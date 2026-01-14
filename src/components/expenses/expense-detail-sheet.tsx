@@ -1,0 +1,405 @@
+"use client"
+
+import * as React from "react"
+import { X, Calendar, User, Trash2, Save, Building, Tag, DollarSign, Receipt, Info, Check, CheckCircle2, ShoppingBag } from "lucide-react"
+import { useProjects, Expense, ExpenseCategory, ExpenseItem } from "@/context/project-context"
+import { cn } from "@/lib/utils"
+
+interface ExpenseDetailSheetProps {
+    expenseId: string | null
+    onClose: () => void
+}
+
+export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetailSheetProps) {
+    const { expenses, updateExpense, deleteExpense, projects, users, vendors } = useProjects()
+
+    // Find the expense
+    const expense = React.useMemo(() =>
+        expenses.find(e => e.id === expenseId),
+        [expenses, expenseId])
+
+    const [isEditing, setIsEditing] = React.useState(false)
+    const [isImageOpen, setIsImageOpen] = React.useState(false)
+    const [editForm, setEditForm] = React.useState<Partial<Expense>>({})
+
+    // Initialize edit form when expense changes
+    React.useEffect(() => {
+        if (expense) {
+            setEditForm(JSON.parse(JSON.stringify(expense))) // Deep copy for items
+        }
+    }, [expense])
+
+    if (!expenseId || !expense) return null
+
+    const handleDelete = () => {
+        if (confirm("Are you sure you want to delete this expense?")) {
+            deleteExpense(expenseId)
+            onClose()
+        }
+    }
+
+    const handleSave = () => {
+        updateExpense(expenseId, editForm)
+        setIsEditing(false)
+    }
+
+    // Calculations
+    const currentItems = editForm.items || []
+    const totalValue = currentItems.length > 0
+        ? currentItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+        : (editForm.totalValue || 0)
+
+    const isVatIncluded = isEditing ? editForm.vatIncluded : expense.vatIncluded
+    const vatRate = 0.07
+    const subtotal = isVatIncluded ? (totalValue / (1 + vatRate)) : totalValue
+    const vatAmount = isVatIncluded ? (totalValue - subtotal) : 0
+
+    // Display Strings
+    const displayAmount = `฿${totalValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+    const displaySubtotal = `฿${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    const displayVat = `฿${vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+    // Mock Image for verification if none exists
+    const receiptImage = expense.receiptImage || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&q=80"
+
+    return (
+        <div className="fixed inset-0 z-[100] flex justify-end font-sans">
+            <div
+                className="absolute inset-0 bg-background/60 backdrop-blur-sm transition-opacity"
+                onClick={onClose}
+            />
+
+            <div className="relative w-full max-w-md h-full bg-card/95 backdrop-blur-3xl border-l border-white/10 shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-white/10 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                            <DollarSign className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold tracking-tight">Expense Details</h2>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">ID: {expense.id.toUpperCase()}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {!isEditing && (
+                            <button
+                                onClick={handleDelete}
+                                className="p-2 rounded-full text-red-500 hover:bg-red-500/10 transition-colors"
+                                title="Delete Expense"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        )}
+                        <button
+                            onClick={onClose}
+                            className="p-2 rounded-full hover:bg-background/50 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+                    {/* Main Amount Card */}
+                    <div className="glass-card rounded-2xl p-6 border border-white/5 bg-gradient-to-br from-background/50 to-muted/20 text-center space-y-2 relative overflow-hidden">
+
+                        {/* Edit Title */}
+                        {isEditing ? (
+                            <input
+                                value={editForm.title || ""}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                                className="w-full text-center bg-transparent border-b border-white/10 font-bold text-lg focus:outline-none focus:border-white/30 transition-colors mb-2"
+                                placeholder="Expense Title"
+                            />
+                        ) : (
+                            <h3 className="text-lg font-bold text-foreground leading-tight px-4">{expense.title}</h3>
+                        )}
+
+                        {/* Amount */}
+                        <div className="scale-110 transform transition-transform">
+                            <h1 className="text-5xl font-black text-primary tracking-tight">{displayAmount}</h1>
+                        </div>
+
+                        {/* Date */}
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="w-4 h-4" />
+                            {isEditing ? (
+                                <input
+                                    type="date"
+                                    value={editForm.date}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                                    className="bg-transparent border-b border-white/10 focus:outline-none"
+                                />
+                            ) : (
+                                <span>{expense.date}</span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Status Select / Display */}
+                    <div className="glass-card p-1 rounded-xl border border-white/5 bg-muted/20 flex flex-col">
+                        {isEditing ? (
+                            <select
+                                value={editForm.status}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value as any }))}
+                                className="w-full bg-background border-none rounded-lg px-4 py-3 text-sm font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            >
+                                <option value="Paid">Paid</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Unpaid">Unpaid</option>
+                                <option value="Advanced">Advanced (สำรองจ่าย)</option>
+                                <option value="Credit">Credit (ติดไว้ก่อน)</option>
+                            </select>
+                        ) : (
+                            <div className={cn("px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all",
+                                expense.status === 'Paid' ? 'bg-green-500/10 text-green-500' :
+                                    expense.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500' :
+                                        expense.status === 'Advanced' ? 'bg-orange-500/10 text-orange-500' :
+                                            'bg-red-500/10 text-red-500'
+                            )}>
+                                {expense.status === 'Paid' && <CheckCircle2 className="w-4 h-4" />}
+                                {expense.status}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Payment Info Grid */}
+                    <div className="grid grid-cols-1 gap-3">
+                        {/* Payee / Receiver */}
+                        <div className="glass-card p-4 rounded-xl border border-white/5 flex items-center justify-between group">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-full bg-blue-500/10 text-blue-500">
+                                    <ShoppingBag className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Payee / Merchant</p>
+                                    {isEditing ? (
+                                        <input
+                                            value={editForm.payee || ""}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, payee: e.target.value }))}
+                                            className="bg-transparent border-b border-white/10 focus:outline-none w-full font-medium"
+                                            placeholder="Who got paid?"
+                                        />
+                                    ) : (
+                                        <p className="font-medium text-foreground">{expense.payee || "-"}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Paid By (Advanced) */}
+                        {(expense.status === 'Advanced' || editForm.status === 'Advanced') && (
+                            <div className="glass-card p-4 rounded-xl border border-orange-500/20 bg-orange-500/5 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-full bg-orange-500/10 text-orange-500">
+                                        <User className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Paid By (สำรองจ่าย)</p>
+                                        {isEditing ? (
+                                            <select
+                                                value={editForm.paidBy || ""}
+                                                onChange={(e) => setEditForm(prev => ({ ...prev, paidBy: e.target.value }))}
+                                                className="bg-transparent border-b border-orange-500/30 text-orange-500 font-medium focus:outline-none w-full"
+                                            >
+                                                <option value="">Select User...</option>
+                                                {users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                                            </select>
+                                        ) : (
+                                            <p className="font-bold text-orange-500">{expense.paidBy || "-"}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Vendor (Credit) */}
+                        {(expense.status === 'Credit' || editForm.status === 'Credit') && (
+                            <div className="glass-card p-4 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-full bg-red-500/10 text-red-500">
+                                        <Building className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Creditor (เจ้าหนี้)</p>
+                                        {isEditing ? (
+                                            <select
+                                                value={editForm.vendor || ""}
+                                                onChange={(e) => setEditForm(prev => ({ ...prev, vendor: e.target.value }))}
+                                                className="bg-transparent border-b border-red-500/30 text-red-500 font-medium focus:outline-none w-full"
+                                            >
+                                                <option value="">Select Vendor...</option>
+                                                {vendors.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
+                                            </select>
+                                        ) : (
+                                            <p className="font-bold text-red-500">{expense.vendor || "-"}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Metadata Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="glass-card p-3 rounded-xl border border-white/5 space-y-1">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                <Tag className="w-3 h-3" /> Category
+                            </label>
+                            {isEditing ? (
+                                <select
+                                    value={editForm.category}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value as any }))}
+                                    className="w-full bg-transparent text-sm font-medium focus:outline-none"
+                                >
+                                    <option value="Material">Material</option>
+                                    <option value="Labor">Labor</option>
+                                    <option value="Sub-contract">Sub-contract</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            ) : (
+                                <div className="text-sm font-medium truncate">{expense.category}</div>
+                            )}
+                        </div>
+                        <div className="glass-card p-3 rounded-xl border border-white/5 space-y-1">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                <Building className="w-3 h-3" /> Project
+                            </label>
+                            <div className="text-sm font-medium truncate">
+                                {projects.find(p => p.id === expense.projectId)?.name || "General"}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Financial Breakdown */}
+                    <div className="glass-card p-4 rounded-xl border border-white/5 space-y-3">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                            <span>Breakdown</span>
+                            {isVatIncluded && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">VAT INCLUDED</span>}
+                        </h3>
+
+                        {/* Items */}
+                        {expense.items && expense.items.length > 0 ? (
+                            <div className="space-y-2">
+                                {expense.items.map((item, idx) => (
+                                    <div key={idx} className="flex items-center justify-between text-sm py-1 border-b border-white/5 last:border-0">
+                                        <div className="truncate pr-4 text-muted-foreground">
+                                            {item.description || "Unspecified Item"}
+                                            <span className="text-[10px] opacity-50 ml-2">({item.category})</span>
+                                        </div>
+                                        <div className="font-mono">฿{item.amount.toLocaleString()}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground italic">No itemized breakdown.</p>
+                        )}
+
+                        <div className="h-px bg-white/10 my-2" />
+
+                        {/* Totals */}
+                        <div className="space-y-1 text-sm">
+                            {isVatIncluded && (
+                                <>
+                                    <div className="flex justify-between text-muted-foreground">
+                                        <span>Subtotal</span>
+                                        <span className="font-mono">{displaySubtotal}</span>
+                                    </div>
+                                    <div className="flex justify-between text-muted-foreground">
+                                        <span>VAT (7%)</span>
+                                        <span className="font-mono">{displayVat}</span>
+                                    </div>
+                                </>
+                            )}
+                            <div className="flex justify-between font-bold text-foreground text-base pt-1">
+                                <span>Grand Total</span>
+                                <span className="font-mono text-primary">{displayAmount}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Receipt Image */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                            <Receipt className="w-3 h-3" /> Receipt Image
+                        </label>
+                        <div className="relative group rounded-xl overflow-hidden border border-white/10 bg-black/40 aspect-[3/4] sm:aspect-video flex items-center justify-center">
+                            {receiptImage ? (
+                                <>
+                                    <img
+                                        src={receiptImage}
+                                        alt="Receipt"
+                                        className="w-full h-full object-contain"
+                                    />
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <button
+                                            onClick={() => setIsImageOpen(true)}
+                                            className="px-4 py-2 bg-white text-black rounded-full font-bold text-sm transform translate-y-2 group-hover:translate-y-0 transition-transform"
+                                        >
+                                            View Full Screen
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center text-muted-foreground gap-2">
+                                    <Receipt className="w-12 h-12 opacity-20" />
+                                    <span className="text-xs">No receipt image attached</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Lightbox / Full Screen Image */}
+                    {isImageOpen && receiptImage && (
+                        <div
+                            className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+                            onClick={() => setIsImageOpen(false)}
+                        >
+                            <button
+                                className="absolute top-4 right-4 p-3 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors"
+                                onClick={() => setIsImageOpen(false)}
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                            <img
+                                src={receiptImage}
+                                alt="Full Receipt"
+                                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer Actions */}
+                <div className="p-6 border-t border-white/10 bg-background/20 backdrop-blur-md shrink-0">
+                    {isEditing ? (
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setIsEditing(false)}
+                                className="flex-1 py-3 rounded-xl font-medium hover:bg-white/5 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Save className="w-4 h-4" /> Save Changes
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-foreground rounded-xl font-bold uppercase tracking-wider transition-all"
+                        >
+                            Edit Expense
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}

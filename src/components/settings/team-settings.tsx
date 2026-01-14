@@ -1,0 +1,101 @@
+"use client"
+
+import { useSettings } from "@/context/settings-context"
+import { Copy, Users, Link as LinkIcon, Shield } from "lucide-react"
+import Link from "next/link"
+
+export function TeamSettings() {
+    const { teamSettings, updateTeamSettings } = useSettings()
+
+    const copyLink = () => {
+        navigator.clipboard.writeText("https://projectpro.app/invite/org_123456")
+        // Would add toast here
+    }
+
+    return (
+        <div className="space-y-8">
+            <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <LinkIcon className="w-5 h-5" />
+                        Invitation Link
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                        Send this link to your team members to let them join your organization automatically.
+                    </p>
+
+                    <div className="space-y-4">
+                        <div className="flex gap-2">
+                            <input
+                                readOnly
+                                value="https://projectpro.app/invite/org_123456"
+                                className="flex-1 h-10 rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
+                            />
+                            <button
+                                onClick={copyLink}
+                                className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2"
+                            >
+                                <Copy className="w-4 h-4 mr-2" />
+                                Copy
+                            </button>
+                        </div>
+
+                        <div className="flex items-center justify-between border rounded-lg p-4 bg-muted/20">
+                            <div className="space-y-0.5">
+                                <label className="text-sm font-medium">Enable Link</label>
+                                <p className="text-xs text-muted-foreground">Allow new members to join via link.</p>
+                            </div>
+                            <button
+                                onClick={() => updateTeamSettings({ allowInvite: !teamSettings.allowInvite })}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${teamSettings.allowInvite ? 'bg-green-500' : 'bg-input'}`}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${teamSettings.allowInvite ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Shield className="w-5 h-5" />
+                        Default Permissions
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                        Choose the default role for new members joining via the link.
+                    </p>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Default Role</label>
+                        <select
+                            value={teamSettings.defaultRole}
+                            onChange={(e) => updateTeamSettings({ defaultRole: e.target.value as any })}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                            <option value="Member">Member (View & Comment)</option>
+                            <option value="Editor">Editor (Edit Projects)</option>
+                            <option value="Admin">Admin (Full Access)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm">
+                <div className="flex flex-col space-y-1.5 p-6">
+                    <h3 className="text-2xl font-semibold leading-none tracking-tight flex items-center gap-2">
+                        <Users className="w-6 h-6" />
+                        Team Members
+                    </h3>
+                    <p className="text-sm text-muted-foreground">Manage existing team members and their roles.</p>
+                </div>
+                <div className="p-6 pt-0">
+                    <p className="mb-4 text-sm">You have 5 active members in your team.</p>
+                    <Link href="/team">
+                        <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                            Manage Team
+                        </button>
+                    </Link>
+                </div>
+            </div>
+        </div>
+    )
+}
