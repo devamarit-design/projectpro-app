@@ -162,101 +162,103 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             {/* Tab Contents */}
             <div className="glass-card rounded-2xl p-6 min-h-[400px]">
                 {activeTab === 'overview' && (
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <div className="glass-card p-6 rounded-2xl space-y-4">
-                            <h3 className="font-bold text-lg flex items-center gap-2">
-                                <Info className="w-5 h-5 text-primary" />
-                                {t.projects.detail.overview.description}
-                            </h3>
-                            <p className="text-muted-foreground leading-relaxed">
-                                {project.description || t.projects.detail.overview.no_desc}
-                            </p>
-                        </div>
-
-                        <div className="glass-card p-6 rounded-2xl space-y-4">
-                            <h3 className="font-bold text-lg flex items-center gap-2">
-                                <Calendar className="w-5 h-5 text-primary" />
-                                {t.projects.detail.overview.timeline}
-                            </h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                    <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.start_date}</span>
-                                    <span className="font-bold">
-                                        {project.startDate ? new Date(project.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                    <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.end_date}</span>
-                                    <span className="font-bold">
-                                        {project.endDate ? new Date(project.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center py-2">
-                                    <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.current_status}</span>
-                                    <span className="px-3 py-1 bg-primary/10 text-primary self-start rounded-full text-xs font-bold uppercase tracking-wider border border-primary/20">
-                                        {project.status}
-                                    </span>
-                                </div>
+                    <>
+                        <div className="grid gap-6 md:grid-cols-2">
+                            <div className="glass-card p-6 rounded-2xl space-y-4">
+                                <h3 className="font-bold text-lg flex items-center gap-2">
+                                    <Info className="w-5 h-5 text-primary" />
+                                    {t.projects.detail.overview.description}
+                                </h3>
+                                <p className="text-muted-foreground leading-relaxed">
+                                    {project.description || t.projects.detail.overview.no_desc}
+                                </p>
                             </div>
-                        </div>
-                    </div>
 
-                    {/* Sub-projects Section */}
-                    <div className="glass-card p-6 rounded-2xl space-y-4 mt-6">
-                        <div className="flex items-center justify-between">
-                            <h3 className="font-bold text-lg flex items-center gap-2">
-                                <Folder className="w-5 h-5 text-primary" />
-                                Sub-projects (โปรเจคย่อย)
-                            </h3>
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">
-                                {project.tasks?.length || 0} items
-                            </span>
-                        </div>
-                        {project.tasks && project.tasks.length > 0 ? (
-                            <div className="space-y-2">
-                                {project.tasks.map((task) => (
-                                    <div
-                                        key={task.id}
-                                        className="flex items-center justify-between p-3 bg-background/50 rounded-xl border border-white/5 hover:border-primary/20 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                                            <div className={cn(
-                                                "w-2 h-2 rounded-full shrink-0",
-                                                task.status === 'Done' ? 'bg-green-500' :
-                                                    task.status === 'In Progress' ? 'bg-blue-500' :
-                                                        task.status === 'Todo' ? 'bg-yellow-500' : 'bg-gray-500'
-                                            )} />
-                                            <span className="font-medium truncate">{task.title}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <span className={cn(
-                                                "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full",
-                                                task.priority === 'High' ? 'bg-red-500/10 text-red-500' :
-                                                    task.priority === 'Medium' ? 'bg-yellow-500/10 text-yellow-500' :
-                                                        'bg-green-500/10 text-green-500'
-                                            )}>
-                                                {task.priority}
-                                            </span>
-                                            <span className={cn(
-                                                "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border",
-                                                task.status === 'Done' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                                                    task.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                                        'bg-muted text-muted-foreground border-white/10'
-                                            )}>
-                                                {task.status}
-                                            </span>
-                                        </div>
+                            <div className="glass-card p-6 rounded-2xl space-y-4">
+                                <h3 className="font-bold text-lg flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-primary" />
+                                    {t.projects.detail.overview.timeline}
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.start_date}</span>
+                                        <span className="font-bold">
+                                            {project.startDate ? new Date(project.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                        </span>
                                     </div>
-                                ))}
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.end_date}</span>
+                                        <span className="font-bold">
+                                            {project.endDate ? new Date(project.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2">
+                                        <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.current_status}</span>
+                                        <span className="px-3 py-1 bg-primary/10 text-primary self-start rounded-full text-xs font-bold uppercase tracking-wider border border-primary/20">
+                                            {project.status}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                        ) : (
-                            <div className="text-center py-8 text-muted-foreground">
-                                <Folder className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                                <p className="text-sm">No sub-projects yet</p>
-                                <p className="text-xs opacity-50">Add from the Tasks tab or when creating expenses</p>
+                        </div>
+
+                        {/* Sub-projects Section */}
+                        <div className="glass-card p-6 rounded-2xl space-y-4 mt-6">
+                            <div className="flex items-center justify-between">
+                                <h3 className="font-bold text-lg flex items-center gap-2">
+                                    <Folder className="w-5 h-5 text-primary" />
+                                    Sub-projects (โปรเจคย่อย)
+                                </h3>
+                                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">
+                                    {project.tasks?.length || 0} items
+                                </span>
                             </div>
-                        )}
-                    </div>
+                            {project.tasks && project.tasks.length > 0 ? (
+                                <div className="space-y-2">
+                                    {project.tasks.map((task) => (
+                                        <div
+                                            key={task.id}
+                                            className="flex items-center justify-between p-3 bg-background/50 rounded-xl border border-white/5 hover:border-primary/20 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                <div className={cn(
+                                                    "w-2 h-2 rounded-full shrink-0",
+                                                    task.status === 'Done' ? 'bg-green-500' :
+                                                        task.status === 'In Progress' ? 'bg-blue-500' :
+                                                            task.status === 'Todo' ? 'bg-yellow-500' : 'bg-gray-500'
+                                                )} />
+                                                <span className="font-medium truncate">{task.title}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <span className={cn(
+                                                    "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full",
+                                                    task.priority === 'High' ? 'bg-red-500/10 text-red-500' :
+                                                        task.priority === 'Medium' ? 'bg-yellow-500/10 text-yellow-500' :
+                                                            'bg-green-500/10 text-green-500'
+                                                )}>
+                                                    {task.priority}
+                                                </span>
+                                                <span className={cn(
+                                                    "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border",
+                                                    task.status === 'Done' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                                        task.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                                            'bg-muted text-muted-foreground border-white/10'
+                                                )}>
+                                                    {task.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-muted-foreground">
+                                    <Folder className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                                    <p className="text-sm">No sub-projects yet</p>
+                                    <p className="text-xs opacity-50">Add from the Tasks tab or when creating expenses</p>
+                                </div>
+                            )}
+                        </div>
+                    </>
                 )}
 
                 {activeTab === 'financials' && (
