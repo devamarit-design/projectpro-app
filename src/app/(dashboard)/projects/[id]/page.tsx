@@ -52,6 +52,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false)
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
     const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
+    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
     const [userFilter, setUserFilter] = useState<string>("all")
     const [monthFilter, setMonthFilter] = useState<string>("all")
 
@@ -218,7 +219,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                     {project.tasks.map((task) => (
                                         <div
                                             key={task.id}
-                                            className="flex items-center justify-between p-3 bg-background/50 rounded-xl border border-white/5 hover:border-primary/20 transition-colors"
+                                            onClick={() => setSelectedTaskId(task.id)}
+                                            className="flex items-center justify-between p-3 bg-background/50 rounded-xl border border-white/5 hover:border-primary/20 hover:bg-background/80 transition-colors cursor-pointer"
                                         >
                                             <div className="flex items-center gap-3 min-w-0 flex-1">
                                                 <div className={cn(
@@ -683,6 +685,94 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 expenseId={selectedExpenseId}
                 onClose={() => setSelectedExpenseId(null)}
             />
+
+            {/* Task/Sub-project Detail Sheet */}
+            {selectedTaskId && (() => {
+                const selectedTask = project.tasks?.find(t => t.id === selectedTaskId)
+                if (!selectedTask) return null
+                return (
+                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+                        <div
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setSelectedTaskId(null)}
+                        />
+                        <div className="relative bg-background border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold">Sub-project Details</h3>
+                                <button
+                                    onClick={() => setSelectedTaskId(null)}
+                                    className="p-2 hover:bg-muted rounded-full transition-colors"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Title</p>
+                                    <p className="font-semibold text-lg">{selectedTask.title}</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Status</p>
+                                        <span className={cn(
+                                            "inline-block px-3 py-1 rounded-full text-xs font-bold uppercase",
+                                            selectedTask.status === 'Done' ? 'bg-green-500/10 text-green-500' :
+                                                selectedTask.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
+                                                    'bg-yellow-500/10 text-yellow-500'
+                                        )}>
+                                            {selectedTask.status}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Priority</p>
+                                        <span className={cn(
+                                            "inline-block px-3 py-1 rounded-full text-xs font-bold uppercase",
+                                            selectedTask.priority === 'High' ? 'bg-red-500/10 text-red-500' :
+                                                selectedTask.priority === 'Medium' ? 'bg-yellow-500/10 text-yellow-500' :
+                                                    'bg-green-500/10 text-green-500'
+                                        )}>
+                                            {selectedTask.priority}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Assigned To</p>
+                                        <p className="font-medium">{selectedTask.assignedTo || 'Unassigned'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Due Date</p>
+                                        <p className="font-medium">
+                                            {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    onClick={() => {
+                                        setSelectedTaskId(null)
+                                        setActiveTab('tasks')
+                                    }}
+                                    className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
+                                >
+                                    View in Tasks Tab
+                                </button>
+                                <button
+                                    onClick={() => setSelectedTaskId(null)}
+                                    className="px-6 py-3 border border-white/10 rounded-xl font-medium hover:bg-muted transition-colors"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            })()}
         </div >
     )
 }
