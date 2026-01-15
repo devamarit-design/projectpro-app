@@ -12,7 +12,7 @@ interface IncomeDetailSheetProps {
 }
 
 export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProps) {
-    const { incomes, customers, projects, updateIncome } = useProjects()
+    const { incomes, customers, projects, updateIncome, addIncome } = useProjects()
     const { t } = useTranslation()
     const [showPreview, setShowPreview] = useState(false)
 
@@ -38,22 +38,44 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
     }
 
     const handleCreateNext = (targetType: IncomeType) => {
-        // If converting Quotation, mark original as Invoiced
-        if (document.type === 'Quotation' && document.status !== 'Invoiced') {
+        // Generate new document number
+        const prefix = targetType === 'Invoice' ? 'INV' : 'REC'
+        const docNumber = `${prefix}-${Date.now().toString(36).toUpperCase()}`
+
+        // Create the new income document automatically
+        const newDoc: Omit<IncomeDocument, 'id'> = {
+            type: targetType,
+            documentNumber: docNumber,
+            date: new Date().toISOString().split('T')[0],
+            customerId: document.customerId,
+            projectId: document.projectId,
+            status: 'Draft',
+            mode: document.mode,
+            items: document.items,
+            sections: document.sections,
+            subtotal: document.subtotal,
+            discount: document.discount || 0,
+            total: document.total || document.subtotal,
+            tax: document.tax,
+            grandTotal: document.grandTotal,
+            referenceDocumentId: document.id,
+        }
+
+        // Add the new document
+        addIncome(newDoc)
+
+        // If converting Quotation to Invoice, mark original as Invoiced
+        if (document.type === 'Quotation' && targetType === 'Invoice' && document.status !== 'Invoiced') {
             updateIncome(document.id, { status: 'Invoiced' })
         }
 
-        const nextData = {
-            ...document,
-            id: undefined, // Create new
-            type: targetType,
-            documentNumber: '', // Generate new
-            date: new Date().toISOString().split('T')[0],
-            referenceDocumentId: document.id,
-            status: 'Draft', // Default for new doc
+        // If converting Invoice to Receipt, mark original as Paid
+        if (document.type === 'Invoice' && targetType === 'Receipt') {
+            updateIncome(document.id, { status: 'Paid' })
         }
-        setDialogData(nextData)
-        setIsDialogOpen(true)
+
+        // Close the sheet and let user know
+        onClose()
     }
 
     // Workflow Actions Config
