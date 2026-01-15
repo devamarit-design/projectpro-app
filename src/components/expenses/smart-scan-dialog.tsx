@@ -57,7 +57,7 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
 
             // Mock "AI Extracted" Data - Multiple items like a real receipt
             const mockExtracted = {
-                merchant: "Thai Home Builder Supplies",
+                merchant: "ร้านวัสดุก่อสร้างไทย (Thai Home Builder)",
                 date: new Date().toISOString().split('T')[0],
                 total: 12850,
                 items: [
