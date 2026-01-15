@@ -1,9 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { X, Receipt, ScanLine, Plus, Trash2, Layers, User, Building, Camera, Upload } from "lucide-react"
+import { X, Receipt, ScanLine, Plus, Trash2, Layers, User, Building, Camera, Upload, CheckCircle2 } from "lucide-react"
 import { useProjects, ExpenseCategory, ExpenseItem } from "@/context/project-context"
 import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
+import { cn } from "@/lib/utils"
 
 interface AddExpenseDialogProps {
     isOpen: boolean
@@ -355,7 +356,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     onClick={onClose}
                 />
 
-                <div className="relative glass-card w-full max-w-2xl h-[90vh] md:h-auto mx-4 p-0 rounded-2xl shadow-2xl border border-white/10 flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                <div className="relative glass-card w-full max-w-2xl h-[90vh] md:h-auto md:max-h-[90vh] mx-4 p-0 rounded-2xl shadow-2xl border border-white/10 flex flex-col animate-in fade-in zoom-in-95 duration-200">
 
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b border-white/10 shrink-0">
@@ -754,13 +755,27 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                             <button
                                 type="button"
                                 onClick={() => setReceiptExpanded(!receiptExpanded)}
-                                className="w-full flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                                className={cn(
+                                    "w-full flex items-center justify-between text-xs font-bold uppercase tracking-wider transition-all p-3 rounded-xl border border-dashed",
+                                    receiptExpanded
+                                        ? "bg-primary/5 border-primary/20 text-primary"
+                                        : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10 hover:text-foreground"
+                                )}
                             >
                                 <span className="flex items-center gap-2">
-                                    <Camera className="w-4 h-4" /> {t.expenses.dialog.receipt_image}
-                                    {receiptImage && <span className="text-green-500 text-[10px]">✓</span>}
+                                    <div className={cn("p-1.5 rounded-lg", receiptExpanded ? "bg-primary/10" : "bg-white/10")}>
+                                        <Camera className="w-4 h-4" />
+                                    </div>
+                                    <span>{t.expenses.dialog.receipt_image}</span>
+                                    {receiptImage ? (
+                                        <span className="flex items-center gap-1 text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded text-[10px]">
+                                            <CheckCircle2 className="w-3 h-3" /> Uploaded
+                                        </span>
+                                    ) : (
+                                        <span className="text-[10px] opacity-50 normal-case font-normal">(Optional but recommended)</span>
+                                    )}
                                 </span>
-                                <span className={`transition-transform ${receiptExpanded ? 'rotate-180' : ''}`}>▼</span>
+                                <span className={`transition-transform duration-300 ${receiptExpanded ? 'rotate-180 text-primary' : 'opacity-50'}`}>▼</span>
                             </button>
 
                             {receiptExpanded && (
