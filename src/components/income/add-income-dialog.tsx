@@ -328,6 +328,14 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
 
                         {mode === "Simple" ? (
                             <div className="space-y-2">
+                                {/* Column Headers */}
+                                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide pb-1 border-b border-white/5">
+                                    <div className="col-span-1 text-center">#</div>
+                                    <div className="col-span-5">Item Name</div>
+                                    <div className="col-span-2 text-center">Qty</div>
+                                    <div className="col-span-2 text-center">Price</div>
+                                    <div className="col-span-2 text-right">Total</div>
+                                </div>
                                 {simpleItems.map((item: any, index: number) => (
                                     <div key={item.id} className="grid grid-cols-12 gap-2 items-start animate-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${index * 50}ms` }}>
                                         <div className="col-span-1 flex justify-center py-2.5 text-muted-foreground text-sm">{index + 1}</div>
@@ -442,6 +450,14 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                             </button>
                                         </div>
                                         <div className="p-4 space-y-2">
+                                            {/* Column Headers */}
+                                            <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide pb-1 border-b border-white/5">
+                                                <div className="col-span-1 text-center">#</div>
+                                                <div className="col-span-5">Item Name</div>
+                                                <div className="col-span-2 text-center">Qty</div>
+                                                <div className="col-span-2 text-center">Price</div>
+                                                <div className="col-span-2 text-right">Total</div>
+                                            </div>
                                             {section.items.map((item, iIndex) => (
                                                 <div key={item.id} className="grid grid-cols-12 gap-2 items-start">
                                                     <div className="col-span-1 flex justify-center py-2.5 text-muted-foreground text-sm">{iIndex + 1}</div>

@@ -976,6 +976,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             setIncomes(snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument)))
         })
 
+        // 7. Contracts
+        const qContracts = query(collection(db, "contracts"), where("teamId", "==", currentTeam.id))
+        const unsubContracts = onSnapshot(qContracts, (snap) => {
+            setContracts(snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract)))
+        })
+
         return () => {
             unsubProjects()
             unsubExpenses()
@@ -983,6 +989,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             unsubVendors()
             unsubCustomers()
             unsubIncomes()
+            unsubContracts()
         }
     }, [currentTeam])
 
@@ -1127,83 +1134,84 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // Contracts Logic
     const [contracts, setContracts] = useState<Contract[]>([])
 
-    // Load Contracts
-    useEffect(() => {
-        get("contracts_v2").then(saved => {
-            if (saved) setContracts(saved)
-        })
-    }, [])
-
-    // Save Contracts
-    useEffect(() => {
-        set("contracts_v2", contracts)
-    }, [contracts])
-
-    const addContract = (data: Omit<Contract, "id" | "createdAt" | "status">) => {
-        const newContract: Contract = {
-            ...data,
-            id: Math.random().toString(36).substring(2, 9),
-            status: "Active",
-            createdAt: new Date().toISOString()
+    const addContract = async (data: Omit<Contract, "id" | "createdAt" | "status">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "contracts"), {
+                ...data,
+                status: "Active",
+                createdAt: new Date().toISOString(),
+                teamId: currentTeam.id,
+            })
+        } catch (e) {
+            console.error("Error adding contract", e)
         }
-        setContracts(prev => [newContract, ...prev])
     }
 
-    const payInstallment = (contractId: string, installmentId: string) => {
+    const payInstallment = async (contractId: string, installmentId: string) => {
+        if (!currentTeam) return
+
         const contract = contracts.find(c => c.id === contractId)
         if (!contract) return
 
         const installment = contract.installments.find(i => i.id === installmentId)
         if (!installment || installment.status === 'Paid') return
 
-        // 1. Create Expense
-        const worker = workers.find(w => w.id === contract.workerId)
-        const expense: Expense = {
-            id: Math.random().toString(36).substring(2, 9),
-            title: `Installment Payment (${installment.description})`,
-            amount: `฿${installment.amount.toLocaleString()}`,
-            totalValue: installment.amount,
-            date: new Date().toISOString().split('T')[0],
-            category: "Labor",
-            payee: worker ? worker.name : "Worker",
-            status: "Paid",
-            projectId: contract.projectId,
-            receiptImage: undefined, // Fixed type error
-            items: [
-                {
-                    id: Math.random().toString(),
-                    description: `Installment: ${installment.description}`,
-                    amount: installment.amount,
-                    category: "Labor",
-                    projectId: contract.projectId
-                }
-            ]
-        }
+        try {
+            // 1. Create Expense in Firestore
+            const worker = workers.find(w => w.id === contract.workerId)
+            const expenseRef = await addDoc(collection(db, "expenses"), {
+                title: `Installment Payment (${installment.description})`,
+                amount: `฿${installment.amount.toLocaleString()}`,
+                totalValue: installment.amount,
+                date: new Date().toISOString().split('T')[0],
+                category: "Labor",
+                payee: worker ? worker.name : "Worker",
+                status: "Paid",
+                projectId: contract.projectId,
+                teamId: currentTeam.id,
+                items: [
+                    {
+                        id: Math.random().toString(),
+                        description: `Installment: ${installment.description}`,
+                        amount: installment.amount,
+                        category: "Labor",
+                        projectId: contract.projectId
+                    }
+                ]
+            })
 
-        setExpenses(prev => [expense, ...prev])
-
-        // 2. Update Contract Status
-        setContracts(prev => prev.map(c => {
-            if (c.id !== contractId) return c
-
-            return {
-                ...c,
-                installments: c.installments.map(i => i.id === installmentId ? {
+            // 2. Update Contract Installment Status in Firestore
+            const updatedInstallments = contract.installments.map(i =>
+                i.id === installmentId ? {
                     ...i,
                     status: "Paid",
                     paidAt: new Date().toISOString(),
-                    expenseId: expense.id
-                } : i)
-            }
-        }))
+                    expenseId: expenseRef.id
+                } : i
+            )
+            await updateDoc(doc(db, "contracts", contractId), {
+                installments: updatedInstallments
+            })
+        } catch (e) {
+            console.error("Error paying installment", e)
+        }
     }
 
-    const updateContract = (id: string, updates: Partial<Contract>) => {
-        setContracts(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c))
+    const updateContract = async (id: string, updates: Partial<Contract>) => {
+        try {
+            await updateDoc(doc(db, "contracts", id), updates)
+        } catch (e) {
+            console.error("Error updating contract", e)
+        }
     }
 
-    const deleteContract = (id: string) => {
-        setContracts(prev => prev.filter(c => c.id !== id))
+    const deleteContract = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "contracts", id))
+        } catch (e) {
+            console.error("Error deleting contract", e)
+        }
     }
 
 
