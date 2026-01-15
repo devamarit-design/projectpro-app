@@ -26,6 +26,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     const [payee, setPayee] = React.useState("")
     const [status, setStatus] = React.useState<"Paid" | "Pending" | "Unpaid" | "Advanced" | "Credit">("Paid")
     const [receiptImage, setReceiptImage] = React.useState<string | null>(null)
+    const [receiptExpanded, setReceiptExpanded] = React.useState(false)
 
     // Split Bill Logic
     const [billType, setBillType] = React.useState<"combine" | "split">("combine")
@@ -190,21 +191,32 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             taskId: billType === 'combine' ? globalTaskId : item.taskId
         }))
 
-        addExpense({
+        // Build expense object, excluding undefined values
+        const expenseData: Parameters<typeof addExpense>[0] = {
             title: title || payee || "New Expense",
             amount: `฿${subtotal.toLocaleString()}`,
             totalValue: subtotal,
             date,
-            category: items[0]?.category || "Other", // Fallback for list view
+            category: items[0]?.category || "Other",
             items: finalItems,
-            payee,
+            payee: payee || "",
             status,
-            paidBy: status === 'Advanced' ? paidBy : undefined,
-            vendor: status === 'Credit' ? vendor : undefined,
             vatIncluded,
-            projectId: finalItems[0]?.projectId, // Primary linkage
-            receiptImage: receiptImage || undefined
-        })
+            projectId: finalItems[0]?.projectId || ""
+        }
+
+        // Only add optional fields if they have values
+        if (status === 'Advanced' && paidBy) {
+            expenseData.paidBy = paidBy
+        }
+        if (status === 'Credit' && vendor) {
+            expenseData.vendor = vendor
+        }
+        if (receiptImage) {
+            expenseData.receiptImage = receiptImage
+        }
+
+        addExpense(expenseData)
         onClose()
     }
 
@@ -707,33 +719,45 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                         </div>
 
-                        {/* Image Upload Section */}
+                        {/* Image Upload Section - Collapsible */}
                         <div className="space-y-2 p-6 pt-0">
-                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                                <Camera className="w-4 h-4" /> {t.expenses.dialog.receipt_image}
-                            </label>
+                            <button
+                                type="button"
+                                onClick={() => setReceiptExpanded(!receiptExpanded)}
+                                className="w-full flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <Camera className="w-4 h-4" /> {t.expenses.dialog.receipt_image}
+                                    {receiptImage && <span className="text-green-500 text-[10px]">✓</span>}
+                                </span>
+                                <span className={`transition-transform ${receiptExpanded ? 'rotate-180' : ''}`}>▼</span>
+                            </button>
 
-                            {receiptImage ? (
-                                <div className="relative rounded-xl overflow-hidden border border-white/10 group aspect-video bg-black/40">
-                                    <img src={receiptImage} alt="Receipt Preview" className="w-full h-full object-contain" />
-                                    <button
-                                        type="button"
-                                        onClick={removeImage}
-                                        className="absolute top-2 right-2 p-2 bg-black/60 text-white rounded-full hover:bg-red-500/80 transition-colors opacity-0 group-hover:opacity-100"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/10 rounded-xl hover:bg-white/5 hover:border-primary/50 transition-all cursor-pointer group">
-                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                        <div className="p-3 rounded-full bg-white/5 group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-2">
-                                            <Upload className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
+                            {receiptExpanded && (
+                                <>
+                                    {receiptImage ? (
+                                        <div className="relative rounded-xl overflow-hidden border border-white/10 group aspect-video bg-black/40 mt-2">
+                                            <img src={receiptImage} alt="Receipt Preview" className="w-full h-full object-contain" />
+                                            <button
+                                                type="button"
+                                                onClick={removeImage}
+                                                className="absolute top-2 right-2 p-2 bg-black/60 text-white rounded-full hover:bg-red-500/80 transition-colors opacity-0 group-hover:opacity-100"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
                                         </div>
-                                        <p className="text-sm text-muted-foreground group-hover:text-foreground font-medium">{t.expenses.dialog.upload_hint}</p>
-                                    </div>
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                                </label>
+                                    ) : (
+                                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/10 rounded-xl hover:bg-white/5 hover:border-primary/50 transition-all cursor-pointer group mt-2">
+                                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                <div className="p-3 rounded-full bg-white/5 group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-2">
+                                                    <Upload className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
+                                                </div>
+                                                <p className="text-sm text-muted-foreground group-hover:text-foreground font-medium">{t.expenses.dialog.upload_hint}</p>
+                                            </div>
+                                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                        </label>
+                                    )}
+                                </>
                             )}
                         </div>
 
