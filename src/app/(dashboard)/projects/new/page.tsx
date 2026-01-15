@@ -1,15 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useTranslation } from "@/lib/i18n-context"
-import { ArrowLeft, Upload, Calendar as CalendarIcon } from "lucide-react"
+import { ArrowLeft, Upload, Calendar as CalendarIcon, User } from "lucide-react"
 import Link from "next/link"
 import { useProjects } from "@/context/project-context"
 import { useRouter } from "next/navigation"
+import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 
 export default function NewProjectPage() {
     const { t } = useTranslation()
-    const { addProject } = useProjects()
+    const { addProject, customers } = useProjects()
     const router = useRouter()
 
     const [formData, setFormData] = useState({
@@ -25,6 +26,19 @@ export default function NewProjectPage() {
         image: "" // Keeping empty for now, or could set a default
     })
 
+    // Quick Add Customer State
+    const [showAddCustomer, setShowAddCustomer] = useState(false)
+    const prevCustomersLength = useRef(customers?.length || 0)
+
+    // Auto-select new customer
+    useEffect(() => {
+        if (customers && customers.length > prevCustomersLength.current) {
+            const newCustomer = customers[customers.length - 1]
+            setFormData(prev => ({ ...prev, customer: newCustomer.name }))
+            prevCustomersLength.current = customers.length
+        }
+    }, [customers])
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         // Basic validation
@@ -35,7 +49,7 @@ export default function NewProjectPage() {
 
         addProject({
             name: formData.name,
-            customer: formData.customer === "1" ? "ABC Corp" : formData.customer === "2" ? "Mr. Smith" : "XYZ Ltd", // Simple mapping for mock
+            customer: formData.customer,
             location: formData.location,
             description: formData.description,
             status: "Planning",
@@ -83,17 +97,30 @@ export default function NewProjectPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Customer <span className="text-red-500">*</span></label>
-                            <select
-                                required
-                                className="w-full h-11 px-4 rounded-xl bg-background/50 border border-input focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                value={formData.customer}
-                                onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
-                            >
-                                <option value="">Select Customer</option>
-                                <option value="1">ABC Corp</option>
-                                <option value="2">Mr. Smith</option>
-                                <option value="3">XYZ Ltd</option>
-                            </select>
+                            <div className="relative">
+                                <select
+                                    required
+                                    className="w-full h-11 px-4 rounded-xl bg-background/50 border border-input focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none"
+                                    value={formData.customer}
+                                    onChange={(e) => {
+                                        if (e.target.value === "NEW_CUSTOMER") {
+                                            setShowAddCustomer(true)
+                                        } else {
+                                            setFormData({ ...formData, customer: e.target.value })
+                                        }
+                                    }}
+                                >
+                                    <option value="">Select Customer</option>
+                                    <option value="NEW_CUSTOMER" className="text-primary font-bold bg-primary/10">
+                                        + Create New Customer
+                                    </option>
+                                    {customers.map((c) => (
+                                        <option key={c.id} value={c.name}>
+                                            {c.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Location</label>
@@ -206,6 +233,11 @@ export default function NewProjectPage() {
                     </button>
                 </div>
             </form>
+
+            <AddCustomerDialog
+                isOpen={showAddCustomer}
+                onClose={() => setShowAddCustomer(false)}
+            />
         </div>
     )
 }

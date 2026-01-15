@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect, use, useMemo } from "react"
+import { useState, useEffect, use, useMemo, useRef } from "react"
 import { useTranslation } from "@/lib/i18n-context"
 import { useProjects } from "@/context/project-context"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Upload, Calendar, MapPin, DollarSign, User, FileText, Loader2 } from "lucide-react"
 import { uploadImage } from "@/lib/upload"
 import Link from "next/link"
+import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 
 export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
     const { t } = useTranslation()
@@ -42,6 +43,19 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
         image: ""
     })
     const [isUploading, setIsUploading] = useState(false)
+
+    // Quick Add Customer State
+    const [showAddCustomer, setShowAddCustomer] = useState(false)
+    const prevCustomersLength = useRef(customers?.length || 0)
+
+    // Auto-select new customer
+    useEffect(() => {
+        if (customers && customers.length > prevCustomersLength.current) {
+            const newCustomer = customers[customers.length - 1]
+            setFormData(prev => ({ ...prev, customer: newCustomer.name }))
+            prevCustomersLength.current = customers.length
+        }
+    }, [customers])
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -135,9 +149,18 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                                     required
                                     className="w-full h-12 rounded-xl bg-background/50 border border-white/10 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all appearance-none"
                                     value={formData.customer}
-                                    onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
+                                    onChange={(e) => {
+                                        if (e.target.value === "NEW_CUSTOMER") {
+                                            setShowAddCustomer(true)
+                                        } else {
+                                            setFormData({ ...formData, customer: e.target.value })
+                                        }
+                                    }}
                                 >
                                     <option value="">{t.projects.edit.placeholders.select_customer}</option>
+                                    <option value="NEW_CUSTOMER" className="text-primary font-bold bg-primary/10">
+                                        + {t.income.dialog?.create_customer || "Create New Customer"}
+                                    </option>
                                     {customers.map(c => (
                                         <option key={c.id} value={c.name}>{c.name}</option>
                                     ))}
@@ -319,6 +342,11 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                     </button>
                 </div>
             </form>
+
+            <AddCustomerDialog
+                isOpen={showAddCustomer}
+                onClose={() => setShowAddCustomer(false)}
+            />
         </div>
     )
 }
