@@ -165,7 +165,8 @@ export interface Customer {
 
 export interface IncomeItem {
     id: string
-    description: string
+    name?: string  // Item name
+    description: string  // Item description/details
     quantity: number
     unit: string
     unitPrice: number

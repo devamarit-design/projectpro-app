@@ -331,7 +331,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                 {/* Column Headers */}
                                 <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide pb-1 border-b border-white/5">
                                     <div className="col-span-1 text-center">#</div>
-                                    <div className="col-span-5">Item Name</div>
+                                    <div className="col-span-5">Item / Description</div>
                                     <div className="col-span-2 text-center">Qty</div>
                                     <div className="col-span-2 text-center">Price</div>
                                     <div className="col-span-2 text-right">Total</div>
@@ -363,12 +363,20 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                     )}
                                                 </label>
                                             </div>
-                                            <input
-                                                placeholder={t.income.dialog.items.desc}
-                                                value={item.description}
-                                                onChange={(e) => updateSimpleItem(item.id, "description", e.target.value)}
-                                                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                            />
+                                            <div className="flex-1 space-y-1">
+                                                <input
+                                                    placeholder="Item name..."
+                                                    value={item.name || ""}
+                                                    onChange={(e) => updateSimpleItem(item.id, "name", e.target.value)}
+                                                    className="w-full bg-background border border-input rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                />
+                                                <input
+                                                    placeholder="Description (optional)..."
+                                                    value={item.description}
+                                                    onChange={(e) => updateSimpleItem(item.id, "description", e.target.value)}
+                                                    className="w-full bg-background border border-input rounded-lg px-3 py-1.5 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                />
+                                            </div>
                                         </div>
                                         <div className="col-span-2">
                                             <input
@@ -453,7 +461,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                             {/* Column Headers */}
                                             <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide pb-1 border-b border-white/5">
                                                 <div className="col-span-1 text-center">#</div>
-                                                <div className="col-span-5">Item Name</div>
+                                                <div className="col-span-5">Item / Description</div>
                                                 <div className="col-span-2 text-center">Qty</div>
                                                 <div className="col-span-2 text-center">Price</div>
                                                 <div className="col-span-2 text-right">Total</div>
@@ -484,18 +492,32 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                                 )}
                                                             </label>
                                                         </div>
-                                                        <input
-                                                            placeholder={t.income.dialog.items.desc}
-                                                            value={item.description}
-                                                            onChange={(e) => {
-                                                                const newVal = e.target.value
-                                                                setSections(prev => prev.map(s => s.id === section.id ? {
-                                                                    ...s,
-                                                                    items: s.items.map(i => i.id === item.id ? { ...i, description: newVal } : i)
-                                                                } : s))
-                                                            }}
-                                                            className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                        />
+                                                        <div className="flex-1 space-y-1">
+                                                            <input
+                                                                placeholder="Item name..."
+                                                                value={item.name || ""}
+                                                                onChange={(e) => {
+                                                                    const newVal = e.target.value
+                                                                    setSections(prev => prev.map(s => s.id === section.id ? {
+                                                                        ...s,
+                                                                        items: s.items.map(i => i.id === item.id ? { ...i, name: newVal } : i)
+                                                                    } : s))
+                                                                }}
+                                                                className="w-full bg-background border border-input rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                            />
+                                                            <input
+                                                                placeholder="Description (optional)..."
+                                                                value={item.description}
+                                                                onChange={(e) => {
+                                                                    const newVal = e.target.value
+                                                                    setSections(prev => prev.map(s => s.id === section.id ? {
+                                                                        ...s,
+                                                                        items: s.items.map(i => i.id === item.id ? { ...i, description: newVal } : i)
+                                                                    } : s))
+                                                                }}
+                                                                className="w-full bg-background border border-input rounded-lg px-3 py-1.5 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                            />
+                                                        </div>
                                                     </div>
                                                     <div className="col-span-2">
                                                         <input
