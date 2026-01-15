@@ -103,7 +103,13 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
             customerSig: "Customer Signature",
             authSig: "Authorized Signature",
             page: "Page",
-            of: "of"
+            of: "of",
+            docTypes: {
+                Quotation: "QUOTATION",
+                Invoice: "INVOICE",
+                Receipt: "RECEIPT"
+            },
+            cont: "Cont."
         },
         th: {
             original: "ต้นฉบับ",
@@ -122,7 +128,13 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
             customerSig: "ลายเซ็นลูกค้า",
             authSig: "ลายเซ็นผู้มีอำนาจ",
             page: "หน้า",
-            of: "จาก"
+            of: "จาก",
+            docTypes: {
+                Quotation: "ใบเสนอราคา",
+                Invoice: "ใบวางบิล",
+                Receipt: "ใบเสร็จรับเงิน"
+            },
+            cont: "ต่อ"
         }
     }
 
@@ -213,7 +225,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                     <div className="h-6 w-px bg-white/10" />
                     <div>
                         <div className="flex items-center gap-2">
-                            <h2 className="font-semibold text-lg">{document.type} Preview</h2>
+                            <h2 className="font-semibold text-lg">{txt.docTypes[document.type as keyof typeof txt.docTypes] || document.type} Preview</h2>
                             <span className="text-muted-foreground text-sm">/ {document.documentNumber}</span>
                         </div>
                         {customer && <p className="text-xs text-muted-foreground">{customer.name}</p>}
@@ -398,7 +410,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                             </div>
                                         </div>
                                         <div className={cn("text-right", template === 'classic' && "text-left")}>
-                                            <h1 className="text-3xl font-bold uppercase tracking-widest mb-1" style={{ color: template === 'classic' ? 'black' : themeColor }}>{document.type}</h1>
+                                            <h1 className="text-3xl font-bold uppercase tracking-widest mb-1" style={{ color: template === 'classic' ? 'black' : themeColor }}>{txt.docTypes[document.type as keyof typeof txt.docTypes] || document.type}</h1>
                                             <p className="text-xs text-gray-400 uppercase tracking-widest mb-4">{txt.original}</p>
 
                                             <div className={cn("flex flex-col gap-1", template === 'classic' ? "items-start" : "items-end")}>
@@ -442,7 +454,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                     <div className="flex items-center gap-3 opacity-60">
                                         <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center font-bold text-gray-500 text-xs">{orgProfile.name.charAt(0)}</div>
                                         <div>
-                                            <h2 className="font-bold text-gray-600 uppercase tracking-wide text-sm">{document.type} <span className="text-gray-400 font-normal normal-case">(Cont.)</span></h2>
+                                            <h2 className="font-bold text-gray-600 uppercase tracking-wide text-sm">{txt.docTypes[document.type as keyof typeof txt.docTypes] || document.type} <span className="text-gray-400 font-normal normal-case">({txt.cont})</span></h2>
                                         </div>
                                     </div>
                                     <div className="text-right">
