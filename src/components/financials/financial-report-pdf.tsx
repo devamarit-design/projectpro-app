@@ -6,8 +6,8 @@ import { format } from 'date-fns'
 Font.register({
     family: 'Sarabun',
     fonts: [
-        { src: 'https://cdn.jsdelivr.net/npm/@fontsource/sarabun@4.5.12/files/sarabun-thai-400-normal.woff' },
-        { src: 'https://cdn.jsdelivr.net/npm/@fontsource/sarabun@4.5.12/files/sarabun-thai-700-normal.woff', fontWeight: 700 },
+        { src: '/fonts/Sarabun-Regular.ttf' },
+        { src: '/fonts/Sarabun-Bold.ttf', fontWeight: 700 },
     ],
 })
 
