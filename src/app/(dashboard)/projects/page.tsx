@@ -170,7 +170,7 @@ export default function ProjectsPage() {
                 ) : (
                     <div className="col-span-full py-12 text-center text-muted-foreground">
                         <Filter className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                        <p>No projects found matching your criteria</p>
+                        <p>{t.projects.empty}</p>
                     </div>
                 )}
             </div>

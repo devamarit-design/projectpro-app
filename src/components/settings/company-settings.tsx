@@ -3,7 +3,9 @@
 import { useSettings } from "@/context/settings-context"
 import { Building2, Mail, Phone, Globe, MapPin, FileText } from "lucide-react"
 
+import { useTranslation } from "@/lib/i18n-context"
 export function CompanySettings() {
+    const { t } = useTranslation()
     const { orgProfile, updateOrgProfile } = useSettings()
 
     return (
@@ -17,13 +19,13 @@ export function CompanySettings() {
                     )}
                 </div>
                 <div>
-                    <h3 className="text-lg font-semibold">Your Company</h3>
-                    <p className="text-sm text-muted-foreground">This information will appear on your documents.</p>
+                    <h3 className="text-lg font-semibold">{t.settings.company.title}</h3>
+                    <p className="text-sm text-muted-foreground">{t.settings.company.subtitle}</p>
                 </div>
                 <div className="ml-auto">
                     {/* Placeholder for Logo Upload */}
                     <button className="text-sm text-primary hover:underline font-medium">
-                        Change Logo
+                        {t.settings.company.change_logo}
                     </button>
                 </div>
             </div>
@@ -32,83 +34,83 @@ export function CompanySettings() {
                 <div className="space-y-2">
                     <label className="text-sm font-medium flex items-center gap-2">
                         <Building2 className="w-4 h-4 text-muted-foreground" />
-                        Company Name
+                        {t.settings.company.fields.name}
                     </label>
                     <input
                         type="text"
                         value={orgProfile.name}
                         onChange={(e) => updateOrgProfile({ name: e.target.value })}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        placeholder="Company Co., Ltd."
+                        placeholder={t.settings.company.placeholders.name}
                     />
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-sm font-medium flex items-center gap-2">
                         <FileText className="w-4 h-4 text-muted-foreground" />
-                        Tax ID / Registration No.
+                        {t.settings.company.fields.tax_id}
                     </label>
                     <input
                         type="text"
                         value={orgProfile.taxId}
                         onChange={(e) => updateOrgProfile({ taxId: e.target.value })}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        placeholder="0000000000000"
+                        placeholder={t.settings.company.placeholders.tax_id}
                     />
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
                     <label className="text-sm font-medium flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-muted-foreground" />
-                        Address
+                        {t.settings.company.fields.address}
                     </label>
                     <textarea
                         value={orgProfile.address}
                         onChange={(e) => updateOrgProfile({ address: e.target.value })}
                         className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        placeholder="123 Street..."
+                        placeholder={t.settings.company.placeholders.address}
                     />
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-sm font-medium flex items-center gap-2">
                         <Phone className="w-4 h-4 text-muted-foreground" />
-                        Phone
+                        {t.settings.company.fields.phone}
                     </label>
                     <input
                         type="tel"
                         value={orgProfile.phone}
                         onChange={(e) => updateOrgProfile({ phone: e.target.value })}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        placeholder="02-xxx-xxxx"
+                        placeholder={t.settings.company.placeholders.phone}
                     />
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-sm font-medium flex items-center gap-2">
                         <Mail className="w-4 h-4 text-muted-foreground" />
-                        Email
+                        {t.settings.company.fields.email}
                     </label>
                     <input
                         type="email"
                         value={orgProfile.email}
                         onChange={(e) => updateOrgProfile({ email: e.target.value })}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        placeholder="contact@company.com"
+                        placeholder={t.settings.company.placeholders.email}
                     />
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-sm font-medium flex items-center gap-2">
                         <Globe className="w-4 h-4 text-muted-foreground" />
-                        Website
+                        {t.settings.company.fields.website}
                     </label>
                     <input
                         type="url"
                         value={orgProfile.website}
                         onChange={(e) => updateOrgProfile({ website: e.target.value })}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        placeholder="https://..."
+                        placeholder={t.settings.company.placeholders.website}
                     />
                 </div>
             </div>

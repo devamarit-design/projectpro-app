@@ -119,7 +119,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     )}
                 >
                     <LayoutDashboard className="w-4 h-4" />
-                    Overview
+                    {t.projects.detail.tabs.overview}
                 </button>
                 <button
                     onClick={() => setActiveTab("financials")}
@@ -131,7 +131,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     )}
                 >
                     <Receipt className="w-4 h-4" />
-                    Financials
+                    {t.projects.detail.tabs.financials}
                 </button>
                 <button
                     onClick={() => setActiveTab("tasks")}
@@ -143,7 +143,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     )}
                 >
                     <CheckSquare className="w-4 h-4" />
-                    Tasks
+                    {t.projects.detail.tabs.tasks}
                 </button>
                 <button
                     onClick={() => setActiveTab("files")}
@@ -155,7 +155,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     )}
                 >
                     <Folder className="w-4 h-4" />
-                    Files
+                    {t.projects.detail.tabs.files}
                 </button>
             </div>
 
@@ -166,29 +166,29 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         <div className="glass-card p-6 rounded-2xl space-y-4">
                             <h3 className="font-bold text-lg flex items-center gap-2">
                                 <Info className="w-5 h-5 text-primary" />
-                                Project Description
+                                {t.projects.detail.overview.description}
                             </h3>
                             <p className="text-muted-foreground leading-relaxed">
-                                {project.description || "No description provided for this project."}
+                                {project.description || t.projects.detail.overview.no_desc}
                             </p>
                         </div>
 
                         <div className="glass-card p-6 rounded-2xl space-y-4">
                             <h3 className="font-bold text-lg flex items-center gap-2">
                                 <Calendar className="w-5 h-5 text-primary" />
-                                Timeline Details
+                                {t.projects.detail.overview.timeline}
                             </h3>
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                    <span className="text-muted-foreground text-sm font-medium">Start Date</span>
+                                    <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.start_date}</span>
                                     <span className="font-bold">{project.startDate}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                    <span className="text-muted-foreground text-sm font-medium">Estimated End</span>
+                                    <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.end_date}</span>
                                     <span className="font-bold">{project.endDate}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2">
-                                    <span className="text-muted-foreground text-sm font-medium">Current Status</span>
+                                    <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.current_status}</span>
                                     <span className="px-3 py-1 bg-primary/10 text-primary self-start rounded-full text-xs font-bold uppercase tracking-wider border border-primary/20">
                                         {project.status}
                                     </span>
@@ -209,7 +209,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                     onChange={(e) => setMonthFilter(e.target.value)}
                                     className="pl-9 pr-8 py-2 bg-muted/50 border border-white/10 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none min-w-[150px]"
                                 >
-                                    <option value="all">All Months</option>
+                                    <option value="all">{t.projects.detail.financials.month_filter}</option>
                                     {availableMonths.map(month => (
                                         <option key={month} value={month}>
                                             {new Date(month + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
@@ -222,19 +222,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         {/* High Level Stats */}
                         <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                             <div className="glass-card p-5 rounded-2xl border-l-4 border-l-primary hover:translate-y-[-2px] transition-transform">
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Contract Value</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.contract_value}</p>
                                 <p className="text-xl md:text-2xl font-black">{project.budget}</p>
                             </div>
                             <div className="glass-card p-5 rounded-2xl border-l-4 border-l-green-500 hover:translate-y-[-2px] transition-transform">
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Received (เบิกแล้ว)</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.received}</p>
                                 <p className="text-xl md:text-2xl font-black text-green-500">฿{totalIncome.toLocaleString()}</p>
                             </div>
                             <div className="glass-card p-5 rounded-2xl border-l-4 border-l-red-500 hover:translate-y-[-2px] transition-transform">
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Total Expenses</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.total_expenses}</p>
                                 <p className="text-xl md:text-2xl font-black text-red-500">฿{totalExpenses.toLocaleString()}</p>
                             </div>
                             <div className="glass-card p-5 rounded-2xl border-l-4 border-l-blue-500 hover:translate-y-[-2px] transition-transform">
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Profit (Est.)</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.profit_est}</p>
                                 <p className={cn(
                                     "text-xl md:text-2xl font-black",
                                     totalProfit >= 0 ? "text-blue-500" : "text-red-500"
@@ -251,28 +251,28 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                     <div className="p-2 rounded-lg bg-orange-500/20 text-orange-500">
                                         <TrendingDown className="w-4 h-4" />
                                     </div>
-                                    <p className="text-sm font-bold text-orange-400 uppercase tracking-wider">Material (ค่าวัสดุ)</p>
+                                    <p className="text-sm font-bold text-orange-400 uppercase tracking-wider">{t.projects.detail.financials.material}</p>
                                 </div>
                                 <p className="text-2xl font-black text-orange-500">
                                     ฿{projectExpenses.filter(e => e.category === 'Material').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    {projectExpenses.filter(e => e.category === 'Material').length} transaction(s)
+                                    {projectExpenses.filter(e => e.category === 'Material').length} {t.projects.detail.financials.transactions_count}
                                 </p>
                             </div>
 
                             <div className="glass-card p-4 rounded-xl border border-white/5 bg-blue-500/5">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="p-2 rounded-lg bg-blue-500/20 text-blue-500">
-                                        <TrendingDown className="w-4 h-4" />
+                                        <User className="w-4 h-4" />
                                     </div>
-                                    <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">Labor (ค่าแรง)</p>
+                                    <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">{t.projects.detail.financials.labor}</p>
                                 </div>
                                 <p className="text-2xl font-black text-blue-500">
                                     ฿{projectExpenses.filter(e => e.category === 'Labor').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    {projectExpenses.filter(e => e.category === 'Labor').length} transaction(s)
+                                    {projectExpenses.filter(e => e.category === 'Labor').length} {t.projects.detail.financials.transactions_count}
                                 </p>
                             </div>
 
@@ -281,25 +281,25 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                     <div className="p-2 rounded-lg bg-purple-500/20 text-purple-500">
                                         <TrendingDown className="w-4 h-4" />
                                     </div>
-                                    <p className="text-sm font-bold text-purple-400 uppercase tracking-wider">Sub-contract (ค่าเหมา)</p>
+                                    <p className="text-sm font-bold text-purple-400 uppercase tracking-wider">{t.projects.detail.financials.subcontract}</p>
                                 </div>
                                 <p className="text-2xl font-black text-purple-500">
                                     ฿{projectExpenses.filter(e => e.category === 'Sub-contract').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    {projectExpenses.filter(e => e.category === 'Sub-contract').length} transaction(s)
+                                    {projectExpenses.filter(e => e.category === 'Sub-contract').length} {t.projects.detail.financials.transactions_count}
                                 </p>
                             </div>
                         </div>
 
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <h4 className="font-bold text-lg">Financial History</h4>
+                                <h4 className="font-bold text-lg">{t.projects.detail.financials.history}</h4>
                                 <button
                                     onClick={() => setIsAddExpenseOpen(true)}
                                     className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border border-primary/20"
                                 >
-                                    <Plus className="w-4 h-4" /> Add Expense
+                                    <Plus className="w-4 h-4" /> {t.projects.detail.financials.add_expense}
                                 </button>
                             </div>
 
@@ -326,7 +326,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                         <span>{expense.date}</span>
                                                         <span>•</span>
-                                                        <span>{expense.payee || "No Payee"}</span>
+                                                        <span>{expense.payee || t.projects.detail.financials.no_payee}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -349,7 +349,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                             <DollarSign className="w-8 h-8 text-muted-foreground" />
                                         </div>
                                         <div className="max-w-xs space-y-2">
-                                            <p className="text-sm text-muted-foreground">No expenses recorded for this project yet.</p>
+                                            <p className="text-sm text-muted-foreground">{t.projects.detail.financials.empty_expenses}</p>
                                         </div>
                                     </div>
                                 )}
@@ -371,7 +371,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                             onChange={(e) => setUserFilter(e.target.value)}
                                             className="w-full pl-9 pr-8 py-2.5 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
                                         >
-                                            <option value="all">All Users</option>
+                                            <option value="all">{t.projects.detail.tasks.all_users}</option>
                                             {users.map(u => (
                                                 <option key={u.id} value={u.name}>{u.name}</option>
                                             ))}
@@ -388,7 +388,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                 className="h-10 px-5 bg-primary text-primary-foreground rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20 text-sm"
                             >
                                 <Plus className="w-4 h-4" />
-                                <span>Add Task</span>
+                                <span>{t.projects.detail.tasks.add_task}</span>
                             </button>
                         </div>
 
@@ -429,12 +429,21 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                         Done: "bg-green-500"
                                     }
 
+                                    const getStatusTranslation = (status: string) => {
+                                        switch (status) {
+                                            case 'Todo': return t.projects.detail.tasks.status.todo
+                                            case 'In Progress': return t.projects.detail.tasks.status.in_progress
+                                            case 'Done': return t.projects.detail.tasks.status.done
+                                            default: return status
+                                        }
+                                    }
+
                                     return (
                                         <div key={status} className="flex-1 flex flex-col h-full bg-muted/30 dark:bg-muted/10 rounded-2xl border border-white/5 overflow-hidden">
                                             <div className="p-4 flex items-center justify-between border-b border-white/5 bg-muted/20 backdrop-blur-sm">
                                                 <h3 className="font-bold text-sm uppercase tracking-wider flex items-center gap-2">
                                                     <div className={cn("w-2 h-2 rounded-full shadow-lg ring-2 ring-opacity-20", statusColors[status].replace('bg-', 'ring-'))} style={{ backgroundColor: 'currentColor' }} />
-                                                    <span className={cn(status === 'Todo' ? 'text-slate-500' : status === 'In Progress' ? 'text-blue-500' : 'text-green-500')}>{status}</span>
+                                                    <span className={cn(status === 'Todo' ? 'text-slate-500' : status === 'In Progress' ? 'text-blue-500' : 'text-green-500')}>{getStatusTranslation(status)}</span>
                                                     <span className="ml-1 text-[10px] text-muted-foreground bg-background/50 px-2 py-0.5 rounded-full border border-white/5 font-medium">
                                                         {statusTasks.length}
                                                     </span>
@@ -455,7 +464,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                                                 "text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide border",
                                                                 priorityColors[task.priority]
                                                             )}>
-                                                                {task.priority || "Low"}
+                                                                {task.priority || t.projects.detail.tasks.priority.low}
                                                             </span>
                                                             <div className="flex items-center gap-1">
                                                                 <button
@@ -488,7 +497,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                                                         {(task.assignedTo || "U").charAt(0)}
                                                                     </span>
                                                                 </div>
-                                                                <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px]">{task.assignedTo || "Unassigned"}</span>
+                                                                <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px]">{task.assignedTo || t.projects.detail.tasks.unassigned}</span>
                                                             </div>
                                                             <div className={cn(
                                                                 "flex items-center gap-1 text-[10px] font-bold uppercase tracking-tight",
@@ -503,7 +512,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
                                                 {statusTasks.length === 0 && (
                                                     <div className="h-24 rounded-xl border-2 border-dashed border-muted flex items-center justify-center p-4 text-center opacity-50">
-                                                        <p className="text-xs text-muted-foreground font-medium">Empty</p>
+                                                        <p className="text-xs text-muted-foreground font-medium">{t.projects.detail.tasks.empty}</p>
                                                     </div>
                                                 )}
 
@@ -512,7 +521,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                                     className="w-full py-3 border border-dashed border-primary/20 bg-primary/5 rounded-xl text-xs font-bold uppercase tracking-widest text-primary/70 hover:bg-primary/10 hover:text-primary transition-all flex items-center justify-center gap-2 group mt-2"
                                                 >
                                                     <Plus className="w-3.5 h-3.5 group-hover:scale-125 transition-transform" />
-                                                    Add Task
+                                                    {t.projects.detail.tasks.add_task}
                                                 </button>
                                             </div>
                                         </div>
@@ -529,11 +538,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         <div className="flex items-center justify-between">
                             <h4 className="font-bold text-lg flex items-center gap-2">
                                 <Folder className="w-5 h-5 text-primary" />
-                                Project Files
+                                {t.projects.detail.files.title}
                             </h4>
                             <button
                                 onClick={() => {
-                                    const fName = prompt("Enter file name:")
+                                    const fName = prompt(t.projects.detail.files.enter_file_name)
                                     if (fName) {
                                         addFile({
                                             name: fName,
@@ -546,7 +555,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                 }}
                                 className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20"
                             >
-                                <Upload className="w-4 h-4" /> Upload File
+                                <Upload className="w-4 h-4" /> {t.projects.detail.files.upload}
                             </button>
                         </div>
 
@@ -584,8 +593,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                     <Folder className="w-8 h-8 text-muted-foreground/50" />
                                 </div>
                                 <div className="max-w-xs mx-auto space-y-1">
-                                    <p className="font-bold">No files here</p>
-                                    <p className="text-sm text-muted-foreground">Upload plans, contracts, or photos for this project.</p>
+                                    <p className="font-bold">{t.projects.detail.files.no_files}</p>
+                                    <p className="text-sm text-muted-foreground">{t.projects.detail.files.no_files_sub}</p>
                                 </div>
                             </div>
                         )}

@@ -10,11 +10,13 @@ import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
 import { useSearchParams, useRouter } from "next/navigation"
 import { AddContractDialog } from "@/components/contracts/add-contract-dialog"
 
+import { useTranslation } from "@/lib/i18n-context"
 import { CheckCircle2 } from "lucide-react"
 import { Suspense } from "react"
 
 function ExpensesContent() {
     const { expenses, projects, users, currentUser } = useProjects()
+    const { t } = useTranslation()
     const searchParams = useSearchParams()
     const router = useRouter()
     // Combined State: isAddOpen controls the dialog, startScanning passes the intent
@@ -118,17 +120,17 @@ function ExpensesContent() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                        Expenses <span className="text-sm font-normal text-muted-foreground hidden sm:inline-block">/ Financials</span>
+                        {t.expenses.title} <span className="text-sm font-normal text-muted-foreground hidden sm:inline-block">/ Financials</span>
                     </h1>
-                    <p className="text-muted-foreground mt-1">Track and manage project costs.</p>
+                    <p className="text-muted-foreground mt-1">{t.expenses.subtitle}</p>
                 </div>
-                <div className="relative z-50 flex items-center gap-3">
+                <div className="relative z-10 flex items-center gap-3">
                     <button
                         onClick={() => setIsContractOpen(true)}
                         className="flex items-center gap-2 px-5 py-2.5 bg-muted/50 border border-border text-foreground rounded-xl font-medium shadow-sm hover:bg-muted transition-all"
                     >
                         <FileText className="w-5 h-5 text-amber-500" />
-                        Create Contract
+                        {t.expenses.create_contract}
                     </button>
 
                     <div className="relative">
@@ -150,7 +152,7 @@ function ExpensesContent() {
                             className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg hover:opacity-90 active:scale-95 transition-all"
                         >
                             <Plus className="w-5 h-5" />
-                            Add Expense
+                            {t.expenses.add_expense}
                         </button>
 
                         {/* Dropdown Menu */}
@@ -160,7 +162,7 @@ function ExpensesContent() {
                                 className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
                             >
                                 <Plus className="w-4 h-4 text-muted-foreground" />
-                                <span className="font-medium text-sm">Manual Entry</span>
+                                <span className="font-medium text-sm">{t.expenses.manual_entry}</span>
                             </button>
                             <div className="h-px bg-border" />
                             <button
@@ -168,7 +170,7 @@ function ExpensesContent() {
                                 className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
                             >
                                 <ScanLine className="w-4 h-4 text-purple-500" />
-                                <span className="font-medium text-sm text-purple-500">Smart Scan AI</span>
+                                <span className="font-medium text-sm text-purple-500">{t.expenses.smart_scan}</span>
                             </button>
                         </div>
                     </div>
@@ -188,7 +190,7 @@ function ExpensesContent() {
                         <div className="p-2 rounded-lg bg-red-500/20 text-red-500 group-hover:scale-110 transition-transform">
                             <Wallet className="w-4 h-4" />
                         </div>
-                        <p className="text-sm font-bold text-red-400 uppercase tracking-wider">Unpaid (ยังไม่จ่าย)</p>
+                        <p className="text-sm font-bold text-red-400 uppercase tracking-wider">{t.expenses.unpaid}</p>
                     </div>
                     <p className="text-2xl font-black text-red-500">
                         ฿{baseFilteredExpenses.filter(e => e.status !== 'Paid' && e.status !== 'Advanced' && e.status !== 'Credit').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
@@ -206,7 +208,7 @@ function ExpensesContent() {
                         <div className="p-2 rounded-lg bg-purple-500/20 text-purple-500 group-hover:scale-110 transition-transform">
                             <Wallet className="w-4 h-4" />
                         </div>
-                        <p className="text-sm font-bold text-purple-400 uppercase tracking-wider">Advanced (สำรองจ่าย)</p>
+                        <p className="text-sm font-bold text-purple-400 uppercase tracking-wider">{t.expenses.advanced}</p>
                     </div>
                     <p className="text-2xl font-black text-purple-500">
                         ฿{baseFilteredExpenses.filter(e => e.status === 'Advanced').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
@@ -224,7 +226,7 @@ function ExpensesContent() {
                         <div className="p-2 rounded-lg bg-blue-500/20 text-blue-500 group-hover:scale-110 transition-transform">
                             <CreditCard className="w-4 h-4" />
                         </div>
-                        <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">Credit (เครดิต)</p>
+                        <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">{t.expenses.credit}</p>
                     </div>
                     <p className="text-2xl font-black text-blue-500">
                         ฿{baseFilteredExpenses.filter(e => e.status === 'Credit').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
@@ -239,11 +241,11 @@ function ExpensesContent() {
                     <div className="flex p-1 bg-muted/30 rounded-xl overflow-x-auto no-scrollbar min-w-0 shrink-0">
                         <div className="flex items-center gap-1">
                             {[
-                                { id: 'All', icon: LayoutGrid, label: 'All' },
-                                { id: 'Material', icon: Hammer, label: 'Material' },
-                                { id: 'Labor', icon: Users, label: 'Labor' },
-                                { id: 'Sub-contract', icon: FileText, label: 'Contract' },
-                                { id: 'Other', icon: Tag, label: 'Other' }
+                                { id: 'All', icon: LayoutGrid, label: t.expenses.categories.all },
+                                { id: 'Material', icon: Hammer, label: t.expenses.categories.material },
+                                { id: 'Labor', icon: Users, label: t.expenses.categories.labor },
+                                { id: 'Sub-contract', icon: FileText, label: t.expenses.categories.subcontract },
+                                { id: 'Other', icon: Tag, label: t.expenses.categories.other }
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
@@ -334,7 +336,7 @@ function ExpensesContent() {
                             <input
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search expenses..."
+                                placeholder={t.expenses.filters.search_placeholder}
                                 className="w-full px-3 py-2.5 bg-transparent border-none text-sm focus:outline-none placeholder:text-muted-foreground/50"
                             />
                             {searchQuery && (
@@ -354,8 +356,8 @@ function ExpensesContent() {
                 {filteredExpenses.length === 0 ? (
                     <div className="text-center py-20 opacity-50">
                         <Wallet className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                        <h3 className="text-lg font-medium">No expenses found</h3>
-                        <p className="text-sm text-muted-foreground">Try adjusting your filters or add a new expense.</p>
+                        <h3 className="text-lg font-medium">{t.expenses.empty}</h3>
+                        <p className="text-sm text-muted-foreground">{t.expenses.empty_hint}</p>
                     </div>
                 ) : filteredExpenses.map((expense) => (
                     <div

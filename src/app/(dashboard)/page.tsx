@@ -23,7 +23,7 @@ function AdminDashboard() {
             className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity shadow-lg shadow-primary/20 flex items-center gap-2"
           >
             {/* You could add an icon here like <Download className="w-4 h-4" /> */}
-            Download Report
+            {t.dashboard.download_report}
           </button>
         </div>
       </div>
@@ -44,8 +44,8 @@ function AdminDashboard() {
 
       <div className="pt-4 border-t border-border/50">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-          My Work
-          <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Personal</span>
+          {t.dashboard.my_work}
+          <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{t.dashboard.personal}</span>
         </h2>
         <UserDashboard />
       </div>

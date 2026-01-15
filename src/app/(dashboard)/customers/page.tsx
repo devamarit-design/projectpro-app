@@ -4,12 +4,14 @@ import * as React from "react"
 import { Search, Plus, User, Building, Phone, MapPin } from "lucide-react"
 import { useProjects } from "@/context/project-context"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/lib/i18n-context"
 // Components
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 import CustomerDetailSheet from "@/components/customers/customer-detail-sheet"
 
 export default function CustomersPage() {
     const { customers, projects } = useProjects()
+    const { t } = useTranslation()
     const [searchQuery, setSearchQuery] = React.useState("")
     const [isAddOpen, setIsAddOpen] = React.useState(false)
     const [selectedCustomerId, setSelectedCustomerId] = React.useState<string | null>(null)
@@ -35,16 +37,16 @@ export default function CustomersPage() {
                 <div className="flex items-end justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
-                            Customers <span className="text-sm font-medium px-2 py-1 bg-white/10 rounded-full text-muted-foreground">{filteredCustomers.length}</span>
+                            {t.customers.title} <span className="text-sm font-medium px-2 py-1 bg-white/10 rounded-full text-muted-foreground">{filteredCustomers.length}</span>
                         </h1>
-                        <p className="text-muted-foreground mt-1 text-sm font-medium">Manage client relationships</p>
+                        <p className="text-muted-foreground mt-1 text-sm font-medium">{t.customers.subtitle}</p>
                     </div>
 
                     <button
                         onClick={() => setIsAddOpen(true)}
                         className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5"
                     >
-                        <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add Customer</span>
+                        <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t.customers.add_customer}</span>
                     </button>
                 </div>
 
@@ -56,7 +58,7 @@ export default function CustomersPage() {
                     <input
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search by name or phone..."
+                        placeholder={t.customers.search_placeholder}
                         className="w-full h-11 pl-10 pr-4 rounded-xl bg-muted/30 border border-white/5 focus:border-primary/30 focus:bg-muted/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                     />
                 </div>
@@ -100,7 +102,7 @@ export default function CustomersPage() {
 
                                     {projectCount > 0 && (
                                         <span className="bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
-                                            {projectCount} Active
+                                            {projectCount} {t.customers.active}
                                         </span>
                                     )}
                                 </div>
@@ -132,7 +134,7 @@ export default function CustomersPage() {
             {filteredCustomers.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-muted-foreground/50 border-2 border-dashed border-white/5 rounded-3xl bg-white/5">
                     <User className="w-12 h-12 mb-3" />
-                    <p className="font-medium">No customers found</p>
+                    <p className="font-medium">{t.customers.empty}</p>
                 </div>
             )}
 

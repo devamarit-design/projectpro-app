@@ -124,7 +124,7 @@ export default function ProfilePage() {
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                             <UserIcon className="w-4 h-4" />
-                            Full Name
+                            {t.profile.fields.name}
                         </label>
                         {isEditing ? (
                             <input
@@ -144,7 +144,7 @@ export default function ProfilePage() {
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                             <Mail className="w-4 h-4" />
-                            Email Address
+                            {t.profile.fields.email}
                         </label>
                         {isEditing ? (
                             <input
@@ -164,7 +164,7 @@ export default function ProfilePage() {
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                             <Phone className="w-4 h-4" />
-                            Phone Number
+                            {t.profile.fields.phone}
                         </label>
                         {isEditing ? (
                             <input
@@ -184,7 +184,7 @@ export default function ProfilePage() {
                     <div className="space-y-2 opacity-70">
                         <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                             <Shield className="w-4 h-4" />
-                            Role
+                            {t.profile.fields.role}
                         </label>
                         <div className="p-3 bg-muted/30 rounded-xl font-medium">
                             {currentUser.role}
@@ -196,7 +196,7 @@ export default function ProfilePage() {
                 <div className="pt-6 border-t border-border flex justify-center">
                     <button
                         onClick={() => {
-                            if (window.confirm("Are you sure you want to log out?")) {
+                            if (window.confirm(t.common.confirm_logout)) {
                                 setCurrentUser(null)
                                 window.location.href = "/"
                             }
@@ -204,7 +204,7 @@ export default function ProfilePage() {
                         className="flex items-center gap-2 px-6 py-3 bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-400 rounded-xl font-bold transition-all"
                     >
                         <LogOut className="w-5 h-5" />
-                        Log Out
+                        {t.common.log_out}
                     </button>
                 </div>
             </div>

@@ -39,9 +39,9 @@ export default function NotificationsPage() {
 
     const translateGroup = (group: string) => {
         switch (group) {
-            case "Today": return t.notifications.today
-            case "Yesterday": return t.notifications.yesterday
-            case "Earlier": return t.notifications.earlier
+            case "Today": return t.notifications.tabs.today
+            case "Yesterday": return t.notifications.tabs.yesterday
+            case "Earlier": return t.notifications.tabs.earlier
             default: return group
         }
     }

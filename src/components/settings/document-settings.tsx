@@ -4,16 +4,18 @@ import { useState } from "react"
 import { useSettings, DocumentTemplate } from "@/context/settings-context"
 import { FileText, Sparkles, Upload, FileCheck, Loader2, GripVertical, Type, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react"
 
+import { useTranslation } from "@/lib/i18n-context"
 export function DocumentSettings() {
+    const { t } = useTranslation()
     const { documentSettings, updateDocumentTemplate } = useSettings()
     const [activeTab, setActiveTab] = useState("quotation")
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [uploadSuccess, setUploadSuccess] = useState(false)
 
     const tabs = [
-        { id: "quotation", label: "Quotation" },
-        { id: "contract", label: "Contract" },
-        { id: "invoice", label: "Invoice" },
+        { id: "quotation", label: t.income.dialog.doc_types.quotation },
+        { id: "contract", label: t.settings.documents.contract },
+        { id: "invoice", label: t.income.dialog.doc_types.invoice },
     ]
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,10 +77,10 @@ export function DocumentSettings() {
                 <div className="relative z-10">
                     <h3 className="text-lg font-bold flex items-center gap-2 text-primary">
                         <Sparkles className="w-5 h-5" />
-                        AI Template Setup
+                        {t.settings.documents.setup_title}
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1 max-w-lg mb-4">
-                        Upload an example of your existing {activeTab} (PDF/Image). Our AI will analyze it and automatically set up your template settings to match your brand.
+                        {t.settings.documents.setup_desc}
                     </p>
 
                     <div className="flex items-center gap-4">
@@ -90,7 +92,7 @@ export function DocumentSettings() {
                             ) : (
                                 <Upload className="w-4 h-4" />
                             )}
-                            {isAnalyzing ? "Analyzing Document..." : uploadSuccess ? "Template Updated!" : "Upload Example File"}
+                            {isAnalyzing ? t.settings.documents.analyzing : uploadSuccess ? t.settings.documents.success : t.settings.documents.upload_btn}
                             <input type="file" className="hidden" accept="image/*,.pdf" onChange={handleFileUpload} disabled={isAnalyzing} />
                         </label>
                         {uploadSuccess && <span className="text-sm text-green-600 font-medium animate-fade-in">Successfully applied settings from file!</span>}
@@ -101,10 +103,10 @@ export function DocumentSettings() {
             {/* Manual Edit Form */}
             <div className="grid gap-6 md:grid-cols-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="space-y-4 md:col-span-2">
-                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Template Content</h4>
+                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">{t.settings.documents.template_content}</h4>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Header Information</label>
+                        <label className="text-sm font-medium">{t.settings.documents.header}</label>
                         <textarea
                             value={currentTemplate.header}
                             onChange={(e) => updateDocumentTemplate(activeTab, { header: e.target.value })}
@@ -114,7 +116,7 @@ export function DocumentSettings() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Terms & Conditions</label>
+                        <label className="text-sm font-medium">{t.settings.documents.terms}</label>
                         <textarea
                             value={currentTemplate.terms}
                             onChange={(e) => updateDocumentTemplate(activeTab, { terms: e.target.value })}
@@ -124,7 +126,7 @@ export function DocumentSettings() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Footer Text</label>
+                        <label className="text-sm font-medium">{t.settings.documents.footer}</label>
                         <input
                             type="text"
                             value={currentTemplate.footer}
@@ -135,10 +137,10 @@ export function DocumentSettings() {
                 </div>
 
                 <div className="space-y-4">
-                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Appearance</h4>
+                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">{t.settings.documents.appearance}</h4>
 
                     <div className="flex items-center justify-between p-3 border rounded-lg">
-                        <span className="text-sm font-medium">Show Logo</span>
+                        <span className="text-sm font-medium">{t.settings.documents.show_logo}</span>
                         <button
                             onClick={() => updateDocumentTemplate(activeTab, { logoVisible: !currentTemplate.logoVisible })}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${currentTemplate.logoVisible ? 'bg-primary' : 'bg-input'}`}
@@ -148,7 +150,7 @@ export function DocumentSettings() {
                     </div>
 
                     <div className="flex items-center justify-between p-3 border rounded-lg">
-                        <span className="text-sm font-medium">Show Signature Line</span>
+                        <span className="text-sm font-medium">{t.settings.documents.show_signature}</span>
                         <button
                             onClick={() => updateDocumentTemplate(activeTab, { signatureVisible: !currentTemplate.signatureVisible })}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${currentTemplate.signatureVisible ? 'bg-primary' : 'bg-input'}`}
@@ -158,7 +160,7 @@ export function DocumentSettings() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Accent Color</label>
+                        <label className="text-sm font-medium">{t.settings.documents.accent_color}</label>
                         <div className="flex gap-2">
                             {['#3b82f6', '#f97316', '#22c55e', '#a855f7', '#000000'].map(color => (
                                 <button
@@ -175,7 +177,7 @@ export function DocumentSettings() {
                 <div className="space-y-2">
                     <label className="text-sm font-medium flex items-center gap-2">
                         <Type className="w-4 h-4" />
-                        Document Font
+                        {t.settings.documents.font}
                     </label>
                     <select
                         value={currentTemplate.font}
@@ -191,7 +193,7 @@ export function DocumentSettings() {
                 </div>
 
                 <div className="space-y-4">
-                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Item Table Columns</h4>
+                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">{t.settings.documents.columns}</h4>
                     <div className="space-y-2">
                         {currentTemplate.columns?.sort((a, b) => a.order - b.order).map((col, index, arr) => (
                             <div key={col.id} className="flex items-center gap-2 p-2 border rounded-lg bg-background">
@@ -256,7 +258,7 @@ export function DocumentSettings() {
             </div>
 
             <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Preview</h4>
+                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">{t.settings.documents.preview}</h4>
                 <div className="border rounded-lg p-4 bg-muted/20 aspect-[1/1.414] relative text-[10px] overflow-hidden shadow-sm">
                     {/* Mini Document Preview */}
                     <div className="absolute top-4 left-4 right-4 bottom-4 bg-white shadow p-4 flex flex-col" style={{ fontFamily: currentTemplate.font }}>

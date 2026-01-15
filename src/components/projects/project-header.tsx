@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { useProjects, ProjectStatus } from "@/context/project-context"
 import { useRouter } from "next/navigation"
+import { useTranslation } from "@/lib/i18n-context"
 
 interface ProjectHeaderProps {
     project: {
@@ -28,9 +29,10 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
     const router = useRouter()
     const [showMenu, setShowMenu] = useState(false)
     const [showStatusPicker, setShowStatusPicker] = useState(false)
+    const { t } = useTranslation() // Hook
 
     const handleDelete = () => {
-        if (confirm("Are you sure you want to delete this project?")) {
+        if (confirm(t.projects.detail.header.confirm_delete)) {
             deleteProject(project.id)
             router.push("/projects")
         }
@@ -84,14 +86,14 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
                                         className="flex items-center gap-3 px-5 py-4 hover:bg-muted/50 transition-colors text-sm font-semibold"
                                     >
                                         <Edit className="w-4.5 h-4.5 text-primary" />
-                                        Edit Project
+                                        {t.projects.detail.header.edit_project}
                                     </Link>
                                     <button
                                         onClick={handleDelete}
                                         className="w-full flex items-center gap-3 px-5 py-4 hover:bg-red-500/10 text-red-500 transition-colors text-sm font-semibold text-left border-t border-white/5"
                                     >
                                         <Trash2 className="w-4.5 h-4.5" />
-                                        Delete Project
+                                        {t.projects.detail.header.delete_project}
                                     </button>
                                 </div>
                             </>
@@ -139,7 +141,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
                                                     <button
                                                         key={s}
                                                         onClick={() => handleStatusChange(s)}
-                                                        className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/50 transition-colors text-xs font-black uppercase tracking-widest text-white/70 hover:text-white"
+                                                        className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/50 transition-colors text-xs font-black uppercase tracking-widest text-foreground/70 hover:text-foreground"
                                                     >
                                                         {s}
                                                         {project.status === s && <Check className="w-4 h-4 text-primary" />}
@@ -159,7 +161,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
                                     <span className="flex items-center gap-2"><MapPin className="w-5 h-5 text-primary" /> {project.location}</span>
                                     <span className="hidden md:block w-1.5 h-1.5 rounded-full bg-white/20" />
                                     <span className="flex items-center gap-2 font-black text-white uppercase tracking-widest text-xs md:text-base bg-white/10 px-3 py-1 rounded-lg border border-white/5">
-                                        Client: {project.customer}
+                                        {t.projects.detail.header.client}: {project.customer}
                                     </span>
                                 </div>
                             </div>
@@ -168,7 +170,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
                         {/* Quick Stats Cards */}
                         <div className="flex flex-wrap items-center gap-4 md:gap-6 bg-black/60 backdrop-blur-2xl p-6 rounded-3xl border border-white/10 shadow-2xl border-t border-l border-white/20">
                             <div>
-                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Cost Paid / Work Value</p>
+                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">{t.projects.detail.header.cost_paid}</p>
                                 <div className="flex items-baseline gap-2">
                                     <p className="text-2xl md:text-3xl font-black text-green-400">
                                         {calculatedProgress}
@@ -190,7 +192,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
                             <div className="hidden md:block w-px h-12 bg-white/10" />
 
                             <div className="w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 border-white/5">
-                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Contract Value</p>
+                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">{t.projects.detail.financials.contract_value}</p>
                                 <p className="text-xl md:text-2xl font-black text-white tracking-tight leading-none">{project.budget}</p>
                             </div>
                         </div>

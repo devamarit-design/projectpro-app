@@ -42,16 +42,16 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <LanguageProvider>
-            <SettingsProvider>
-              <ProjectProvider>
+            <ProjectProvider>
+              <SettingsProvider>
                 <NotificationProvider>
                   <SecurityProvider>
                     <LockScreen />
                     {children}
                   </SecurityProvider>
                 </NotificationProvider>
-              </ProjectProvider>
-            </SettingsProvider>
+              </SettingsProvider>
+            </ProjectProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

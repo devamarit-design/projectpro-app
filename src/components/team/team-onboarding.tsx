@@ -3,10 +3,13 @@
 import * as React from "react"
 import { useState } from "react"
 import { Building2, Plus, ArrowRight, Construction } from "lucide-react"
+
 import { useProjects } from "@/context/project-context"
+import { useTranslation } from "@/lib/i18n-context"
 
 export function TeamOnboarding() {
     const { addTeam } = useProjects()
+    const { t } = useTranslation()
     const [name, setName] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -16,11 +19,10 @@ export function TeamOnboarding() {
 
         setIsSubmitting(true)
         try {
-            // Emulate a small delay for better UX
-            await new Promise(resolve => setTimeout(resolve, 600))
-            addTeam(name)
+            await addTeam(name)
         } catch (error) {
             console.error(error)
+            alert("Failed to create team. Please try again.")
         } finally {
             setIsSubmitting(false)
         }
@@ -36,10 +38,10 @@ export function TeamOnboarding() {
                         <Construction className="w-8 h-8 text-blue-600" />
                     </div>
                     <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                        Welcome to ProjectPro
+                        {t.team.onboarding.welcome}
                     </h1>
                     <p className="text-gray-500">
-                        To get started, please create your first team or workspace.
+                        {t.team.onboarding.subtitle}
                     </p>
                 </div>
 
@@ -48,11 +50,11 @@ export function TeamOnboarding() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
                             <label htmlFor="teamName" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Team Name
+                                {t.team.onboarding.team_name}
                             </label>
                             <input
                                 id="teamName"
-                                placeholder="e.g. My Construction Co."
+                                placeholder={t.team.onboarding.team_placeholder}
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-lg ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -67,10 +69,10 @@ export function TeamOnboarding() {
                             disabled={!name.trim() || isSubmitting}
                         >
                             {isSubmitting ? (
-                                "Creating..."
+                                t.team.onboarding.creating
                             ) : (
                                 <>
-                                    Create Workspace
+                                    {t.team.onboarding.create_workspace}
                                     <ArrowRight className="ml-2 w-5 h-5" />
                                 </>
                             )}
@@ -83,7 +85,7 @@ export function TeamOnboarding() {
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
                             <span className="bg-white px-2 text-gray-400">
-                                This will be your main workspace
+                                {t.team.onboarding.main_workspace}
                             </span>
                         </div>
                     </div>
@@ -91,7 +93,7 @@ export function TeamOnboarding() {
                     <div className="bg-blue-50 text-blue-700 text-sm p-4 rounded-lg flex items-start gap-3">
                         <Building2 className="w-5 h-5 shrink-0 mt-0.5" />
                         <p>
-                            You can create multiple teams later to separate different business units or branches.
+                            {t.team.onboarding.hint}
                         </p>
                     </div>
                 </div>

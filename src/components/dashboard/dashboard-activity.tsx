@@ -5,9 +5,11 @@ import { useProjects, Expense, IncomeDocument } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { TrendingUp, TrendingDown, Filter, Calendar, Building2, User } from "lucide-react"
 import { format } from "date-fns"
+import { useTranslation } from "@/lib/i18n-context"
 
 export function DashboardActivity() {
     const { expenses, incomes, projects, users, currentUser } = useProjects()
+    const { t } = useTranslation()
 
     // Filters
     const [projectFilter, setProjectFilter] = React.useState<string>("all")
@@ -76,7 +78,7 @@ export function DashboardActivity() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <h3 className="text-lg font-bold flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-primary" />
-                    Activity Feed
+                    {t.dashboard.activity_feed}
                 </h3>
 
                 {/* Filters */}
@@ -88,7 +90,7 @@ export function DashboardActivity() {
                             onChange={(e) => setProjectFilter(e.target.value)}
                             className="w-full pl-8 pr-2 py-1.5 bg-background/50 border border-white/10 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary h-8 appearance-none"
                         >
-                            <option value="all">All Projects</option>
+                            <option value="all">{t.dashboard.filters.all_projects}</option>
                             {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                     </div>
@@ -100,7 +102,7 @@ export function DashboardActivity() {
                             onChange={(e) => setUserFilter(e.target.value)}
                             className="w-full pl-8 pr-2 py-1.5 bg-background/50 border border-white/10 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary h-8 appearance-none"
                         >
-                            <option value="all">All Users</option>
+                            <option value="all">{t.dashboard.filters.all_users}</option>
                             {users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                         </select>
                     </div>
@@ -149,7 +151,7 @@ export function DashboardActivity() {
                 ) : (
                     <div className="text-center py-10 opacity-50">
                         <Filter className="w-8 h-8 mx-auto mb-2" />
-                        <p className="text-xs">No activity found for these filters.</p>
+                        <p className="text-xs">{t.dashboard.no_activity}</p>
                     </div>
                 )}
             </div>

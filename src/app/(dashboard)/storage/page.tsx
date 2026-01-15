@@ -4,9 +4,11 @@ import * as React from "react"
 import { Search, Upload, Folder, File, ArrowLeft, Image as ImageIcon, FileText, Download, MoreVertical, Grid, List, Film, FileSpreadsheet } from "lucide-react"
 import { useProjects, ProjectFile } from "@/context/project-context"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/lib/i18n-context"
 
 export default function StoragePage() {
     const { projects, files, addFile } = useProjects()
+    const { t } = useTranslation()
     const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid")
     const [currentFolderId, setCurrentFolderId] = React.useState<string | null>(null) // null = Root (Projects List)
     const [searchQuery, setSearchQuery] = React.useState("")
@@ -91,10 +93,10 @@ export default function StoragePage() {
                         )}
                         <div>
                             <h1 className="text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
-                                {currentFolder ? currentFolder.name : "Storage"}
+                                {currentFolder ? currentFolder.name : t.storage.title}
                             </h1>
                             <p className="text-muted-foreground mt-1 text-sm font-medium">
-                                {currentFolder ? "Project Files" : "Select a project to view files"}
+                                {currentFolder ? t.storage.subtitle : t.storage.subtitle_root}
                             </p>
                         </div>
                     </div>
@@ -104,7 +106,7 @@ export default function StoragePage() {
                             onClick={handleUpload}
                             className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5"
                         >
-                            <Upload className="w-4 h-4" /> Upload
+                            <Upload className="w-4 h-4" /> {t.storage.upload}
                         </button>
                     )}
                 </div>
@@ -118,7 +120,7 @@ export default function StoragePage() {
                         <input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder={currentFolderId ? "Search files in project..." : "Search projects..."}
+                            placeholder={currentFolderId ? t.storage.search_files : t.storage.search_projects}
                             className="w-full h-11 pl-10 pr-4 rounded-xl bg-muted/30 border border-white/5 focus:border-primary/30 focus:bg-muted/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                         />
                     </div>
@@ -180,10 +182,10 @@ export default function StoragePage() {
                         <table className="w-full text-sm">
                             <thead className="bg-muted/50 text-muted-foreground text-left uppercase tracking-wider text-xs">
                                 <tr>
-                                    <th className="px-6 py-4 font-bold w-12">Type</th>
-                                    <th className="px-6 py-4 font-bold">Name</th>
-                                    <th className="px-6 py-4 font-bold">Size</th>
-                                    <th className="px-6 py-4 font-bold">Date</th>
+                                    <th className="px-6 py-4 font-bold w-12">{t.storage.table.type}</th>
+                                    <th className="px-6 py-4 font-bold">{t.storage.table.name}</th>
+                                    <th className="px-6 py-4 font-bold">{t.storage.table.size}</th>
+                                    <th className="px-6 py-4 font-bold">{t.storage.table.date}</th>
                                     <th className="px-6 py-4 font-bold w-12"></th>
                                 </tr>
                             </thead>
@@ -216,8 +218,8 @@ export default function StoragePage() {
             ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-muted-foreground/50 border-2 border-dashed border-white/5 rounded-3xl bg-white/5">
                     <Folder className="w-16 h-16 mb-4 opacity-50" />
-                    <p className="font-medium text-lg">Empty Folder</p>
-                    <p className="text-sm">No items found in this location.</p>
+                    <p className="font-medium text-lg">{t.storage.empty_folder}</p>
+                    <p className="text-sm">{t.storage.empty_hint}</p>
                 </div>
             )}
         </div>

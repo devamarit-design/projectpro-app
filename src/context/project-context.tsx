@@ -2,6 +2,10 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { get, set } from "idb-keyval"
+import { auth, googleProvider, db } from "@/lib/firebase"
+import { signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser } from "firebase/auth"
+import { doc, getDoc, setDoc, onSnapshot, collection, query, where, addDoc, updateDoc, deleteDoc, documentId, orderBy } from "firebase/firestore"
+import { seedDatabase } from "@/lib/seed-data"
 
 export type ProjectStatus = "Planning" | "In Progress" | "On Hold" | "Completed"
 export type TaskStatus = "Todo" | "In Progress" | "Done"
@@ -25,6 +29,7 @@ export interface CompanyProfile {
     logo?: string
     paymentInfo?: string
     signatureName?: string
+    description?: string // Added description
 }
 
 export interface ProjectFile {
@@ -64,6 +69,7 @@ export interface Expense {
     items?: ExpenseItem[] // For split bills
     vatIncluded?: boolean
     receiptImage?: string
+    teamId?: string
 }
 
 export interface Project {
@@ -111,6 +117,7 @@ export interface Vendor {
     rating?: number
     products?: string[]
     status: "Active" | "Inactive"
+    teamId?: string
 }
 
 export interface Worker {
@@ -125,6 +132,7 @@ export interface Worker {
     rating?: number
     status: "Active" | "Inactive"
     joinedDate?: string
+    teamId?: string
 }
 
 export interface Customer {
@@ -140,6 +148,7 @@ export interface Customer {
     projects?: string[] // IDs of linked projects
     totalValue?: number // Calculated
     status: "Active" | "Inactive"
+    teamId?: string
 }
 
 export interface IncomeItem {
@@ -288,7 +297,7 @@ interface ProjectContextType {
 
     // Company Profile
     companyProfile: CompanyProfile
-    updateCompanyProfile: (updates: Partial<CompanyProfile>) => void
+    updateCompanyProfile: (updates: Partial<CompanyProfile>) => Promise<void>
 
     // Contracts
     contracts: Contract[]
@@ -303,6 +312,7 @@ interface ProjectContextType {
     logout: () => void
     // Backup & Restore
     restoreData: (data: any) => Promise<boolean>
+    seedData: () => Promise<void>
 }
 
 
@@ -764,7 +774,8 @@ export const INITIAL_COMPANY_PROFILE: CompanyProfile = {
     logo: "",
     primaryColor: "#000000",
     secondaryColor: "#ffffff",
-    paymentInfo: "Bank: KBANK\nAcc: 123-4-56789-0\nName: My Company"
+    paymentInfo: "Bank: KBANK\nAcc: 123-4-56789-0",
+    description: "Welcome to ProjectPro"
 }
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
@@ -773,16 +784,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const [currentTeam, setCurrentTeam] = useState<Team | null>(null)
 
     // Mock Projects
-    const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS)
-    const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES)
-    const [files, setFiles] = useState<ProjectFile[]>(MOCK_FILES)
-    const [users, setUsers] = useState<User[]>(MOCK_USERS)
-    const [workers, setWorkers] = useState<Worker[]>(MOCK_WORKERS)
-    const [vendors, setVendors] = useState<Vendor[]>(MOCK_VENDORS)
-    const [customers, setCustomers] = useState<Customer[]>(MOCK_CUSTOMERS)
+    // Real Data State (Initially Empty)
+    const [projects, setProjects] = useState<Project[]>([])
+    const [expenses, setExpenses] = useState<Expense[]>([])
+    const [files, setFiles] = useState<ProjectFile[]>([])
+    // Users are managed by filtering all users (or fetching team users - optimized later)
+    // For now, let's keep mock users until we replace them with real user fetch
+    const [users, setUsers] = useState<User[]>([])
+    const [workers, setWorkers] = useState<Worker[]>([])
+    const [vendors, setVendors] = useState<Vendor[]>([])
+    const [customers, setCustomers] = useState<Customer[]>([])
 
-    // Mock Incomes
-    const [incomes, setIncomes] = useState<IncomeDocument[]>(MOCK_INCOMES)
+    // Mock Incomes -> Real Incomes
+    const [incomes, setIncomes] = useState<IncomeDocument[]>([])
 
     // Derived Company Profile from Current Team
     const companyProfile: CompanyProfile = currentTeam ? {
@@ -794,73 +808,168 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         website: currentTeam.website,
         logo: currentTeam.logo,
         primaryColor: currentTeam.primaryColor,
-        secondaryColor: currentTeam.secondaryColor
+        secondaryColor: currentTeam.secondaryColor,
+        description: currentTeam.description
     } : INITIAL_COMPANY_PROFILE
 
 
 
-    const [currentUser, setCurrentUser] = useState<User | null>(null) // Default to null for auth flow
+    const [currentUser, setCurrentUser] = useState<User | null>(null)
+
+    // Auth State Listener
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                const userRef = doc(db, "users", firebaseUser.uid)
+                const userSnap = await getDoc(userRef)
+
+                if (userSnap.exists()) {
+                    setCurrentUser({ ...userSnap.data(), id: firebaseUser.uid } as User)
+                } else {
+                    // New User - Create Profile
+                    const newUser: User = {
+                        id: firebaseUser.uid,
+                        name: firebaseUser.displayName || "User",
+                        email: firebaseUser.email || "",
+                        role: "Member",
+                        status: "Active",
+                        teamIds: [],
+                        avatar: firebaseUser.photoURL || undefined
+                    }
+                    await setDoc(userRef, newUser)
+                    setCurrentUser(newUser)
+                }
+            } else {
+                setCurrentUser(null)
+                setCurrentTeam(null)
+                setTeams([])
+            }
+        })
+        return () => unsubscribe()
+    }, [])
 
     const login = async (provider: string, credentials?: { email?: string, password?: string }) => {
-        // Simulate API Call
-        await new Promise(resolve => setTimeout(resolve, 800))
-
-        let mockUser: User | undefined;
-
-        if (provider === 'credentials' && credentials) {
-            // Check Admin Credentials
-            if (credentials.email === "admin@projectpro.com" && credentials.password === "123456") {
-                mockUser = MOCK_USERS.find(u => u.role === "Admin")
-            } else {
-                throw new Error("Invalid credentials")
-            }
-        } else {
-            // Google / Default Login (Mock as Admin)
-            mockUser = MOCK_USERS.find(u => u.role === "Admin") || MOCK_USERS[0]
-        }
-
-        if (mockUser) {
-            setCurrentUser(mockUser)
-
-            // Ensure one team is active
-            if (mockUser.teamIds && mockUser.teamIds.length > 0) {
-                const team = teams.find(t => t.id === mockUser.teamIds[0])
-                if (team) setCurrentTeam(team)
+        if (provider === 'google') {
+            try {
+                await signInWithPopup(auth, googleProvider)
+            } catch (error) {
+                console.error("Login failed", error)
+                throw error
             }
         }
+        // Legacy credential support removed or can be re-added if needed
     }
 
-    const logout = () => {
+    const logout = async () => {
+        await signOut(auth)
         setCurrentUser(null)
         setCurrentTeam(null)
+        localStorage.removeItem("projectpro_teamid")
     }
 
     const switchTeam = (teamId: string) => {
         const team = teams.find(t => t.id === teamId)
         if (team) {
             setCurrentTeam(team)
+            localStorage.setItem("projectpro_teamid", team.id)
         }
     }
 
-    // Security Check: Verify currentTeam access when user changes
+    // Load User's Teams (Real-time)
     useEffect(() => {
-        if (!currentUser || !currentTeam) return
-
-        // If currentTeam is not in user's allowed teams, switch to first allowed team
-        if (!currentUser.teamIds?.includes(currentTeam.id)) {
-            const firstAllowedTeamId = currentUser.teamIds?.[0]
-            if (firstAllowedTeamId) {
-                const allowedTeam = teams.find(t => t.id === firstAllowedTeamId)
-                if (allowedTeam) {
-                    setCurrentTeam(allowedTeam)
-                }
-            } else {
-                setCurrentTeam(null) // No access to any team
-            }
+        if (!currentUser || !currentUser.teamIds || currentUser.teamIds.length === 0) {
+            setTeams([])
+            return
         }
-    }, [currentUser, currentTeam, teams])
 
-    const addTeam = (name: string) => {
+        try {
+            // Fetch teams where ID is in user's teamIds
+            // Note: 'in' query limit is 10. For production, handle batches.
+            const validTeamIds = currentUser.teamIds.slice(0, 10).filter(id => id)
+
+            if (validTeamIds.length > 0) {
+                const qTeams = query(collection(db, "teams"), where(documentId(), "in", validTeamIds))
+                const unsubTeams = onSnapshot(qTeams, (snapshot) => {
+                    const loadedTeams = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as Team))
+                    setTeams(loadedTeams)
+
+                    // Auto-select first team if none selected
+                    // We use functional state update to ensure we don't overwrite if user just switched?
+                    // Actually, depend on currentTeam.
+                    if (loadedTeams.length > 0) {
+                        setCurrentTeam(prev => {
+                            if (!prev || !loadedTeams.find(t => t.id === prev.id)) {
+                                return loadedTeams[0]
+                            }
+                            return prev
+                        })
+                    }
+                })
+                return () => unsubTeams()
+            }
+        } catch (error) {
+            console.error("Error loading teams:", error)
+        }
+    }, [currentUser]) // Re-run when user (and their teamIds) changes
+
+    // --- Real-time Data Sync ---
+    useEffect(() => {
+        if (!currentTeam) {
+            setProjects([])
+            setExpenses([])
+            setWorkers([])
+            setVendors([])
+            setCustomers([])
+            setIncomes([])
+            return
+        }
+
+        // 1. Projects
+        const qProjects = query(collection(db, "projects"), where("teamId", "==", currentTeam.id))
+        const unsubProjects = onSnapshot(qProjects, (snap) => {
+            setProjects(snap.docs.map(d => ({ ...d.data(), id: d.id } as Project)))
+        })
+
+        // 2. Expenses
+        const qExpenses = query(collection(db, "expenses"), where("teamId", "==", currentTeam.id))
+        const unsubExpenses = onSnapshot(qExpenses, (snap) => {
+            setExpenses(snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense)))
+        })
+
+        // 3. Workers
+        const qWorkers = query(collection(db, "workers"), where("teamId", "==", currentTeam.id))
+        const unsubWorkers = onSnapshot(qWorkers, (snap) => {
+            setWorkers(snap.docs.map(d => ({ ...d.data(), id: d.id } as Worker)))
+        })
+
+        // 4. Vendors (Optional: Add teamId to vendor logic if needed, assuming yes)
+        // Note: Check if Vendor has teamId, we added it.
+        const qVendors = query(collection(db, "vendors"), where("teamId", "==", currentTeam.id))
+        const unsubVendors = onSnapshot(qVendors, (snap) => {
+            setVendors(snap.docs.map(d => ({ ...d.data(), id: d.id } as Vendor)))
+        })
+
+        // 5. Customers
+        const qCustomers = query(collection(db, "customers"), where("teamId", "==", currentTeam.id))
+        const unsubCustomers = onSnapshot(qCustomers, (snap) => {
+            setCustomers(snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer)))
+        })
+
+        return () => {
+            unsubProjects()
+            unsubExpenses()
+            unsubWorkers()
+            unsubVendors()
+            unsubCustomers()
+        }
+    }, [currentTeam])
+
+    const seedData = async () => {
+        if (!currentTeam || !currentUser) return
+        await seedDatabase(currentTeam.id, currentUser.id)
+    }
+
+    const addTeam = async (name: string) => {
         const newTeam: Team = {
             ...INITIAL_COMPANY_PROFILE,
             id: Date.now().toString(),
@@ -869,138 +978,75 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             role: 'Owner'
         }
 
-        // 1. Update Teams State
-        setTeams([...teams, newTeam])
+        try {
+            // Firestore Logic
+            if (currentUser && currentUser.id) {
+                // 1. Create Team Document
+                const teamRef = doc(db, "teams", newTeam.id)
+                await setDoc(teamRef, newTeam)
 
-        // 2. Update Current User Access
-        if (currentUser) {
-            const updatedUser = {
-                ...currentUser,
-                teamIds: [...(currentUser.teamIds || []), newTeam.id]
+                // 2. Update User's teamIds
+                const userRef = doc(db, "users", currentUser.id)
+                const updatedTeamIds = [...(currentUser.teamIds || []), newTeam.id]
+                await setDoc(userRef, { teamIds: updatedTeamIds }, { merge: true })
+
+                // 3. Update Local State (Optimistic UI)
+                setTeams([...teams, newTeam])
+
+                const updatedUser = { ...currentUser, teamIds: updatedTeamIds }
+                setCurrentUser(updatedUser)
+                setCurrentTeam(newTeam)
+            } else {
+                // Fallback for non-auth / demo mode
+                setTeams([...teams, newTeam])
+                setCurrentTeam(newTeam)
             }
-
-            // Update User State
-            setCurrentUser(updatedUser)
-
-            // Update Users List (Persistence)
-            setUsers(prevUsers => prevUsers.map(u => u.id === currentUser.id ? updatedUser : u))
+        } catch (error) {
+            console.error("Error creating team:", error)
+            throw error
         }
-
-        // 3. Switch to New Team
-        setCurrentTeam(newTeam)
     }
 
-    // Load data from IndexedDB on mount
-    useEffect(() => {
-        async function loadData() {
-            try {
-                const [
-                    savedProjects,
-                    savedExpenses,
-                    savedFiles,
-                    savedUsers,
-                    savedWorkers,
-                    savedVendors,
-                    savedCustomers,
-                    savedIncomes,
-                    savedProfile,
-                    savedTeams,
-                    savedCurrentTeam
 
-                ] = await Promise.all([
-                    get("projects_v2"),
-                    get("expenses_v2"),
-                    get("files_v2"),
-                    get("users_v2"),
-                    get("workers_v2"),
-                    get("vendors_v2"),
-                    get("customers_v2"),
-                    get("incomes_v2"),
-                    get("companyProfile_v2"),
-                    get("teams_v2"),
-                    get("currentTeam_v2")
 
-                ])
-
-                if (savedProjects) setProjects(savedProjects)
-                if (savedExpenses) setExpenses(savedExpenses)
-                if (savedFiles) setFiles(savedFiles)
-                if (savedUsers) setUsers(savedUsers)
-                if (savedWorkers) setWorkers(savedWorkers as Worker[])
-                if (savedVendors) setVendors(savedVendors)
-                if (savedCustomers) setCustomers(savedCustomers)
-                if (savedIncomes) setIncomes(savedIncomes)
-
-                if (savedIncomes) setIncomes(savedIncomes)
-
-                // Load Teams
-                if (savedTeams && savedTeams.length > 0) {
-                    setTeams(savedTeams)
-                    if (savedCurrentTeam) {
-                        setCurrentTeam(savedCurrentTeam)
-                    } else {
-                        setCurrentTeam(savedTeams[0])
-                    }
-                } else {
-                    // Start clean with Mock Teams AND Data
-                    setTeams(MOCK_TEAMS)
-                    setCurrentTeam(MOCK_TEAMS[0])
-
-                    // Seed data if not already present
-                    if (!savedProjects) setProjects(INITIAL_PROJECTS)
-                    if (!savedExpenses) setExpenses(INITIAL_EXPENSES)
-                    if (!savedUsers) setUsers(MOCK_USERS)
-                    if (!savedWorkers) setWorkers(MOCK_WORKERS)
-                    if (!savedVendors) setVendors(MOCK_VENDORS)
-                    if (!savedCustomers) setCustomers(MOCK_CUSTOMERS)
-                    if (!savedIncomes) setIncomes(MOCK_INCOMES)
-                    if (!savedFiles) setFiles(MOCK_FILES)
-                }
-
-            } catch (error) {
-                console.error("Failed to load data from IndexedDB:", error)
-            }
-        }
-        loadData()
-    }, [])
 
     // Save data whenever it changes
-    useEffect(() => {
-        set("projects_v2", projects)
-        set("expenses_v2", expenses)
-        set("files_v2", files)
-        set("users_v2", users)
-        set("workers_v2", workers)
-        set("vendors_v2", vendors)
-        set("customers_v2", customers)
-        set("incomes_v2", incomes)
-        set("companyProfile_v2", companyProfile)
-        set("teams_v2", teams)
-        if (currentTeam) set("currentTeam_v2", currentTeam)
-    }, [projects, expenses, files, users, workers, vendors, customers, incomes, companyProfile, teams, currentTeam])
 
 
-    const addProject = (data: Omit<Project, "id">) => {
-        const newProject: Project = {
-            ...data,
-            id: Math.random().toString(36).substring(2, 9), // Simple ID generation
+
+    // --- CRUD Operations (Firestore) ---
+
+    // 1. Projects
+    const addProject = async (project: Omit<Project, "id">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "projects"), {
+                ...project,
+                teamId: currentTeam.id,
+                createdAt: new Date().toISOString()
+            })
+        } catch (e) {
+            console.error("Error adding project", e)
         }
-        setProjects((prev) => [newProject, ...prev])
     }
 
-    const updateProject = (id: string, updates: Partial<Project>) => {
-        setProjects((prev) =>
-            prev.map((project) => (project.id === id ? { ...project, ...updates } : project))
-        )
+    const updateProject = async (id: string, updates: Partial<Project>) => {
+        try {
+            await updateDoc(doc(db, "projects", id), updates)
+        } catch (e) {
+            console.error("Error updating project", e)
+        }
     }
 
-    const deleteProject = (id: string) => {
-        setProjects((prev) => prev.filter((p) => p.id !== id))
+    const deleteProject = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "projects", id))
+        } catch (e) {
+            console.error("Error deleting project", e)
+        }
     }
 
-    const getProject = (id: string) => {
-        return projects.find(p => p.id === id)
-    }
+    const getProject = (id: string) => projects.find(p => p.id === id)
 
     const addTask = (projectId: string, task: Omit<ProjectTask, "id">) => {
         setProjects(prev => prev.map(p => {
@@ -1190,52 +1236,76 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
 
     // Customer CRUD
-    const addCustomer = (customerData: Omit<Customer, "id" | "status" | "totalValue">) => {
-        const newCustomer: Customer = {
-            ...customerData,
-            id: Math.random().toString(36).substr(2, 9),
-            status: "Active"
-        }
-        setCustomers(prev => [...prev, newCustomer])
+    // 4. Customers
+    const addCustomer = async (customer: Omit<Customer, "id" | "status" | "totalValue">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "customers"), {
+                ...customer,
+                teamId: currentTeam.id,
+                status: "Active",
+                totalValue: 0
+            })
+        } catch (e) { console.error(e) }
     }
-
-    const updateCustomer = (id: string, updates: Partial<Customer>) => {
-        setCustomers(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c))
+    const updateCustomer = async (id: string, updates: Partial<Customer>) => {
+        try { await updateDoc(doc(db, "customers", id), updates) } catch (e) { console.error(e) }
     }
-
-    const deleteCustomer = (id: string) => {
-        setCustomers(prev => prev.filter(c => c.id !== id))
+    const deleteCustomer = async (id: string) => {
+        try { await deleteDoc(doc(db, "customers", id)) } catch (e) { console.error(e) }
     }
 
     // File CRUD
-    const addFile = (fileData: Omit<ProjectFile, "id" | "uploadedAt">) => {
-        const newFile: ProjectFile = {
-            ...fileData,
-            id: Math.random().toString(36).substr(2, 9),
-            uploadedAt: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    // 3. Files
+    const addFile = async (file: Omit<ProjectFile, "id" | "uploadedAt">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "files"), {
+                ...file,
+                teamId: currentTeam.id,
+                uploadedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+            })
+        } catch (e) {
+            console.error("Error adding file", e)
         }
-        setFiles(prev => [newFile, ...prev])
     }
 
-    const deleteFile = (id: string) => {
-        setFiles(prev => prev.filter(f => f.id !== id))
-    }
-
-    const addExpense = (data: Omit<Expense, "id">) => {
-        const newExpense = {
-            ...data,
-            id: Math.random().toString(36).substr(2, 9),
-            totalValue: data.totalValue || parseFloat(data.amount.replace(/[^0-9.-]+/g, "")) || 0
+    const deleteFile = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "files", id))
+        } catch (e) {
+            console.error("Error deleting file", e)
         }
-        setExpenses(prev => [newExpense, ...prev])
     }
 
-    const updateExpense = (id: string, updates: Partial<Expense>) => {
-        setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e))
+    // 2. Expenses
+    const addExpense = async (expense: Omit<Expense, "id">) => {
+        if (!currentTeam) return
+        try {
+            // Ensure teamId is attached
+            await addDoc(collection(db, "expenses"), {
+                ...expense,
+                teamId: currentTeam.id
+            })
+        } catch (e) {
+            console.error("Error adding expense", e)
+        }
     }
 
-    const deleteExpense = (id: string) => {
-        setExpenses(prev => prev.filter(e => e.id !== id))
+    const updateExpense = async (id: string, updates: Partial<Expense>) => {
+        try {
+            await updateDoc(doc(db, "expenses", id), updates)
+        } catch (e) {
+            console.error("Error updating expense", e)
+        }
+    }
+
+    const deleteExpense = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "expenses", id))
+        } catch (e) {
+            console.error("Error deleting expense", e)
+        }
     }
 
     // Income Actions
@@ -1255,16 +1325,21 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         setIncomes(prev => prev.filter(doc => doc.id !== id))
     }
 
-    const updateCompanyProfile = (updates: Partial<CompanyProfile>) => {
+    const updateCompanyProfile = async (updates: Partial<CompanyProfile>) => {
         if (!currentTeam) return
 
-        const updatedTeam: Team = { ...currentTeam, ...updates }
+        try {
+            // Update Firestore
+            const teamRef = doc(db, "teams", currentTeam.id)
+            await updateDoc(teamRef, updates)
 
-        // Update in teams array
-        setTeams(teams.map(t => t.id === currentTeam.id ? updatedTeam : t))
-
-        // Update current team reference
-        setCurrentTeam(updatedTeam)
+            // Update Local State (Optimistic)
+            const updatedTeam: Team = { ...currentTeam, ...updates }
+            setTeams(teams.map(t => t.id === currentTeam.id ? updatedTeam : t))
+            setCurrentTeam(updatedTeam)
+        } catch (e) {
+            console.error("Error updating company profile", e)
+        }
     }
 
     const restoreData = async (data: any) => {
@@ -1351,6 +1426,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             login,
             logout,
             restoreData,
+            seedData,
             files: files.filter(f => !f.projectId || filteredProjectIds.has(f.projectId)),
             addFile,
             deleteFile,

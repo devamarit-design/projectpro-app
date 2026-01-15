@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Building2, FileText, Palette, Users, Database, Shield } from "lucide-react"
+import { useTranslation } from "@/lib/i18n-context"
+import { Building2, FileText, Palette, Users, Database, Shield, Bell } from "lucide-react"
 import { CompanySettings } from "@/components/settings/company-settings"
 import { DocumentSettings } from "@/components/settings/document-settings"
 import { ThemeSettings } from "@/components/settings/theme-settings"
@@ -9,26 +10,26 @@ import { TeamSettings } from "@/components/settings/team-settings"
 import { DataSettings } from "@/components/settings/data-settings"
 import { SecuritySettings } from "@/components/settings/security-settings"
 import { NotificationSettings } from "@/components/settings/notifications-settings"
-import { Bell } from "lucide-react"
 
 export default function SettingsPage() {
+    const { t } = useTranslation()
     const [activeSection, setActiveSection] = useState("company")
 
     const menuItems = [
-        { id: "company", label: "Company Profile", icon: Building2 },
-        { id: "documents", label: "Documents", icon: FileText },
-        { id: "notifications", label: "Notifications", icon: Bell },
-        { id: "team", label: "Team & Roles", icon: Users },
-        { id: "security", label: "Security & Lock", icon: Shield },
-        { id: "data", label: "Data Management", icon: Database },
-        { id: "theme", label: "App Theme", icon: Palette },
+        { id: "company", label: t.settings.menu.company, icon: Building2 },
+        { id: "documents", label: t.settings.menu.documents, icon: FileText },
+        { id: "notifications", label: t.settings.menu.notifications, icon: Bell },
+        { id: "team", label: t.settings.menu.team, icon: Users },
+        { id: "security", label: t.settings.menu.security, icon: Shield },
+        { id: "data", label: t.settings.menu.data, icon: Database },
+        { id: "theme", label: t.settings.menu.theme, icon: Palette },
     ]
 
     return (
         <div className="max-w-5xl space-y-8 pb-20">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight text-primary font-sans">Settings</h1>
-                <p className="text-muted-foreground mt-2">Manage your organization preferences and document templates.</p>
+                <h1 className="text-3xl font-bold tracking-tight text-primary font-sans">{t.settings.title}</h1>
+                <p className="text-muted-foreground mt-2">{t.settings.subtitle}</p>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8">

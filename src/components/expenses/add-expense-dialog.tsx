@@ -12,8 +12,11 @@ interface AddExpenseDialogProps {
     startScanning?: boolean
 }
 
+import { useTranslation } from "@/lib/i18n-context"
+
 export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, startScanning }: AddExpenseDialogProps) {
     const { addExpense, addProject, addTask, addUser, addVendor, addWorker, projects, users, vendors, workers } = useProjects()
+    const { t } = useTranslation()
 
     const [isScanOpen, setIsScanOpen] = React.useState(false)
 
@@ -298,7 +301,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 </div>
             )}
 
-            <div className="fixed inset-0 z-[50] flex items-center justify-center font-sans overflow-hidden">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center font-sans overflow-hidden">
                 <SmartScanDialog
                     isOpen={isScanOpen}
                     onClose={() => setIsScanOpen(false)}
@@ -315,8 +318,8 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b border-white/10 shrink-0">
                         <div>
-                            <h2 className="text-2xl font-bold tracking-tight">Add Expense</h2>
-                            <p className="text-sm text-muted-foreground mr-4">Record payments, bills, or invoices.</p>
+                            <h2 className="text-2xl font-bold tracking-tight">{t.expenses.dialog.title}</h2>
+                            <p className="text-sm text-muted-foreground mr-4">{t.expenses.dialog.subtitle}</p>
                         </div>
                         <div className="flex items-center gap-2">
                             <button
@@ -337,17 +340,17 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                             {/* Top Metadata */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Bill Title</label>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.bill_title}</label>
                                     <input
                                         required
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
-                                        placeholder="e.g. Purchase Materials"
+                                        placeholder={t.expenses.dialog.bill_placeholder}
                                         className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Date</label>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.date}</label>
                                     <input
                                         type="date"
                                         value={date}
@@ -360,7 +363,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                             {/* Category & Payee Selection */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Category</label>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.category}</label>
                                     <select
                                         value={items[0]?.category || "Material"}
                                         onChange={(e) => {
@@ -380,7 +383,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                        {(items[0]?.category === 'Labor') ? 'Worker / Technician' : 'Store / Payee'}
+                                        {(items[0]?.category === 'Labor') ? t.expenses.dialog.payee_labor : t.expenses.dialog.payee}
                                     </label>
                                     <div className="relative">
                                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -406,7 +409,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             }}
                                             className="w-full bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
                                         >
-                                            <option value="">Select {items[0]?.category === 'Labor' ? 'Person' : 'Vendor'}...</option>
+                                            <option value="">{items[0]?.category === 'Labor' ? t.expenses.dialog.select_person : t.expenses.dialog.select_vendor}</option>
 
                                             {/* Logic for Options */}
                                             {items[0]?.category === 'Labor' ? (
@@ -414,7 +417,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                     {workers.map(w => (
                                                         <option key={w.id} value={w.name}>{w.name} ({w.role})</option>
                                                     ))}
-                                                    <option value="NEW" className="font-bold text-primary">+ Add New Person...</option>
+                                                    <option value="NEW" className="font-bold text-primary">{t.expenses.dialog.add_new_person}</option>
                                                 </>
 
                                             ) : (
@@ -431,7 +434,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                             <option key={v.id} value={v.name}>{v.name} ({v.category})</option>
                                                         ))
                                                     }
-                                                    <option value="NEW" className="font-bold text-primary">+ Add New Vendor...</option>
+                                                    <option value="NEW" className="font-bold text-primary">{t.expenses.dialog.add_new_vendor}</option>
                                                 </>
                                             )}
                                         </select>
@@ -450,7 +453,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             onChange={() => setBillType('combine')}
                                             className="text-primary focus:ring-primary"
                                         />
-                                        <span className="text-sm font-bold">Combine Bill (Single Project)</span>
+                                        <span className="text-sm font-bold">{t.expenses.dialog.combine_bill}</span>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
@@ -460,14 +463,14 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             onChange={() => setBillType('split')}
                                             className="text-primary focus:ring-primary"
                                         />
-                                        <span className="text-sm font-bold">Split Bill (Multi-Project)</span>
+                                        <span className="text-sm font-bold">{t.expenses.dialog.split_bill}</span>
                                     </label>
                                 </div>
 
                                 {billType === 'combine' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                                         <div className="space-y-1">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Project</label>
+                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.project}</label>
                                             <div className="relative">
                                                 <select
                                                     required
@@ -487,7 +490,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             </div>
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Task / Sub-project</label>
+                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.task}</label>
                                             <div className="relative">
                                                 <select
                                                     value={globalTaskId}
@@ -511,7 +514,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                                        <Layers className="w-4 h-4" /> Item Breakdown
+                                        <Layers className="w-4 h-4" /> {t.expenses.dialog.item_breakdown}
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer group">
                                         <input
@@ -520,7 +523,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             onChange={(e) => setVatIncluded(e.target.checked)}
                                             className="w-4 h-4 rounded border-white/10 bg-background/50 text-primary focus:ring-primary/50 transition-all"
                                         />
-                                        <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">VAT Included (7%)</span>
+                                        <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">{t.expenses.dialog.vat_included}</span>
                                     </label>
                                 </div>
 
@@ -534,7 +537,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                 {/* Description & Amount */}
                                                 <div className="sm:col-span-12 grid grid-cols-6 gap-3">
                                                     <input
-                                                        placeholder="Item description"
+                                                        placeholder={t.expenses.dialog.item_desc}
                                                         value={item.description}
                                                         onChange={(e) => updateItem(item.id, { description: e.target.value })}
                                                         className="col-span-4 bg-background border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -620,7 +623,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                         onClick={addItem}
                                         className="w-full py-2 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 border border-dashed border-white/10 rounded-xl transition-all"
                                     >
-                                        <Plus className="w-4 h-4" /> Add Line Item
+                                        <Plus className="w-4 h-4" /> {t.expenses.dialog.add_line_item}
                                     </button>
                                 </div>
                             </div>
@@ -629,12 +632,12 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                             <div className="flex justify-end gap-8 text-sm">
                                 {vatIncluded && (
                                     <div className="text-muted-foreground text-right">
-                                        <p>Subtotal: ฿{(subtotal - vatAmount).toLocaleString()}</p>
-                                        <p>VAT (7%): ฿{vatAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                                        <p>{t.expenses.dialog.subtotal}: ฿{(subtotal - vatAmount).toLocaleString()}</p>
+                                        <p>{t.expenses.dialog.vat}: ฿{vatAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                                     </div>
                                 )}
                                 <div className="text-right">
-                                    <p className="text-muted-foreground font-bold tracking-wider">GRAND TOTAL</p>
+                                    <p className="text-muted-foreground font-bold tracking-wider">{t.expenses.dialog.grand_total}</p>
                                     <p className="text-2xl font-black text-primary">฿{subtotal.toLocaleString()}</p>
                                 </div>
                             </div>
@@ -644,7 +647,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                             {/* Payment Details */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payment Status</label>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.payment_status}</label>
                                     <div className="relative">
                                         <Receipt className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                         <select
@@ -663,7 +666,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                                 {status === 'Advanced' && (
                                     <div className="space-y-1 animate-in fade-in slide-in-from-top-2">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Paid By (สำรองจ่ายโดย)</label>
+                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.paid_by}</label>
                                         <div className="relative">
                                             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                             <select
@@ -683,7 +686,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                                 {status === 'Credit' && (
                                     <div className="space-y-1 animate-in fade-in slide-in-from-top-2">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Vendor (เจ้าหนี้)</label>
+                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.vendor}</label>
                                         <div className="relative">
                                             <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                             <select
@@ -707,7 +710,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                         {/* Image Upload Section */}
                         <div className="space-y-2 p-6 pt-0">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                                <Camera className="w-4 h-4" /> Receipt / Image
+                                <Camera className="w-4 h-4" /> {t.expenses.dialog.receipt_image}
                             </label>
 
                             {receiptImage ? (
@@ -727,7 +730,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                         <div className="p-3 rounded-full bg-white/5 group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-2">
                                             <Upload className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
                                         </div>
-                                        <p className="text-sm text-muted-foreground group-hover:text-foreground font-medium">Click to upload receipt</p>
+                                        <p className="text-sm text-muted-foreground group-hover:text-foreground font-medium">{t.expenses.dialog.upload_hint}</p>
                                     </div>
                                     <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
                                 </label>
@@ -740,7 +743,8 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 type="submit"
                                 className="w-full bg-primary text-primary-foreground hover:opacity-90 rounded-xl py-3 font-bold uppercase tracking-wider shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
                             >
-                                Save Expense
+
+                                {t.expenses.dialog.save}
                             </button>
                         </div>
                     </form>

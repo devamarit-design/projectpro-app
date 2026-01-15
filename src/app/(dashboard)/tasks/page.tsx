@@ -12,11 +12,13 @@ interface DetailedTask extends ProjectTask {
     projectName: string
 }
 
+import { useTranslation } from "@/lib/i18n-context"
 import AddTaskDialog from "@/components/tasks/add-task-dialog"
 import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
 
 export default function TasksPage() {
     const { projects, updateTask, deleteTask, toggleTask, currentUser, users } = useProjects()
+    const { t } = useTranslation()
     const [searchQuery, setSearchQuery] = React.useState("")
     const [projectFilter, setProjectFilter] = React.useState<string>("all")
     const [userFilter, setUserFilter] = React.useState<string>("all")
@@ -77,15 +79,15 @@ export default function TasksPage() {
         <div className="space-y-6 flex flex-col pb-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-primary font-sans">Tasks</h1>
-                    <p className="text-muted-foreground mt-1">Manage project tasks and assignments across all projects.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-primary font-sans">{t.tasks.title}</h1>
+                    <p className="text-muted-foreground mt-1">{t.tasks.subtitle}</p>
                 </div>
                 <button
                     onClick={() => setShowAddTask(true)}
                     className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all w-full md:w-auto justify-center"
                 >
                     <Plus className="w-5 h-5" />
-                    New Task
+                    {t.tasks.new_task}
                 </button>
             </div>
 
@@ -95,7 +97,7 @@ export default function TasksPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
                         type="text"
-                        placeholder="Search tasks or projects..."
+                        placeholder={t.tasks.search_placeholder}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-9 pr-4 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm"
@@ -108,7 +110,7 @@ export default function TasksPage() {
                         onChange={(e) => setProjectFilter(e.target.value)}
                         className="w-full pl-9 pr-8 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
                     >
-                        <option value="all">All Projects</option>
+                        <option value="all">{t.tasks.filters.all_projects}</option>
                         {projects.map(p => (
                             <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
@@ -126,7 +128,7 @@ export default function TasksPage() {
                             onChange={(e) => setUserFilter(e.target.value)}
                             className="w-full pl-9 pr-8 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
                         >
-                            <option value="all">All Users</option>
+                            <option value="all">{t.tasks.filters.all_users}</option>
                             {users.map(u => (
                                 <option key={u.id} value={u.name}>{u.name}</option>
                             ))}
@@ -146,7 +148,9 @@ export default function TasksPage() {
                             <div className="p-4 flex items-center justify-between border-b border-white/5 bg-muted/20 backdrop-blur-sm">
                                 <h3 className="font-bold text-sm uppercase tracking-wider flex items-center gap-2">
                                     <div className={cn("w-2 h-2 rounded-full shadow-lg ring-2 ring-opacity-20", statusColors[status].replace('bg-', 'ring-'))} style={{ backgroundColor: 'currentColor' }} />
-                                    <span className={cn(status === 'Todo' ? 'text-slate-500' : status === 'In Progress' ? 'text-blue-500' : 'text-green-500')}>{status}</span>
+                                    <span className={cn(status === 'Todo' ? 'text-slate-500' : status === 'In Progress' ? 'text-blue-500' : 'text-green-500')}>
+                                        {status === 'Todo' ? t.tasks.status.todo : status === 'In Progress' ? t.tasks.status.in_progress : t.tasks.status.done}
+                                    </span>
                                     <span className="ml-1 text-[10px] text-muted-foreground bg-background/50 px-2 py-0.5 rounded-full border border-white/5 font-medium">
                                         {getTasksByStatus(status).length}
                                     </span>
@@ -181,14 +185,14 @@ export default function TasksPage() {
                                                 <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10">
                                                     <User className="w-3 h-3 text-primary" />
                                                 </div>
-                                                <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px]">{task.assignedTo || "Unassigned"}</span>
+                                                <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px]">{task.assignedTo || t.tasks.unassigned}</span>
                                             </div>
                                             <div className={cn(
                                                 "flex items-center gap-1 text-[10px] font-bold uppercase tracking-tight",
                                                 status === 'Done' ? 'text-green-500' : 'text-orange-500'
                                             )}>
                                                 <Clock className="w-3 h-3" />
-                                                {task.dueDate || "No date"}
+                                                {task.dueDate || t.tasks.no_date}
                                             </div>
                                         </div>
                                     </div>
@@ -196,7 +200,7 @@ export default function TasksPage() {
 
                                 {getTasksByStatus(status).length === 0 && (
                                     <div className="h-24 rounded-xl border-2 border-dashed border-muted flex items-center justify-center p-4 text-center opacity-50 hover:opacity-100 transition-opacity">
-                                        <p className="text-xs text-muted-foreground font-medium">Empty</p>
+                                        <p className="text-xs text-muted-foreground font-medium">{t.tasks.empty}</p>
                                     </div>
                                 )}
 
@@ -205,7 +209,7 @@ export default function TasksPage() {
                                     className="w-full py-3 border border-dashed border-primary/20 bg-primary/5 rounded-xl text-xs font-bold uppercase tracking-widest text-primary/70 hover:bg-primary/10 hover:text-primary transition-all flex items-center justify-center gap-2 group mt-2"
                                 >
                                     <Plus className="w-3.5 h-3.5 group-hover:scale-125 transition-transform" />
-                                    Add Task
+                                    {t.tasks.add_task}
                                 </button>
                             </div>
                         </div>

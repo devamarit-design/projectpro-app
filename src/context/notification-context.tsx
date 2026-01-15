@@ -83,10 +83,20 @@ const MOCK_NOTIFICATIONS: Notification[] = [
     }
 ]
 
+import { useTranslation } from "@/lib/i18n-context"
+
+// Helper for string interpolation
+const format = (template: string, args: Record<string, any>) => {
+    return template.replace(/{(\w+)}/g, (_, key) => {
+        return args[key] !== undefined ? String(args[key]) : `{${key}}`
+    })
+}
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
     const [notifications, setNotifications] = useState<Notification[]>([])
     const { projects, expenses, contracts, currentUser } = useProjects()
     const { notificationSettings } = useSettings()
+    const { t } = useTranslation()
 
     // Load read status from local storage
     const [readStatus, setReadStatus] = useState<Record<string, boolean>>({})
@@ -113,7 +123,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         // 1. Task Alerts (Due soon or Assigned)
         projects.forEach(project => {
-            project.tasks?.forEach(task => {
+            project.tasks?.forEach(task => { // Add safety check for tasks
                 // Skip if done
                 if (task.status === 'Done') return
 
@@ -132,8 +142,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                     if (daysLeft < 0) {
                         newNotifications.push({
                             id: generateAlertId('overdue', task.id),
-                            title: `Task Overdue: ${task.title}`,
-                            message: `Task in ${project.name} is overdue by ${Math.abs(daysLeft)} days.`,
+                            title: `${t.notifications.alerts.task_overdue}: ${task.title}`,
+                            message: format(t.notifications.alerts.task_overdue_msg, { project: project.name, days: Math.abs(daysLeft) }),
                             type: 'error',
                             date: new Date().toISOString(), // In real app, this should be the date it BECAME overdue
                             read: !!readStatus[generateAlertId('overdue', task.id)],
@@ -145,8 +155,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                     else if (daysLeft <= warnDays) {
                         newNotifications.push({
                             id: generateAlertId('due', task.id),
-                            title: `Task Due Soon: ${task.title}`,
-                            message: `Task in ${project.name} is due in ${daysLeft === 0 ? 'today' : daysLeft + ' days'}.`,
+                            title: `${t.notifications.alerts.task_due_soon}: ${task.title}`,
+                            message: daysLeft === 0
+                                ? format(t.notifications.alerts.task_due_today_msg, { project: project.name })
+                                : format(t.notifications.alerts.task_due_days_msg, { project: project.name, days: daysLeft }),
                             type: 'warning',
                             date: new Date().toISOString(),
                             read: !!readStatus[generateAlertId('due', task.id)],
@@ -175,8 +187,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 if (age > 30) {
                     newNotifications.push({
                         id: generateAlertId('exp-overdue', expense.id),
-                        title: `Payment Overdue: ${expense.title}`,
-                        message: `Expense is unpaid for ${age} days.`,
+                        title: `${t.notifications.alerts.payment_overdue}: ${expense.title}`,
+                        message: format(t.notifications.alerts.expense_overdue_msg, { days: age }),
                         type: 'error',
                         date: new Date().toISOString(),
                         read: !!readStatus[generateAlertId('exp-overdue', expense.id)],
@@ -186,8 +198,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 } else if (age > 15) {
                     newNotifications.push({
                         id: generateAlertId('exp-warning', expense.id),
-                        title: `Unpaid Expense: ${expense.title}`,
-                        message: `Expense is pending payment for ${age} days.`,
+                        title: `${t.notifications.alerts.unpaid_expense}: ${expense.title}`,
+                        message: format(t.notifications.alerts.expense_pending_msg, { days: age }),
                         type: 'warning',
                         date: new Date().toISOString(),
                         read: !!readStatus[generateAlertId('exp-warning', expense.id)],
@@ -208,8 +220,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                     if (daysLeft < 0) {
                         newNotifications.push({
                             id: generateAlertId('contract-overdue', installment.id),
-                            title: `Installment Overdue`,
-                            message: `Payment '${installment.description}' for ${contract.title} is overdue by ${Math.abs(daysLeft)} days.`,
+                            title: t.notifications.alerts.installment_overdue,
+                            message: format(t.notifications.alerts.installment_overdue_msg, { description: installment.description, contract: contract.title, days: Math.abs(daysLeft) }),
                             type: 'error',
                             date: new Date().toISOString(),
                             read: !!readStatus[generateAlertId('contract-overdue', installment.id)],
@@ -219,8 +231,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                     } else if (daysLeft <= warnDays) {
                         newNotifications.push({
                             id: generateAlertId('contract-due', installment.id),
-                            title: `Installment Due Soon`,
-                            message: `Payment '${installment.description}' for ${contract.title} is due in ${daysLeft === 0 ? 'today' : daysLeft + ' days'}.`,
+                            title: t.notifications.alerts.installment_due_soon,
+                            message: daysLeft === 0
+                                ? format(t.notifications.alerts.installment_due_today_msg, { description: installment.description, contract: contract.title })
+                                : format(t.notifications.alerts.installment_due_days_msg, { description: installment.description, contract: contract.title, days: daysLeft }),
                             type: 'warning',
                             date: new Date().toISOString(),
                             read: !!readStatus[generateAlertId('contract-due', installment.id)],
@@ -234,7 +248,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         setNotifications(newNotifications)
 
-    }, [projects, expenses, contracts, notificationSettings, readStatus, currentUser])
+    }, [projects, expenses, contracts, notificationSettings, readStatus, currentUser, t])
 
 
     const unreadCount = notifications.filter(n => !n.read).length

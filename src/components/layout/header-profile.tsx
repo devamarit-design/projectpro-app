@@ -70,7 +70,7 @@ export function HeaderProfile() {
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-xl shadow-xl py-2 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-xl shadow-xl py-2 z-[200] animate-in fade-in zoom-in-95 duration-200 origin-top-right">
 
                     {/* User Info Header */}
                     <div className="px-4 py-3 border-b border-border bg-muted/20">

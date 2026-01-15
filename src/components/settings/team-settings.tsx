@@ -3,9 +3,11 @@
 import { useSettings } from "@/context/settings-context"
 import { Copy, Users, Link as LinkIcon, Shield } from "lucide-react"
 import Link from "next/link"
+import { useTranslation } from "@/lib/i18n-context"
 
 export function TeamSettings() {
     const { teamSettings, updateTeamSettings } = useSettings()
+    const { t } = useTranslation()
 
     const copyLink = () => {
         navigator.clipboard.writeText("https://projectpro.app/invite/org_123456")
@@ -18,10 +20,10 @@ export function TeamSettings() {
                 <div className="space-y-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
                         <LinkIcon className="w-5 h-5" />
-                        Invitation Link
+                        {t.team_settings.invitation_link}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                        Send this link to your team members to let them join your organization automatically.
+                        {t.team_settings.invitation_desc}
                     </p>
 
                     <div className="space-y-4">
@@ -36,14 +38,14 @@ export function TeamSettings() {
                                 className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2"
                             >
                                 <Copy className="w-4 h-4 mr-2" />
-                                Copy
+                                {t.team_settings.copy}
                             </button>
                         </div>
 
                         <div className="flex items-center justify-between border rounded-lg p-4 bg-muted/20">
                             <div className="space-y-0.5">
-                                <label className="text-sm font-medium">Enable Link</label>
-                                <p className="text-xs text-muted-foreground">Allow new members to join via link.</p>
+                                <label className="text-sm font-medium">{t.team_settings.enable_link}</label>
+                                <p className="text-xs text-muted-foreground">{t.team_settings.enable_link_desc}</p>
                             </div>
                             <button
                                 onClick={() => updateTeamSettings({ allowInvite: !teamSettings.allowInvite })}
@@ -58,22 +60,22 @@ export function TeamSettings() {
                 <div className="space-y-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
                         <Shield className="w-5 h-5" />
-                        Default Permissions
+                        {t.team_settings.default_permissions}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                        Choose the default role for new members joining via the link.
+                        {t.team_settings.default_role_desc}
                     </p>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Default Role</label>
+                        <label className="text-sm font-medium">{t.team_settings.default_role}</label>
                         <select
                             value={teamSettings.defaultRole}
                             onChange={(e) => updateTeamSettings({ defaultRole: e.target.value as any })}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         >
-                            <option value="Member">Member (View & Comment)</option>
-                            <option value="Editor">Editor (Edit Projects)</option>
-                            <option value="Admin">Admin (Full Access)</option>
+                            <option value="Member">{t.team_settings.roles.member}</option>
+                            <option value="Editor">{t.team_settings.roles.editor}</option>
+                            <option value="Admin">{t.team_settings.roles.admin}</option>
                         </select>
                     </div>
                 </div>
@@ -83,15 +85,15 @@ export function TeamSettings() {
                 <div className="flex flex-col space-y-1.5 p-6">
                     <h3 className="text-2xl font-semibold leading-none tracking-tight flex items-center gap-2">
                         <Users className="w-6 h-6" />
-                        Team Members
+                        {t.team_settings.team_members}
                     </h3>
-                    <p className="text-sm text-muted-foreground">Manage existing team members and their roles.</p>
+                    <p className="text-sm text-muted-foreground">{t.team_settings.manage_members}</p>
                 </div>
                 <div className="p-6 pt-0">
-                    <p className="mb-4 text-sm">You have 5 active members in your team.</p>
+                    <p className="mb-4 text-sm">{t.team_settings.active_members.replace('{{count}}', '5')}</p>
                     <Link href="/team">
                         <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
-                            Manage Team
+                            {t.team_settings.manage_team}
                         </button>
                     </Link>
                 </div>

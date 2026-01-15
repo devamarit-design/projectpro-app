@@ -5,12 +5,15 @@ import { Search, Plus, Shield, Mail, Phone, MoreHorizontal, Trash2, Edit } from 
 import { useProjects, User } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { hasPermission } from "@/lib/permissions"
+import { useTranslation } from "@/lib/i18n-context"
 
 // Components
 import AddUserDialog from "./add-user-dialog"
+import EditTeamDialog from "./edit-team-dialog"
 
 export default function TeamPage() {
     const { users, deleteUser, currentUser, teams, currentTeam, switchTeam, addTeam } = useProjects()
+    const { t } = useTranslation()
     const [searchQuery, setSearchQuery] = React.useState("")
 
 
@@ -18,6 +21,7 @@ export default function TeamPage() {
     const [editingUser, setEditingUser] = React.useState<User | null>(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = React.useState<User | null>(null)
     const [openMenuId, setOpenMenuId] = React.useState<string | null>(null)
+    const [isEditTeamOpen, setIsEditTeamOpen] = React.useState(false)
 
     // Click outside handler
     React.useEffect(() => {
@@ -57,8 +61,8 @@ export default function TeamPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Team Members</h1>
-                    <p className="text-muted-foreground">Manage your internal team and system access.</p>
+                    <h1 className="text-2xl font-bold tracking-tight">{t.team.title}</h1>
+                    <p className="text-muted-foreground">{t.team.subtitle}</p>
                 </div>
 
 
@@ -84,7 +88,7 @@ export default function TeamPage() {
 
                     <button
                         onClick={() => {
-                            const name = window.prompt("Enter new team name:")
+                            const name = window.prompt(t.team_settings.enter_team_name)
                             if (name) {
                                 // Add random mock team data (optional)
                                 addTeam(name)
@@ -94,6 +98,14 @@ export default function TeamPage() {
                         title="Create New Team"
                     >
                         <Plus className="w-5 h-5" />
+                    </button>
+                    {/* Edit Team Button */}
+                    <button
+                        onClick={() => setIsEditTeamOpen(true)}
+                        className="p-2 bg-muted hover:bg-muted/80 text-foreground rounded-xl transition-colors border border-border"
+                        title="Edit Team Details"
+                    >
+                        <Edit className="w-5 h-5 text-muted-foreground" />
                     </button>
                 </div>
 
@@ -107,7 +119,7 @@ export default function TeamPage() {
                         className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-bold shadow-lg shadow-primary/25 hover:translate-y-0.5 transition-all active:scale-95"
                     >
                         <Plus className="w-5 h-5" />
-                        Add Member
+                        {t.team.add_member}
                     </button>
                 )}
             </div>
@@ -119,7 +131,7 @@ export default function TeamPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
                         type="text"
-                        placeholder="Search by name, role, or email..."
+                        placeholder={t.team.search_placeholder}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-muted/50 border-none rounded-lg pl-9 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 transition-all"
@@ -187,7 +199,7 @@ export default function TeamPage() {
                                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
                                                 >
                                                     <Edit className="w-3.5 h-3.5" />
-                                                    Edit
+                                                    {t.common.edit}
                                                 </button>
                                             )}
                                             {hasPermission(currentUser, "USER_DELETE") && user.role !== 'Owner' && (
@@ -199,7 +211,7 @@ export default function TeamPage() {
                                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
-                                                    Delete
+                                                    {t.common.delete}
                                                 </button>
                                             )}
                                         </div>
@@ -230,7 +242,7 @@ export default function TeamPage() {
                 {displayUsers.length === 0 && (
                     <div className="col-span-full py-12 text-center text-muted-foreground bg-muted/20 rounded-2xl border border-dashed border-border">
                         <Shield className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                        <p>No team members found</p>
+                        <p>{t.team.empty}</p>
                     </div>
                 )}
             </div>
@@ -242,38 +254,51 @@ export default function TeamPage() {
                 initialData={editingUser}
             />
 
+            {/* Edit Team Dialog */}
+            {
+                currentTeam && (
+                    <EditTeamDialog
+                        isOpen={isEditTeamOpen}
+                        onClose={() => setIsEditTeamOpen(false)}
+                        team={currentTeam}
+                    />
+                )
+            }
+
             {/* Delete Confirmation */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(null)} />
-                    <div className="relative bg-card border border-border p-6 rounded-2xl w-full max-w-sm space-y-4 shadow-2xl animate-in zoom-in-95">
-                        <div className="text-center space-y-2">
-                            <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                                <Trash2 className="w-6 h-6" />
+            {
+                showDeleteConfirm && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(null)} />
+                        <div className="relative bg-card border border-border p-6 rounded-2xl w-full max-w-sm space-y-4 shadow-2xl animate-in zoom-in-95">
+                            <div className="text-center space-y-2">
+                                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <Trash2 className="w-6 h-6" />
+                                </div>
+                                <h3 className="text-lg font-bold">{t.team.confirm_remove.title}</h3>
+                                <p className="text-muted-foreground text-sm">
+                                    {t.team.confirm_remove.message} <span className="text-foreground font-bold">{showDeleteConfirm.name}</span>?
+                                    <br />{t.team.confirm_remove.warning}
+                                </p>
                             </div>
-                            <h3 className="text-lg font-bold">Remove Team Member?</h3>
-                            <p className="text-muted-foreground text-sm">
-                                Are you sure you want to remove <span className="text-foreground font-bold">{showDeleteConfirm.name}</span>?
-                                <br />This account will no longer be able to access the system.
-                            </p>
-                        </div>
-                        <div className="flex gap-3 pt-2">
-                            <button
-                                onClick={() => setShowDeleteConfirm(null)}
-                                className="flex-1 py-2.5 rounded-xl font-medium hover:bg-muted transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDelete}
-                                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-500/20"
-                            >
-                                Remove
-                            </button>
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    onClick={() => setShowDeleteConfirm(null)}
+                                    className="flex-1 py-2.5 rounded-xl font-medium hover:bg-muted transition-colors"
+                                >
+                                    {t.common.cancel}
+                                </button>
+                                <button
+                                    onClick={handleDelete}
+                                    className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-500/20"
+                                >
+                                    {t.common.remove}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }

@@ -4,6 +4,7 @@ import * as React from "react"
 import { X, User, Shield, Phone, Mail, Check } from "lucide-react"
 import { useProjects, User as UserType } from "@/context/project-context"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/lib/i18n-context"
 
 interface AddUserDialogProps {
     isOpen: boolean
@@ -13,6 +14,7 @@ interface AddUserDialogProps {
 
 export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserDialogProps) {
     const { addUser, updateUser } = useProjects()
+    const { t } = useTranslation()
 
     // Form State
     const [name, setName] = React.useState("")
@@ -87,7 +89,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                         <div className="p-2 bg-primary/10 rounded-lg text-primary">
                             <Shield className="w-5 h-5" />
                         </div>
-                        {initialData ? "Edit Member" : "Add New Member"}
+                        {initialData ? t.dialogs.add_user.title_edit : t.dialogs.add_user.title_add}
                     </h2>
                     <button
                         onClick={onClose}
@@ -101,7 +103,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                     <div className="p-6 space-y-4">
                         {/* Name */}
                         <div className="space-y-1">
-                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Full Name</label>
+                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.dialogs.add_user.full_name}</label>
                             <div className="relative">
                                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                 <input
@@ -118,7 +120,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                         {/* Role & Status */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Role</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.dialogs.add_user.role}</label>
                                 <select
                                     value={role}
                                     onChange={(e) => setRole(e.target.value)}
@@ -134,7 +136,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.dialogs.add_user.status}</label>
                                 <div className="flex bg-muted p-1 rounded-xl">
                                     <button
                                         type="button"
@@ -144,7 +146,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                                             status === "Active" ? "bg-background text-green-500 shadow-sm" : "text-muted-foreground hover:text-foreground"
                                         )}
                                     >
-                                        Active
+                                        {t.dialogs.add_user.active}
                                     </button>
                                     <button
                                         type="button"
@@ -154,7 +156,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                                             status === "Inactive" ? "bg-background text-muted-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                                         )}
                                     >
-                                        Inactive
+                                        {t.dialogs.add_user.inactive}
                                     </button>
                                 </div>
                             </div>
@@ -163,7 +165,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                         {/* Contact Info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Phone</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.profile.fields.phone}</label>
                                 <div className="relative">
                                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                     <input
@@ -177,7 +179,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Email</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.profile.fields.email}</label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                     <input
@@ -197,7 +199,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                                 <Shield className="w-4 h-4" />
                             </div>
                             <p>
-                                <strong>System Users:</strong> Can login and access the application. For field workers or external technicians, please use "Partners" instead.
+                                {t.dialogs.add_user.system_users_hint}
                             </p>
                         </div>
                     </div>
@@ -208,7 +210,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                             onClick={onClose}
                             className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl transition-colors"
                         >
-                            Cancel
+                            {t.dialogs.add_user.cancel}
                         </button>
                         <button
                             type="submit"
@@ -216,7 +218,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                             className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
                         >
                             <Check className="w-4 h-4" />
-                            {initialData ? "Save Changes" : "Add Member"}
+                            {initialData ? t.dialogs.add_user.save : t.dialogs.add_user.add}
                         </button>
                     </div>
                 </form>

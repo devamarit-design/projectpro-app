@@ -1,6 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from "react"
+import { useProjects, CompanyProfile } from "@/context/project-context"
 
 export type DocumentTemplate = {
     header: string
@@ -18,15 +19,8 @@ export type DocumentTemplate = {
     }[]
 }
 
-export type OrgProfile = {
-    name: string
-    address: string
-    taxId: string
-    phone: string
-    email: string
-    website: string
-    logo: string | null // Data URL
-}
+// Re-export or Alias for compatibility
+export type OrgProfile = CompanyProfile
 
 export type AppTheme = {
     color: 'blue' | 'orange' | 'green' | 'purple' | 'slate'
@@ -47,8 +41,9 @@ export type NotificationSettings = {
 }
 
 type SettingsContextType = {
+    // Mapped from ProjectContext
     orgProfile: OrgProfile
-    updateOrgProfile: (data: Partial<OrgProfile>) => void
+    updateOrgProfile: (data: Partial<OrgProfile>) => Promise<void>
 
     documentSettings: Record<string, DocumentTemplate>
     updateDocumentTemplate: (type: string, data: Partial<DocumentTemplate>) => void
@@ -63,16 +58,6 @@ type SettingsContextType = {
     updateNotificationSettings: (data: Partial<NotificationSettings>) => void
 
     resetSettings: () => void
-}
-
-const defaultOrgProfile: OrgProfile = {
-    name: "My Construction Co.",
-    address: "123 Builder Lane, Construct City, 10100",
-    taxId: "1234567890123",
-    phone: "02-123-4567",
-    email: "contact@myconstruction.co",
-    website: "www.myconstruction.co",
-    logo: null
 }
 
 const defaultDocumentTemplate: DocumentTemplate = {
@@ -114,7 +99,9 @@ const defaultNotificationSettings: NotificationSettings = {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-    const [orgProfile, setOrgProfile] = useState<OrgProfile>(defaultOrgProfile)
+    // Integration with ProjectContext
+    const { companyProfile, updateCompanyProfile } = useProjects()
+
     const [documentSettings, setDocumentSettings] = useState<Record<string, DocumentTemplate>>({
         quotation: { ...defaultDocumentTemplate, terms: "1. Quotation valid for 30 days.\n2. 50% deposit required to start." },
         contract: { ...defaultDocumentTemplate, terms: "1. This contract is binding.\n2. Work will commence upon deposit." },
@@ -138,7 +125,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             }
         }
 
-        load('orgProfile', setOrgProfile)
+        // Removed orgProfile load
         load('documentSettings', setDocumentSettings)
         load('appTheme', setAppTheme)
         load('teamSettings', setTeamSettings)
@@ -147,11 +134,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }, [])
 
     // Save to LocalStorage whenever state changes
-    useEffect(() => {
-        if (!isLoaded) return
-        localStorage.setItem('projectpro_settings_orgProfile', JSON.stringify(orgProfile))
-    }, [orgProfile, isLoaded])
-
     useEffect(() => {
         if (!isLoaded) return
         localStorage.setItem('projectpro_settings_documentSettings', JSON.stringify(documentSettings))
@@ -196,8 +178,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }, [notificationSettings, isLoaded])
 
 
-    const updateOrgProfile = (data: Partial<OrgProfile>) => {
-        setOrgProfile(prev => ({ ...prev, ...data }))
+    // Map ProjectContext functions
+    const updateOrgProfile = async (data: Partial<OrgProfile>) => {
+        await updateCompanyProfile(data)
     }
 
     const updateDocumentTemplate = (type: string, data: Partial<DocumentTemplate>) => {
@@ -220,7 +203,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
 
     const resetSettings = () => {
-        setOrgProfile(defaultOrgProfile)
+        // Only reset local settings, not company profile (which is synced)
         setDocumentSettings({
             quotation: defaultDocumentTemplate,
             contract: defaultDocumentTemplate,
@@ -233,7 +216,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <SettingsContext.Provider value={{
-            orgProfile,
+            orgProfile: companyProfile, // Use from ProjectContext
             updateOrgProfile,
             documentSettings,
             updateDocumentTemplate,

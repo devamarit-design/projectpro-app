@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { useProjects, Contract, ContractInstallment } from "@/context/project-context"
 import { Plus, Trash2, FileText, Layout, User, List, AlignLeft, MessageSquare, Save } from "lucide-react"
+import { useTranslation } from "@/lib/i18n-context"
 
 interface ScopeItem {
     id: string
@@ -24,6 +25,7 @@ interface AddContractDialogProps {
 
 export function AddContractDialog({ isOpen, onClose, initialData }: AddContractDialogProps) {
     const { projects, workers, addContract, updateContract } = useProjects()
+    const { t } = useTranslation()
 
     // Form State
     const [projectId, setProjectId] = useState("")
@@ -167,14 +169,14 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
 
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                     <FileText className="w-6 h-6 text-primary" />
-                    {initialData ? "Edit Contract" : "Create Employment Contract"}
+                    {initialData ? t.contracts.dialog.edit_title : t.contracts.dialog.create_title}
                 </h2>
 
                 <div className="space-y-6">
                     {/* Header Details */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground font-bold uppercase">Project</label>
+                            <label className="text-xs text-muted-foreground font-bold uppercase">{t.contracts.dialog.project}</label>
                             <div className="relative">
                                 <Layout className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                                 <select
@@ -187,7 +189,7 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground font-bold uppercase">Worker / Contractor</label>
+                            <label className="text-xs text-muted-foreground font-bold uppercase">{t.contracts.dialog.worker}</label>
                             <div className="relative">
                                 <User className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                                 <select
@@ -202,22 +204,22 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground font-bold uppercase">Contract Title</label>
+                        <label className="text-xs text-muted-foreground font-bold uppercase">{t.contracts.dialog.title_field}</label>
                         <input
                             value={title}
                             onChange={e => setTitle(e.target.value)}
-                            placeholder="e.g. Electrical System Installation Phase 1"
+                            placeholder={t.contracts.dialog.title_placeholder}
                             className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg"
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground font-bold uppercase">Start Date</label>
+                            <label className="text-xs text-muted-foreground font-bold uppercase">{t.contracts.dialog.start_date}</label>
                             <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg" />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground font-bold uppercase">End Date</label>
+                            <label className="text-xs text-muted-foreground font-bold uppercase">{t.contracts.dialog.end_date}</label>
                             <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg" />
                         </div>
                     </div>
@@ -225,21 +227,21 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                     {/* Scope of Work - Mode Toggle */}
                     <div className="space-y-3 border-t border-border pt-4">
                         <div className="flex items-center justify-between">
-                            <label className="text-sm font-bold">Scope of Work (ขอบเขตงาน)</label>
+                            <label className="text-sm font-bold">{t.contracts.dialog.scope}</label>
                             <div className="flex items-center gap-1 p-1 bg-muted/30 rounded-lg">
                                 <button
                                     type="button"
                                     onClick={() => setScopeMode("items")}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${scopeMode === "items" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                                 >
-                                    <List className="w-3.5 h-3.5" /> เลือกเป็นข้อ
+                                    <List className="w-3.5 h-3.5" /> {t.contracts.dialog.scope_mode_items}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setScopeMode("freeform")}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${scopeMode === "freeform" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                                 >
-                                    <AlignLeft className="w-3.5 h-3.5" /> พิมพ์เอง
+                                    <AlignLeft className="w-3.5 h-3.5" /> {t.contracts.dialog.scope_mode_freeform}
                                 </button>
                             </div>
                         </div>
@@ -252,7 +254,7 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                                         <input
                                             value={item.text}
                                             onChange={e => handleScopeItemChange(item.id, e.target.value)}
-                                            placeholder="รายละเอียดงาน..."
+                                            placeholder={t.contracts.dialog.scope_placeholder_item}
                                             className="flex-1 px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm"
                                         />
                                         {scopeItems.length > 1 && (
@@ -263,14 +265,14 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                                     </div>
                                 ))}
                                 <button onClick={handleAddScopeItem} className="text-xs flex items-center gap-1 text-primary hover:underline font-medium">
-                                    <Plus className="w-3 h-3" /> เพิ่มรายการ
+                                    <Plus className="w-3 h-3" /> {t.contracts.dialog.add_item}
                                 </button>
                             </div>
                         ) : (
                             <textarea
                                 value={scopeFreeform}
                                 onChange={e => setScopeFreeform(e.target.value)}
-                                placeholder="พิมพ์รายละเอียดขอบเขตงานทั้งหมด..."
+                                placeholder={t.contracts.dialog.scope_placeholder_freeform}
                                 className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg min-h-[100px]"
                             />
                         )}
@@ -279,8 +281,8 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                     {/* Payment Installments */}
                     <div className="border-t border-border pt-4">
                         <div className="flex justify-between items-center mb-4">
-                            <label className="text-sm font-bold">Payment Installments (งวดการจ่าย)</label>
-                            <span className="text-sm font-mono text-muted-foreground">Total: ฿{totalAmount.toLocaleString()}</span>
+                            <label className="text-sm font-bold">{t.contracts.dialog.installments}</label>
+                            <span className="text-sm font-mono text-muted-foreground">{t.contracts.dialog.total_amount}: ฿{totalAmount.toLocaleString()}</span>
                         </div>
 
                         <div className="space-y-4">
@@ -290,14 +292,14 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                                         <input
                                             value={inst.description}
                                             onChange={e => handleInstallmentChange(idx, 'description', e.target.value)}
-                                            placeholder="Description"
+                                            placeholder={t.contracts.dialog.installment_desc}
                                             className="flex-1 px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm"
                                         />
                                         <input
                                             type="number"
                                             value={inst.amount}
                                             onChange={e => handleInstallmentChange(idx, 'amount', parseFloat(e.target.value) || 0)}
-                                            placeholder="Amount"
+                                            placeholder={t.contracts.dialog.installment_amount}
                                             className="w-28 px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm text-right"
                                         />
                                         <input
@@ -313,13 +315,13 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                                     <input
                                         value={inst.paymentDetails || ""}
                                         onChange={e => handleInstallmentChange(idx, 'paymentDetails', e.target.value)}
-                                        placeholder="รายละเอียดการจ่าย (เช่น โอนเงิน, เงินสด, เช็ค...)"
+                                        placeholder={t.contracts.dialog.payment_details}
                                         className="w-full px-3 py-2 bg-muted/20 border border-border/50 rounded-lg text-xs text-muted-foreground"
                                     />
                                 </div>
                             ))}
                             <button onClick={handleAddInstallment} className="text-xs flex items-center gap-1 text-primary hover:underline font-medium">
-                                <Plus className="w-3 h-3" /> Add Installment
+                                <Plus className="w-3 h-3" /> {t.contracts.dialog.add_installment}
                             </button>
                         </div>
                     </div>
@@ -328,24 +330,24 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                     <div className="border-t border-border pt-4">
                         <label className="text-sm font-bold flex items-center gap-2 mb-2">
                             <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                            หมายเหตุ / Notes
+                            {t.contracts.dialog.notes}
                         </label>
                         <textarea
                             value={notes}
                             onChange={e => setNotes(e.target.value)}
-                            placeholder="เงื่อนไขเพิ่มเติม, ข้อตกลงพิเศษ, หรือหมายเหตุอื่นๆ..."
+                            placeholder={t.contracts.dialog.notes_placeholder}
                             className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg min-h-[80px]"
                         />
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                        <button onClick={onClose} className="px-4 py-2 text-muted-foreground hover:text-foreground">Cancel</button>
+                        <button onClick={onClose} className="px-4 py-2 text-muted-foreground hover:text-foreground">{t.contracts.dialog.cancel}</button>
                         <button
                             onClick={handleSave}
                             className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-lg font-bold shadow-lg hover:opacity-90 transition-all"
                         >
                             <Save className="w-4 h-4" />
-                            {initialData ? "Save Changes" : "Create Contract"}
+                            {initialData ? t.contracts.dialog.save : t.contracts.dialog.create}
                         </button>
                     </div>
                 </div>

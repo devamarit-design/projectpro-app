@@ -5,9 +5,11 @@ import { useProjects, Priority, TaskStatus } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { CheckCircle, Clock, AlertCircle, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { useTranslation } from "@/lib/i18n-context"
 
 export function DashboardTasks() {
     const { projects, currentUser } = useProjects()
+    const { t } = useTranslation()
 
     // Get tasks assigned to current user
     const userTasks = React.useMemo(() => {
@@ -45,12 +47,12 @@ export function DashboardTasks() {
                 <div>
                     <h3 className="text-lg font-bold flex items-center gap-2">
                         <CheckCircle className="w-5 h-5 text-primary" />
-                        My Tasks
+                        {t.dashboard.my_tasks}
                     </h3>
-                    <p className="text-sm text-muted-foreground">You have {userTasks.filter(t => t.status !== 'Done').length} pending tasks</p>
+                    <p className="text-sm text-muted-foreground">{t.dashboard.pending_tasks_count.replace('{{count}}', String(userTasks.filter(t => t.status !== 'Done').length))}</p>
                 </div>
                 <Link href="/tasks" className="text-xs font-medium text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
-                    View All <ArrowRight className="w-3 h-3" />
+                    {t.dashboard.view_all} <ArrowRight className="w-3 h-3" />
                 </Link>
             </div>
 
@@ -88,7 +90,7 @@ export function DashboardTasks() {
                 ) : (
                     <div className="text-center py-8 text-muted-foreground">
                         <CheckCircle className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                        <p className="text-sm">No active tasks assigned to you.</p>
+                        <p className="text-sm">{t.dashboard.no_active_tasks}</p>
                     </div>
                 )}
             </div>

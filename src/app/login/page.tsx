@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useProjects } from "@/context/project-context"
 import { useRouter } from "next/navigation"
 import { LayoutDashboard, Loader2 } from "lucide-react"
+import Link from "next/link"
 
 export default function LoginPage() {
     const { login } = useProjects()
@@ -73,7 +74,15 @@ export default function LoginPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                                <Link
+                                    href="/forgot-password"
+                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                                >
+                                    Forgot password?
+                                </Link>
+                            </div>
                             <input
                                 name="password"
                                 type="password"
@@ -134,15 +143,21 @@ export default function LoginPage() {
                         )}
                     </button>
 
-                    <div className="relative">
+                    <div className="relative pt-4">
                         <div className="absolute inset-0 flex items-center">
                             <span className="w-full border-t border-gray-200 dark:border-gray-800" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-gray-50 dark:bg-gray-950 px-2 text-muted-foreground">
+                            <span className="bg-white dark:bg-gray-900 px-2 text-muted-foreground">
                                 Secured by ProjectPro
                             </span>
                         </div>
+                    </div>
+
+                    <div className="text-center pt-4">
+                        <Link href="/privacy" className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                            Privacy Policy
+                        </Link>
                     </div>
                 </div>
             </div>

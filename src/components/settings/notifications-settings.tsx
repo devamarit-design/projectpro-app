@@ -3,22 +3,24 @@
 import { useSettings } from "@/context/settings-context"
 import { Bell, Calendar, Clock, AlertTriangle } from "lucide-react"
 
+import { useTranslation } from "@/lib/i18n-context"
 export function NotificationSettings() {
+    const { t } = useTranslation()
     const { notificationSettings, updateNotificationSettings } = useSettings()
 
     return (
         <div className="space-y-8">
             <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Alert Preferences</h3>
+                <h3 className="text-lg font-semibold">{t.settings.notifications.title}</h3>
                 <div className="bg-muted/30 p-4 rounded-xl border border-white/5 space-y-4">
 
                     {/* Warning Days */}
                     <div className="space-y-3">
                         <label className="text-sm font-medium flex items-center gap-2">
                             <Clock className="w-4 h-4 text-primary" />
-                            Advance Warning (Days)
+                            {t.settings.notifications.warning_days}
                         </label>
-                        <p className="text-xs text-muted-foreground">How many days in advance should we alert you about due dates?</p>
+                        <p className="text-xs text-muted-foreground">{t.settings.notifications.warning_desc}</p>
                         <div className="flex items-center gap-4">
                             <input
                                 type="range"
@@ -43,9 +45,9 @@ export function NotificationSettings() {
                             <div className="space-y-0.5">
                                 <label className="text-sm font-medium flex items-center gap-2">
                                     <AlertTriangle className="w-4 h-4 text-orange-500" />
-                                    Overdue Alerts
+                                    {t.settings.notifications.overdue}
                                 </label>
-                                <p className="text-xs text-muted-foreground">Get notified immediately when items are overdue.</p>
+                                <p className="text-xs text-muted-foreground">{t.settings.notifications.overdue_desc}</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
@@ -62,9 +64,9 @@ export function NotificationSettings() {
                             <div className="space-y-0.5">
                                 <label className="text-sm font-medium flex items-center gap-2">
                                     <Bell className="w-4 h-4 text-blue-500" />
-                                    Task Assignments
+                                    {t.settings.notifications.assignments}
                                 </label>
-                                <p className="text-xs text-muted-foreground">Get notified when you are assigned to a new task.</p>
+                                <p className="text-xs text-muted-foreground">{t.settings.notifications.assignments_desc}</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input

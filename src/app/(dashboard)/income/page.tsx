@@ -82,8 +82,8 @@ export default function IncomePage() {
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-primary">{t.common.income}</h1>
-                    <p className="text-muted-foreground mt-1">Manage quotations, billing notes, and receipts.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-primary">{t.income.title}</h1>
+                    <p className="text-muted-foreground mt-1">{t.income.subtitle}</p>
                 </div>
                 <button
                     onClick={() => setShowAddDialog(true)}
@@ -103,7 +103,7 @@ export default function IncomePage() {
                             onClick={() => setFilter(tab)}
                             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${filter === tab ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                         >
-                            {tab === 'All' ? 'All Items' : tab}
+                            {tab === 'All' ? t.income.tabs.all : tab === 'Quotation' ? t.income.tabs.quotation : tab === 'Invoice' ? t.income.tabs.invoice : t.income.tabs.receipt}
                         </button>
                     ))}
                 </div>
@@ -116,7 +116,7 @@ export default function IncomePage() {
                         onChange={(e) => setProjectFilter(e.target.value)}
                         className="h-10 px-3 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm max-w-[150px]"
                     >
-                        <option value="all">All Projects</option>
+                        <option value="all">{t.income.filters.all_projects}</option>
                         {projects.map(p => (
                             <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
@@ -128,7 +128,7 @@ export default function IncomePage() {
                         onChange={(e) => setMonthFilter(e.target.value)}
                         className="h-10 px-3 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
                     >
-                        <option value="all">All Months</option>
+                        <option value="all">{t.income.filters.all_months}</option>
                         {availableMonths.map(month => (
                             <option key={month} value={month}>
                                 {new Date(month + "-01").toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
@@ -142,7 +142,7 @@ export default function IncomePage() {
                         onChange={(e) => setCustomerFilter(e.target.value)}
                         className="h-10 px-3 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm max-w-[150px]"
                     >
-                        <option value="all">All Customers</option>
+                        <option value="all">{t.income.filters.all_customers}</option>
                         {customers.map(c => (
                             <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
@@ -154,7 +154,7 @@ export default function IncomePage() {
                         onChange={(e) => setTechnicianFilter(e.target.value)}
                         className="h-10 px-3 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm max-w-[150px]"
                     >
-                        <option value="all">All Techs</option>
+                        <option value="all">{t.income.filters.all_techs}</option>
                         {workers.map(w => (
                             <option key={w.id} value={w.id}>{w.name}</option>
                         ))}
@@ -167,7 +167,7 @@ export default function IncomePage() {
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
-                            placeholder="Search by No. or Customer..."
+                            placeholder={t.income.filters.search_placeholder}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full pl-9 pr-4 py-2 bg-muted/20 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -179,12 +179,12 @@ export default function IncomePage() {
                         <table className="w-full text-sm text-left">
                             <thead className="bg-muted/50 text-muted-foreground">
                                 <tr>
-                                    <th className="px-6 py-3 font-medium">No.</th>
-                                    <th className="px-6 py-3 font-medium">Type</th>
-                                    <th className="px-6 py-3 font-medium">Customer / Project</th>
-                                    <th className="px-6 py-3 font-medium">Date</th>
-                                    <th className="px-6 py-3 font-medium text-right">Total</th>
-                                    <th className="px-6 py-3 font-medium text-center">Status</th>
+                                    <th className="px-6 py-3 font-medium">{t.income.table.no}</th>
+                                    <th className="px-6 py-3 font-medium">{t.income.table.type}</th>
+                                    <th className="px-6 py-3 font-medium">{t.income.table.customer_project}</th>
+                                    <th className="px-6 py-3 font-medium">{t.income.table.date}</th>
+                                    <th className="px-6 py-3 font-medium text-right">{t.income.table.total}</th>
+                                    <th className="px-6 py-3 font-medium text-center">{t.income.table.status}</th>
                                     <th className="px-6 py-3 font-medium w-10"></th>
                                 </tr>
                             </thead>
@@ -239,7 +239,7 @@ export default function IncomePage() {
                             <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto text-muted-foreground">
                                 <FileText className="w-8 h-8" />
                             </div>
-                            <p className="text-muted-foreground">No documents found matching criteria.</p>
+                            <p className="text-muted-foreground">{t.income.empty}</p>
                         </div>
                     )}
                 </div>

@@ -4,6 +4,7 @@ import * as React from "react"
 import { X, User, Building, MapPin, Phone, Star, Tag, Check, Info } from "lucide-react"
 import { useProjects, User as UserType, Vendor as VendorType, Worker as WorkerType } from "@/context/project-context"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/lib/i18n-context"
 
 interface AddPartnerDialogProps {
     isOpen: boolean
@@ -14,6 +15,7 @@ interface AddPartnerDialogProps {
 
 export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Person", initialData }: AddPartnerDialogProps) {
     const { addWorker, addVendor, updateWorker, updateVendor } = useProjects()
+    const { t } = useTranslation()
     const [type, setType] = React.useState<"Person" | "Business">(defaultType)
 
     // Form State
@@ -120,8 +122,8 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-white/10">
                     <div>
-                        <h2 className="text-xl font-bold tracking-tight">{initialData ? "Edit Partner" : "Add New Partner"}</h2>
-                        <p className="text-sm text-muted-foreground mt-1">{initialData ? "Update partner details" : "Add a new technician, contractor, or store."}</p>
+                        <h2 className="text-xl font-bold tracking-tight">{initialData ? t.dialogs.add_partner.title_edit : t.dialogs.add_partner.title_add}</h2>
+                        <p className="text-sm text-muted-foreground mt-1">{initialData ? t.dialogs.add_partner.subtitle_edit : t.dialogs.add_partner.subtitle_add}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -145,7 +147,7 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                                         : "text-muted-foreground hover:bg-white/5"
                                 )}
                             >
-                                <User className="w-4 h-4" /> Person
+                                <User className="w-4 h-4" /> {t.dialogs.add_partner.person}
                             </button>
                             <button
                                 type="button"
@@ -157,7 +159,7 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                                         : "text-muted-foreground hover:bg-white/5"
                                 )}
                             >
-                                <Building className="w-4 h-4" /> Business
+                                <Building className="w-4 h-4" /> {t.dialogs.add_partner.business}
                             </button>
                         </div>
                     )}
@@ -166,7 +168,7 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                         {/* Name */}
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                {type === "Person" ? "Full Name" : "Store / Company Name"} <span className="text-red-500">*</span>
+                                {type === "Person" ? t.dialogs.add_partner.name_person : t.dialogs.add_partner.name_business} <span className="text-red-500">*</span>
                             </label>
                             <input
                                 required
@@ -180,7 +182,7 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                         {/* Role / Category */}
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                {type === "Person" ? "Role / Skill" : "Business Category"}
+                                {type === "Person" ? t.dialogs.add_partner.role_skill : t.dialogs.add_partner.business_category}
                             </label>
                             {type === "Person" ? (
                                 <select
@@ -214,7 +216,7 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                    <Phone className="w-3 h-3" /> Phone
+                                    <Phone className="w-3 h-3" /> {t.profile.fields.phone}
                                 </label>
                                 <input
                                     value={phone}
@@ -239,7 +241,7 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                         {/* Location */}
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                <MapPin className="w-3 h-3" /> Location
+                                <MapPin className="w-3 h-3" /> {t.dialogs.add_project.location}
                             </label>
                             <input
                                 value={location}
@@ -252,7 +254,7 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                         {/* Rating */}
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                <Star className="w-3 h-3" /> {initialData ? "Current Rating" : "Initial Rating"}
+                                <Star className="w-3 h-3" /> {initialData ? t.dialogs.add_partner.current_rating : t.dialogs.add_partner.initial_rating}
                             </label>
                             <div className="flex gap-2">
                                 {[1, 2, 3, 4, 5].map((star) => (
@@ -281,13 +283,13 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                             onClick={onClose}
                             className="flex-1 py-3 rounded-xl font-medium hover:bg-white/5 transition-colors"
                         >
-                            Cancel
+                            {t.common.cancel}
                         </button>
                         <button
                             type="submit"
                             className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2"
                         >
-                            <Check className="w-4 h-4" /> {initialData ? "Update Partner" : "Save Partner"}
+                            <Check className="w-4 h-4" /> {initialData ? t.dialogs.add_partner.update : t.dialogs.add_partner.save}
                         </button>
                     </div>
                 </form>

@@ -154,13 +154,15 @@ interface ContractDocumentProps {
     project?: Project;
     worker?: Worker;
     orgProfile: OrgProfile;
-    settings?: DocumentTemplate
+    settings?: DocumentTemplate;
+    dictionary: any; // Using any to avoid complex type import cycles
 }
 
-export const ContractDocument = ({ contract, project, worker, orgProfile, settings }: ContractDocumentProps) => {
+export const ContractDocument = ({ contract, project, worker, orgProfile, settings, dictionary }: ContractDocumentProps) => {
     // Format scope text handling newlines
     const scopeLines = contract.scope.split('\n');
     const color = settings?.accentColor || '#111';
+    const t = dictionary; // Alias for easier usage
 
     return (
         <Document>
@@ -178,33 +180,33 @@ export const ContractDocument = ({ contract, project, worker, orgProfile, settin
                     </View>
                 </View>
 
-                <Text style={styles.docTitle}>EMPLOYMENT CONTRACT</Text>
+                <Text style={styles.docTitle}>{t.contracts.document.title}</Text>
                 <Text style={{ textAlign: 'center', marginBottom: 20, fontSize: 14 }}>{contract.title}</Text>
 
                 {/* Info Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Contract Parties</Text>
+                    <Text style={styles.sectionTitle}>{t.contracts.document.parties_title}</Text>
                     <View style={styles.row}>
-                        <Text style={styles.label}>Employer:</Text>
+                        <Text style={styles.label}>{t.contracts.document.employer}</Text>
                         <Text style={styles.value}>{orgProfile.name}</Text>
                     </View>
                     <View style={styles.row}>
-                        <Text style={styles.label}>Worker/Contractor:</Text>
+                        <Text style={styles.label}>{t.contracts.document.worker}</Text>
                         <Text style={styles.value}>{worker?.name} ({worker?.role})</Text>
                     </View>
                     <View style={styles.row}>
-                        <Text style={styles.label}>Project:</Text>
+                        <Text style={styles.label}>{t.contracts.document.project}</Text>
                         <Text style={styles.value}>{project?.name}</Text>
                     </View>
                     <View style={styles.row}>
-                        <Text style={styles.label}>Duration:</Text>
-                        <Text style={styles.value}>{contract.startDate} to {contract.endDate || 'TBD'}</Text>
+                        <Text style={styles.label}>{t.contracts.document.duration}</Text>
+                        <Text style={styles.value}>{contract.startDate} {t.contracts.document.to} {contract.endDate || t.contracts.document.tbd}</Text>
                     </View>
                 </View>
 
                 {/* Scope */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Scope of Work</Text>
+                    <Text style={styles.sectionTitle}>{t.contracts.document.scope_title}</Text>
                     <View style={styles.scopeContainer}>
                         {scopeLines.map((line, i) => (
                             <Text key={i} style={styles.scopeText}>{line}</Text>
@@ -214,12 +216,12 @@ export const ContractDocument = ({ contract, project, worker, orgProfile, settin
 
                 {/* Installments */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Payment Schedule</Text>
+                    <Text style={styles.sectionTitle}>{t.contracts.document.schedule_title}</Text>
                     <View style={styles.table}>
                         <View style={styles.tableHeader}>
-                            <Text style={[styles.col1, { fontWeight: 'bold' }]}>Description</Text>
-                            <Text style={[styles.col2, { fontWeight: 'bold' }]}>Due Date</Text>
-                            <Text style={[styles.col3, { fontWeight: 'bold' }]}>Amount</Text>
+                            <Text style={[styles.col1, { fontWeight: 'bold' }]}>{t.contracts.document.desc}</Text>
+                            <Text style={[styles.col2, { fontWeight: 'bold' }]}>{t.contracts.document.due_date}</Text>
+                            <Text style={[styles.col3, { fontWeight: 'bold' }]}>{t.contracts.document.amount}</Text>
                         </View>
                         {contract.installments.map((inst, i) => (
                             <View key={i} style={styles.tableRow}>
@@ -228,8 +230,9 @@ export const ContractDocument = ({ contract, project, worker, orgProfile, settin
                                 <Text style={styles.col3}>฿{inst.amount.toLocaleString()}</Text>
                             </View>
                         ))}
+
                         <View style={styles.totalRow}>
-                            <Text style={{ fontWeight: 'bold', marginRight: 10 }}>Total Contract Value:</Text>
+                            <Text style={{ fontWeight: 'bold', marginRight: 10 }}>{t.contracts.document.total_value}</Text>
                             <Text style={{ fontWeight: 'bold', color: '#000' }}>฿{contract.totalAmount.toLocaleString()}</Text>
                         </View>
                     </View>
@@ -238,22 +241,23 @@ export const ContractDocument = ({ contract, project, worker, orgProfile, settin
                 {/* Remarks/Notes */}
                 {contract.scope.includes("--- หมายเหตุ ---") && (
                     <View style={styles.remarks}>
-                        <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Notes / Conditions:</Text>
+                        <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>{t.contracts.document.notes_title}</Text>
                         <Text>{contract.scope.split("--- หมายเหตุ ---")[1]?.trim()}</Text>
                     </View>
                 )}
 
                 {/* Signatures */}
+                {/* Signatures */}
                 <View style={styles.signatures}>
                     <View style={styles.signBox}>
                         <View style={styles.signLine} />
                         <Text style={styles.signName}>({orgProfile.name})</Text>
-                        <Text style={{ fontSize: 9, color: '#888' }}>Employer</Text>
+                        <Text style={{ fontSize: 9, color: '#888' }}>{t.contracts.document.sign_employer}</Text>
                     </View>
                     <View style={styles.signBox}>
                         <View style={styles.signLine} />
                         <Text style={styles.signName}>({worker?.name})</Text>
-                        <Text style={{ fontSize: 9, color: '#888' }}>Contractor / Worker</Text>
+                        <Text style={{ fontSize: 9, color: '#888' }}>{t.contracts.document.sign_worker}</Text>
                     </View>
                 </View>
             </Page>

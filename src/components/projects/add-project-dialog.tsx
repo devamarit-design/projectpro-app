@@ -4,6 +4,7 @@ import * as React from "react"
 import { X, Building, MapPin, Calendar, Check, DollarSign } from "lucide-react"
 import { useProjects, Project } from "@/context/project-context"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/lib/i18n-context"
 
 interface AddProjectDialogProps {
     isOpen: boolean
@@ -13,6 +14,7 @@ interface AddProjectDialogProps {
 
 export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProjectDialogProps) {
     const { addProject } = useProjects()
+    const { t } = useTranslation()
 
     // Form State
     const [name, setName] = React.useState("")
@@ -83,8 +85,8 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-white/10 shrink-0">
                     <div>
-                        <h2 className="text-xl font-bold tracking-tight">Quick Add Project</h2>
-                        <p className="text-sm text-muted-foreground mt-1">Create a new project quickly.</p>
+                        <h2 className="text-xl font-bold tracking-tight">{t.dialogs.add_project.title}</h2>
+                        <p className="text-sm text-muted-foreground mt-1">{t.dialogs.add_project.subtitle}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -98,50 +100,50 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                     <form id="project-form" onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                Project Name <span className="text-red-500">*</span>
+                                {t.dialogs.add_project.name} <span className="text-red-500">*</span>
                             </label>
                             <input
                                 required
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="e.g. New House Renovation"
+                                placeholder={t.dialogs.add_project.placeholders.name}
                                 className="w-full h-11 px-4 bg-background border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none"
                             />
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                <Building className="w-3 h-3" /> Customer Name
+                                <Building className="w-3 h-3" /> {t.dialogs.add_project.customer}
                             </label>
                             <input
                                 value={customer}
                                 onChange={(e) => setCustomer(e.target.value)}
-                                placeholder="e.g. Mr. Somchai"
+                                placeholder={t.dialogs.add_project.placeholders.customer}
                                 className="w-full h-11 px-4 bg-background border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none"
                             />
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                <MapPin className="w-3 h-3" /> Location
+                                <MapPin className="w-3 h-3" /> {t.dialogs.add_project.location}
                             </label>
                             <input
                                 value={location}
                                 onChange={(e) => setLocation(e.target.value)}
-                                placeholder="e.g. Sukhumvit 101"
+                                placeholder={t.dialogs.add_project.placeholders.location}
                                 className="w-full h-11 px-4 bg-background border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none"
                             />
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                <DollarSign className="w-3 h-3" /> Estimated Budget
+                                <DollarSign className="w-3 h-3" /> {t.dialogs.add_project.budget}
                             </label>
                             <input
                                 type="number"
                                 value={budget}
                                 onChange={(e) => setBudget(e.target.value)}
-                                placeholder="e.g. 1000000"
+                                placeholder={t.dialogs.add_project.placeholders.budget}
                                 className="w-full h-11 px-4 bg-background border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none"
                             />
                         </div>
@@ -149,7 +151,7 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" /> Start Date
+                                    <Calendar className="w-3 h-3" /> {t.dialogs.add_project.start_date}
                                 </label>
                                 <input
                                     type="date"
@@ -160,7 +162,7 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" /> End Date
+                                    <Calendar className="w-3 h-3" /> {t.dialogs.add_project.end_date}
                                 </label>
                                 <input
                                     type="date"
@@ -182,14 +184,14 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                         onClick={onClose}
                         className="flex-1 py-3 rounded-xl font-medium hover:bg-white/5 transition-colors"
                     >
-                        Cancel
+                        {t.common.cancel}
                     </button>
                     <button
                         type="submit"
                         form="project-form"
                         className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2"
                     >
-                        <Check className="w-4 h-4" /> Save Project
+                        <Check className="w-4 h-4" /> {t.dialogs.add_project.save}
                     </button>
                 </div>
             </div>

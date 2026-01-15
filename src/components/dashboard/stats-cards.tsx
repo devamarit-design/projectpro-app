@@ -1,37 +1,40 @@
 import { ArrowDownRight, ArrowUpRight, DollarSign, Wallet, CreditCard, Activity } from "lucide-react"
-
-const stats = [
-    {
-        title: "Total Revenue",
-        value: "฿2,450,000",
-        change: "+20.1% from last month",
-        icon: DollarSign,
-        trend: "up"
-    },
-    {
-        title: "Total Expenses",
-        value: "฿1,235,000",
-        change: "+4.5% from last month",
-        icon: CreditCard,
-        trend: "down"
-    },
-    {
-        title: "Net Profit",
-        value: "฿1,215,000",
-        change: "+12.2% from last month",
-        icon: Wallet,
-        trend: "up"
-    },
-    {
-        title: "Active Projects",
-        value: "12",
-        change: "+2 new this month",
-        icon: Activity,
-        trend: "neutral"
-    }
-]
+import { useTranslation } from "@/lib/i18n-context"
 
 export function StatsCards() {
+    const { t } = useTranslation()
+
+    const stats = [
+        {
+            title: t.dashboard.total_revenue,
+            value: "฿2,450,000",
+            change: "+20.1% from last month",
+            icon: DollarSign,
+            trend: "up"
+        },
+        {
+            title: t.dashboard.total_expenses,
+            value: "฿1,235,000",
+            change: "+4.5% from last month",
+            icon: CreditCard,
+            trend: "down"
+        },
+        {
+            title: t.dashboard.net_profit,
+            value: "฿1,215,000",
+            change: "+12.2% from last month",
+            icon: Wallet,
+            trend: "up"
+        },
+        {
+            title: t.dashboard.active_projects,
+            value: "12",
+            change: "+2 new this month",
+            icon: Activity,
+            trend: "neutral"
+        }
+    ]
+
     return (
         <>
             {stats.map((stat, index) => (

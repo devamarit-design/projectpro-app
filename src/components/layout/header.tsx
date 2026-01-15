@@ -20,7 +20,8 @@ export function Header({ }: HeaderProps) {
     const scrollDirection = useScrollDirection()
 
     const toggleLanguage = () => {
-        setLocale(locale === 'en' ? 'th' : 'en')
+        const newLocale = locale === 'en' ? 'th' : 'en'
+        setLocale(newLocale)
     }
 
     return (

@@ -6,6 +6,7 @@ import { useSettings } from "@/context/settings-context"
 import { ContractDocument } from "./contract-document"
 import { pdf } from "@react-pdf/renderer"
 import { Printer, Edit, X, FileText } from "lucide-react"
+import { useTranslation } from "@/lib/i18n-context"
 
 interface ContractPreviewDialogProps {
     isOpen: boolean
@@ -17,6 +18,7 @@ interface ContractPreviewDialogProps {
 export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: ContractPreviewDialogProps) {
     const { projects, workers } = useProjects()
     const { orgProfile, documentSettings } = useSettings()
+    const { t } = useTranslation()
     const [blobUrl, setBlobUrl] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
@@ -34,7 +36,9 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                         project={project}
                         worker={worker}
                         orgProfile={orgProfile}
+
                         settings={documentSettings['contract']}
+                        dictionary={t}
                     />
                 ).toBlob()
                 const url = URL.createObjectURL(blob)
@@ -49,7 +53,7 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
         if (isOpen) {
             loadPdf()
         }
-    }, [isOpen, contract, project, worker, orgProfile, documentSettings])
+    }, [isOpen, contract, project, worker, orgProfile, documentSettings, t])
 
     if (!isOpen) return null
 

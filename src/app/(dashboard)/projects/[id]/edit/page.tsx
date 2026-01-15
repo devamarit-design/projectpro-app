@@ -76,8 +76,8 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                     <ArrowLeft className="w-6 h-6" />
                 </Link>
                 <div>
-                    <h1 className="text-2xl font-bold font-sans">Edit Project</h1>
-                    <p className="text-muted-foreground">Update project details</p>
+                    <h1 className="text-2xl font-bold font-sans">{t.projects.edit.title}</h1>
+                    <p className="text-muted-foreground">{t.projects.edit.subtitle}</p>
                 </div>
             </div>
 
@@ -88,16 +88,16 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                             <FileText className="w-5 h-5" />
                         </div>
-                        <h2 className="text-lg font-semibold">Project Details</h2>
+                        <h2 className="text-lg font-semibold">{t.projects.edit.sections.details}</h2>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Project Name <span className="text-red-500">*</span></label>
+                            <label className="text-sm font-medium">{t.projects.edit.fields.name} <span className="text-red-500">*</span></label>
                             <input
                                 required
                                 type="text"
-                                placeholder="e.g. Modern Office Complex"
+                                placeholder={t.projects.edit.placeholders.name}
                                 className="w-full h-12 rounded-xl bg-background/50 border border-white/10 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -105,7 +105,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Customer <span className="text-red-500">*</span></label>
+                            <label className="text-sm font-medium">{t.projects.edit.fields.customer} <span className="text-red-500">*</span></label>
                             <div className="relative">
                                 <select
                                     required
@@ -113,7 +113,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                                     value={formData.customer}
                                     onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
                                 >
-                                    <option value="">Select Customer</option>
+                                    <option value="">{t.projects.edit.placeholders.select_customer}</option>
                                     {customers.map(c => (
                                         <option key={c.id} value={c.name}>{c.name}</option>
                                     ))}
@@ -123,11 +123,11 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         </div>
 
                         <div className="space-y-2 md:col-span-2">
-                            <label className="text-sm font-medium">Location</label>
+                            <label className="text-sm font-medium">{t.projects.edit.fields.location}</label>
                             <div className="relative">
                                 <input
                                     type="text"
-                                    placeholder="Project site address"
+                                    placeholder={t.projects.edit.placeholders.location}
                                     className="w-full h-12 rounded-xl bg-background/50 border border-white/10 pl-11 pr-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
                                     value={formData.location}
                                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
@@ -137,7 +137,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Status</label>
+                            <label className="text-sm font-medium">{t.projects.edit.fields.status}</label>
                             <select
                                 className="w-full h-12 rounded-xl bg-background/50 border border-white/10 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all appearance-none"
                                 value={formData.status}
@@ -150,10 +150,10 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                             </select>
                         </div>
                         <div className="space-y-2 md:col-span-2">
-                            <label className="text-sm font-medium">Description</label>
+                            <label className="text-sm font-medium">{t.projects.edit.fields.desc}</label>
                             <textarea
                                 rows={4}
-                                placeholder="Brief description of the project scope..."
+                                placeholder={t.projects.edit.placeholders.desc}
                                 className="w-full rounded-xl bg-background/50 border border-white/10 p-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all resize-none"
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -168,12 +168,12 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
                             <Calendar className="w-5 h-5" />
                         </div>
-                        <h2 className="text-lg font-semibold">Timeline & Budget</h2>
+                        <h2 className="text-lg font-semibold">{t.projects.edit.sections.timeline}</h2>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Start Date</label>
+                            <label className="text-sm font-medium">{t.projects.edit.fields.start_date}</label>
                             <input
                                 type="date"
                                 className="w-full h-12 rounded-xl bg-background/50 border border-white/10 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
@@ -183,7 +183,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">End Date</label>
+                            <label className="text-sm font-medium">{t.projects.edit.fields.end_date}</label>
                             <input
                                 type="date"
                                 className="w-full h-12 rounded-xl bg-background/50 border border-white/10 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
@@ -193,7 +193,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Estimated Budget</label>
+                            <label className="text-sm font-medium">{t.projects.edit.fields.budget}</label>
                             <div className="relative">
                                 <input
                                     type="text"
@@ -214,7 +214,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Income / Received (เบิกเงิน)</label>
+                            <label className="text-sm font-medium">{t.projects.edit.fields.income}</label>
                             <div className="relative">
                                 <input
                                     type="text"
@@ -235,7 +235,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Expenses / Costs (ต้นทุนจ่าย)</label>
+                            <label className="text-sm font-medium">{t.projects.edit.fields.expenses}</label>
                             <div className="relative">
                                 <input
                                     type="text"
@@ -263,15 +263,15 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">
                             <Upload className="w-5 h-5" />
                         </div>
-                        <h2 className="text-lg font-semibold">Cover Image</h2>
+                        <h2 className="text-lg font-semibold">{t.projects.edit.sections.image}</h2>
                     </div>
 
                     <div className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:bg-muted/5 transition-colors cursor-pointer group">
                         <div className="w-16 h-16 rounded-full bg-background border border-white/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                             <Upload className="w-8 h-8 text-muted-foreground" />
                         </div>
-                        <h3 className="font-medium mb-1">Click to upload or drag and drop</h3>
-                        <p className="text-sm text-muted-foreground">SVG, PNG, JPG or GIF (max. 3MB)</p>
+                        <h3 className="font-medium mb-1">{t.projects.edit.upload_area.title}</h3>
+                        <p className="text-sm text-muted-foreground">{t.projects.edit.upload_area.subtitle}</p>
                         {formData.image && (
                             <div className="mt-4 text-xs text-green-400">Current image URL: {formData.image.substring(0, 30)}...</div>
                         )}
@@ -283,13 +283,13 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         href={`/projects/${id}`}
                         className="px-6 py-3 rounded-xl hover:bg-muted/50 transition-colors font-medium"
                     >
-                        Cancel
+                        {t.common.cancel}
                     </Link>
                     <button
                         type="submit"
                         className="px-8 py-3 bg-primary text-primary-foreground rounded-xl shadow-lg shadow-primary/25 font-bold hover:scale-105 transition-transform"
                     >
-                        Save Changes
+                        {t.common.save}
                     </button>
                 </div>
             </form>

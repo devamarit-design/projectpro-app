@@ -188,20 +188,23 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0 bg-background/95 backdrop-blur-xl border-white/10">
                 {/* Header */}
+                {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
                     <div className="flex items-center gap-3">
-                        <DialogTitle className="text-xl font-bold">{initialData ? 'Edit' : 'New'} {type}</DialogTitle>
+                        <DialogTitle className="text-xl font-bold">
+                            {initialData ? t.income.dialog.edit : t.income.dialog.new} {t.income.dialog.doc_types[type.toLowerCase() as keyof typeof t.income.dialog.doc_types]}
+                        </DialogTitle>
                         <div className="flex bg-muted rounded-lg p-0.5">
-                            {(["Quotation", "Invoice", "Receipt"] as IncomeType[]).map(t => (
+                            {(["Quotation", "Invoice", "Receipt"] as IncomeType[]).map(docType => (
                                 <button
-                                    key={t}
-                                    onClick={() => setType(t)}
+                                    key={docType}
+                                    onClick={() => setType(docType)}
                                     className={cn(
                                         "px-3 py-1 text-xs font-medium rounded-md transition-all",
-                                        type === t ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                                        type === docType ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
                                     )}
                                 >
-                                    {t}
+                                    {t.income.dialog.doc_types[docType.toLowerCase() as keyof typeof t.income.dialog.doc_types]}
                                 </button>
                             ))}
                         </div>
@@ -217,7 +220,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">Customer</label>
+                                <label className="text-sm font-medium text-muted-foreground">{t.income.dialog.fields.customer}</label>
                                 <select
                                     className="w-full bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/50"
                                     value={selectedCustomer}
@@ -229,15 +232,15 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                         }
                                     }}
                                 >
-                                    <option value="">Select Customer</option>
+                                    <option value="">{t.income.dialog.select_customer}</option>
                                     <option value="NEW_CUSTOMER" className="bg-primary/10 text-primary font-bold">
-                                        + Create New Customer
+                                        {t.income.dialog.create_customer}
                                     </option>
                                     {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">Project</label>
+                                <label className="text-sm font-medium text-muted-foreground">{t.income.dialog.fields.project}</label>
                                 <select
                                     className="w-full bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/50"
                                     value={selectedProject}
@@ -249,9 +252,9 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                         }
                                     }}
                                 >
-                                    <option value="">Select Project</option>
+                                    <option value="">{t.income.dialog.select_project}</option>
                                     <option value="NEW_PROJECT" className="bg-primary/10 text-primary font-bold">
-                                        + Create New Project
+                                        {t.income.dialog.create_project}
                                     </option>
                                     {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </select>
@@ -259,7 +262,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                         </div>
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">Date</label>
+                                <label className="text-sm font-medium text-muted-foreground">{t.income.dialog.fields.date}</label>
                                 <div className="relative">
                                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                     <input
@@ -271,7 +274,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">Document Mode</label>
+                                <label className="text-sm font-medium text-muted-foreground">{t.income.dialog.fields.doc_type}</label>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setMode("Simple")}
@@ -280,7 +283,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                             mode === "Simple" ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 hover:bg-muted/50"
                                         )}
                                     >
-                                        Simple (Combine)
+                                        {t.income.dialog.mode_simple_desc}
                                     </button>
                                     <button
                                         onClick={() => setMode("Zone")}
@@ -289,7 +292,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                             mode === "Zone" ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 hover:bg-muted/50"
                                         )}
                                     >
-                                        Zone (Split)
+                                        {t.income.dialog.mode_zone_desc}
                                     </button>
                                 </div>
                             </div>
@@ -301,7 +304,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                     {/* Items Section */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <h3 className="font-bold text-lg">Items</h3>
+                            <h3 className="font-bold text-lg">{t.income.dialog.sections.items}</h3>
                         </div>
 
                         {mode === "Simple" ? (
@@ -334,7 +337,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                 </label>
                                             </div>
                                             <input
-                                                placeholder="Description"
+                                                placeholder={t.income.dialog.items.desc}
                                                 value={item.description}
                                                 onChange={(e) => updateSimpleItem(item.id, "description", e.target.value)}
                                                 className="w-full bg-muted/30 border border-white/5 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
@@ -343,7 +346,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                         <div className="col-span-1">
                                             <input
                                                 type="number"
-                                                placeholder="Qty"
+                                                placeholder={t.income.dialog.items.qty}
                                                 value={item.quantity}
                                                 onChange={(e) => updateSimpleItem(item.id, "quantity", parseFloat(e.target.value) || 0)}
                                                 className="w-full bg-muted/30 border border-white/5 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
@@ -352,7 +355,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                         <div className="col-span-2">
                                             <input
                                                 type="number"
-                                                placeholder="Price"
+                                                placeholder={t.income.dialog.items.price}
                                                 value={item.unitPrice}
                                                 onChange={(e) => updateSimpleItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)}
                                                 className="w-full bg-muted/30 border border-white/5 rounded-lg px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary/50"
@@ -375,7 +378,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                     onClick={() => setSimpleItems((prev: any[]) => [...prev, { id: Math.random().toString(), description: "", quantity: 1, unit: "unit", unitPrice: 0, total: 0, image: "" }])}
                                     className="flex items-center gap-2 px-4 py-2 text-sm text-primary hover:bg-primary/5 rounded-lg transition-colors mt-2"
                                 >
-                                    <Plus className="w-4 h-4" /> Add Item
+                                    <Plus className="w-4 h-4" /> {t.income.dialog.items.add}
                                 </button>
                             </div>
                         ) : (
@@ -407,7 +410,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                     value={section.name}
                                                     onChange={(e) => setSections(prev => prev.map(s => s.id === section.id ? { ...s, name: e.target.value } : s))}
                                                     className="bg-transparent font-bold text-lg outline-none placeholder:text-muted-foreground/50 w-full"
-                                                    placeholder="Zone Name (e.g. Living Room)"
+                                                    placeholder={t.income.dialog.zone_name_placeholder}
                                                 />
                                             </div>
                                             <button
@@ -445,7 +448,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                             </label>
                                                         </div>
                                                         <input
-                                                            placeholder="Description"
+                                                            placeholder={t.income.dialog.items.desc}
                                                             value={item.description}
                                                             onChange={(e) => {
                                                                 const newVal = e.target.value
@@ -460,7 +463,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                     <div className="col-span-1">
                                                         <input
                                                             type="number"
-                                                            placeholder="Qty"
+                                                            placeholder={t.income.dialog.items.qty}
                                                             value={item.quantity}
                                                             onChange={(e) => {
                                                                 const newVal = parseFloat(e.target.value) || 0
@@ -475,7 +478,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                     <div className="col-span-2">
                                                         <input
                                                             type="number"
-                                                            placeholder="Price"
+                                                            placeholder={t.income.dialog.items.price}
                                                             value={item.unitPrice}
                                                             onChange={(e) => {
                                                                 const newVal = parseFloat(e.target.value) || 0
@@ -514,7 +517,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                 }}
                                                 className="flex items-center gap-2 px-4 py-2 text-sm text-primary hover:bg-primary/5 rounded-lg transition-colors mt-2"
                                             >
-                                                <Plus className="w-4 h-4" /> Add Item
+                                                <Plus className="w-4 h-4" /> {t.income.dialog.items.add}
                                             </button>
                                         </div>
                                     </div>
@@ -523,7 +526,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                     onClick={() => setSections(prev => [...prev, { id: Math.random().toString(), name: `Zone ${prev.length + 1}`, items: [] }])}
                                     className="w-full py-3 border border-dashed border-white/20 rounded-xl text-muted-foreground hover:bg-white/5 hover:text-foreground transition-all flex items-center justify-center gap-2"
                                 >
-                                    <Plus className="w-5 h-5" /> Add New Zone
+                                    <Plus className="w-5 h-5" /> {t.income.dialog.add_zone}
                                 </button>
                             </div>
                         )}
@@ -534,15 +537,15 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                 <div className="p-4 border-t border-white/10 bg-muted/20">
                     <div className="flex flex-col gap-2 mb-4">
                         <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Subtotal</span>
+                            <span className="text-muted-foreground">{t.income.dialog.summary.subtotal}</span>
                             <span>฿{subtotal.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">VAT (7%)</span>
+                            <span className="text-muted-foreground">{t.income.dialog.summary.tax} (7%)</span>
                             <span>฿{tax.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-lg font-bold text-primary border-t border-white/10 pt-2">
-                            <span>Grand Total</span>
+                            <span>{t.income.dialog.summary.grand_total}</span>
                             <span>฿{grandTotal.toLocaleString()}</span>
                         </div>
                     </div>
@@ -551,14 +554,14 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                             onClick={() => onOpenChange(false)}
                             className="px-6 py-2.5 rounded-xl font-medium text-muted-foreground hover:bg-muted transition-colors"
                         >
-                            Cancel
+                            {t.income.dialog.footer.cancel}
                         </button>
                         <button
                             onClick={handleSave}
                             disabled={!selectedCustomer || !selectedProject}
                             className="bg-primary text-primary-foreground px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                            <Save className="w-4 h-4" /> Save {type}
+                            <Save className="w-4 h-4" /> {t.income.dialog.save} {t.income.dialog.doc_types[type.toLowerCase() as keyof typeof t.income.dialog.doc_types]}
                         </button>
                     </div>
                 </div>

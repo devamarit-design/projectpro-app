@@ -5,9 +5,11 @@ import { useProjects, Contract } from "@/context/project-context"
 import { AddContractDialog } from "@/components/contracts/add-contract-dialog"
 import { ContractPreviewDialog } from "@/components/contracts/contract-preview-dialog"
 import { FileText, Printer, CheckCircle, Plus, ChevronDown, ChevronUp, Edit } from "lucide-react"
+import { useTranslation } from "@/lib/i18n-context"
 
 export default function ContractsPage() {
     const { contracts, projects, workers, payInstallment } = useProjects()
+    const { t } = useTranslation()
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [previewContract, setPreviewContract] = useState<Contract | null>(null)
     const [editingContract, setEditingContract] = useState<Contract | undefined>(undefined)
@@ -47,15 +49,15 @@ export default function ContractsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                        Contracts <span className="text-sm font-normal text-muted-foreground hidden sm:inline-block">/ Workers</span>
+                        {t.contracts.title} <span className="text-sm font-normal text-muted-foreground hidden sm:inline-block">/ {t.contracts.dialog.worker}</span>
                     </h1>
-                    <p className="text-muted-foreground mt-1">Manage employment contracts and installment payments.</p>
+                    <p className="text-muted-foreground mt-1">{t.contracts.subtitle}</p>
                 </div>
                 <button
                     onClick={() => setIsAddOpen(true)}
                     className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg hover:opacity-90 active:scale-95 transition-all"
                 >
-                    <Plus className="w-5 h-5" /> <span className="hidden sm:inline">New Contract</span>
+                    <Plus className="w-5 h-5" /> <span className="hidden sm:inline">{t.contracts.new_contract}</span>
                 </button>
             </div>
 
@@ -63,8 +65,8 @@ export default function ContractsPage() {
                 {contracts.length === 0 ? (
                     <div className="text-center py-20 opacity-50">
                         <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                        <h3 className="text-lg font-medium">No contracts yet</h3>
-                        <p className="text-sm text-muted-foreground">Create a contract to start tracking worker payments.</p>
+                        <h3 className="text-lg font-medium">{t.contracts.empty}</h3>
+                        <p className="text-sm text-muted-foreground">{t.contracts.empty_hint}</p>
                     </div>
                 ) : contracts.map(contract => {
                     const worker = workers.find(w => w.id === contract.workerId)
@@ -89,12 +91,12 @@ export default function ContractsPage() {
                                 <div className="flex items-center gap-4">
                                     <div className="text-right hidden sm:block">
                                         <p className="font-bold">฿{contract.totalAmount.toLocaleString()}</p>
-                                        <p className="text-xs text-muted-foreground">Total Value</p>
+                                        <p className="text-xs text-muted-foreground">{t.contracts.total_value}</p>
                                     </div>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setPreviewContract(contract) }}
                                         className="p-2 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground"
-                                        title="Print / Preview"
+                                        title={t.contracts.print_preview}
                                     >
                                         <Printer className="w-4 h-4" />
                                     </button>
@@ -107,12 +109,12 @@ export default function ContractsPage() {
                                 <div className="p-4 bg-muted/20 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-top-2">
                                     <div className="p-3 bg-muted/50 rounded-lg text-sm">
                                         <div className="flex justify-between items-start mb-2">
-                                            <span className="font-bold text-xs uppercase text-muted-foreground">Scope of Work</span>
+                                            <span className="font-bold text-xs uppercase text-muted-foreground">{t.contracts.scope}</span>
                                             <button
                                                 onClick={() => handleEdit(contract)}
                                                 className="text-xs text-primary hover:underline flex items-center gap-1"
                                             >
-                                                <Edit className="w-3 h-3" /> Edit
+                                                <Edit className="w-3 h-3" /> {t.common.edit}
                                             </button>
                                         </div>
                                         <div className="whitespace-pre-wrap leading-relaxed text-muted-foreground">
@@ -121,17 +123,17 @@ export default function ContractsPage() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <span className="font-bold text-xs uppercase text-muted-foreground">Installments</span>
+                                        <span className="font-bold text-xs uppercase text-muted-foreground">{t.contracts.installments}</span>
                                         {contract.installments.map((inst, idx) => (
                                             <div key={idx} className="flex items-start justify-between p-3 rounded-lg border border-white/5 bg-background/50">
                                                 <div className="flex items-start gap-3">
                                                     <div className={`w-2 h-2 rounded-full mt-1.5 ${inst.status === 'Paid' ? 'bg-green-500' : inst.status === 'Overdue' ? 'bg-red-500' : 'bg-yellow-500'}`} />
                                                     <div>
                                                         <p className="font-medium text-sm">{inst.description}</p>
-                                                        <p className="text-xs text-muted-foreground">Due: {inst.dueDate}</p>
+                                                        <p className="text-xs text-muted-foreground">{t.contracts.due}: {inst.dueDate}</p>
                                                         {inst.paymentDetails && (
                                                             <p className="text-[10px] text-muted-foreground mt-1 bg-muted px-2 py-0.5 rounded w-fit">
-                                                                Note: {inst.paymentDetails}
+                                                                {t.contracts.note}: {inst.paymentDetails}
                                                             </p>
                                                         )}
                                                     </div>
@@ -145,12 +147,12 @@ export default function ContractsPage() {
                                                     ) : (
                                                         <button
                                                             onClick={() => {
-                                                                if (confirm(`Confirm payment of ฿${inst.amount.toLocaleString()}? This will create an expense record.`)) {
+                                                                if (confirm(`${t.contracts.confirm_payment} ฿${inst.amount.toLocaleString()}? ${t.contracts.confirm_hint}`)) {
                                                                     payInstallment(contract.id, inst.id)
                                                                 }
                                                             }}
                                                             className="p-1.5 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
-                                                            title="Pay Now"
+                                                            title={t.contracts.pay_now}
                                                         >
                                                             <CheckCircle className="w-4 h-4" />
                                                         </button>

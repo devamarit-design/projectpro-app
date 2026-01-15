@@ -48,8 +48,8 @@ function SearchResultsContent() {
                 <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
                     <SearchIcon className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h2 className="text-xl font-semibold">Enter a search term</h2>
-                <p className="text-muted-foreground">Search for projects, tasks, or contracts.</p>
+                <h2 className="text-xl font-semibold">{t.search.enter_term}</h2>
+                <p className="text-muted-foreground">{t.search.search_hint}</p>
             </div>
         )
     }
@@ -57,9 +57,9 @@ function SearchResultsContent() {
     return (
         <div className="max-w-5xl mx-auto py-8 px-4 space-y-8">
             <div>
-                <h1 className="text-3xl font-bold mb-2">Search Results</h1>
+                <h1 className="text-3xl font-bold mb-2">{t.search.title}</h1>
                 <p className="text-muted-foreground">
-                    Found {filteredProjects.length + filteredTasks.length} results for "{query}"
+                    {t.search.found_results.replace('{{count}}', (filteredProjects.length + filteredTasks.length).toString()).replace('{{query}}', query)}
                 </p>
             </div>
 
@@ -68,7 +68,7 @@ function SearchResultsContent() {
                 <section className="space-y-4">
                     <h2 className="text-xl font-semibold flex items-center gap-2">
                         <FolderKanban className="w-5 h-5 text-primary" />
-                        Projects
+                        {t.search.sections.projects}
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {filteredProjects.map(project => (
@@ -101,7 +101,7 @@ function SearchResultsContent() {
                 <section className="space-y-4">
                     <h2 className="text-xl font-semibold flex items-center gap-2">
                         <CheckSquare className="w-5 h-5 text-orange-500" />
-                        Tasks
+                        {t.search.sections.tasks}
                     </h2>
                     <div className="bg-card border border-border rounded-xl divide-y divide-border">
                         {filteredTasks.map(task => (
@@ -109,7 +109,7 @@ function SearchResultsContent() {
                                 <div>
                                     <h3 className="font-medium">{task.title}</h3>
                                     <p className="text-xs text-muted-foreground">
-                                        in <span className="font-semibold text-foreground">{task.projectName}</span>
+                                        {t.search.in_project} <span className="font-semibold text-foreground">{task.projectName}</span>
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -133,8 +133,8 @@ function SearchResultsContent() {
 
             {filteredProjects.length === 0 && filteredTasks.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <p className="text-lg font-medium text-muted-foreground">No results found.</p>
-                    <p className="text-sm text-muted-foreground mt-2">Try adjusting your search terms.</p>
+                    <p className="text-lg font-medium text-muted-foreground">{t.search.no_results}</p>
+                    <p className="text-sm text-muted-foreground mt-2">{t.search.adjust_terms}</p>
                 </div>
             )}
         </div>

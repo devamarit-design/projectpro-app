@@ -3,7 +3,9 @@
 import * as React from "react"
 import { Search, Plus, Store, Wrench, Truck, Phone, MapPin, Star, MoreHorizontal, User, Filter, Building } from "lucide-react"
 import { useProjects } from "@/context/project-context"
+
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/lib/i18n-context"
 // Components
 import AddPartnerDialog from "@/components/partners/add-partner-dialog"
 import PartnerDetailSheet from "@/components/partners/partner-detail-sheet"
@@ -12,6 +14,7 @@ type FilterType = "All" | "Technician" | "Store" | "Contractor"
 
 export default function PartnersPage() {
     const { workers, vendors } = useProjects()
+    const { t } = useTranslation()
     const [activeTab, setActiveTab] = React.useState<FilterType>("All")
     const [searchQuery, setSearchQuery] = React.useState("")
 
@@ -68,40 +71,47 @@ export default function PartnersPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-primary">Partners</h1>
-                    <p className="text-muted-foreground mt-1">Manage technicians, contractors, and material stores.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-primary">{t.partners.title}</h1>
+                    <p className="text-muted-foreground mt-1">{t.partners.subtitle}</p>
                 </div>
                 <button
                     onClick={handleOpenAdd}
                     className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg hover:opacity-90 active:scale-95 transition-all"
                 >
                     <Plus className="w-5 h-5" />
-                    Add Partner
+                    {t.partners.add_partner}
                 </button>
             </div>
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                 <div className="flex bg-muted/50 p-1 rounded-xl w-full sm:w-fit overflow-x-auto scrollbar-hide">
-                    {(["All", "Technician", "Contractor", "Store"] as const).map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={cn(
-                                "flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
-                                activeTab === tab
-                                    ? "bg-background text-foreground shadow-sm font-bold"
-                                    : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
-                            )}
-                        >
-                            {tab}
-                        </button>
-                    ))}
+                    {(["All", "Technician", "Contractor", "Store"] as const).map((tab) => {
+                        let label = t.partners.tabs.all
+                        if (tab === "Technician") label = t.partners.tabs.technician
+                        if (tab === "Contractor") label = t.partners.tabs.contractor
+                        if (tab === "Store") label = t.partners.tabs.store
+
+                        return (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={cn(
+                                    "flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+                                    activeTab === tab
+                                        ? "bg-background text-foreground shadow-sm font-bold"
+                                        : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+                                )}
+                            >
+                                {label}
+                            </button>
+                        )
+                    })}
                 </div>
                 <div className="relative w-full sm:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
-                        placeholder="Search partners..."
+                        placeholder={t.partners.search_placeholder}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-9 pr-4 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
@@ -145,11 +155,11 @@ export default function PartnersPage() {
                             <div className="space-y-2 text-sm pt-2">
                                 <div className="flex items-center gap-3 text-muted-foreground">
                                     <Phone className="w-4 h-4 shrink-0 opacity-70" />
-                                    <span className="truncate">{partner.phone || "No phone"}</span>
+                                    <span className="truncate">{partner.phone || t.partners.no_phone}</span>
                                 </div>
                                 <div className="flex items-center gap-3 text-muted-foreground">
                                     <MapPin className="w-4 h-4 shrink-0 opacity-70" />
-                                    <span className="truncate">{partner.location || "No location"}</span>
+                                    <span className="truncate">{partner.location || t.partners.no_location}</span>
                                 </div>
                             </div>
 
@@ -161,7 +171,7 @@ export default function PartnersPage() {
                                     {partner.status}
                                 </span>
                                 <button className="text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">
-                                    View Details →
+                                    {t.partners.view_details} →
                                 </button>
                             </div>
                         </div>

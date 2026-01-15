@@ -6,16 +6,18 @@ import { useProjects } from "@/context/project-context"
 import { DashboardTasks } from "./dashboard-tasks"
 import { DashboardActivity } from "./dashboard-activity"
 import { DashboardFiles } from "./dashboard-files"
+import { useTranslation } from "@/lib/i18n-context"
 
 export function UserDashboard() {
-    const { currentUser } = useProjects()
+    const { currentUser, projects } = useProjects()
+    const { t } = useTranslation()
 
     // Greeting based on time
     const getGreeting = () => {
         const hour = new Date().getHours()
-        if (hour < 12) return "Good Morning"
-        if (hour < 18) return "Good Afternoon"
-        return "Good Evening"
+        if (hour < 12) return t.dashboard.greeting_morning
+        if (hour < 18) return t.dashboard.greeting_afternoon
+        return t.dashboard.greeting_evening
     }
 
     return (
@@ -24,20 +26,28 @@ export function UserDashboard() {
                 <h1 className="text-3xl font-bold tracking-tight text-primary font-sans">
                     {getGreeting()}, <span className="text-foreground">{currentUser?.name?.split(' ')[0] || "User"}</span>
                 </h1>
-                <p className="text-muted-foreground">Here's your personal overview for today.</p>
+                <p className="text-muted-foreground">{t.dashboard.personal_overview}</p>
             </header>
 
             {/* Quick Stats */}
             <div className="glass-card rounded-2xl p-6 border border-white/5 bg-gradient-to-br from-primary/10 to-transparent">
-                <h3 className="font-bold text-lg mb-2">Quick Stats</h3>
+                <h3 className="font-bold text-lg mb-2">{t.dashboard.quick_stats}</h3>
                 <div className="grid grid-cols-2 gap-4">
                     <Link href="/tasks" className="p-3 rounded-xl bg-background/50 backdrop-blur-sm hover:bg-background/80 transition-colors group cursor-pointer">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold group-hover:text-primary transition-colors">Pending Tasks</p>
-                        <p className="text-2xl font-black text-primary">3</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold group-hover:text-primary transition-colors">{t.dashboard.pending_tasks}</p>
+                        <p className="text-2xl font-black text-primary">
+                            {currentUser ?
+                                projects.flatMap(p => p.tasks || [])
+                                    .filter(t => t.assignedTo === currentUser.name && t.status !== 'Done')
+                                    .length
+                                : 0}
+                        </p>
                     </Link>
                     <Link href="/projects" className="p-3 rounded-xl bg-background/50 backdrop-blur-sm hover:bg-background/80 transition-colors group cursor-pointer">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold group-hover:text-green-500 transition-colors">This Week</p>
-                        <p className="text-2xl font-black text-green-500">12h</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold group-hover:text-blue-500 transition-colors">{t.dashboard.active_projects}</p>
+                        <p className="text-2xl font-black text-blue-500">
+                            {projects.filter(p => p.status === 'In Progress').length}
+                        </p>
                     </Link>
                 </div>
             </div>
