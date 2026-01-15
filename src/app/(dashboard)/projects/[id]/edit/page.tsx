@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, use } from "react"
+import { useState, useEffect, use, useMemo } from "react"
 import { useTranslation } from "@/lib/i18n-context"
 import { useProjects } from "@/context/project-context"
 import { useRouter } from "next/navigation"
@@ -9,10 +9,23 @@ import Link from "next/link"
 
 export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
     const { t } = useTranslation()
-    const { updateProject, getProject } = useProjects()
+    const { updateProject, getProject, expenses, incomes } = useProjects()
     const router = useRouter()
     const { id } = use(params)
     const project = getProject(id)
+
+    // Calculate income and expenses from actual data
+    const calculatedIncome = useMemo(() => {
+        return incomes
+            .filter(i => i.projectId === id && (i.status === 'Paid' || i.status === 'Accepted'))
+            .reduce((sum, i) => sum + i.grandTotal, 0)
+    }, [incomes, id])
+
+    const calculatedExpenses = useMemo(() => {
+        return expenses
+            .filter(e => e.projectId === id || e.items?.some(item => item.projectId === id))
+            .reduce((sum, e) => sum + e.totalValue, 0)
+    }, [expenses, id])
 
     const [formData, setFormData] = useState({
         name: "",
@@ -216,43 +229,23 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         <div className="space-y-2">
                             <label className="text-sm font-medium">{t.projects.edit.fields.income}</label>
                             <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="0.00"
-                                    className="w-full h-12 rounded-xl bg-background/50 border border-white/10 pl-11 pr-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
-                                    value={formData.income}
-                                    onChange={(e) => {
-                                        const val = e.target.value
-                                        if (!val.startsWith("฿")) {
-                                            setFormData({ ...formData, income: "฿" + val.replace("฿", "") })
-                                        } else {
-                                            setFormData({ ...formData, income: val })
-                                        }
-                                    }}
-                                />
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                                <div className="w-full h-12 rounded-xl bg-green-500/10 border border-green-500/20 pl-11 pr-4 flex items-center text-green-500 font-medium">
+                                    ฿{calculatedIncome.toLocaleString()}
+                                </div>
+                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
                             </div>
+                            <p className="text-xs text-muted-foreground">Auto-calculated from paid incomes</p>
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium">{t.projects.edit.fields.expenses}</label>
                             <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="0.00"
-                                    className="w-full h-12 rounded-xl bg-background/50 border border-white/10 pl-11 pr-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
-                                    value={formData.expenses}
-                                    onChange={(e) => {
-                                        const val = e.target.value
-                                        if (!val.startsWith("฿")) {
-                                            setFormData({ ...formData, expenses: "฿" + val.replace("฿", "") })
-                                        } else {
-                                            setFormData({ ...formData, expenses: val })
-                                        }
-                                    }}
-                                />
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                                <div className="w-full h-12 rounded-xl bg-red-500/10 border border-red-500/20 pl-11 pr-4 flex items-center text-red-500 font-medium">
+                                    ฿{calculatedExpenses.toLocaleString()}
+                                </div>
+                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
                             </div>
+                            <p className="text-xs text-muted-foreground">Auto-calculated from expenses</p>
                         </div>
                     </div>
                 </div>

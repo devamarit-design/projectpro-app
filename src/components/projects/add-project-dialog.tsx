@@ -1,10 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { X, Building, MapPin, Calendar, Check, DollarSign } from "lucide-react"
+import { X, Building, MapPin, Calendar, Check, DollarSign, Upload, ImageIcon, Loader2 } from "lucide-react"
 import { useProjects, Project } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
+import { uploadImage } from "@/lib/upload"
 
 interface AddProjectDialogProps {
     isOpen: boolean
@@ -23,6 +24,9 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
     const [budget, setBudget] = React.useState("")
     const [startDate, setStartDate] = React.useState("")
     const [endDate, setEndDate] = React.useState("")
+    const [coverImage, setCoverImage] = React.useState<string>("")
+    const [isUploading, setIsUploading] = React.useState(false)
+    const fileInputRef = React.useRef<HTMLInputElement>(null)
 
     React.useEffect(() => {
         if (isOpen) {
@@ -32,23 +36,43 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
             setBudget("")
             setStartDate("")
             setEndDate("")
+            setCoverImage("")
         }
     }, [isOpen])
 
     if (!isOpen) return null
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        // Validate file type
+        if (!file.type.startsWith("image/")) {
+            alert("Please select an image file")
+            return
+        }
+
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            alert("Image size must be less than 10MB")
+            return
+        }
+
+        setIsUploading(true)
+        try {
+            const url = await uploadImage(file, "projects/covers")
+            setCoverImage(url)
+        } catch (error) {
+            console.error("Upload failed:", error)
+            alert("Failed to upload image. Please try again.")
+        } finally {
+            setIsUploading(false)
+        }
+    }
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (!name) return
-
-        // We can't easily get the ID back from addProject without refactoring context, 
-        // but since we are generating IDs randomly in context, for this quick add 
-        // let's simulate the ID creation here or just rely on the user finding it in the list.
-        // However, a better approach for "Quick Add" is to have the context return the ID, 
-        // but I will stick to the existing pattern and maybe select the latest one.
-
-        // Actually, to make "Quick Add" auto-select work, we might need a small trick.
-        // For now, let's just add it.
 
         addProject({
             name,
@@ -61,12 +85,11 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
             expenses: "฿0",
             startDate: startDate || new Date().toISOString().split('T')[0],
             endDate: endDate || new Date().toISOString().split('T')[0],
-            image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80",
+            image: coverImage || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80",
             description: "Quick added project"
         })
 
         if (onSuccess) {
-            // Wait a tick for state update (not perfect but simple)
             setTimeout(() => {
                 onSuccess("")
             }, 100)
@@ -98,6 +121,46 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
 
                 <div className="flex-1 overflow-y-auto p-6">
                     <form id="project-form" onSubmit={handleSubmit} className="space-y-4">
+                        {/* Cover Image Upload */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                Cover Image
+                            </label>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
+                            />
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className={cn(
+                                    "relative w-full h-32 border-2 border-dashed rounded-xl flex items-center justify-center cursor-pointer transition-all hover:border-primary/50 hover:bg-primary/5",
+                                    coverImage ? "border-primary/30" : "border-white/10"
+                                )}
+                            >
+                                {isUploading ? (
+                                    <div className="flex flex-col items-center gap-2">
+                                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                        <span className="text-xs text-muted-foreground">Uploading...</span>
+                                    </div>
+                                ) : coverImage ? (
+                                    <img
+                                        src={coverImage}
+                                        alt="Cover preview"
+                                        className="w-full h-full object-cover rounded-xl"
+                                    />
+                                ) : (
+                                    <div className="flex flex-col items-center gap-2">
+                                        <Upload className="w-8 h-8 text-muted-foreground" />
+                                        <span className="text-xs text-muted-foreground">Click to upload cover image</span>
+                                        <span className="text-[10px] text-muted-foreground/50">PNG, JPG up to 10MB</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                                 {t.dialogs.add_project.name} <span className="text-red-500">*</span>
@@ -189,7 +252,8 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                     <button
                         type="submit"
                         form="project-form"
-                        className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                        disabled={isUploading}
+                        className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                         <Check className="w-4 h-4" /> {t.dialogs.add_project.save}
                     </button>
@@ -198,3 +262,4 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
         </div>
     )
 }
+
