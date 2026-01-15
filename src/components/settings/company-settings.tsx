@@ -4,9 +4,28 @@ import { useSettings } from "@/context/settings-context"
 import { Building2, Mail, Phone, Globe, MapPin, FileText } from "lucide-react"
 
 import { useTranslation } from "@/lib/i18n-context"
+import { useState, useRef } from "react"
+import { uploadImage } from "@/lib/upload"
 export function CompanySettings() {
     const { t } = useTranslation()
     const { orgProfile, updateOrgProfile } = useSettings()
+    const [isUploading, setIsUploading] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setIsUploading(true)
+        try {
+            const url = await uploadImage(file, "company/logo")
+            updateOrgProfile({ logo: url })
+        } catch (error) {
+            console.error("Logo upload failed:", error)
+        } finally {
+            setIsUploading(false)
+        }
+    }
 
     return (
         <div className="space-y-6">
@@ -24,8 +43,20 @@ export function CompanySettings() {
                 </div>
                 <div className="ml-auto">
                     {/* Placeholder for Logo Upload */}
-                    <button className="text-sm text-primary hover:underline font-medium">
-                        {t.settings.company.change_logo}
+                    {/* Logo Upload */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleLogoUpload}
+                        accept="image/*"
+                        className="hidden"
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="text-sm text-primary hover:underline font-medium disabled:opacity-50"
+                    >
+                        {isUploading ? "Uploading..." : t.settings.company.change_logo}
                     </button>
                 </div>
             </div>

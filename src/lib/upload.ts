@@ -10,14 +10,24 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
  * @returns The download URL of the uploaded image
  */
 export async function uploadImage(file: File, path: string): Promise<string> {
-    const timestamp = Date.now()
-    const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`
-    const storageRef = ref(storage, `${path}/${fileName}`)
+    try {
+        const timestamp = Date.now()
+        const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`
+        const storageRef = ref(storage, `${path}/${fileName}`)
 
-    await uploadBytes(storageRef, file)
-    const downloadURL = await getDownloadURL(storageRef)
+        await uploadBytes(storageRef, file)
+        const downloadURL = await getDownloadURL(storageRef)
 
-    return downloadURL
+        return downloadURL
+    } catch (error) {
+        console.warn("Firebase Storage upload failed, falling back to Base64:", error)
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(file)
+        })
+    }
 }
 
 /**
