@@ -3,16 +3,33 @@
 import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
 import { Search, Plus, Filter, Calendar, MapPin, MoreHorizontal } from "lucide-react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 
 import { useProjects } from "@/context/project-context"
 
 export default function ProjectsPage() {
     const { t } = useTranslation()
-    const { projects } = useProjects()
+    const { projects, expenses } = useProjects()
     const [searchQuery, setSearchQuery] = useState("")
     const [showFilters, setShowFilters] = useState(false)
     const [statusFilter, setStatusFilter] = useState<string | null>(null)
+
+    // Calculate total expenses per project from actual expense data
+    const getProjectExpenses = useMemo(() => {
+        const expensesByProject: Record<string, number> = {}
+        expenses.forEach(expense => {
+            if (expense.projectId) {
+                expensesByProject[expense.projectId] = (expensesByProject[expense.projectId] || 0) + (expense.totalValue || 0)
+            }
+            // Also check item-level projectIds
+            expense.items?.forEach(item => {
+                if (item.projectId) {
+                    expensesByProject[item.projectId] = (expensesByProject[item.projectId] || 0) + (item.amount || 0)
+                }
+            })
+        })
+        return expensesByProject
+    }, [expenses])
 
     // Filter logic
     const filteredProjects = projects.filter(project => {
@@ -140,18 +157,27 @@ export default function ProjectsPage() {
 
                                 {/* Progress Bar */}
                                 <div className="space-y-2">
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-muted-foreground">{t.projects.cost_value}</span>
-                                        <span className="font-medium text-primary">
-                                            {Math.min(Math.round((parseInt(String(project.expenses || "0").replace(/[^0-9]/g, '')) / (parseInt(String(project.budget || "0").replace(/[^0-9]/g, '')) || 1)) * 100), 100)}%
-                                        </span>
-                                    </div>
-                                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-primary rounded-full transition-all duration-500"
-                                            style={{ width: `${Math.min(Math.round((parseInt(String(project.expenses || "0").replace(/[^0-9]/g, '')) / (parseInt(String(project.budget || "0").replace(/[^0-9]/g, '')) || 1)) * 100), 100)}%` }}
-                                        />
-                                    </div>
+                                    {(() => {
+                                        const projectExpenses = getProjectExpenses[project.id] || 0
+                                        const budgetValue = parseInt(String(project.budget || "0").replace(/[^0-9]/g, '')) || 1
+                                        const costPercent = Math.min(Math.round((projectExpenses / budgetValue) * 100), 100)
+                                        return (
+                                            <>
+                                                <div className="flex justify-between text-xs">
+                                                    <span className="text-muted-foreground">{t.projects.cost_value}</span>
+                                                    <span className="font-medium text-primary">
+                                                        {costPercent}%
+                                                    </span>
+                                                </div>
+                                                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-primary rounded-full transition-all duration-500"
+                                                        style={{ width: `${costPercent}%` }}
+                                                    />
+                                                </div>
+                                            </>
+                                        )
+                                    })()}
                                 </div>
 
                                 {/* Footer */}
