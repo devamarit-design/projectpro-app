@@ -6,6 +6,7 @@ import { useProjects, Project } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
 import { uploadImage } from "@/lib/upload"
+import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 
 interface AddProjectDialogProps {
     isOpen: boolean
@@ -14,7 +15,7 @@ interface AddProjectDialogProps {
 }
 
 export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProjectDialogProps) {
-    const { addProject } = useProjects()
+    const { addProject, customers } = useProjects()
     const { t } = useTranslation()
 
     // Form State
@@ -27,6 +28,19 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
     const [coverImage, setCoverImage] = React.useState<string>("")
     const [isUploading, setIsUploading] = React.useState(false)
     const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+    // Quick Add Customer State
+    const [showAddCustomer, setShowAddCustomer] = React.useState(false)
+    const prevCustomersLength = React.useRef(customers?.length || 0)
+
+    // Auto-select new customer
+    React.useEffect(() => {
+        if (customers && customers.length > prevCustomersLength.current) {
+            const newCustomer = customers[customers.length - 1]
+            setCustomer(newCustomer.name) // Using Name as Project stores Customer Name
+            prevCustomersLength.current = customers.length
+        }
+    }, [customers])
 
     React.useEffect(() => {
         if (isOpen) {
@@ -98,7 +112,11 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
     }
 
     return (
-        <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 sm:p-6 font-sans">
+        <div
+            className="fixed inset-0 z-[160] flex items-center justify-center p-4 sm:p-6 font-sans"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+        >
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
@@ -181,12 +199,27 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                                 <Building className="w-3 h-3" /> {t.dialogs.add_project.customer}
                             </label>
-                            <input
+                            <select
                                 value={customer}
-                                onChange={(e) => setCustomer(e.target.value)}
-                                placeholder={t.dialogs.add_project.placeholders.customer}
-                                className="w-full h-11 px-4 bg-background border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none"
-                            />
+                                onChange={(e) => {
+                                    if (e.target.value === "NEW_CUSTOMER") {
+                                        setShowAddCustomer(true)
+                                    } else {
+                                        setCustomer(e.target.value)
+                                    }
+                                }}
+                                className="w-full h-11 px-4 bg-background border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none appearance-none"
+                            >
+                                <option value="">{t.dialogs.add_project.placeholders.customer}</option>
+                                <option value="NEW_CUSTOMER" className="text-primary font-bold bg-primary/10">
+                                    + {t.income.dialog?.create_customer || "Create New Customer"}
+                                </option>
+                                {customers.map((c) => (
+                                    <option key={c.id} value={c.name}>
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="space-y-2">
@@ -262,6 +295,11 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                     </button>
                 </div>
             </div>
+
+            <AddCustomerDialog
+                isOpen={showAddCustomer}
+                onClose={() => setShowAddCustomer(false)}
+            />
         </div>
     )
 }

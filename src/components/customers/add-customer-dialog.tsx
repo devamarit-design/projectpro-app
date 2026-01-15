@@ -79,7 +79,11 @@ export default function AddCustomerDialog({ isOpen, onClose, initialData }: AddC
     }
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 font-sans">
+        <div
+            className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 font-sans"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+        >
             <div
                 className="absolute inset-0 bg-background/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
