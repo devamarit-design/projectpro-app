@@ -126,31 +126,34 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                                 Cover Image
                             </label>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                className="hidden"
-                            />
-                            <div
-                                onClick={() => fileInputRef.current?.click()}
+                            <label
                                 className={cn(
                                     "relative w-full h-32 border-2 border-dashed rounded-xl flex items-center justify-center cursor-pointer transition-all hover:border-primary/50 hover:bg-primary/5",
                                     coverImage ? "border-primary/30" : "border-white/10"
                                 )}
                             >
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                    className="hidden"
+                                />
                                 {isUploading ? (
                                     <div className="flex flex-col items-center gap-2">
                                         <Loader2 className="w-8 h-8 text-primary animate-spin" />
                                         <span className="text-xs text-muted-foreground">Uploading...</span>
                                     </div>
                                 ) : coverImage ? (
-                                    <img
-                                        src={coverImage}
-                                        alt="Cover preview"
-                                        className="w-full h-full object-cover rounded-xl"
-                                    />
+                                    <div className="relative w-full h-full group">
+                                        <img
+                                            src={coverImage}
+                                            alt="Cover preview"
+                                            className="w-full h-full object-cover rounded-xl"
+                                        />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                                            <span className="text-white text-xs font-medium bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">Change Image</span>
+                                        </div>
+                                    </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-2">
                                         <Upload className="w-8 h-8 text-muted-foreground" />
@@ -158,7 +161,7 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                                         <span className="text-[10px] text-muted-foreground/50">PNG, JPG up to 10MB</span>
                                     </div>
                                 )}
-                            </div>
+                            </label>
                         </div>
 
                         <div className="space-y-2">
