@@ -122,37 +122,47 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const warnDays = notificationSettings?.warnDaysBeforeDue || 3
 
         // 1. Task Alerts (Due soon or Assigned)
+        // Role-based visibility:
+        // - Task notifications: only for creator or assigned user
+        // - Deadline notifications: only for Manager, Admin, Owner
+        const isManagerOrAbove = currentUser?.role === 'Manager' || currentUser?.role === 'Admin' || currentUser?.role === 'Owner'
+
         projects.forEach(project => {
             project.tasks?.forEach(task => { // Add safety check for tasks
                 // Skip if done
                 if (task.status === 'Done') return
 
-                // Check Assignment
-                if (notificationSettings.notifyOnTaskAssignment && task.assignedTo === currentUser?.name && !readStatus[generateAlertId('assign', task.id)]) {
-                    // Logic for assignment alert (simplified, usually assumes 'new' but here just checking existence)
-                    // For a purely client-side app, strictly "new" is hard without history. 
-                    // We'll skip "New Assignment" spam on reload and focus on Due Dates.
+                // Check if current user is related to this task (creator or assignee)
+                const isAssignedToMe = task.assignedTo === currentUser?.name
+
+                // Task assignment notifications - only for the assigned user
+                if (notificationSettings.notifyOnTaskAssignment && isAssignedToMe && !readStatus[generateAlertId('assign', task.id)]) {
+                    // Logic for assignment alert
                 }
 
+                // Deadline notifications - only for Manager+ AND also for the assigned user
                 if (task.dueDate) {
                     const due = parseISO(task.dueDate)
                     const daysLeft = differenceInDays(due, new Date())
 
+                    // Only show to managers+ OR the assigned user
+                    const canSeeDeadline = isManagerOrAbove || isAssignedToMe
+
                     // Overdue
-                    if (daysLeft < 0) {
+                    if (daysLeft < 0 && canSeeDeadline) {
                         newNotifications.push({
                             id: generateAlertId('overdue', task.id),
                             title: `${t.notifications.alerts.task_overdue}: ${task.title}`,
                             message: format(t.notifications.alerts.task_overdue_msg, { project: project.name, days: Math.abs(daysLeft) }),
                             type: 'error',
-                            date: new Date().toISOString(), // In real app, this should be the date it BECAME overdue
+                            date: new Date().toISOString(),
                             read: !!readStatus[generateAlertId('overdue', task.id)],
                             link: `/projects/${project.id}`,
                             relatedId: task.id
                         })
                     }
                     // Due Soon
-                    else if (daysLeft <= warnDays) {
+                    else if (daysLeft <= warnDays && canSeeDeadline) {
                         newNotifications.push({
                             id: generateAlertId('due', task.id),
                             title: `${t.notifications.alerts.task_due_soon}: ${task.title}`,
