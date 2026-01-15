@@ -215,39 +215,70 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
 
-        // Finalize items based on mode
-        const finalItems = items.map(item => ({
-            ...item,
-            projectId: billType === 'combine' ? globalProjectId : item.projectId,
-            taskId: billType === 'combine' ? globalTaskId : item.taskId
-        }))
+        if (billType === 'combine') {
+            // COMBINE MODE: One expense with all items under the same project
+            const finalItems = items.map(item => ({
+                ...item,
+                projectId: globalProjectId,
+                taskId: globalTaskId
+            }))
 
-        // Build expense object, excluding undefined values
-        const expenseData: Parameters<typeof addExpense>[0] = {
-            title: title || payee || "New Expense",
-            amount: `฿${subtotal.toLocaleString()}`,
-            totalValue: subtotal,
-            date,
-            category: items[0]?.category || "Other",
-            items: finalItems,
-            payee: payee || "",
-            status,
-            vatIncluded,
-            projectId: finalItems[0]?.projectId || ""
+            const expenseData: Parameters<typeof addExpense>[0] = {
+                title: title || payee || "New Expense",
+                amount: `฿${subtotal.toLocaleString()}`,
+                totalValue: subtotal,
+                date,
+                category: items[0]?.category || "Other",
+                items: finalItems,
+                payee: payee || "",
+                status,
+                vatIncluded,
+                projectId: globalProjectId || ""
+            }
+
+            if (status === 'Advanced' && paidBy) expenseData.paidBy = paidBy
+            if (status === 'Credit' && vendor) expenseData.vendor = vendor
+            if (receiptImage) expenseData.receiptImage = receiptImage
+
+            addExpense(expenseData)
+        } else {
+            // SPLIT MODE: Group items by projectId and create separate expenses
+            const itemsByProject: Record<string, typeof items> = {}
+
+            items.forEach(item => {
+                const pid = item.projectId || "unassigned"
+                if (!itemsByProject[pid]) {
+                    itemsByProject[pid] = []
+                }
+                itemsByProject[pid].push(item)
+            })
+
+            // Create one expense per project
+            Object.entries(itemsByProject).forEach(([projectId, projectItems]) => {
+                const projectTotal = projectItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+                const projectName = projects.find(p => p.id === projectId)?.name || "Unassigned"
+
+                const expenseData: Parameters<typeof addExpense>[0] = {
+                    title: `${title || payee || "Split Bill"} (${projectName})`,
+                    amount: `฿${projectTotal.toLocaleString()}`,
+                    totalValue: projectTotal,
+                    date,
+                    category: projectItems[0]?.category || "Other",
+                    items: projectItems,
+                    payee: payee || "",
+                    status,
+                    vatIncluded,
+                    projectId: projectId === "unassigned" ? "" : projectId
+                }
+
+                if (status === 'Advanced' && paidBy) expenseData.paidBy = paidBy
+                if (status === 'Credit' && vendor) expenseData.vendor = vendor
+                if (receiptImage) expenseData.receiptImage = receiptImage
+
+                addExpense(expenseData)
+            })
         }
 
-        // Only add optional fields if they have values
-        if (status === 'Advanced' && paidBy) {
-            expenseData.paidBy = paidBy
-        }
-        if (status === 'Credit' && vendor) {
-            expenseData.vendor = vendor
-        }
-        if (receiptImage) {
-            expenseData.receiptImage = receiptImage
-        }
-
-        addExpense(expenseData)
         onClose()
     }
 
