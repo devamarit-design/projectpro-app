@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { useProjects, Customer, Project, IncomeType, IncomeSection } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -184,6 +184,14 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
         reader.readAsDataURL(file)
     }
 
+    // Filter projects based on selected customer
+    const filteredProjects = useMemo(() => {
+        if (!selectedCustomer) return projects
+        const cust = customers.find(c => c.id === selectedCustomer)
+        if (!cust) return projects
+        return projects.filter(p => p.customer === cust.name)
+    }, [selectedCustomer, projects, customers])
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0 bg-background/95 backdrop-blur-xl border-white/10">
@@ -245,10 +253,21 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                     className="w-full bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/50"
                                     value={selectedProject}
                                     onChange={(e) => {
-                                        if (e.target.value === "NEW_PROJECT") {
+                                        const pid = e.target.value
+                                        if (pid === "NEW_PROJECT") {
                                             setShowAddProject(true)
                                         } else {
-                                            setSelectedProject(e.target.value)
+                                            setSelectedProject(pid)
+                                            // Auto-select customer if project is selected
+                                            if (pid) {
+                                                const proj = projects.find(p => p.id === pid)
+                                                if (proj) {
+                                                    const cust = customers.find(c => c.name === proj.customer)
+                                                    if (cust) {
+                                                        setSelectedCustomer(cust.id)
+                                                    }
+                                                }
+                                            }
                                         }
                                     }}
                                 >
@@ -256,7 +275,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                     <option value="NEW_PROJECT" className="bg-primary/10 text-primary font-bold">
                                         {t.income.dialog.create_project}
                                     </option>
-                                    {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                    {filteredProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </select>
                             </div>
                         </div>
@@ -312,7 +331,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                 {simpleItems.map((item: any, index: number) => (
                                     <div key={item.id} className="grid grid-cols-12 gap-2 items-start animate-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${index * 50}ms` }}>
                                         <div className="col-span-1 flex justify-center py-2.5 text-muted-foreground text-sm">{index + 1}</div>
-                                        <div className="col-span-6 flex gap-2">
+                                        <div className="col-span-5 flex gap-2">
                                             {/* Image Upload */}
                                             <div className="relative shrink-0">
                                                 <input
@@ -325,8 +344,8 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                 <label
                                                     htmlFor={`file-${item.id}`}
                                                     className={cn(
-                                                        "w-10 h-10 rounded-lg flex items-center justify-center border border-white/10 cursor-pointer transition-colors overflow-hidden",
-                                                        item.image ? "bg-transparent" : "bg-muted/30 hover:bg-muted/50"
+                                                        "w-10 h-10 rounded-lg flex items-center justify-center border border-input cursor-pointer transition-colors overflow-hidden",
+                                                        item.image ? "bg-transparent" : "bg-muted hover:bg-muted/80"
                                                     )}
                                                 >
                                                     {item.image ? (
@@ -340,16 +359,17 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                 placeholder={t.income.dialog.items.desc}
                                                 value={item.description}
                                                 onChange={(e) => updateSimpleItem(item.id, "description", e.target.value)}
-                                                className="w-full bg-muted/30 border border-white/5 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
                                             />
                                         </div>
-                                        <div className="col-span-1">
+                                        <div className="col-span-2">
                                             <input
                                                 type="number"
                                                 placeholder={t.income.dialog.items.qty}
                                                 value={item.quantity}
                                                 onChange={(e) => updateSimpleItem(item.id, "quantity", parseFloat(e.target.value) || 0)}
-                                                className="w-full bg-muted/30 border border-white/5 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                className="w-full bg-background border border-input rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-primary/50 font-medium"
+                                                min={0}
                                             />
                                         </div>
                                         <div className="col-span-2">
@@ -358,7 +378,8 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                 placeholder={t.income.dialog.items.price}
                                                 value={item.unitPrice}
                                                 onChange={(e) => updateSimpleItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)}
-                                                className="w-full bg-muted/30 border border-white/5 rounded-lg px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary/50 font-medium"
+                                                min={0}
                                             />
                                         </div>
                                         <div className="col-span-2 flex items-center gap-2">
@@ -424,7 +445,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                             {section.items.map((item, iIndex) => (
                                                 <div key={item.id} className="grid grid-cols-12 gap-2 items-start">
                                                     <div className="col-span-1 flex justify-center py-2.5 text-muted-foreground text-sm">{iIndex + 1}</div>
-                                                    <div className="col-span-6 flex gap-2">
+                                                    <div className="col-span-5 flex gap-2">
                                                         <div className="relative shrink-0">
                                                             <input
                                                                 type="file"
@@ -436,8 +457,8 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                             <label
                                                                 htmlFor={`file-${item.id}`}
                                                                 className={cn(
-                                                                    "w-10 h-10 rounded-lg flex items-center justify-center border border-white/10 cursor-pointer transition-colors overflow-hidden",
-                                                                    item.image ? "bg-transparent" : "bg-muted/30 hover:bg-muted/50"
+                                                                    "w-10 h-10 rounded-lg flex items-center justify-center border border-input cursor-pointer transition-colors overflow-hidden",
+                                                                    item.image ? "bg-transparent" : "bg-muted hover:bg-muted/80"
                                                                 )}
                                                             >
                                                                 {item.image ? (
@@ -457,10 +478,10 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                                     items: s.items.map(i => i.id === item.id ? { ...i, description: newVal } : i)
                                                                 } : s))
                                                             }}
-                                                            className="w-full bg-muted/30 border border-white/5 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                            className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
                                                         />
                                                     </div>
-                                                    <div className="col-span-1">
+                                                    <div className="col-span-2">
                                                         <input
                                                             type="number"
                                                             placeholder={t.income.dialog.items.qty}
@@ -472,7 +493,8 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                                     items: s.items.map(i => i.id === item.id ? { ...i, quantity: newVal, total: newVal * i.unitPrice } : i)
                                                                 } : s))
                                                             }}
-                                                            className="w-full bg-muted/30 border border-white/5 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                            className="w-full bg-background border border-input rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-primary/50 font-medium"
+                                                            min={0}
                                                         />
                                                     </div>
                                                     <div className="col-span-2">
@@ -487,7 +509,8 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                                     items: s.items.map(i => i.id === item.id ? { ...i, unitPrice: newVal, total: item.quantity * newVal } : i)
                                                                 } : s))
                                                             }}
-                                                            className="w-full bg-muted/30 border border-white/5 rounded-lg px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                            className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary/50 font-medium"
+                                                            min={0}
                                                         />
                                                     </div>
                                                     <div className="col-span-2 flex items-center gap-2">
