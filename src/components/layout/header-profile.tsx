@@ -100,8 +100,12 @@ export function HeaderProfile() {
                                         currentTeam?.id === team.id && "bg-primary/5 border-l-2 border-primary"
                                     )}
                                 >
-                                    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-lg shadow-sm group-hover:scale-105 transition-transform">
-                                        {team.logo || "🏢"}
+                                    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-lg shadow-sm group-hover:scale-105 transition-transform overflow-hidden">
+                                        {team.logo && (team.logo.startsWith('http') || team.logo.startsWith('data:')) ? (
+                                            <img src={team.logo} alt={team.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            team.logo || "🏢"
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className={cn("text-sm font-medium", currentTeam?.id === team.id && "text-primary")}>

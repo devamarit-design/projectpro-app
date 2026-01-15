@@ -4,7 +4,8 @@ import { useState, useEffect, use, useMemo } from "react"
 import { useTranslation } from "@/lib/i18n-context"
 import { useProjects } from "@/context/project-context"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Upload, Calendar, MapPin, DollarSign, User, FileText } from "lucide-react"
+import { ArrowLeft, Upload, Calendar, MapPin, DollarSign, User, FileText, Loader2 } from "lucide-react"
+import { uploadImage } from "@/lib/upload"
 import Link from "next/link"
 
 export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
@@ -40,6 +41,22 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
         status: "" as any,
         image: ""
     })
+    const [isUploading, setIsUploading] = useState(false)
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setIsUploading(true)
+        try {
+            const url = await uploadImage(file, "projects/covers")
+            setFormData(prev => ({ ...prev, image: url }))
+        } catch (error) {
+            console.error("Upload failed", error)
+        } finally {
+            setIsUploading(false)
+        }
+    }
 
     useEffect(() => {
         if (project) {
@@ -259,16 +276,38 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                         <h2 className="text-lg font-semibold">{t.projects.edit.sections.image}</h2>
                     </div>
 
-                    <div className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:bg-muted/5 transition-colors cursor-pointer group">
-                        <div className="w-16 h-16 rounded-full bg-background border border-white/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                            <Upload className="w-8 h-8 text-muted-foreground" />
-                        </div>
-                        <h3 className="font-medium mb-1">{t.projects.edit.upload_area.title}</h3>
-                        <p className="text-sm text-muted-foreground">{t.projects.edit.upload_area.subtitle}</p>
-                        {formData.image && (
-                            <div className="mt-4 text-xs text-green-400">Current image URL: {formData.image.substring(0, 30)}...</div>
+                    <label className="border-2 border-dashed border-white/10 rounded-xl min-h-[200px] flex flex-col items-center justify-center p-6 bg-background/50 cursor-pointer hover:bg-muted/5 transition-colors group relative overflow-hidden">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                        />
+                        {isUploading ? (
+                            <div className="flex flex-col items-center gap-3">
+                                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                <span className="text-sm text-muted-foreground">Uploading...</span>
+                            </div>
+                        ) : formData.image ? (
+                            <>
+                                <img src={formData.image} alt="Cover" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-40 transition-opacity" />
+                                <div className="z-10 flex flex-col items-center gap-2">
+                                    <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
+                                        <Upload className="w-5 h-5 text-white" />
+                                    </div>
+                                    <span className="text-xs font-bold text-white uppercase tracking-wider bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">Change Cover</span>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center gap-2 text-center">
+                                <div className="w-16 h-16 rounded-full bg-background border border-white/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                    <Upload className="w-8 h-8 text-muted-foreground" />
+                                </div>
+                                <h3 className="font-medium mb-1">{t.projects.edit.upload_area.title}</h3>
+                                <p className="text-sm text-muted-foreground">{t.projects.edit.upload_area.subtitle}</p>
+                            </div>
                         )}
-                    </div>
+                    </label>
                 </div>
 
                 <div className="flex justify-end gap-4 pt-4">
