@@ -37,6 +37,8 @@ import { cn } from "@/lib/utils"
 import AddExpenseDialog from "@/components/expenses/add-expense-dialog"
 import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
 import AddTaskDialog from "@/components/tasks/add-task-dialog"
+import { FinancialReportPDF } from '@/components/financials/financial-report-pdf'
+import { PDFDownloadLink } from '@react-pdf/renderer'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { t } = useTranslation()
@@ -59,6 +61,52 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     const [userFilter, setUserFilter] = useState<string>("all")
     const [monthFilter, setMonthFilter] = useState<string>("all")
     const [activeFinancialTab, setActiveFinancialTab] = useState<'expenses' | 'incomes'>('expenses')
+    const [isClient, setIsClient] = useState(false)
+
+    useEffect(() => {
+        setIsClient(true)
+    }, [])
+
+    const handleExportCSV = (type: 'Expense' | 'Income') => {
+        let headers: string[] = []
+        let rows: (string | number)[] = []
+        const filename = `${project?.name || 'Project'}_${type}_Report_${new Date().toISOString().split('T')[0]}.csv`
+
+        if (type === 'Expense') {
+            headers = ['Date', 'Category', 'Description', 'Payee', 'Amount', 'Status']
+            rows = projectExpenses.map(e => [
+                e.date,
+                e.category,
+                `"${e.title.replace(/"/g, '""')}"`,
+                `"${(e.payee || '').replace(/"/g, '""')}"`,
+                e.totalValue,
+                e.status
+            ]) as any
+        } else {
+            const data = incomes.filter(i => i.projectId === id)
+            headers = ['Date', 'Doc No', 'Type', 'Customer', 'Amount', 'Status']
+            rows = data.map(d => [
+                d.date,
+                d.documentNumber,
+                d.type,
+                `"${(users.find(u => u.id === d.customerId)?.name || 'Unknown').replace(/"/g, '""')}"`,
+                d.grandTotal || 0,
+                d.status
+            ]) as any
+        }
+
+        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" // Add BOM for Excel support
+            + headers.join(",") + "\n"
+            + rows.map((r: any) => r.join(",")).join("\n")
+
+        const encodedUri = encodeURI(csvContent)
+        const link = document.createElement("a")
+        link.setAttribute("href", encodedUri)
+        link.setAttribute("download", filename)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }
 
     // 1. Get all raw data for this project
     const allProjectExpenses = expenses.filter(e => e.projectId === id || e.items?.some(i => i.projectId === id))
@@ -396,12 +444,34 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h4 className="font-bold text-lg">{t.projects.detail.financials.history}</h4>
-                                        <button
-                                            onClick={() => setIsAddExpenseOpen(true)}
-                                            className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border border-primary/20"
-                                        >
-                                            <Plus className="w-4 h-4" /> {t.projects.detail.financials.add_expense}
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleExportCSV('Expense')}
+                                                className="w-9 h-9 flex items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
+                                                title="Export CSV"
+                                            >
+                                                <FileSpreadsheet className="w-4 h-4" />
+                                            </button>
+                                            {isClient && (
+                                                <PDFDownloadLink
+                                                    document={<FinancialReportPDF type="Expense" projectName={project?.name || ''} items={projectExpenses} />}
+                                                    fileName={`${project?.name || 'Project'}_Expense_Report.pdf`}
+                                                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
+                                                >
+                                                    {/* @ts-ignore */}
+                                                    {({ loading }) => (
+                                                        <FileText className="w-4 h-4" />
+                                                    )}
+                                                </PDFDownloadLink>
+                                            )}
+                                            <button
+                                                onClick={() => setIsAddExpenseOpen(true)}
+                                                className="w-9 h-9 flex items-center justify-center bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all shadow-sm"
+                                                title={t.projects.detail.financials.add_expense}
+                                            >
+                                                <Plus className="w-5 h-5" />
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="space-y-3">
@@ -465,9 +535,43 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h4 className="font-bold text-lg">Income Documents (เอกสารรายรับ)</h4>
-                                        <Link href="/income" className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border border-primary/20">
-                                            <Plus className="w-4 h-4" /> New Document
-                                        </Link>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleExportCSV('Income')}
+                                                className="w-9 h-9 flex items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
+                                                title="Export CSV"
+                                            >
+                                                <FileSpreadsheet className="w-4 h-4" />
+                                            </button>
+                                            {isClient && (
+                                                <PDFDownloadLink
+                                                    document={
+                                                        <FinancialReportPDF
+                                                            type="Income"
+                                                            projectName={project?.name || ''}
+                                                            items={incomes.filter(i => i.projectId === id).map(i => ({
+                                                                ...i,
+                                                                customerName: users.find(u => u.id === i.customerId)?.name || 'Unknown'
+                                                            }))}
+                                                        />
+                                                    }
+                                                    fileName={`${project?.name || 'Project'}_Income_Report.pdf`}
+                                                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
+                                                >
+                                                    {/* @ts-ignore */}
+                                                    {({ loading }) => (
+                                                        <FileText className="w-4 h-4" />
+                                                    )}
+                                                </PDFDownloadLink>
+                                            )}
+                                            <Link
+                                                href="/income"
+                                                className="w-9 h-9 flex items-center justify-center bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all shadow-sm"
+                                                title="New Document"
+                                            >
+                                                <Plus className="w-5 h-5" />
+                                            </Link>
+                                        </div>
                                     </div>
 
                                     {/* All Income Documents List */}
