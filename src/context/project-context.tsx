@@ -21,6 +21,17 @@ export interface ProjectTask {
     description?: string
 }
 
+// Sub-project (โปรเจคย่อย) - Different from Task
+export interface SubProject {
+    id: string
+    name: string
+    description?: string
+    status: "Planning" | "In Progress" | "Done"
+    budget?: string
+    startDate?: string
+    endDate?: string
+}
+
 export interface CompanyProfile {
     name: string
     address: string
@@ -87,6 +98,7 @@ export interface Project {
     image: string
     description?: string
     tasks?: ProjectTask[]
+    subProjects?: SubProject[] // โปรเจคย่อย - separate from Tasks
     teamId?: string // Workspace/Team ID
 }
 
@@ -256,6 +268,9 @@ interface ProjectContextType {
     updateTask: (projectId: string, taskId: string, updates: Partial<ProjectTask>) => void
     deleteTask: (projectId: string, taskId: string) => void
     toggleTask: (projectId: string, taskId: string) => void
+
+    // Sub-project Management (โปรเจคย่อย)
+    addSubProject: (projectId: string, subProject: Omit<SubProject, "id">) => void
 
     // Expense Management
     expenses: Expense[]
@@ -1058,6 +1073,17 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }))
     }
 
+    // Add Sub-project (โปรเจคย่อย)
+    const addSubProject = (projectId: string, subProject: Omit<SubProject, "id">) => {
+        setProjects(prev => prev.map(p => {
+            if (p.id === projectId) {
+                const newSubProject = { ...subProject, id: Math.random().toString(36).substr(2, 9) }
+                return { ...p, subProjects: [...(p.subProjects || []), newSubProject] }
+            }
+            return p
+        }))
+    }
+
     const updateTask = (projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
         setProjects(prev => prev.map(p => {
             if (p.id === projectId) {
@@ -1392,6 +1418,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             addTeam,
 
             addTask,
+            addSubProject,
             updateTask,
             deleteTask,
             toggleTask,

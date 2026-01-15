@@ -40,7 +40,7 @@ import AddTaskDialog from "@/components/tasks/add-task-dialog"
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { t } = useTranslation()
-    const { getProject, addTask, deleteTask, toggleTask, expenses, files, addFile, currentUser, users, incomes } = useProjects()
+    const { getProject, addTask, addSubProject, deleteTask, toggleTask, expenses, files, addFile, currentUser, users, incomes } = useProjects()
     const [activeTab, setActiveTab] = useState("overview")
     const { id } = use(params)
     const project = getProject(id)
@@ -53,6 +53,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
     const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+    const [selectedSubProjectId, setSelectedSubProjectId] = useState<string | null>(null)
+    const [isAddSubProjectOpen, setIsAddSubProjectOpen] = useState(false)
+    const [newSubProjectName, setNewSubProjectName] = useState("")
     const [userFilter, setUserFilter] = useState<string>("all")
     const [monthFilter, setMonthFilter] = useState<string>("all")
 
@@ -210,45 +213,43 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                     <Folder className="w-5 h-5 text-primary" />
                                     Sub-projects (โปรเจคย่อย)
                                 </h3>
-                                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">
-                                    {project.tasks?.length || 0} items
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">
+                                        {project.subProjects?.length || 0} items
+                                    </span>
+                                    <button
+                                        onClick={() => setIsAddSubProjectOpen(true)}
+                                        className="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground rounded-full text-xs font-bold hover:opacity-90 transition-opacity"
+                                    >
+                                        <Plus className="w-3 h-3" /> Add
+                                    </button>
+                                </div>
                             </div>
-                            {project.tasks && project.tasks.length > 0 ? (
+                            {project.subProjects && project.subProjects.length > 0 ? (
                                 <div className="space-y-2">
-                                    {project.tasks.map((task) => (
+                                    {project.subProjects.map((sp) => (
                                         <div
-                                            key={task.id}
-                                            onClick={() => setSelectedTaskId(task.id)}
+                                            key={sp.id}
+                                            onClick={() => setSelectedSubProjectId(sp.id)}
                                             className="flex items-center justify-between p-3 bg-background/50 rounded-xl border border-white/5 hover:border-primary/20 hover:bg-background/80 transition-colors cursor-pointer"
                                         >
                                             <div className="flex items-center gap-3 min-w-0 flex-1">
                                                 <div className={cn(
                                                     "w-2 h-2 rounded-full shrink-0",
-                                                    task.status === 'Done' ? 'bg-green-500' :
-                                                        task.status === 'In Progress' ? 'bg-blue-500' :
-                                                            task.status === 'Todo' ? 'bg-yellow-500' : 'bg-gray-500'
+                                                    sp.status === 'Done' ? 'bg-green-500' :
+                                                        sp.status === 'In Progress' ? 'bg-blue-500' :
+                                                            'bg-yellow-500'
                                                 )} />
-                                                <span className="font-medium truncate">{task.title}</span>
+                                                <span className="font-medium truncate">{sp.name}</span>
                                             </div>
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                <span className={cn(
-                                                    "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full",
-                                                    task.priority === 'High' ? 'bg-red-500/10 text-red-500' :
-                                                        task.priority === 'Medium' ? 'bg-yellow-500/10 text-yellow-500' :
-                                                            'bg-green-500/10 text-green-500'
-                                                )}>
-                                                    {task.priority}
-                                                </span>
-                                                <span className={cn(
-                                                    "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border",
-                                                    task.status === 'Done' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                                                        task.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                                            'bg-muted text-muted-foreground border-white/10'
-                                                )}>
-                                                    {task.status}
-                                                </span>
-                                            </div>
+                                            <span className={cn(
+                                                "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border",
+                                                sp.status === 'Done' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                                    sp.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                                        'bg-muted text-muted-foreground border-white/10'
+                                            )}>
+                                                {sp.status}
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
@@ -256,7 +257,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                 <div className="text-center py-8 text-muted-foreground">
                                     <Folder className="w-10 h-10 mx-auto mb-2 opacity-30" />
                                     <p className="text-sm">No sub-projects yet</p>
-                                    <p className="text-xs opacity-50">Add from the Tasks tab or when creating expenses</p>
+                                    <button
+                                        onClick={() => setIsAddSubProjectOpen(true)}
+                                        className="mt-3 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+                                    >
+                                        Add Sub-project
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -765,6 +771,126 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                 <button
                                     onClick={() => setSelectedTaskId(null)}
                                     className="px-6 py-3 border border-white/10 rounded-xl font-medium hover:bg-muted transition-colors"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            })()}
+
+            {/* Add Sub-project Dialog */}
+            {isAddSubProjectOpen && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setIsAddSubProjectOpen(false)}
+                    />
+                    <div className="relative bg-background border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 animate-in slide-in-from-bottom-4">
+                        <h3 className="text-lg font-bold">Add Sub-project (โปรเจคย่อย)</h3>
+
+                        <div className="space-y-3">
+                            <input
+                                type="text"
+                                placeholder="Sub-project name..."
+                                value={newSubProjectName}
+                                onChange={(e) => setNewSubProjectName(e.target.value)}
+                                className="w-full px-4 py-3 bg-muted/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => {
+                                    if (newSubProjectName.trim()) {
+                                        addSubProject(project.id, {
+                                            name: newSubProjectName.trim(),
+                                            status: "Planning"
+                                        })
+                                        setNewSubProjectName("")
+                                        setIsAddSubProjectOpen(false)
+                                    }
+                                }}
+                                disabled={!newSubProjectName.trim()}
+                                className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                            >
+                                Add Sub-project
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setNewSubProjectName("")
+                                    setIsAddSubProjectOpen(false)
+                                }}
+                                className="px-6 py-3 border border-white/10 rounded-xl font-medium hover:bg-muted transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Sub-project Detail Sheet */}
+            {selectedSubProjectId && (() => {
+                const selectedSP = project.subProjects?.find(sp => sp.id === selectedSubProjectId)
+                if (!selectedSP) return null
+                return (
+                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+                        <div
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setSelectedSubProjectId(null)}
+                        />
+                        <div className="relative bg-background border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 animate-in slide-in-from-bottom-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold">Sub-project Details</h3>
+                                <button
+                                    onClick={() => setSelectedSubProjectId(null)}
+                                    className="p-2 hover:bg-muted rounded-full transition-colors"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Name</p>
+                                    <p className="font-semibold text-lg">{selectedSP.name}</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Status</p>
+                                        <span className={cn(
+                                            "inline-block px-3 py-1 rounded-full text-xs font-bold uppercase",
+                                            selectedSP.status === 'Done' ? 'bg-green-500/10 text-green-500' :
+                                                selectedSP.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
+                                                    'bg-yellow-500/10 text-yellow-500'
+                                        )}>
+                                            {selectedSP.status}
+                                        </span>
+                                    </div>
+                                    {selectedSP.budget && (
+                                        <div>
+                                            <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Budget</p>
+                                            <p className="font-medium">{selectedSP.budget}</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {selectedSP.description && (
+                                    <div>
+                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Description</p>
+                                        <p className="text-sm text-muted-foreground">{selectedSP.description}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    onClick={() => setSelectedSubProjectId(null)}
+                                    className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
                                 >
                                     Close
                                 </button>
