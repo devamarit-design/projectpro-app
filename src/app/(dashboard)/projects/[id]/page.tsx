@@ -58,6 +58,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     const [newSubProjectName, setNewSubProjectName] = useState("")
     const [userFilter, setUserFilter] = useState<string>("all")
     const [monthFilter, setMonthFilter] = useState<string>("all")
+    const [activeFinancialTab, setActiveFinancialTab] = useState<'expenses' | 'incomes'>('expenses')
 
     // 1. Get all raw data for this project
     const allProjectExpenses = expenses.filter(e => e.projectId === id || e.items?.some(i => i.projectId === id))
@@ -315,117 +316,217 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                             </div>
                         </div>
 
-                        {/* Detailed Expense Breakdown */}
-                        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-                            <div className="glass-card p-4 rounded-xl border border-white/5 bg-orange-500/5">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 rounded-lg bg-orange-500/20 text-orange-500">
-                                        <TrendingDown className="w-4 h-4" />
-                                    </div>
-                                    <p className="text-sm font-bold text-orange-400 uppercase tracking-wider">{t.projects.detail.financials.material}</p>
-                                </div>
-                                <p className="text-2xl font-black text-orange-500">
-                                    ฿{projectExpenses.filter(e => e.category === 'Material').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    {projectExpenses.filter(e => e.category === 'Material').length} {t.projects.detail.financials.transactions_count}
-                                </p>
-                            </div>
-
-                            <div className="glass-card p-4 rounded-xl border border-white/5 bg-blue-500/5">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 rounded-lg bg-blue-500/20 text-blue-500">
-                                        <User className="w-4 h-4" />
-                                    </div>
-                                    <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">{t.projects.detail.financials.labor}</p>
-                                </div>
-                                <p className="text-2xl font-black text-blue-500">
-                                    ฿{projectExpenses.filter(e => e.category === 'Labor').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    {projectExpenses.filter(e => e.category === 'Labor').length} {t.projects.detail.financials.transactions_count}
-                                </p>
-                            </div>
-
-                            <div className="glass-card p-4 rounded-xl border border-white/5 bg-purple-500/5">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 rounded-lg bg-purple-500/20 text-purple-500">
-                                        <TrendingDown className="w-4 h-4" />
-                                    </div>
-                                    <p className="text-sm font-bold text-purple-400 uppercase tracking-wider">{t.projects.detail.financials.subcontract}</p>
-                                </div>
-                                <p className="text-2xl font-black text-purple-500">
-                                    ฿{projectExpenses.filter(e => e.category === 'Sub-contract').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    {projectExpenses.filter(e => e.category === 'Sub-contract').length} {t.projects.detail.financials.transactions_count}
-                                </p>
-                            </div>
+                        {/* Sub-Tabs Switcher */}
+                        <div className="flex bg-muted/30 p-1 rounded-xl w-fit">
+                            <button
+                                onClick={() => setActiveFinancialTab('expenses')}
+                                className={cn(
+                                    "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                    activeFinancialTab === 'expenses'
+                                        ? "bg-white text-black shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                Expenses (รายจ่าย)
+                            </button>
+                            <button
+                                onClick={() => setActiveFinancialTab('incomes')}
+                                className={cn(
+                                    "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                    activeFinancialTab === 'incomes'
+                                        ? "bg-white text-black shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                Incomes (รายรับ)
+                            </button>
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h4 className="font-bold text-lg">{t.projects.detail.financials.history}</h4>
-                                <button
-                                    onClick={() => setIsAddExpenseOpen(true)}
-                                    className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border border-primary/20"
-                                >
-                                    <Plus className="w-4 h-4" /> {t.projects.detail.financials.add_expense}
-                                </button>
-                            </div>
+                        {/* EXPENSES TAB CONTENT */}
+                        {activeFinancialTab === 'expenses' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                {/* Detailed Expense Breakdown */}
+                                <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+                                    <div className="glass-card p-4 rounded-xl border border-white/5 bg-orange-500/5">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="p-2 rounded-lg bg-orange-500/20 text-orange-500">
+                                                <TrendingDown className="w-4 h-4" />
+                                            </div>
+                                            <p className="text-sm font-bold text-orange-400 uppercase tracking-wider">{t.projects.detail.financials.material}</p>
+                                        </div>
+                                        <p className="text-2xl font-black text-orange-500">
+                                            ฿{projectExpenses.filter(e => e.category === 'Material').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {projectExpenses.filter(e => e.category === 'Material').length} {t.projects.detail.financials.transactions_count}
+                                        </p>
+                                    </div>
 
-                            <div className="space-y-3">
-                                {projectExpenses.length > 0 ? (
-                                    projectExpenses.map((expense) => (
-                                        <div
-                                            key={expense.id}
-                                            onClick={() => setSelectedExpenseId(expense.id)}
-                                            className="glass-card p-4 rounded-xl border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer group"
+                                    <div className="glass-card p-4 rounded-xl border border-white/5 bg-blue-500/5">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="p-2 rounded-lg bg-blue-500/20 text-blue-500">
+                                                <User className="w-4 h-4" />
+                                            </div>
+                                            <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">{t.projects.detail.financials.labor}</p>
+                                        </div>
+                                        <p className="text-2xl font-black text-blue-500">
+                                            ฿{projectExpenses.filter(e => e.category === 'Labor').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {projectExpenses.filter(e => e.category === 'Labor').length} {t.projects.detail.financials.transactions_count}
+                                        </p>
+                                    </div>
+
+                                    <div className="glass-card p-4 rounded-xl border border-white/5 bg-purple-500/5">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="p-2 rounded-lg bg-purple-500/20 text-purple-500">
+                                                <TrendingDown className="w-4 h-4" />
+                                            </div>
+                                            <p className="text-sm font-bold text-purple-400 uppercase tracking-wider">{t.projects.detail.financials.subcontract}</p>
+                                        </div>
+                                        <p className="text-2xl font-black text-purple-500">
+                                            ฿{projectExpenses.filter(e => e.category === 'Sub-contract').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {projectExpenses.filter(e => e.category === 'Sub-contract').length} {t.projects.detail.financials.transactions_count}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="font-bold text-lg">{t.projects.detail.financials.history}</h4>
+                                        <button
+                                            onClick={() => setIsAddExpenseOpen(true)}
+                                            className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border border-primary/20"
                                         >
-                                            <div className="flex items-center gap-4">
-                                                <div className={cn(
-                                                    "w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold",
-                                                    expense.category === 'Material' ? "bg-blue-500/10 text-blue-500" :
-                                                        expense.category === 'Labor' ? "bg-orange-500/10 text-orange-500" :
-                                                            expense.category === 'Sub-contract' ? "bg-purple-500/10 text-purple-500" :
-                                                                "bg-gray-500/10 text-gray-500"
-                                                )}>
-                                                    {expense.category[0]}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold group-hover:text-primary transition-colors">{expense.title}</p>
-                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                        <span>{expense.date}</span>
-                                                        <span>•</span>
-                                                        <span>{expense.payee || t.projects.detail.financials.no_payee}</span>
+                                            <Plus className="w-4 h-4" /> {t.projects.detail.financials.add_expense}
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {projectExpenses.length > 0 ? (
+                                            projectExpenses.map((expense) => (
+                                                <div
+                                                    key={expense.id}
+                                                    onClick={() => setSelectedExpenseId(expense.id)}
+                                                    className="glass-card p-4 rounded-xl border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer group"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={cn(
+                                                            "w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold",
+                                                            expense.category === 'Material' ? "bg-blue-500/10 text-blue-500" :
+                                                                expense.category === 'Labor' ? "bg-orange-500/10 text-orange-500" :
+                                                                    expense.category === 'Sub-contract' ? "bg-purple-500/10 text-purple-500" :
+                                                                        "bg-gray-500/10 text-gray-500"
+                                                        )}>
+                                                            {expense.category[0]}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold group-hover:text-primary transition-colors">{expense.title}</p>
+                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                <span>{expense.date}</span>
+                                                                <span>•</span>
+                                                                <span>{expense.payee || t.projects.detail.financials.no_payee}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-bold text-base">{expense.amount}</p>
+                                                        <span className={cn(
+                                                            "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                                                            expense.status === 'Paid' ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                                                                expense.status === 'Pending' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
+                                                                    "bg-red-500/10 text-red-500 border-red-500/20"
+                                                        )}>
+                                                            {expense.status}
+                                                        </span>
                                                     </div>
                                                 </div>
+                                            ))
+                                        ) : (
+                                            <div className="glass-card p-8 rounded-3xl min-h-[200px] flex flex-col items-center justify-center text-center space-y-4 border border-white/5">
+                                                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                                                    <DollarSign className="w-8 h-8 text-muted-foreground" />
+                                                </div>
+                                                <div className="max-w-xs space-y-2">
+                                                    <p className="text-sm text-muted-foreground">{t.projects.detail.financials.empty_expenses}</p>
+                                                </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="font-bold text-base">{expense.amount}</p>
-                                                <span className={cn(
-                                                    "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
-                                                    expense.status === 'Paid' ? "bg-green-500/10 text-green-500 border-green-500/20" :
-                                                        expense.status === 'Pending' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
-                                                            "bg-red-500/10 text-red-500 border-red-500/20"
-                                                )}>
-                                                    {expense.status}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="glass-card p-8 rounded-3xl min-h-[200px] flex flex-col items-center justify-center text-center space-y-4 border border-white/5">
-                                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                                            <DollarSign className="w-8 h-8 text-muted-foreground" />
-                                        </div>
-                                        <div className="max-w-xs space-y-2">
-                                            <p className="text-sm text-muted-foreground">{t.projects.detail.financials.empty_expenses}</p>
-                                        </div>
+                                        )}
                                     </div>
-                                )}
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {/* INCOMES TAB CONTENT */}
+                        {activeFinancialTab === 'incomes' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="font-bold text-lg">Income Documents (เอกสารรายรับ)</h4>
+                                        <Link href="/income" className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border border-primary/20">
+                                            <Plus className="w-4 h-4" /> New Document
+                                        </Link>
+                                    </div>
+
+                                    {/* All Income Documents List */}
+                                    <div className="space-y-3">
+                                        {/* Filter incomes by project ID manually here to get ALL items including Quotations */}
+                                        {incomes.filter(i => i.projectId === id).length > 0 ? (
+                                            incomes.filter(i => i.projectId === id).map((doc) => (
+                                                <div
+                                                    key={doc.id}
+                                                    // Link to income page or open preview? For now, simple div or link
+                                                    className="glass-card p-4 rounded-xl border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer group"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={cn(
+                                                            "w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shrink-0",
+                                                            doc.type === 'Quotation' ? "bg-blue-500/10 text-blue-500" :
+                                                                doc.type === 'Invoice' ? "bg-orange-500/10 text-orange-500" :
+                                                                    "bg-green-500/10 text-green-500"
+                                                        )}>
+                                                            {doc.type === 'Quotation' ? 'QT' : doc.type === 'Invoice' ? 'IV' : 'RC'}
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="font-bold group-hover:text-primary transition-colors">{doc.documentNumber}</p>
+                                                                <span className="text-xs text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded uppercase tracking-wide">{doc.type}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                <span>{doc.date}</span>
+                                                                <span>•</span>
+                                                                <span className="truncate max-w-[150px]">{users.find(u => u.id === doc.customerId)?.name || "Unknown Customer"}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-bold text-base">฿{doc.grandTotal?.toLocaleString()}</p>
+                                                        <span className={cn(
+                                                            "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                                                            doc.status === 'Paid' || doc.status === 'Accepted' ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                                                                doc.status === 'Sent' || doc.status === 'Invoiced' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
+                                                                    doc.status === 'Draft' ? "bg-slate-500/10 text-slate-500 border-slate-500/20" :
+                                                                        "bg-red-500/10 text-red-500 border-red-500/20"
+                                                        )}>
+                                                            {doc.status}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="glass-card p-8 rounded-3xl min-h-[200px] flex flex-col items-center justify-center text-center space-y-4 border border-white/5">
+                                                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                                                    <FileText className="w-8 h-8 text-muted-foreground" />
+                                                </div>
+                                                <p className="text-sm text-muted-foreground">No income documents for this project yet.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
