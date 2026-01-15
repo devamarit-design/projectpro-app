@@ -1353,10 +1353,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const addIncome = async (income: Omit<IncomeDocument, "id">) => {
         if (!currentTeam) return
         try {
-            await addDoc(collection(db, "incomes"), {
-                ...income,
-                teamId: currentTeam.id,
-            })
+            // Clean undefined values - Firestore doesn't accept undefined
+            const cleanedData = Object.fromEntries(
+                Object.entries({
+                    ...income,
+                    teamId: currentTeam.id,
+                    items: income.items || [],
+                    sections: income.sections || undefined,
+                }).filter(([_, v]) => v !== undefined)
+            )
+            await addDoc(collection(db, "incomes"), cleanedData)
         } catch (e) {
             console.error("Error adding income", e)
         }
