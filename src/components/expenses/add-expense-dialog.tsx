@@ -218,7 +218,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         <>
             {/* Quick Add Dialog Overlay */}
             {quickAdd && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center font-sans">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center font-sans">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setQuickAdd(null)} />
                     <div className="relative glass-card w-full max-w-sm p-6 rounded-2xl shadow-2xl border border-white/10 flex flex-col animate-in fade-in zoom-in-95">
                         <h3 className="text-xl font-bold mb-4">Add New {quickAdd.type === 'user' ? 'Person' : quickAdd.type.charAt(0).toUpperCase() + quickAdd.type.slice(1)}</h3>
