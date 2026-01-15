@@ -751,7 +751,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                         </div>
 
                         {/* Image Upload Section - Collapsible */}
-                        <div className="space-y-2 p-6 pt-0">
+                        <div className="space-y-2 p-6 pt-2">
                             <button
                                 type="button"
                                 onClick={() => setReceiptExpanded(!receiptExpanded)}
