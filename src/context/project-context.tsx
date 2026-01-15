@@ -970,12 +970,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             setCustomers(snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer)))
         })
 
+        // 6. Incomes (Quotation, Invoice, Receipt)
+        const qIncomes = query(collection(db, "incomes"), where("teamId", "==", currentTeam.id))
+        const unsubIncomes = onSnapshot(qIncomes, (snap) => {
+            setIncomes(snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument)))
+        })
+
         return () => {
             unsubProjects()
             unsubExpenses()
             unsubWorkers()
             unsubVendors()
             unsubCustomers()
+            unsubIncomes()
         }
     }, [currentTeam])
 
@@ -1334,21 +1341,33 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    // Income Actions
-    const addIncome = (income: Omit<IncomeDocument, "id">) => {
-        const newIncome: IncomeDocument = {
-            ...income,
-            id: Math.random().toString(36).substr(2, 9),
+    // Income Actions (Firestore)
+    const addIncome = async (income: Omit<IncomeDocument, "id">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "incomes"), {
+                ...income,
+                teamId: currentTeam.id,
+            })
+        } catch (e) {
+            console.error("Error adding income", e)
         }
-        setIncomes(prev => [newIncome, ...prev])
     }
 
-    const updateIncome = (id: string, updates: Partial<IncomeDocument>) => {
-        setIncomes(prev => prev.map(doc => doc.id === id ? { ...doc, ...updates } : doc))
+    const updateIncome = async (id: string, updates: Partial<IncomeDocument>) => {
+        try {
+            await updateDoc(doc(db, "incomes", id), updates)
+        } catch (e) {
+            console.error("Error updating income", e)
+        }
     }
 
-    const deleteIncome = (id: string) => {
-        setIncomes(prev => prev.filter(doc => doc.id !== id))
+    const deleteIncome = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "incomes", id))
+        } catch (e) {
+            console.error("Error deleting income", e)
+        }
     }
 
     const updateCompanyProfile = async (updates: Partial<CompanyProfile>) => {

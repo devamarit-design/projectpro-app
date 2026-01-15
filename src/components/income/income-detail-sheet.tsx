@@ -1,7 +1,7 @@
 import { IncomeDocument, useProjects, IncomeType } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { X, Calendar, User, Briefcase, FileText, Download, Printer, Send, CheckCircle, FilePlus, Archive, ArrowRight, Edit } from "lucide-react"
+import { X, Calendar, User, Briefcase, FileText, Download, Printer, Send, CheckCircle, FilePlus, Archive, ArrowRight, Edit, Trash2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { DocumentPreview } from "./document-preview"
 import { AddIncomeDialog } from "./add-income-dialog"
@@ -12,9 +12,10 @@ interface IncomeDetailSheetProps {
 }
 
 export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProps) {
-    const { incomes, customers, projects, updateIncome, addIncome } = useProjects()
+    const { incomes, customers, projects, updateIncome, addIncome, deleteIncome, currentUser } = useProjects()
     const { t } = useTranslation()
     const [showPreview, setShowPreview] = useState(false)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
     // Dialog State
     const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -145,10 +146,17 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={handleEdit} className="p-2 hover:bg-muted rounded-full">
+                                    <button onClick={handleEdit} className="p-2 hover:bg-muted rounded-full" title="Edit">
                                         <Edit className="w-4 h-4" />
                                     </button>
-                                    <button onClick={onClose} className="p-2 hover:bg-muted rounded-full">
+                                    <button
+                                        onClick={() => setShowDeleteConfirm(true)}
+                                        className="p-2 hover:bg-red-500/20 text-red-500 rounded-full"
+                                        title="Delete"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={onClose} className="p-2 hover:bg-muted rounded-full" title="Close">
                                         <X className="w-5 h-5" />
                                     </button>
                                 </div>
@@ -303,6 +311,50 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
                 onOpenChange={setIsDialogOpen}
                 initialData={dialogData}
             />
+
+            {/* Delete Confirmation Dialog */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setShowDeleteConfirm(false)}
+                    />
+                    <div className="relative bg-background border border-white/10 rounded-2xl p-6 w-full max-w-sm space-y-4 animate-in zoom-in-95">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-red-500/10 rounded-full">
+                                <Trash2 className="w-6 h-6 text-red-500" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg">Delete Document?</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    This will permanently delete "{document?.documentNumber}"
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => {
+                                    if (document) {
+                                        deleteIncome(document.id)
+                                        setShowDeleteConfirm(false)
+                                        onClose()
+                                    }
+                                }}
+                                className="flex-1 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors"
+                            >
+                                Delete
+                            </button>
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="flex-1 py-3 border border-white/10 rounded-xl font-medium hover:bg-muted transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     )
 }
