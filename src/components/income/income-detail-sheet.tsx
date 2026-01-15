@@ -78,6 +78,39 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
         onClose()
     }
 
+    // Mark as Paid AND create Receipt automatically
+    const handleMarkPaid = () => {
+        // Mark this document as Paid
+        updateIncome(document.id, { status: 'Paid' })
+
+        // If it's an Invoice, also create a Receipt
+        if (document.type === 'Invoice') {
+            const docNumber = `REC-${Date.now().toString(36).toUpperCase()}`
+
+            const newReceipt: Omit<IncomeDocument, 'id'> = {
+                type: 'Receipt',
+                documentNumber: docNumber,
+                date: new Date().toISOString().split('T')[0],
+                customerId: document.customerId,
+                projectId: document.projectId,
+                status: 'Paid',
+                mode: document.mode,
+                items: document.items,
+                sections: document.sections,
+                subtotal: document.subtotal,
+                discount: document.discount || 0,
+                total: document.total || document.subtotal,
+                tax: document.tax,
+                grandTotal: document.grandTotal,
+                referenceDocumentId: document.id,
+            }
+
+            addIncome(newReceipt)
+        }
+
+        onClose()
+    }
+
     // Workflow Actions Config
     const canConvertToBilling = document.type === 'Quotation'
     const canConvertToReceipt = document.type === 'Invoice' && (document.status === 'Accepted' || document.status === 'Sent' || document.status === 'Invoiced')
@@ -253,7 +286,7 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
 
                             {canMarkPaid && (
                                 <button
-                                    onClick={() => updateIncome(document.id, { status: 'Paid' })}
+                                    onClick={handleMarkPaid}
                                     className="flex items-center justify-center gap-2 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-colors font-medium text-sm shadow-lg shadow-green-900/20"
                                 >
                                     <CheckCircle className="w-4 h-4" /> Mark as Paid
