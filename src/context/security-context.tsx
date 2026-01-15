@@ -30,10 +30,17 @@ export function SecurityProvider({ children }: { children: React.ReactNode }) {
     const checkPinStatus = async () => {
         try {
             const savedPin = await get<string>("app_security_pin")
+            const sessionUnlocked = typeof window !== 'undefined' ? sessionStorage.getItem("app_security_unlocked") : null
+
             if (savedPin) {
                 setHasPin(true)
-                setIsLocked(true) // Should be locked if PIN exists
-                setIsAuthenticated(false)
+                if (sessionUnlocked === "true") {
+                    setIsLocked(false)
+                    setIsAuthenticated(true)
+                } else {
+                    setIsLocked(true) // Should be locked if PIN exists and no session
+                    setIsAuthenticated(false)
+                }
             } else {
                 setHasPin(false)
                 setIsLocked(false) // Not locked if no PIN
@@ -48,6 +55,8 @@ export function SecurityProvider({ children }: { children: React.ReactNode }) {
 
     const setPin = async (pin: string) => {
         await set("app_security_pin", pin)
+        // Also unlock current session
+        sessionStorage.setItem("app_security_unlocked", "true")
         setHasPin(true)
         setIsAuthenticated(true)
         setIsLocked(false)
@@ -61,6 +70,7 @@ export function SecurityProvider({ children }: { children: React.ReactNode }) {
     const unlockApp = async (inputPin: string) => {
         const isValid = await verifyPin(inputPin)
         if (isValid) {
+            sessionStorage.setItem("app_security_unlocked", "true")
             setIsLocked(false)
             setIsAuthenticated(true)
             return true
@@ -70,6 +80,7 @@ export function SecurityProvider({ children }: { children: React.ReactNode }) {
 
     const lockApp = () => {
         if (hasPin) {
+            sessionStorage.removeItem("app_security_unlocked")
             setIsLocked(true)
             setIsAuthenticated(false)
         }

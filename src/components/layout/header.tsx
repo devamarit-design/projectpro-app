@@ -33,7 +33,7 @@ export function Header({ }: HeaderProps) {
                 scrollDirection === "down" ? "-translate-y-24" : "translate-y-0"
             )}
         >
-            <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 min-w-max">
+            <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
                 <div className="relative flex flex-1 items-center">
                     <Search className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                     <input
@@ -73,6 +73,7 @@ export function Header({ }: HeaderProps) {
                     <ThemeToggle />
 
                     <div className="h-6 w-px bg-border sm:block" aria-hidden="true" />
+
                     <HeaderProfile />
                 </div>
             </div>

@@ -3,40 +3,35 @@
 import { useState } from "react"
 import { useProjects } from "@/context/project-context"
 import { useRouter } from "next/navigation"
-import { LayoutDashboard, Loader2 } from "lucide-react"
+import { LayoutDashboard, Loader2, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
-export default function LoginPage() {
-    const { login } = useProjects()
+export default function RegisterPage() {
+    const { register, login } = useProjects()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const handleGoogleLogin = async () => {
-        setIsLoading(true)
-        try {
-            await login("google")
-            router.push("/")
-        } catch (error) {
-            console.error("Login failed", error)
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
             <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-800">
+                <div className="mb-6">
+                    <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-1 transition-colors">
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Login
+                    </Link>
+                </div>
+
                 <div className="flex flex-col items-center text-center space-y-4 mb-8">
                     <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20">
                         <LayoutDashboard className="w-8 h-8 text-white" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                            Welcome Back
+                            Create Account
                         </h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                            Sign in to access your ProjectPro dashboard
+                            Join ProjectPro and manage your projects efficiently
                         </p>
                     </div>
                 </div>
@@ -47,14 +42,33 @@ export default function LoginPage() {
                         setIsLoading(true)
                         setError(null)
                         const formData = new FormData(e.currentTarget)
+                        const name = formData.get("name") as string
                         const email = formData.get("email") as string
                         const password = formData.get("password") as string
+                        const confirmPassword = formData.get("confirmPassword") as string
+
+                        if (password !== confirmPassword) {
+                            setError("Passwords do not match")
+                            setIsLoading(false)
+                            return
+                        }
+
+                        if (password.length < 6) {
+                            setError("Password must be at least 6 characters")
+                            setIsLoading(false)
+                            return
+                        }
 
                         try {
-                            await login("credentials", { email, password })
+                            await register(name, email, password)
                             router.push("/")
-                        } catch (err) {
-                            setError("Invalid credentials. Try admin@projectpro.com / 123456")
+                        } catch (err: any) {
+                            console.error(err)
+                            if (err.code === 'auth/email-already-in-use') {
+                                setError("Email is already in use")
+                            } else {
+                                setError("Registration failed. Please try again.")
+                            }
                             setIsLoading(false)
                         }
                     }} className="space-y-4">
@@ -63,6 +77,16 @@ export default function LoginPage() {
                                 {error}
                             </div>
                         )}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
+                            <input
+                                name="name"
+                                type="text"
+                                placeholder="John Doe"
+                                className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                required
+                            />
+                        </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
                             <input
@@ -74,17 +98,19 @@ export default function LoginPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
-                                <Link
-                                    href="/forgot-password"
-                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline"
-                                >
-                                    Forgot password?
-                                </Link>
-                            </div>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
                             <input
                                 name="password"
+                                type="password"
+                                placeholder="••••••••"
+                                className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Confirm Password</label>
+                            <input
+                                name="confirmPassword"
                                 type="password"
                                 placeholder="••••••••"
                                 className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -94,9 +120,9 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-blue-600 text-white font-medium py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 disabled:opacity-70"
+                            className="w-full bg-blue-600 text-white font-medium py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 disabled:opacity-70 mt-2"
                         >
-                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Sign in"}
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Create Account"}
                         </button>
                     </form>
 
@@ -112,7 +138,18 @@ export default function LoginPage() {
                     </div>
 
                     <button
-                        onClick={handleGoogleLogin}
+                        onClick={async () => {
+                            setIsLoading(true)
+                            try {
+                                await login("google")
+                                router.push("/")
+                            } catch (error) {
+                                console.error(error)
+                                setError(null)
+                            } finally {
+                                setIsLoading(false)
+                            }
+                        }}
                         disabled={isLoading}
                         className="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-white font-medium py-2.5 px-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
                     >
@@ -138,33 +175,16 @@ export default function LoginPage() {
                                         fill="#EA4335"
                                     />
                                 </svg>
-                                <span>Sign in with Google</span>
+                                <span>Sign up with Google</span>
                             </>
                         )}
                     </button>
 
-                    <div className="relative pt-4">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-gray-200 dark:border-gray-800" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white dark:bg-gray-900 px-2 text-muted-foreground">
-                                Secured by ProjectPro
-                            </span>
-                        </div>
-                    </div>
-
                     <div className="text-center pt-4">
-                        <Link href="/privacy" className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                            Privacy Policy
-                        </Link>
-                    </div>
-
-                    <div className="text-center pt-2">
                         <p className="text-sm text-gray-500">
-                            Don&apos;t have an account?{" "}
-                            <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium hover:underline">
-                                Sign up
+                            Already have an account?{" "}
+                            <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium hover:underline">
+                                Sign in
                             </Link>
                         </p>
                     </div>

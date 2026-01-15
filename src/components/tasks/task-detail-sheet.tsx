@@ -11,17 +11,21 @@ interface TaskDetailSheetProps {
 }
 
 export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProps) {
-    const { projects, updateTask, deleteTask, users } = useProjects()
+    const { projects, tasks, updateTask, deleteTask, users } = useProjects()
 
     // Find the task and its project
     const taskData = React.useMemo(() => {
         if (!taskId) return null
-        for (const project of projects) {
-            const task = (project.tasks || []).find(t => t.id === taskId)
-            if (task) return { task, projectId: project.id, projectName: project.name }
+        const task = tasks.find(t => t.id === taskId)
+        if (!task) return null
+
+        const project = projects.find(p => p.id === task.projectId)
+        return {
+            task,
+            projectId: task.projectId || "",
+            projectName: project?.name || "Unknown Project"
         }
-        return null
-    }, [projects, taskId])
+    }, [projects, tasks, taskId])
 
     if (!taskId || !taskData) return null
 

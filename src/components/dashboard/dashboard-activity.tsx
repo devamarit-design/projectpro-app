@@ -8,6 +8,8 @@ import { format } from "date-fns"
 import { useTranslation } from "@/lib/i18n-context"
 import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
 
+import { IncomeDetailSheet } from "@/components/income/income-detail-sheet"
+
 export function DashboardActivity() {
     const { expenses, incomes, projects, users, currentUser } = useProjects()
     const { t } = useTranslation()
@@ -18,11 +20,15 @@ export function DashboardActivity() {
 
     // Selection State
     const [selectedExpenseId, setSelectedExpenseId] = React.useState<string | null>(null)
+    const [selectedIncomeId, setSelectedIncomeId] = React.useState<string | null>(null)
 
     const isAdmin = currentUser?.role === 'Owner' || currentUser?.role === 'Admin'
 
-    // Combine and Filter Activities
+    // ... (rest of filtering logic safely skipped if unchanged, but let's be safe via context match) 
+    // Actually, replace_file_content needs context. I will use a larger block or multiple chunks.
+
     const activities = React.useMemo(() => {
+        // ... (logic unchanged)
         // 1. Map Expenses -> Activity
         const expenseActivities = expenses
             .filter(e => {
@@ -53,7 +59,7 @@ export function DashboardActivity() {
             subtitle: projects.find(p => p.id === i.projectId)?.name || "Unknown Project",
             status: i.status,
             projectId: i.projectId,
-            userMatch: null // Incomes usually don't have a specific "user" tied to them in this context easily, maybe creator but logic is simpler to skip or assume "System"
+            userMatch: null
         }))
 
         // 3. Combine
@@ -65,10 +71,6 @@ export function DashboardActivity() {
         }
 
         if (userFilter !== "all") {
-            // Filter by user (Payee for expenses)
-            // For incomes, we skip user filtering or include all if strictly checking interaction
-            // Let's hide incomes if filtering by specific user unless we add 'createdBy' field later.
-            // Current assumption: "Filter Activity by User" implies seeing WHAT THAT USER DID (Expenses).
             all = all.filter(a => a.type === 'expense' && a.userMatch === userFilter)
         }
 
@@ -80,6 +82,8 @@ export function DashboardActivity() {
     const handleItemClick = (item: typeof activities[0]) => {
         if (item.type === 'expense') {
             setSelectedExpenseId(item.id)
+        } else if (item.type === 'income') {
+            setSelectedIncomeId(item.id)
         }
     }
 
@@ -126,9 +130,7 @@ export function DashboardActivity() {
                             <div
                                 key={`${item.type}-${item.id}`}
                                 onClick={() => handleItemClick(item)}
-                                className={cn("flex items-center justify-between group transition-colors p-2 rounded-xl -mx-2 hover:bg-white/5 cursor-pointer",
-                                    item.type === 'expense' ? "cursor-pointer" : ""
-                                )}
+                                className={cn("flex items-center justify-between group transition-colors p-2 rounded-xl -mx-2 hover:bg-white/5 cursor-pointer")}
                             >
                                 <div className="flex items-center gap-3">
                                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border transition-colors",
@@ -177,6 +179,11 @@ export function DashboardActivity() {
             <ExpenseDetailSheet
                 expenseId={selectedExpenseId}
                 onClose={() => setSelectedExpenseId(null)}
+            />
+
+            <IncomeDetailSheet
+                documentId={selectedIncomeId}
+                onClose={() => setSelectedIncomeId(null)}
             />
         </>
     )

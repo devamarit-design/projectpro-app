@@ -20,6 +20,7 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Export services
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 

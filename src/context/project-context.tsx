@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { get, set } from "idb-keyval"
 import { auth, googleProvider, db } from "@/lib/firebase"
-import { signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser } from "firebase/auth"
+import { signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseUser } from "firebase/auth"
 import { doc, getDoc, setDoc, onSnapshot, collection, query, where, addDoc, updateDoc, deleteDoc, documentId, orderBy } from "firebase/firestore"
 import { seedDatabase } from "@/lib/seed-data"
 
@@ -19,6 +19,8 @@ export interface ProjectTask {
     assignedTo?: string
     dueDate?: string
     description?: string
+    projectId: string // Link to project
+    teamId: string    // Link to team
 }
 
 // Sub-project (โปรเจคย่อย) - Different from Task
@@ -265,7 +267,8 @@ interface ProjectContextType {
     addTeam: (name: string) => void
 
     // Task Management
-    addTask: (projectId: string, task: Omit<ProjectTask, "id">) => void
+    tasks: ProjectTask[] // Exposed global tasks
+    addTask: (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "teamId">) => void
     updateTask: (projectId: string, taskId: string, updates: Partial<ProjectTask>) => void
     deleteTask: (projectId: string, taskId: string) => void
     toggleTask: (projectId: string, taskId: string) => void
@@ -325,7 +328,9 @@ interface ProjectContextType {
     currentUser: User | null
     setCurrentUser: (user: User | null) => void
     login: (provider: string, credentials?: { email?: string, password?: string }) => Promise<void>
+    register: (name: string, email: string, password: string) => Promise<void>
     logout: () => void
+    isAuthLoading: boolean
     // Backup & Restore
     restoreData: (data: any) => Promise<boolean>
     seedData: () => Promise<void>
@@ -350,11 +355,6 @@ const INITIAL_PROJECTS: Project[] = [
         endDate: "2024-11-30",
         image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
         description: "Renovation of existing office space including new electrical systems, HVAC, and interior design for a modern tech workspace.",
-        tasks: [
-            { id: "1-1", title: "Complete electrical wiring", status: "Done", priority: "High", dueDate: "2024-03-15", assignedTo: "Foreman Chai" },
-            { id: "1-2", title: "Install HVAC system", status: "In Progress", priority: "Medium", dueDate: "2024-04-01", assignedTo: "Electrician Jo" },
-            { id: "1-3", title: "Interior painting", status: "Todo", priority: "Low", dueDate: "2024-05-10" }
-        ],
         teamId: '1' // Headquarters
     },
     {
@@ -371,10 +371,6 @@ const INITIAL_PROJECTS: Project[] = [
         endDate: "2024-08-30",
         image: "https://images.unsplash.com/photo-1600596542815-e32c2159c82c?w=800&q=80",
         description: "Complete overhaul of a 3-bedroom pool villa, including landscape redesign and smart home integration.",
-        tasks: [
-            { id: "2-1", title: "Excavate pool area", status: "Done", priority: "High", dueDate: "2024-03-10", assignedTo: "Team Alpha" },
-            { id: "2-2", title: "Smart home wiring", status: "Todo", priority: "Medium", dueDate: "2024-04-15" }
-        ],
         teamId: '2' // Site Operations
     },
     {
@@ -407,9 +403,6 @@ const INITIAL_PROJECTS: Project[] = [
         endDate: "2024-01-15",
         image: "https://images.unsplash.com/photo-1502005229762-cf1e25e7c667?w=800&q=80",
         description: "Modern minimalist interior design for a 2-bedroom condo unit with custom built-in furniture.",
-        tasks: [
-            { id: "4-1", title: "Final Inspection", status: "Done", priority: "High", dueDate: "2024-01-14", assignedTo: "Foreman Chai" }
-        ],
         teamId: '3' // Design Studio
     },
     {
@@ -426,10 +419,6 @@ const INITIAL_PROJECTS: Project[] = [
         endDate: "2024-02-28",
         image: "https://images.unsplash.com/photo-1565008447742-97f6f38c985c?w=800&q=80",
         description: "Replacement of metal sheet roofing and installation of insulation for a large warehouse factory.",
-        tasks: [
-            { id: "5-1", title: "Remove old roofing", status: "Done", priority: "High", dueDate: "2024-01-10", assignedTo: "Team Alpha" },
-            { id: "5-2", title: "Install insulation", status: "In Progress", priority: "High", dueDate: "2024-01-25" }
-        ],
         teamId: '2' // Site Operations
     },
     {
@@ -831,6 +820,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
 
     const [currentUser, setCurrentUser] = useState<User | null>(null)
+    const [isAuthLoading, setIsAuthLoading] = useState(true)
 
     // Auth State Listener
     useEffect(() => {
@@ -860,9 +850,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 setCurrentTeam(null)
                 setTeams([])
             }
+            setIsAuthLoading(false)
         })
         return () => unsubscribe()
     }, [])
+
+
+
+    // ... (existing imports)
+
+    // ... (existing code)
 
     const login = async (provider: string, credentials?: { email?: string, password?: string }) => {
         if (provider === 'google') {
@@ -872,15 +869,65 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 console.error("Login failed", error)
                 throw error
             }
+        } else if ((provider === 'email' || provider === 'credentials') && credentials?.email && credentials?.password) {
+            try {
+                await signInWithEmailAndPassword(auth, credentials.email, credentials.password)
+            } catch (error) {
+                console.error("Login failed", error)
+                throw error
+            }
         }
-        // Legacy credential support removed or can be re-added if needed
+    }
+
+    const register = async (name: string, email: string, password: string) => {
+        try {
+            // 1. Create Auth User
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+            const firebaseUser = userCredential.user
+
+            // 2. Update Profile Name
+            await updateProfile(firebaseUser, { displayName: name })
+
+            // 3. Create Firestore User Doc
+            const newUser: User = {
+                id: firebaseUser.uid,
+                name: name,
+                email: email,
+                role: "Member",
+                status: "Active",
+                teamIds: [],
+                avatar: undefined,
+                joinedDate: new Date().toISOString()
+            }
+
+            await setDoc(doc(db, "users", firebaseUser.uid), newUser)
+
+            // 4. Update State
+            setCurrentUser(newUser)
+
+        } catch (error) {
+            console.error("Registration failed", error)
+            throw error
+        }
     }
 
     const logout = async () => {
-        await signOut(auth)
-        setCurrentUser(null)
-        setCurrentTeam(null)
-        localStorage.removeItem("projectpro_teamid")
+        try {
+            await signOut(auth)
+            // Clear all local state
+            setCurrentUser(null)
+            setCurrentTeam(null)
+            setTeams([])
+
+            // Clear persistence
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem("projectpro_teamid")
+                sessionStorage.removeItem("app_security_unlocked")
+                // Optional: Clear other app-specific storage if needed
+            }
+        } catch (error) {
+            console.error("Logout failed", error)
+        }
     }
 
     const switchTeam = (teamId: string) => {
@@ -983,6 +1030,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             setContracts(snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract)))
         })
 
+        // 8. Tasks (Top-level collection)
+        const qTasks = query(collection(db, "tasks"), where("teamId", "==", currentTeam.id))
+        const unsubTasks = onSnapshot(qTasks, (snap) => {
+            setTasks(snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask)))
+        })
+
         // 8. Team Members (Users)
         const qUsers = query(collection(db, "users"), where("teamIds", "array-contains", currentTeam.id))
         const unsubUsers = onSnapshot(qUsers, (snap) => {
@@ -1000,7 +1053,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             unsubVendors()
             unsubCustomers()
             unsubIncomes()
+            unsubIncomes()
             unsubContracts()
+            unsubTasks()
             unsubUsers()
         }
     }, [currentTeam])
@@ -1087,60 +1142,77 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    const getProject = (id: string) => projects.find(p => p.id === id)
+    const getProject = (id: string) => {
+        const project = projects.find(p => p.id === id)
+        if (!project) return undefined
+        // Merge tasks from global state
+        const projectTasks = tasks.filter(t => t.projectId === id)
+        return { ...project, tasks: projectTasks }
+    }
 
-    const addTask = (projectId: string, task: Omit<ProjectTask, "id">) => {
-        setProjects(prev => prev.map(p => {
-            if (p.id === projectId) {
-                const newTask = { ...task, id: Math.random().toString(36).substr(2, 9) }
-                return { ...p, tasks: [...(p.tasks || []), newTask] }
-            }
-            return p
-        }))
+    // Task Management Logic (Refactored to Top-level Collection)
+    const [tasks, setTasks] = useState<ProjectTask[]>([])
+
+    const addTask = async (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "teamId">) => {
+        if (!currentTeam) return
+
+        try {
+            await addDoc(collection(db, "tasks"), {
+                ...task,
+                projectId,
+                teamId: currentTeam.id,
+                status: task.status || "Todo",
+                priority: task.priority || "Medium"
+            })
+        } catch (e) {
+            console.error("Error adding task", e)
+        }
     }
 
     // Add Sub-project (โปรเจคย่อย)
-    const addSubProject = (projectId: string, subProject: Omit<SubProject, "id">) => {
-        setProjects(prev => prev.map(p => {
-            if (p.id === projectId) {
-                const newSubProject = { ...subProject, id: Math.random().toString(36).substr(2, 9) }
-                return { ...p, subProjects: [...(p.subProjects || []), newSubProject] }
-            }
-            return p
-        }))
+    const addSubProject = async (projectId: string, subProject: Omit<SubProject, "id">) => {
+        const project = projects.find(p => p.id === projectId)
+        if (!project) return
+
+        const newSubProject = { ...subProject, id: Math.random().toString(36).substr(2, 9) }
+        const updatedSubProjects = [...(project.subProjects || []), newSubProject]
+
+        // Optimistic Update
+        setProjects(prev => prev.map(p => p.id === projectId ? { ...p, subProjects: updatedSubProjects } : p))
+
+        try {
+            await updateDoc(doc(db, "projects", projectId), { subProjects: updatedSubProjects })
+        } catch (e) {
+            console.error("Error adding sub-project", e)
+        }
     }
 
-    const updateTask = (projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
-        setProjects(prev => prev.map(p => {
-            if (p.id === projectId) {
-                return {
-                    ...p,
-                    tasks: (p.tasks || []).map(t => t.id === taskId ? { ...t, ...updates } : t)
-                }
-            }
-            return p
-        }))
+    const updateTask = async (projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
+        try {
+            await updateDoc(doc(db, "tasks", taskId), updates)
+        } catch (e) {
+            console.error("Error updating task", e)
+        }
     }
 
-    const deleteTask = (projectId: string, taskId: string) => {
-        setProjects(prev => prev.map(p => {
-            if (p.id === projectId) {
-                return { ...p, tasks: (p.tasks || []).filter(t => t.id !== taskId) }
-            }
-            return p
-        }))
+    const deleteTask = async (projectId: string, taskId: string) => {
+        try {
+            await deleteDoc(doc(db, "tasks", taskId))
+        } catch (e) {
+            console.error("Error deleting task", e)
+        }
     }
 
-    const toggleTask = (projectId: string, taskId: string) => {
-        setProjects(prev => prev.map(p => {
-            if (p.id === projectId) {
-                return {
-                    ...p,
-                    tasks: (p.tasks || []).map(t => t.id === taskId ? { ...t, status: t.status === 'Done' ? 'Todo' : 'Done' } : t)
-                }
-            }
-            return p
-        }))
+    const toggleTask = async (projectId: string, taskId: string) => {
+        const task = tasks.find(t => t.id === taskId)
+        if (!task) return
+
+        const newStatus = task.status === 'Done' ? 'Todo' : 'Done'
+        try {
+            await updateDoc(doc(db, "tasks", taskId), { status: newStatus })
+        } catch (e) {
+            console.error("Error toggling task", e)
+        }
     }
 
     // Contracts Logic
@@ -1259,40 +1331,65 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Vendor CRUD
-    const addVendor = (vendorData: Omit<Vendor, "id" | "status">) => {
-        const newVendor: Vendor = {
-            ...vendorData,
-            id: Math.random().toString(36).substr(2, 9),
-            status: "Active"
+    // Vendor CRUD
+    const addVendor = async (vendorData: Omit<Vendor, "id" | "status">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "vendors"), {
+                ...vendorData,
+                status: "Active",
+                teamId: currentTeam.id
+            })
+        } catch (e) {
+            console.error("Error adding vendor", e)
         }
-        setVendors(prev => [...prev, newVendor])
     }
 
-    const updateVendor = (id: string, updates: Partial<Vendor>) => {
-        setVendors(prev => prev.map(v => v.id === id ? { ...v, ...updates } : v))
+    const updateVendor = async (id: string, updates: Partial<Vendor>) => {
+        try {
+            await updateDoc(doc(db, "vendors", id), updates)
+        } catch (e) {
+            console.error("Error updating vendor", e)
+        }
     }
 
-    const deleteVendor = (id: string) => {
-        setVendors(prev => prev.filter(v => v.id !== id))
+    const deleteVendor = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "vendors", id))
+        } catch (e) {
+            console.error("Error deleting vendor", e)
+        }
     }
 
     // Worker CRUD
-    const addWorker = (workerData: Omit<Worker, "id" | "status">) => {
-        const newWorker: Worker = {
-            ...workerData,
-            id: Math.random().toString(36).substr(2, 9),
-            status: "Active",
-            joinedDate: new Date().toISOString().split('T')[0]
+    const addWorker = async (workerData: Omit<Worker, "id" | "status">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "workers"), {
+                ...workerData,
+                status: "Active",
+                joinedDate: new Date().toISOString().split('T')[0],
+                teamId: currentTeam.id
+            })
+        } catch (e) {
+            console.error("Error adding worker", e)
         }
-        setWorkers(prev => [...prev, newWorker])
     }
 
-    const updateWorker = (id: string, updates: Partial<Worker>) => {
-        setWorkers(prev => prev.map(w => w.id === id ? { ...w, ...updates } : w))
+    const updateWorker = async (id: string, updates: Partial<Worker>) => {
+        try {
+            await updateDoc(doc(db, "workers", id), updates)
+        } catch (e) {
+            console.error("Error updating worker", e)
+        }
     }
 
-    const deleteWorker = (id: string) => {
-        setWorkers(prev => prev.filter(w => w.id !== id))
+    const deleteWorker = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "workers", id))
+        } catch (e) {
+            console.error("Error deleting worker", e)
+        }
     }
 
 
@@ -1471,6 +1568,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             addTeam,
 
             addTask,
+            tasks,
             addSubProject,
             updateTask,
             deleteTask,
@@ -1503,7 +1601,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             updateCompanyProfile,
             currentUser,
             setCurrentUser,
+            isAuthLoading,
             login,
+            register,
             logout,
             restoreData,
             seedData,

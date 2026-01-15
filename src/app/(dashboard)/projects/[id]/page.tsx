@@ -457,10 +457,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                                     document={<FinancialReportPDF type="Expense" projectName={project?.name || ''} items={projectExpenses} />}
                                                     fileName={`${project?.name || 'Project'}_Expense_Report.pdf`}
                                                     className="w-9 h-9 flex items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
+                                                    title="Export PDF"
                                                 >
                                                     {/* @ts-ignore */}
                                                     {({ loading }) => (
-                                                        <FileText className="w-4 h-4" />
+                                                        <Download className="w-4 h-4" />
                                                     )}
                                                 </PDFDownloadLink>
                                             )}
@@ -557,10 +558,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                                     }
                                                     fileName={`${project?.name || 'Project'}_Income_Report.pdf`}
                                                     className="w-9 h-9 flex items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
+                                                    title="Export PDF"
                                                 >
                                                     {/* @ts-ignore */}
                                                     {({ loading }) => (
-                                                        <FileText className="w-4 h-4" />
+                                                        <Download className="w-4 h-4" />
                                                     )}
                                                 </PDFDownloadLink>
                                             )}

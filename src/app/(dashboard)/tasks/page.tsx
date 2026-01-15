@@ -17,7 +17,7 @@ import AddTaskDialog from "@/components/tasks/add-task-dialog"
 import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
 
 export default function TasksPage() {
-    const { projects, updateTask, deleteTask, toggleTask, currentUser, users } = useProjects()
+    const { projects, tasks, updateTask, deleteTask, toggleTask, currentUser, users } = useProjects()
     const { t } = useTranslation()
     const [searchQuery, setSearchQuery] = React.useState("")
     const [projectFilter, setProjectFilter] = React.useState<string>("all")
@@ -25,16 +25,17 @@ export default function TasksPage() {
     const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
     const [showAddTask, setShowAddTask] = React.useState(false)
 
-    // Aggregate all tasks from all projects
+    // Aggregate all tasks from global state
     const allTasks: DetailedTask[] = React.useMemo(() => {
-        return projects.flatMap(project =>
-            (project.tasks || []).map(task => ({
+        return tasks.map(task => {
+            const project = projects.find(p => p.id === task.projectId)
+            return {
                 ...task,
-                projectId: project.id,
-                projectName: project.name
-            }))
-        )
-    }, [projects])
+                projectId: task.projectId || "", // Ensure string
+                projectName: project?.name || "Unknown Project"
+            }
+        })
+    }, [tasks, projects])
 
     // Filter tasks based on search, project, and user permissions
     const filteredTasks = React.useMemo(() => {

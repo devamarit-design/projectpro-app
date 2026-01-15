@@ -10,21 +10,25 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode
 }) {
-    const { currentUser } = useProjects()
+    const { currentUser, isAuthLoading } = useProjects()
     const router = useRouter()
-    const [isChecking, setIsChecking] = useState(true)
 
     useEffect(() => {
-        // Simple check: if not logged in, redirect
-        // In a real app, you might want to wait for an 'isInitialized' flag
-        if (currentUser === null) {
+        if (!isAuthLoading && currentUser === null) {
             router.push("/login")
         }
-        setIsChecking(false)
-    }, [currentUser, router])
+    }, [currentUser, isAuthLoading, router])
+
+    if (isAuthLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        )
+    }
 
     if (currentUser === null) {
-        return null // Don't render dashboard while redirecting
+        return null // Will redirect
     }
 
     return <AppShell>{children}</AppShell>

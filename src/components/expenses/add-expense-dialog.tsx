@@ -16,7 +16,7 @@ interface AddExpenseDialogProps {
 import { useTranslation } from "@/lib/i18n-context"
 
 export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, startScanning }: AddExpenseDialogProps) {
-    const { addExpense, addProject, addTask, addUser, addVendor, addWorker, projects, users, vendors, workers } = useProjects()
+    const { addExpense, addProject, addTask, addUser, addVendor, addWorker, projects, tasks, users, vendors, workers } = useProjects()
     const { t } = useTranslation()
 
     const [isScanOpen, setIsScanOpen] = React.useState(false)
@@ -285,7 +285,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     // Helper to get tasks for a project
     const getProjectTasks = (pid?: string) => {
         if (!pid) return []
-        return projects.find(p => p.id === pid)?.tasks || []
+        return tasks.filter(t => t.projectId === pid)
     }
 
     return (

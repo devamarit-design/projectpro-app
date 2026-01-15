@@ -20,8 +20,11 @@ import {
     TrendingDown,
     User,
     Handshake,
-    Briefcase
+    Briefcase,
+    Globe,
+    LogOut
 } from "lucide-react"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 import { useScrollDirection } from "@/hooks/use-scroll-direction"
 import { cn } from "@/lib/utils"
@@ -31,8 +34,8 @@ import { hasPermission } from "@/lib/permissions"
 
 export function MobileNav() {
     const pathname = usePathname()
-    const { t } = useTranslation()
-    const { currentUser } = useProjects()
+    const { t, locale, setLocale } = useTranslation()
+    const { currentUser, logout } = useProjects()
     const [showAddMenu, setShowAddMenu] = React.useState(false)
     const [showMoreMenu, setShowMoreMenu] = React.useState(false)
     const [showFinanceMenu, setShowFinanceMenu] = React.useState(false)
@@ -191,6 +194,54 @@ export function MobileNav() {
                                     <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors text-center leading-tight">{item.label}</span>
                                 </Link>
                             ))}
+                        </div>
+
+                        {/* App Settings Section (Mobile Only) */}
+                        <div className="pt-4 mt-4 border-t border-white/10">
+                            <h4 className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wider">{t.common.settings}</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* Language Toggle */}
+                                <button
+                                    onClick={() => {
+                                        setLocale(locale === 'en' ? 'th' : 'en')
+                                        // Don't close menu immediately so they can see change
+                                    }}
+                                    className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-white/5 hover:bg-muted/50 transition-colors"
+                                >
+                                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                                        <Globe className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="text-xs text-muted-foreground">Language</div>
+                                        <div className="font-bold">{locale.toUpperCase()}</div>
+                                    </div>
+                                </button>
+
+                                {/* Theme Toggle */}
+                                <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-white/5 hover:bg-muted/50 transition-colors">
+                                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center">
+                                        <ThemeToggle mobile />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="text-xs text-muted-foreground">Theme</div>
+                                        <div className="font-bold">Auto</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Mobile Logout Button */}
+                            <button
+                                onClick={async () => {
+                                    if (window.confirm("Are you sure you want to log out?")) {
+                                        await logout()
+                                        window.location.href = "/login"
+                                    }
+                                }}
+                                className="w-full mt-4 flex items-center justify-center gap-2 p-3 rounded-xl bg-red-500/10 text-red-500 font-medium hover:bg-red-500/20 transition-colors"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                Log Out
+                            </button>
                         </div>
                     </div>
                 </div>
