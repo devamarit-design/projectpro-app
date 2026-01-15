@@ -558,7 +558,10 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                                                                                 {data.image && (
                                                                                                     <img src={data.image} className="w-10 h-10 object-cover rounded-md border border-gray-200" alt="Product" />
                                                                                                 )}
-                                                                                                <span>{data.description}</span>
+                                                                                                <div className="flex flex-col">
+                                                                                                    <span className="font-bold text-gray-800">{data.name}</span>
+                                                                                                    {data.description && <span className="text-gray-500 text-xs font-normal whitespace-pre-wrap">{data.description}</span>}
+                                                                                                </div>
                                                                                             </div>
                                                                                         </td>
                                                                                     )

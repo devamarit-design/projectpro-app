@@ -157,7 +157,7 @@ const safeColor = (color: string | undefined): string => {
 const LABELS = {
     th: {
         quotation: 'ใบเสนอราคา',
-        invoice: 'ใบแจ้งหนี้',
+        invoice: 'ใบวางบิล',
         receipt: 'ใบเสร็จรับเงิน',
         no: 'ลำดับ',
         description: 'รายการ',
@@ -172,7 +172,8 @@ const LABELS = {
         dueDate: 'ครบกำหนด',
         customer: 'ลูกค้า',
         project: 'โครงการ',
-        docNo: 'เลขที่เอกสาร'
+        docNo: 'เลขที่เอกสาร',
+        cont: 'ต่อ'
     },
     en: {
         quotation: 'QUOTATION',
@@ -191,7 +192,8 @@ const LABELS = {
         dueDate: 'Due Date',
         customer: 'Customer',
         project: 'Project',
-        docNo: 'Doc No.'
+        docNo: 'Doc No.',
+        cont: 'Cont.'
     }
 }
 
@@ -205,7 +207,9 @@ const formatDate = (dateStr: string) => {
 
 export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3b82f6', lang = 'th', manualPageBreaks = [], columns, orgProfile }: PDFDocumentProps) => {
     const labels = LABELS[lang]
-    const docTitle = doc.type === 'Quotation' ? labels.quotation : labels.receipt
+    // Map document type to label key safely
+    const docTypeLower = doc.type.toLowerCase() as keyof typeof labels
+    const docTitle = labels[docTypeLower] || doc.type.toUpperCase()
 
     const subtotal = doc.subtotal
     const vat = doc.tax
@@ -288,7 +292,10 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
                             </>
                         ) : (
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#eeeeee' }}>
-                                <Text style={{ fontSize: 12, fontWeight: 'bold' }}>{docTitle} (ต่อ)</Text>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#eeeeee' }}>
+                                    <Text style={{ fontSize: 12, fontWeight: 'bold' }}>{docTitle} ({labels.cont})</Text>
+                                    <Text style={{ fontSize: 10, color: '#666666' }}>{doc.documentNumber}</Text>
+                                </View>
                                 <Text style={{ fontSize: 10, color: '#666666' }}>{doc.documentNumber}</Text>
                             </View>
                         )}
@@ -308,11 +315,16 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
                                     return <Text key={col.id} style={style}>{col.label}</Text>
                                 })}
                             </View>
-                            {page.items.map((item, index) => (
+                            {page.items.map((item: any, index) => (
                                 <View key={index} style={(item.originalIndex + 1) % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
                                     {visibleColumns.map(col => {
                                         if (col.id === 'item') return <Text key={col.id} style={styles.colNo}>{item.originalIndex + 1}</Text>
-                                        if (col.id === 'description') return <Text key={col.id} style={styles.colDesc}>{item.description}</Text>
+                                        if (col.id === 'description') return (
+                                            <View key={col.id} style={styles.colDesc}>
+                                                <Text style={{ fontWeight: 'bold' }}>{item.name}</Text>
+                                                {item.description && <Text style={{ color: '#666666', fontSize: 8 }}>{item.description}</Text>}
+                                            </View>
+                                        )
                                         if (col.id === 'qty') return <Text key={col.id} style={styles.colQty}>{item.quantity}</Text>
                                         if (col.id === 'unit') return <Text key={col.id} style={styles.colUnit}>{item.unit}</Text>
                                         if (col.id === 'price') return <Text key={col.id} style={styles.colPrice}>{item.unitPrice ? formatCurrency(item.unitPrice) : '-'}</Text>
