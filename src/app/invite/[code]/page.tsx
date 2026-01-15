@@ -1,0 +1,147 @@
+"use client"
+
+import * as React from "react"
+import { useProjects } from "@/context/project-context"
+import { useRouter, useParams } from "next/navigation"
+import { Building2, CheckCircle2, XCircle, Loader2 } from "lucide-react"
+import { doc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+
+export default function InvitePage() {
+    const { currentUser, setCurrentUser } = useProjects()
+    const router = useRouter()
+    const params = useParams()
+    const code = params.code as string
+
+    const [status, setStatus] = React.useState<"loading" | "valid" | "invalid" | "success">("loading")
+    const [teamName, setTeamName] = React.useState("")
+    const [teamId, setTeamId] = React.useState("")
+
+    React.useEffect(() => {
+        const validateInvite = async () => {
+            if (!code) return
+
+            try {
+                // Find invite by code
+                const q = query(collection(db, "invites"), where("code", "==", code))
+                const snap = await getDocs(q)
+
+                if (snap.empty) {
+                    setStatus("invalid")
+                    return
+                }
+
+                const inviteData = snap.docs[0].data()
+                // Check expiry if you have one
+
+                // Fetch Team Details
+                const teamSnap = await getDoc(doc(db, "teams", inviteData.teamId))
+                if (teamSnap.exists()) {
+                    setTeamName(teamSnap.data().name)
+                    setTeamId(inviteData.teamId)
+                    setStatus("valid")
+                } else {
+                    setStatus("invalid")
+                }
+            } catch (error) {
+                console.error("Error validating invite", error)
+                setStatus("invalid")
+            }
+        }
+
+        validateInvite()
+    }, [code])
+
+    const handleJoin = async () => {
+        if (!currentUser || !teamId) return
+
+        setStatus("loading")
+        try {
+            // Add user to team in Firestore
+            await updateDoc(doc(db, "users", currentUser.id), {
+                teamIds: arrayUnion(teamId)
+            })
+
+            // Update local state (optimistic)
+            // But actually we might wait for context to reload or force reload
+            // For simplicity, just force a hard redirect to dashboard which triggers context reload
+            window.location.href = `/projects`
+
+        } catch (error) {
+            console.error("Failed to join team", error)
+            setStatus("invalid")
+        }
+    }
+
+    if (!currentUser) {
+        // Redirect to login with callback?
+        // For now, assume user must be logged in. 
+        // If not, maybe show "Please Login First"
+        return (
+            <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
+                <p>Please log in to join this team.</p>
+                <button onClick={() => router.push("/")} className="mt-4 bg-primary px-4 py-2 rounded-xl text-black font-bold">
+                    Go to Login
+                </button>
+            </div>
+        )
+    }
+
+    return (
+        <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+            <div className="relative w-full max-w-md bg-card border border-white/10 rounded-3xl p-8 space-y-6 text-center">
+                {status === "loading" && (
+                    <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                        <p className="text-muted-foreground">Verifying invite...</p>
+                    </div>
+                )}
+
+                {status === "invalid" && (
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                            <XCircle className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-red-500">Invalid Invite</h2>
+                            <p className="text-muted-foreground mt-2">This invite link is invalid or has expired.</p>
+                        </div>
+                        <button onClick={() => router.push("/")} className="mt-4 text-sm underline opacity-70">
+                            Back to Home
+                        </button>
+                    </div>
+                )}
+
+                {status === "valid" && (
+                    <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-300">
+                        <div className="w-20 h-20 bg-primary/20 rounded-2xl flex items-center justify-center text-primary mb-2">
+                            <Building2 className="w-10 h-10" />
+                        </div>
+
+                        <div className="space-y-2">
+                            <p className="text-muted-foreground uppercase tracking-wider text-xs font-bold">You've been invited to join</p>
+                            <h1 className="text-3xl font-bold">{teamName}</h1>
+                        </div>
+
+                        <div className="w-full h-px bg-white/10" />
+
+                        <div className="w-full space-y-3">
+                            <button
+                                onClick={handleJoin}
+                                className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                Join Workspace
+                            </button>
+                            <button
+                                onClick={() => router.push("/")}
+                                className="text-sm text-muted-foreground hover:text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}

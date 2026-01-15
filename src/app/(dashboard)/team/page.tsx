@@ -1,7 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { Search, Plus, Shield, Mail, Phone, MoreHorizontal, Trash2, Edit } from "lucide-react"
+import { Search, Plus, Shield, Mail, Phone, MoreHorizontal, Trash2, Edit, Link as LinkIcon, Copy, Check } from "lucide-react"
+import { addDoc, collection } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 import { useProjects, User } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { hasPermission } from "@/lib/permissions"
@@ -56,6 +58,38 @@ export default function TeamPage() {
         }
     }
 
+    const [inviteLink, setInviteLink] = React.useState("")
+    const [isCopied, setIsCopied] = React.useState(false)
+
+    const handleInvite = async () => {
+        if (!currentTeam) return
+        try {
+            // Generate Code
+            const code = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10)
+
+            // Save to Firestore
+            await addDoc(collection(db, "invites"), {
+                code,
+                teamId: currentTeam.id,
+                createdAt: new Date().toISOString(),
+                expiresAt: null, // Never expires for now
+                createdBy: currentUser?.id
+            })
+
+            const link = `${window.location.origin}/invite/${code}`
+            setInviteLink(link)
+
+            // Auto copy
+            navigator.clipboard.writeText(link)
+            setIsCopied(true)
+            setTimeout(() => setIsCopied(false), 2000)
+
+        } catch (error) {
+            console.error("Failed to generate invite", error)
+            alert("Failed to generate invite link")
+        }
+    }
+
     return (
         <div className="space-y-6 pb-20 md:pb-6">
             {/* Header */}
@@ -70,8 +104,12 @@ export default function TeamPage() {
                 {/* Team Switcher & Actions */}
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-xl border border-border/50">
-                        <div className="w-8 h-8 flex items-center justify-center bg-primary/10 rounded-lg text-lg">
-                            {currentTeam?.logo || '🏢'}
+                        <div className="w-8 h-8 flex items-center justify-center bg-primary/10 rounded-lg text-lg overflow-hidden">
+                            {(currentTeam?.logo && (currentTeam.logo.startsWith('http') || currentTeam.logo.startsWith('data:'))) ? (
+                                <img src={currentTeam.logo} alt="Team Logo" className="w-full h-full object-cover" />
+                            ) : (
+                                currentTeam?.logo || '🏢'
+                            )}
                         </div>
                         <select
                             value={currentTeam?.id || ""}
@@ -111,16 +149,25 @@ export default function TeamPage() {
 
                 <div className="flex-1"></div>
                 {hasPermission(currentUser, "USER_CREATE") && (
-                    <button
-                        onClick={() => {
-                            setEditingUser(null)
-                            setIsAddOpen(true)
-                        }}
-                        className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-bold shadow-lg shadow-primary/25 hover:translate-y-0.5 transition-all active:scale-95"
-                    >
-                        <Plus className="w-5 h-5" />
-                        {t.team.add_member}
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleInvite}
+                            className="flex items-center justify-center gap-2 bg-purple-500 text-white px-4 py-2 rounded-xl font-bold shadow-lg shadow-purple-500/25 hover:translate-y-0.5 transition-all active:scale-95"
+                        >
+                            {isCopied ? <Check className="w-5 h-5" /> : <LinkIcon className="w-5 h-5" />}
+                            {isCopied ? "Copied!" : "Invite Link"}
+                        </button>
+                        <button
+                            onClick={() => {
+                                setEditingUser(null)
+                                setIsAddOpen(true)
+                            }}
+                            className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-bold shadow-lg shadow-primary/25 hover:translate-y-0.5 transition-all active:scale-95"
+                        >
+                            <Plus className="w-5 h-5" />
+                            {t.team.add_member}
+                        </button>
+                    </div>
                 )}
             </div>
 
