@@ -14,7 +14,7 @@ interface AddTaskDialogProps {
 import { useTranslation } from "@/lib/i18n-context"
 
 export default function AddTaskDialog({ isOpen, onClose, defaultProjectId }: AddTaskDialogProps) {
-    const { projects, addTask, users } = useProjects()
+    const { projects, addTask, users, currentUser } = useProjects()
     const { t } = useTranslation()
     const [title, setTitle] = React.useState("")
     const [selectedProjectId, setSelectedProjectId] = React.useState(defaultProjectId || "")
@@ -154,6 +154,11 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId }: Add
                                     className="w-full bg-background/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium appearance-none"
                                 >
                                     <option value="">{t.tasks.dialog.unassigned}</option>
+                                    {currentUser && (
+                                        <option value={currentUser.name} className="font-bold text-primary">
+                                            Assign to Me ({currentUser.name})
+                                        </option>
+                                    )}
                                     {users.map(user => (
                                         <option key={user.id} value={user.name}>{user.name}</option>
                                     ))}
