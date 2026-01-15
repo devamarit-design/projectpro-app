@@ -49,6 +49,10 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         { id: "1", description: "", amount: 0, category: "Material", projectId: defaultProjectId }
     ])
 
+    // Scroll tracking for receipt section auto-expand/collapse
+    const scrollRef = React.useRef<HTMLDivElement>(null)
+    const lastScrollY = React.useRef(0)
+
     // Reset when opening
     React.useEffect(() => {
         if (isOpen) {
@@ -64,6 +68,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             setVendor("")
             setVatIncluded(true)
             setReceiptImage(null)
+            setReceiptExpanded(false)
             setQuickAdd(null)
 
             if (startScanning) {
@@ -71,6 +76,26 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             }
         }
     }, [isOpen, defaultProjectId, startScanning])
+
+    // Scroll listener for auto-expand/collapse receipt section
+    React.useEffect(() => {
+        const scrollElement = scrollRef.current
+        if (!scrollElement) return
+
+        const handleScroll = () => {
+            const currentScrollY = scrollElement.scrollTop
+            const isScrollingDown = currentScrollY > lastScrollY.current
+
+            // Only change state if there's enough scroll delta
+            if (Math.abs(currentScrollY - lastScrollY.current) > 30) {
+                setReceiptExpanded(isScrollingDown)
+                lastScrollY.current = currentScrollY
+            }
+        }
+
+        scrollElement.addEventListener('scroll', handleScroll, { passive: true })
+        return () => scrollElement.removeEventListener('scroll', handleScroll)
+    }, [])
 
     if (!isOpen) return null
 
@@ -138,11 +163,16 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     const subtotal = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
     const vatAmount = vatIncluded ? (subtotal * 7) / 107 : 0
 
-    const handleScanComplete = (data: { merchant: string, date: string, items: ExpenseItem[], total: number }) => {
+    const handleScanComplete = (data: { merchant: string, date: string, items: ExpenseItem[], total: number, receiptImage?: string }) => {
         setPayee(data.merchant)
         setDate(data.date)
         setItems(data.items.map(i => ({ ...i, projectId: globalProjectId || defaultProjectId })))
         setTitle(`Bill from ${data.merchant}`)
+        // Set receipt image from scan
+        if (data.receiptImage) {
+            setReceiptImage(data.receiptImage)
+            setReceiptExpanded(true) // Show the image
+        }
     }
 
     const addItem = () => {
@@ -344,7 +374,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     </div>
 
                     <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
 
                             {/* Mobile Scan Button */}
 

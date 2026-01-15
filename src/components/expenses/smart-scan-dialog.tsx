@@ -5,7 +5,7 @@ import { Camera, Upload, Loader2, CheckCircle } from "lucide-react"
 export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
     isOpen: boolean
     onClose: () => void
-    onScanComplete?: (data: { merchant: string, date: string, items: ExpenseItem[], total: number }) => void
+    onScanComplete?: (data: { merchant: string, date: string, items: ExpenseItem[], total: number, receiptImage?: string }) => void
 }) {
     const { addExpense } = useProjects()
     const [scanning, setScanning] = useState(false)
@@ -55,17 +55,45 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
             setScanning(false)
             setCompleted(true)
 
-            // Mock "AI Extracted" Data
+            // Mock "AI Extracted" Data - Multiple items like a real receipt
             const mockExtracted = {
-                merchant: "7-Eleven",
+                merchant: "Thai Home Builder Supplies",
                 date: new Date().toISOString().split('T')[0],
-                total: 350,
+                total: 12850,
                 items: [
                     {
                         id: Math.random().toString(),
-                        description: "Office Supplies",
-                        amount: 350,
+                        description: "ปูนซีเมนต์ TPI (50kg) x5",
+                        amount: 1250,
                         category: "Material" as const,
+                        projectId: undefined
+                    },
+                    {
+                        id: Math.random().toString(),
+                        description: "เหล็กเส้น SR24 ขนาด 12mm x20",
+                        amount: 4800,
+                        category: "Material" as const,
+                        projectId: undefined
+                    },
+                    {
+                        id: Math.random().toString(),
+                        description: "ทรายหยาบ (คิว) x3",
+                        amount: 2400,
+                        category: "Material" as const,
+                        projectId: undefined
+                    },
+                    {
+                        id: Math.random().toString(),
+                        description: "ไม้แบบ x10 แผ่น",
+                        amount: 2500,
+                        category: "Material" as const,
+                        projectId: undefined
+                    },
+                    {
+                        id: Math.random().toString(),
+                        description: "ค่าขนส่ง",
+                        amount: 1900,
+                        category: "Other" as const,
                         projectId: undefined
                     }
                 ]
@@ -78,7 +106,11 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
         if (!extractedData) return
 
         if (onScanComplete) {
-            onScanComplete(extractedData)
+            // Pass back all data including the receipt image
+            onScanComplete({
+                ...extractedData,
+                receiptImage: previewUrl || undefined
+            })
         } else {
             // Fallback if used standalone (e.g. from Fab)
             addExpense({
@@ -86,7 +118,7 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
                 amount: `฿${extractedData.total.toLocaleString()}`,
                 totalValue: extractedData.total,
                 date: extractedData.date,
-                category: extractedData.items[0].category,
+                category: extractedData.items[0]?.category || "Other",
                 payee: extractedData.merchant,
                 status: "Pending",
                 items: extractedData.items,
