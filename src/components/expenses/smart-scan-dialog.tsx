@@ -217,7 +217,7 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
                                         className="w-full bg-background border border-white/10 rounded-lg px-3 py-2 text-sm font-medium focus:ring-1 focus:ring-primary"
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <label className="text-xs text-muted-foreground uppercase font-bold">Date</label>
                                         <input

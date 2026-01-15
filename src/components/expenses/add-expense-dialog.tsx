@@ -545,7 +545,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                     {getProjectTasks(globalProjectId).map(t => (
                                                         <option key={t.id} value={t.id}>{t.title}</option>
                                                     ))}
-                                                    <option value="NEW" className="font-bold text-primary">+ Add New Task...</option>
+                                                    <option value="NEW" className="font-bold text-primary">+ Add New Sub-project...</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -638,7 +638,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                                 disabled={!item.projectId}
                                                                 className="bg-background border border-white/10 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none truncate disabled:opacity-50"
                                                             >
-                                                                <option value="">- Task -</option>
+                                                                <option value="">- Sub-project -</option>
                                                                 {getProjectTasks(item.projectId).map(t => (
                                                                     <option key={t.id} value={t.id}>{t.title}</option>
                                                                 ))}

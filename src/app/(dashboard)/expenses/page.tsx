@@ -363,9 +363,9 @@ function ExpensesContent() {
                     <div
                         key={expense.id}
                         onClick={() => setSelectedExpenseId(expense.id)}
-                        className="glass-card p-4 rounded-xl border border-white/5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
+                        className="glass-card p-4 rounded-xl border border-white/5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group overflow-hidden"
                     >
-                        <div className="flex gap-4 items-center w-full sm:w-auto">
+                        <div className="flex gap-4 items-center w-full sm:w-auto min-w-0">
                             <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors group-hover:scale-110 duration-200",
                                 expense.category === 'Material' ? 'bg-orange-500/10 text-orange-500' :
                                     expense.category === 'Labor' ? 'bg-blue-500/10 text-blue-500' :
@@ -373,7 +373,7 @@ function ExpensesContent() {
                             )}>
                                 <span className="text-[10px] font-bold uppercase">{expense.category.substring(0, 3)}</span>
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 overflow-hidden">
                                 <h3 className="font-semibold text-foreground truncate">{expense.title}</h3>
                                 <p className="text-xs text-muted-foreground flex items-center gap-2 truncate">
                                     {expense.payee} <span className="w-1 h-1 rounded-full bg-muted-foreground/30" /> {expense.date}

@@ -181,11 +181,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center py-2 border-b border-white/5">
                                     <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.start_date}</span>
-                                    <span className="font-bold">{project.startDate}</span>
+                                    <span className="font-bold">
+                                        {project.startDate ? new Date(project.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b border-white/5">
                                     <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.end_date}</span>
-                                    <span className="font-bold">{project.endDate}</span>
+                                    <span className="font-bold">
+                                        {project.endDate ? new Date(project.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between items-center py-2">
                                     <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.current_status}</span>
