@@ -237,6 +237,22 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
                                         />
                                     </div>
                                 </div>
+
+                                {/* Extracted Items Summary */}
+                                <div className="space-y-2 pt-2 border-t border-dashed border-white/10 mt-2">
+                                    <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase">
+                                        <span>Extracted Items</span>
+                                        <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px]">{extractedData.items.length} Items</span>
+                                    </div>
+                                    <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                                        {extractedData.items.map((item, i) => (
+                                            <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-black/20 text-xs hover:bg-black/30 transition-colors">
+                                                <span className="text-foreground/90 truncate mr-2 flex-1">{item.description}</span>
+                                                <span className="font-mono text-primary font-medium">฿{item.amount.toLocaleString()}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
 
                             <button
