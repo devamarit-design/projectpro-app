@@ -10,7 +10,7 @@ import Link from "next/link"
 
 export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
     const { t } = useTranslation()
-    const { updateProject, getProject, expenses, incomes } = useProjects()
+    const { updateProject, getProject, expenses, incomes, customers } = useProjects()
     const router = useRouter()
     const { id } = use(params)
     const project = getProject(id)
@@ -90,13 +90,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
         router.push(`/projects/${id}`)
     }
 
-    // Mock customers for dropdown
-    const customers = [
-        { id: 1, name: "TechStart Inc." },
-        { id: 2, name: "Mr. Anderson" },
-        { id: 3, name: "Fashion Co." },
-        { id: 4, name: "City Developers" }
-    ]
+
 
     return (
         <div className="space-y-6 pb-20">
