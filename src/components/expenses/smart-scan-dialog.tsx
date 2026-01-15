@@ -49,61 +49,58 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
         }
     }
 
-    const handleScan = () => {
-        if (!selectedFile && !previewUrl) return // Should not happen given UI
+    const handleScan = async () => {
+        if (!selectedFile && !previewUrl) return
 
         setScanning(true)
 
-        // Simulate AI Processing Delay
-        setTimeout(() => {
-            setScanning(false)
-            setCompleted(true)
+        try {
+            const response = await fetch('/api/scan-receipt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ image: previewUrl }),
+            })
 
-            // Mock "AI Extracted" Data - Multiple items like a real receipt
-            const mockExtracted = {
-                merchant: "ร้านวัสดุก่อสร้างไทย (Thai Home Builder)",
-                date: new Date().toISOString().split('T')[0],
-                total: 12850,
-                items: [
-                    {
-                        id: Math.random().toString(),
-                        description: "ปูนซีเมนต์ TPI (50kg) x5",
-                        amount: 1250,
-                        category: "Material" as const,
-                        projectId: undefined
-                    },
-                    {
-                        id: Math.random().toString(),
-                        description: "เหล็กเส้น SR24 ขนาด 12mm x20",
-                        amount: 4800,
-                        category: "Material" as const,
-                        projectId: undefined
-                    },
-                    {
-                        id: Math.random().toString(),
-                        description: "ทรายหยาบ (คิว) x3",
-                        amount: 2400,
-                        category: "Material" as const,
-                        projectId: undefined
-                    },
-                    {
-                        id: Math.random().toString(),
-                        description: "ไม้แบบ x10 แผ่น",
-                        amount: 2500,
-                        category: "Material" as const,
-                        projectId: undefined
-                    },
-                    {
-                        id: Math.random().toString(),
-                        description: "ค่าขนส่ง",
-                        amount: 1900,
-                        category: "Other" as const,
-                        projectId: undefined
-                    }
-                ]
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Scan failed')
             }
-            setExtractedData(mockExtracted)
-        }, 2500)
+
+            const data = await response.json()
+
+            // Map API response to internal state
+            const extractedItems: ExpenseItem[] = Array.isArray(data.items)
+                ? data.items.map((item: any) => ({
+                    id: Math.random().toString(),
+                    description: item.description || "Unknown Item",
+                    amount: Number(item.amount) || 0,
+                    category: (item.category as any) || "Other",
+                    projectId: undefined
+                }))
+                : []
+
+            setExtractedData({
+                merchant: data.merchant || "Unknown Merchant",
+                date: data.date || new Date().toISOString().split('T')[0],
+                total: Number(data.total) || 0,
+                items: extractedItems.length > 0 ? extractedItems : [{
+                    id: Math.random().toString(),
+                    description: "Total Expense",
+                    amount: Number(data.total) || 0,
+                    category: "Other",
+                    projectId: undefined
+                }]
+            })
+
+            setCompleted(true)
+        } catch (error) {
+            console.error("Scan failed:", error)
+            alert("Scan failed. Please check your API Key or try again.")
+        } finally {
+            setScanning(false)
+        }
     }
 
     const handleSave = () => {
