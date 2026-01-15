@@ -41,7 +41,7 @@ import { FinancialReportPDF } from '@/components/financials/financial-report-pdf
 import { PDFDownloadLink } from '@react-pdf/renderer'
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { t } = useTranslation()
+    const { t, locale } = useTranslation()
     const { getProject, addTask, addSubProject, deleteTask, toggleTask, expenses, files, addFile, currentUser, users, incomes } = useProjects()
     const [activeTab, setActiveTab] = useState("overview")
     const { id } = use(params)
@@ -260,7 +260,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                             <div className="flex items-center justify-between">
                                 <h3 className="font-bold text-lg flex items-center gap-2">
                                     <Folder className="w-5 h-5 text-primary" />
-                                    Sub-projects (โปรเจคย่อย)
+                                    {locale === 'th' ? "โปรเจคย่อย (Sub-projects)" : "Sub-projects"}
                                 </h3>
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">

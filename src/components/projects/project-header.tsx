@@ -114,7 +114,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
                             <div className="flex flex-wrap items-center gap-4">
                                 <span className="px-4 py-2 rounded-full bg-white/10 border border-white/10 backdrop-blur-md text-white/90 text-[10px] md:text-sm flex items-center gap-2 font-bold tracking-tight shadow-xl">
                                     <Calendar className="w-4 h-4 text-primary" />
-                                    {project.startDate} — {project.endDate}
+                                    {new Date(project.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })} - {new Date(project.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
                                 </span>
 
                                 {/* Status Picker */}

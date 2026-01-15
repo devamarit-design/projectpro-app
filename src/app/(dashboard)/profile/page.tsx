@@ -16,6 +16,23 @@ export default function ProfilePage() {
         phone: "",
         email: ""
     })
+    const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+    const handleAvatarClick = () => {
+        fileInputRef.current?.click()
+    }
+
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file && currentUser) {
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                const base64 = reader.result as string
+                updateUser(currentUser.id, { avatar: base64 })
+            }
+            reader.readAsDataURL(file)
+        }
+    }
 
     React.useEffect(() => {
         if (currentUser) {
@@ -91,7 +108,10 @@ export default function ProfilePage() {
 
                 {/* Avatar Section */}
                 <div className="relative flex flex-col items-center">
-                    <div className="w-32 h-32 rounded-3xl bg-background shadow-2xl flex items-center justify-center text-4xl font-bold text-primary border-4 border-card relative group cursor-pointer overflow-hidden">
+                    <div
+                        onClick={handleAvatarClick}
+                        className="w-32 h-32 rounded-3xl bg-background shadow-2xl flex items-center justify-center text-4xl font-bold text-primary border-4 border-card relative group cursor-pointer overflow-hidden"
+                    >
                         {/* Placeholder Avatar */}
                         {!currentUser.avatar ? (
                             currentUser.name.charAt(0).toUpperCase()
@@ -103,6 +123,13 @@ export default function ProfilePage() {
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <Camera className="w-8 h-8 text-white" />
                         </div>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                        />
                     </div>
                     <div className="mt-4 text-center">
                         <h2 className="text-2xl font-bold">{currentUser.name}</h2>

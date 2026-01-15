@@ -13,11 +13,13 @@ interface HeaderProps { }
 
 import { useNotifications } from "@/context/notification-context"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export function Header({ }: HeaderProps) {
     const { locale, setLocale, t } = useTranslation()
     const { unreadCount } = useNotifications()
     const scrollDirection = useScrollDirection()
+    const router = useRouter()
 
     const toggleLanguage = () => {
         const newLocale = locale === 'en' ? 'th' : 'en'
@@ -27,13 +29,11 @@ export function Header({ }: HeaderProps) {
     return (
         <header
             className={cn(
-                "sticky top-4 z-40 flex h-16 shrink-0 items-center gap-x-4 bg-background/60 backdrop-blur-xl rounded-2xl mx-4 mt-2 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8 border border-white/10 transition-transform duration-300",
+                "sticky top-4 z-40 flex h-16 shrink-0 items-center gap-x-4 bg-background/60 backdrop-blur-xl rounded-2xl mx-4 mt-2 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8 border border-white/10 transition-transform duration-300 overflow-x-auto scrollbar-hide",
                 scrollDirection === "down" ? "-translate-y-24" : "translate-y-0"
             )}
         >
-
-
-            <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+            <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 min-w-max">
                 <div className="relative flex flex-1 items-center">
                     <Search className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                     <input
@@ -43,11 +43,12 @@ export function Header({ }: HeaderProps) {
                             if (e.key === "Enter") {
                                 const query = e.currentTarget.value
                                 if (query.trim()) {
-                                    window.location.href = `/search?q=${encodeURIComponent(query)}`
+                                    // Use router.push to avoid full reload (which triggers auth check and redirect)
+                                    router.push(`/search?q=${encodeURIComponent(query)}`)
                                 }
                             }
                         }}
-                        className="w-full max-w-sm pl-8 pr-4 py-1.5 text-sm bg-muted/50 border-none rounded-md focus:ring-1 focus:ring-primary focus:bg-background transition-all"
+                        className="w-full max-w-sm pl-8 pr-4 py-1.5 text-sm bg-muted/50 border-none rounded-md focus:ring-1 focus:ring-primary focus:bg-background transition-all min-w-[150px]"
                     />
                 </div>
                 <div className="flex items-center gap-x-4 lg:gap-x-6">
