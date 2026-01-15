@@ -40,8 +40,12 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
         const file = e.target.files?.[0]
         if (file) {
             setSelectedFile(file)
-            const url = URL.createObjectURL(file)
-            setPreviewUrl(url)
+            // Use FileReader to get Base64 string for persistence
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                setPreviewUrl(reader.result as string)
+            }
+            reader.readAsDataURL(file)
         }
     }
 

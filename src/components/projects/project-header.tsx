@@ -154,7 +154,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
                             </div>
 
                             <div className="relative space-y-3">
-                                <h1 className="text-4xl md:text-6xl lg:text-7xl font-black font-sans tracking-tighter leading-[1.1] drop-shadow-2xl">
+                                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-sans tracking-tighter leading-[1.1] drop-shadow-2xl">
                                     {project.name}
                                 </h1>
                                 <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-white/70 text-sm md:text-xl font-medium">
