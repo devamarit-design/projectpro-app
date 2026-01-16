@@ -9,11 +9,15 @@ import { uploadImage } from "@/lib/upload"
 import Link from "next/link"
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 
-export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
+import { useSearchParams } from "next/navigation"
+
+export default function EditProjectClient() {
+    const searchParams = useSearchParams()
+    const id = searchParams.get("id") || ""
     const { t } = useTranslation()
     const { updateProject, getProject, expenses, incomes, customers } = useProjects()
     const router = useRouter()
-    const { id } = use(params)
+    // const { id } = use(params) // Removed
     const project = getProject(id)
 
     // Calculate income and expenses from actual data
@@ -101,7 +105,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
             // Keep existing status and progress or allow editing them too? 
             // For now, simpler to just update details.
         })
-        router.push(`/projects/${id}`)
+        router.push(`/projects/detail?id=${id}`)
     }
 
 
@@ -110,7 +114,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
         <div className="space-y-6 pb-20">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <Link href={`/projects/${id}`} className="p-2 -ml-2 rounded-full hover:bg-muted/50 transition-colors">
+                <Link href={`/projects/detail?id=${id}`} className="p-2 -ml-2 rounded-full hover:bg-muted/50 transition-colors">
                     <ArrowLeft className="w-6 h-6" />
                 </Link>
                 <div>
@@ -329,7 +333,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
 
                 <div className="flex justify-end gap-4 pt-4">
                     <Link
-                        href={`/projects/${id}`}
+                        href={`/projects/detail?id=${id}`}
                         className="px-6 py-3 rounded-xl hover:bg-muted/50 transition-colors font-medium"
                     >
                         {t.common.cancel}

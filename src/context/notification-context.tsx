@@ -40,7 +40,7 @@ const MOCK_NOTIFICATIONS: Notification[] = [
         type: "success",
         date: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
         read: false,
-        link: "/projects/1",
+        link: "/projects/detail?id=1",
         relatedId: "proj-1"
     },
     {
@@ -70,7 +70,7 @@ const MOCK_NOTIFICATIONS: Notification[] = [
         type: "warning",
         date: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
         read: true,
-        link: "/projects/1",
+        link: "/projects/detail?id=1",
         relatedId: "proj-1"
     },
     {
@@ -157,7 +157,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                             type: 'error',
                             date: new Date().toISOString(),
                             read: !!readStatus[generateAlertId('overdue', task.id)],
-                            link: `/projects/${project.id}`,
+                            link: `/projects/detail?id=${project.id}`,
                             relatedId: task.id
                         })
                     }
@@ -172,7 +172,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                             type: 'warning',
                             date: new Date().toISOString(),
                             read: !!readStatus[generateAlertId('due', task.id)],
-                            link: `/projects/${project.id}`,
+                            link: `/projects/detail?id=${project.id}`,
                             relatedId: task.id
                         })
                     }

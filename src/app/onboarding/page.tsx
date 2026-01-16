@@ -12,7 +12,7 @@ export default function OnboardingPage() {
     // Auto-redirect if already has teams
     React.useEffect(() => {
         if (currentUser && teams.length > 0) {
-            router.push(`/projects/${teams[0].id}`) // Or dashboard
+            router.push(`/projects/detail?id=${teams[0].id}`) // Or dashboard
         }
     }, [currentUser, teams, router])
 

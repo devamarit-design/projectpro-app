@@ -337,107 +337,10 @@ interface ProjectContextType {
 }
 
 
+import { INITIAL_PROJECTS } from "@/lib/initial-data"
+
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined)
 
-// Initial Mock Data
-const INITIAL_PROJECTS: Project[] = [
-    {
-        id: "1",
-        name: "Modern Office Complex",
-        customer: "TechStart Inc.",
-        location: "Bangkok, Thailand",
-        status: "In Progress",
-        progress: 65,
-        budget: "฿12,500,000",
-        income: "฿8,000,000",
-        expenses: "฿7,500,000",
-        startDate: "2024-01-15",
-        endDate: "2024-11-30",
-        image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
-        description: "Renovation of existing office space including new electrical systems, HVAC, and interior design for a modern tech workspace.",
-        teamId: '1' // Headquarters
-    },
-    {
-        id: "2",
-        name: "Luxury Villa Renovation",
-        customer: "Mr. Anderson",
-        location: "Phuket, Thailand",
-        status: "Planning",
-        progress: 15,
-        budget: "฿8,200,000",
-        income: "฿1,500,000",
-        expenses: "฿500,000",
-        startDate: "2024-03-01",
-        endDate: "2024-08-30",
-        image: "https://images.unsplash.com/photo-1600596542815-e32c2159c82c?w=800&q=80",
-        description: "Complete overhaul of a 3-bedroom pool villa, including landscape redesign and smart home integration.",
-        teamId: '2' // Site Operations
-    },
-    {
-        id: "3",
-        name: "Urban Retail Store",
-        customer: "Fashion Co.",
-        location: "Siam Square, Bangkok",
-        status: "On Hold",
-        progress: 45,
-        budget: "฿4,500,000",
-        income: "฿2,000,000",
-        expenses: "฿1,800,000",
-        startDate: "2024-02-10",
-        endDate: "2024-05-20",
-        image: "https://images.unsplash.com/photo-1556740758-90de2742dd28?w=800&q=80",
-        description: "Interior fit-out for a new flagship retail store in a high-traffic shopping district.",
-        teamId: '3' // Design Studio
-    },
-    {
-        id: "4",
-        name: "Riverside Condo Interior",
-        customer: "Mrs. Linda",
-        location: "Charoen Nakhon, Bangkok",
-        status: "Completed",
-        progress: 100,
-        budget: "฿1,200,000",
-        income: "฿1,200,000",
-        expenses: "฿950,000",
-        startDate: "2023-11-01",
-        endDate: "2024-01-15",
-        image: "https://images.unsplash.com/photo-1502005229762-cf1e25e7c667?w=800&q=80",
-        description: "Modern minimalist interior design for a 2-bedroom condo unit with custom built-in furniture.",
-        teamId: '3' // Design Studio
-    },
-    {
-        id: "5",
-        name: "Factory Roof Repair",
-        customer: "Industrial Works Ltd.",
-        location: "Samut Prakan",
-        status: "In Progress",
-        progress: 30,
-        budget: "฿3,500,000",
-        income: "฿1,000,000",
-        expenses: "฿1,200,000",
-        startDate: "2024-01-05",
-        endDate: "2024-02-28",
-        image: "https://images.unsplash.com/photo-1565008447742-97f6f38c985c?w=800&q=80",
-        description: "Replacement of metal sheet roofing and installation of insulation for a large warehouse factory.",
-        teamId: '2' // Site Operations
-    },
-    {
-        id: "6",
-        name: "Co-working Space Setup",
-        customer: "Digital Nomads TH",
-        location: "Chiang Mai",
-        status: "Planning",
-        progress: 5,
-        budget: "฿5,000,000",
-        income: "฿500,000",
-        expenses: "฿100,000",
-        startDate: "2024-04-01",
-        endDate: "2024-09-01",
-        image: "https://images.unsplash.com/photo-1497215842964-222b430dc0a1?w=800&q=80",
-        description: "Renovation of an old shop house into a modern co-working space with cafe and meeting rooms.",
-        teamId: '1' // Headquarters
-    }
-]
 
 // Initial Mock Expenses
 const INITIAL_EXPENSES: Expense[] = [
@@ -790,7 +693,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     // Mock Projects
     // Real Data State (Initially Empty)
-    const [projects, setProjects] = useState<Project[]>([])
+    const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS as Project[])
     const [expenses, setExpenses] = useState<Expense[]>([])
     const [files, setFiles] = useState<ProjectFile[]>([])
     // Users are managed by filtering all users (or fetching team users - optimized later)

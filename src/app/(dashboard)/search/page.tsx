@@ -74,7 +74,7 @@ function SearchResultsContent() {
                         {filteredProjects.map(project => (
                             <Link
                                 key={project.id}
-                                href={`/projects/${project.id}`}
+                                href={`/projects/detail?id=${project.id}`}
                                 className="block p-4 rounded-xl border border-border bg-card hover:shadow-md transition-all group"
                             >
                                 <div className="flex justify-between items-start">

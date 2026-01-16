@@ -145,7 +145,7 @@ export default function CustomerDetailSheet({ customerId, onClose }: CustomerDet
                                     {customerProjects.map(project => (
                                         <Link
                                             key={project.id}
-                                            href={`/projects/${project.id}`}
+                                            href={`/projects/detail?id=${project.id}`}
                                             target="_blank"
                                             className="block group"
                                         >

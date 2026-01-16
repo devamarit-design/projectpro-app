@@ -16,7 +16,7 @@ export function ProjectCard({ project }: { project: ProjectCardProps }) {
     const percentage = Math.min(100, Math.max(0, project.progress))
 
     return (
-        <Link href={`/projects/${project.id}`} className="group block h-full">
+        <Link href={`/projects/detail?id=${project.id}`} className="group block h-full">
             <div className="flex flex-col h-full bg-card rounded-xl border border-border shadow-sm overflow-hidden hover:shadow-md transition-all duration-200">
                 <div className="relative h-40 w-full bg-muted">
                     {/* Placeholder Image Logic */}

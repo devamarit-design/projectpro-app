@@ -117,7 +117,7 @@ export default function ProjectsPage() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredProjects.length > 0 ? (
                     filteredProjects.map((project) => (
-                        <Link href={`/projects/${project.id}`} key={project.id} className="group glass-card rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-white/5 block">
+                        <Link href={`/projects/detail?id=${project.id}`} key={project.id} className="group glass-card rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-white/5 block">
                             {/* Project Image */}
                             <div className="h-48 w-full relative overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />

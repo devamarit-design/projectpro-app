@@ -2,16 +2,17 @@
 
 import * as React from "react"
 import { useProjects } from "@/context/project-context"
-import { useRouter, useParams } from "next/navigation"
-import { Building2, CheckCircle2, XCircle, Loader2 } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Building2, XCircle, Loader2 } from "lucide-react"
 import { doc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import { Suspense } from "react"
 
-export default function InvitePage() {
-    const { currentUser, setCurrentUser } = useProjects()
+function InviteContent() {
+    const { currentUser } = useProjects()
     const router = useRouter()
-    const params = useParams()
-    const code = params.code as string
+    const searchParams = useSearchParams()
+    const code = searchParams.get("code")
 
     const [status, setStatus] = React.useState<"loading" | "valid" | "invalid" | "success">("loading")
     const [teamName, setTeamName] = React.useState("")
@@ -19,7 +20,10 @@ export default function InvitePage() {
 
     React.useEffect(() => {
         const validateInvite = async () => {
-            if (!code) return
+            if (!code) {
+                setStatus("invalid")
+                return
+            }
 
             try {
                 // Find invite by code
@@ -74,9 +78,6 @@ export default function InvitePage() {
     }
 
     if (!currentUser) {
-        // Redirect to login with callback?
-        // For now, assume user must be logged in. 
-        // If not, maybe show "Please Login First"
         return (
             <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
                 <p>Please log in to join this team.</p>
@@ -143,5 +144,13 @@ export default function InvitePage() {
                 )}
             </div>
         </div>
+    )
+}
+
+export default function InvitePage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <InviteContent />
+        </Suspense>
     )
 }

@@ -1,36 +1,36 @@
 "use client"
 
-import React, { useState, use, useEffect } from "react"
+import { useState, useEffect } from "react"
+import { useTranslation } from "@/lib/i18n-context"
+import { useProjects } from "@/context/project-context"
 import {
-    ChevronRight,
-    Calendar,
-    MapPin,
-    DollarSign,
-    Info,
-    CheckCircle2,
-    Plus,
-    Check,
-    Trash2,
-    AlertCircle,
     LayoutDashboard,
     Receipt,
     CheckSquare,
-    TrendingDown,
     Folder,
+    Plus,
+    Calendar,
+    Info,
+    MoreVertical,
+    FileText,
+    TrendingDown,
+    ArrowUpRight,
+    ArrowDownRight,
+    DollarSign,
+    Target,
+    Filter,
+    Download,
+    Upload,
     File,
     Image as ImageIcon,
-    FileText,
     FileSpreadsheet,
     Film,
-    Upload,
-    MoreVertical,
-    Download,
+    AlertCircle,
     User,
-    Filter
-} from "lucide-react"
+    ChevronRight,
+    Check
+} from "lucide-react" // Ensure icons are correct, Step 85 didn't show imports 1-35 but they are standard. 
 import Link from "next/link"
-import { useTranslation } from "@/lib/i18n-context"
-import { useProjects } from "@/context/project-context"
 import { ProjectHeader } from "@/components/projects/project-header"
 import { cn } from "@/lib/utils"
 // Components
@@ -39,12 +39,16 @@ import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
 import AddTaskDialog from "@/components/tasks/add-task-dialog"
 import { FinancialReportPDF } from '@/components/financials/financial-report-pdf'
 import { PDFDownloadLink } from '@react-pdf/renderer'
+import { TaskBoard } from "@/components/tasks/task-board"
 
-export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+import { useSearchParams } from "next/navigation"
+
+export default function ProjectDetailClient() {
+    const searchParams = useSearchParams()
+    const id = searchParams.get("id") || ""
     const { t, locale } = useTranslation()
-    const { getProject, addTask, addSubProject, deleteTask, toggleTask, expenses, files, addFile, currentUser, users, incomes } = useProjects()
+    const { getProject, addTask, addSubProject, deleteTask, toggleTask, updateTask, expenses, files, addFile, currentUser, users, incomes } = useProjects()
     const [activeTab, setActiveTab] = useState("overview")
-    const { id } = use(params)
     const project = getProject(id)
 
     const projectFiles = files.filter(f => f.projectId === id)
@@ -636,6 +640,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                 )}
 
+                {/* TASKS TAB CONTENT */}
                 {activeTab === 'tasks' && (
                     <div className="space-y-6">
                         {/* Quick Add Task */}
@@ -671,141 +676,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         </div>
 
                         <div className="flex-1 overflow-x-auto min-h-0">
-                            <div className="flex gap-6 h-[85vh] min-h-[800px] min-w-[800px] pb-4 px-1">
-                                {(["Todo", "In Progress", "Done"] as const).map((status) => {
-                                    // Use project.tasks for base, then filter by status AND permissions
-                                    const baseTasks = project.tasks || []
-
-                                    const statusTasks = baseTasks.filter(task => {
-                                        // 1. Status Check
-                                        if (task.status !== status) return false
-
-                                        // 2. Permission Check
-                                        const isAdmin = currentUser?.role === 'Owner' || currentUser?.role === 'Admin'
-
-                                        if (isAdmin) {
-                                            // Admin: Filter by userFilter if set
-                                            if (userFilter !== "all") {
-                                                return task.assignedTo === userFilter
-                                            }
-                                            return true
-                                        } else {
-                                            // User: Only own tasks
-                                            return task.assignedTo === currentUser?.name
-                                        }
-                                    })
-
-                                    const priorityColors: Record<string, string> = {
-                                        High: "bg-red-500/10 text-red-500 border-red-500/20",
-                                        Medium: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-                                        Low: "bg-slate-500/10 text-slate-500 border-slate-500/20"
-                                    }
-
-                                    const statusColors: Record<string, string> = {
-                                        Todo: "bg-slate-500",
-                                        "In Progress": "bg-blue-500",
-                                        Done: "bg-green-500"
-                                    }
-
-                                    const getStatusTranslation = (status: string) => {
-                                        switch (status) {
-                                            case 'Todo': return t.projects.detail.tasks.status.todo
-                                            case 'In Progress': return t.projects.detail.tasks.status.in_progress
-                                            case 'Done': return t.projects.detail.tasks.status.done
-                                            default: return status
-                                        }
-                                    }
-
-                                    return (
-                                        <div key={status} className="flex-1 flex flex-col h-full bg-muted/30 dark:bg-muted/10 rounded-2xl border border-white/5 overflow-hidden">
-                                            <div className="p-4 flex items-center justify-between border-b border-white/5 bg-muted/20 backdrop-blur-sm">
-                                                <h3 className="font-bold text-sm uppercase tracking-wider flex items-center gap-2">
-                                                    <div className={cn("w-2 h-2 rounded-full shadow-lg ring-2 ring-opacity-20", statusColors[status].replace('bg-', 'ring-'))} style={{ backgroundColor: 'currentColor' }} />
-                                                    <span className={cn(status === 'Todo' ? 'text-slate-500' : status === 'In Progress' ? 'text-blue-500' : 'text-green-500')}>{getStatusTranslation(status)}</span>
-                                                    <span className="ml-1 text-[10px] text-muted-foreground bg-background/50 px-2 py-0.5 rounded-full border border-white/5 font-medium">
-                                                        {statusTasks.length}
-                                                    </span>
-                                                </h3>
-                                            </div>
-
-                                            <div className="flex-1 p-3 space-y-3 overflow-y-auto scrollbar-hide">
-                                                {statusTasks.map((task) => (
-                                                    <div
-                                                        key={task.id}
-                                                        className={cn(
-                                                            "glass-card w-full p-4 rounded-xl border border-white/5 hover:border-primary/20 hover:-translate-y-1 cursor-pointer transition-all group relative overflow-hidden bg-card/50",
-                                                            task.status === 'Done' && "opacity-75"
-                                                        )}
-                                                    >
-                                                        <div className="flex justify-between items-start mb-3">
-                                                            <span className={cn(
-                                                                "text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide border",
-                                                                priorityColors[task.priority]
-                                                            )}>
-                                                                {task.priority || t.projects.detail.tasks.priority.low}
-                                                            </span>
-                                                            <div className="flex items-center gap-1">
-                                                                <button
-                                                                    onClick={() => toggleTask(project.id, task.id)}
-                                                                    className={cn(
-                                                                        "w-5 h-5 rounded-full border flex items-center justify-center transition-all",
-                                                                        task.status === 'Done' ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground/30 hover:border-primary"
-                                                                    )}
-                                                                >
-                                                                    {task.status === 'Done' && <Check className="w-3 h-3" />}
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => deleteTask(project.id, task.id)}
-                                                                    className="p-1 text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-
-                                                        <h4 className={cn("font-semibold text-sm mb-2 group-hover:text-primary transition-colors leading-snug", task.status === 'Done' && "line-through text-muted-foreground")}>
-                                                            {task.title}
-                                                        </h4>
-
-                                                        <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10">
-                                                                    {/* Simple Avatar */}
-                                                                    <span className="text-[10px] font-bold text-primary">
-                                                                        {(task.assignedTo || "U").charAt(0)}
-                                                                    </span>
-                                                                </div>
-                                                                <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px]">{task.assignedTo || t.projects.detail.tasks.unassigned}</span>
-                                                            </div>
-                                                            <div className={cn(
-                                                                "flex items-center gap-1 text-[10px] font-bold uppercase tracking-tight",
-                                                                task.status === 'Done' ? 'text-green-500' : 'text-orange-500'
-                                                            )}>
-                                                                {task.dueDate && <Calendar className="w-3 h-3" />}
-                                                                {task.dueDate}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-
-                                                {statusTasks.length === 0 && (
-                                                    <div className="h-24 rounded-xl border-2 border-dashed border-muted flex items-center justify-center p-4 text-center opacity-50">
-                                                        <p className="text-xs text-muted-foreground font-medium">{t.projects.detail.tasks.empty}</p>
-                                                    </div>
-                                                )}
-
-                                                <button
-                                                    onClick={() => setIsAddTaskOpen(true)}
-                                                    className="w-full py-3 border border-dashed border-primary/20 bg-primary/5 rounded-xl text-xs font-bold uppercase tracking-widest text-primary/70 hover:bg-primary/10 hover:text-primary transition-all flex items-center justify-center gap-2 group mt-2"
-                                                >
-                                                    <Plus className="w-3.5 h-3.5 group-hover:scale-125 transition-transform" />
-                                                    {t.projects.detail.tasks.add_task}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
+                            <TaskBoard
+                                projectId={project.id}
+                                tasks={project.tasks || []}
+                                users={users}
+                                currentUser={currentUser}
+                                userFilter={userFilter}
+                                onUpdateTask={updateTask}
+                                onDeleteTask={deleteTask}
+                                onToggleTask={toggleTask}
+                                t={t}
+                            />
                         </div>
                     </div>
                 )}
@@ -878,11 +759,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         )}
                     </div>
                 )}
-            </div>
+            </div >
 
 
             {/* Dialogs */}
-            <AddExpenseDialog
+            < AddExpenseDialog
                 isOpen={isAddExpenseOpen}
                 onClose={() => setIsAddExpenseOpen(false)}
                 defaultProjectId={project.id}
@@ -900,212 +781,218 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             />
 
             {/* Task/Sub-project Detail Sheet */}
-            {selectedTaskId && (() => {
-                const selectedTask = project.tasks?.find(t => t.id === selectedTaskId)
-                if (!selectedTask) return null
-                return (
+            {
+                selectedTaskId && (() => {
+                    const selectedTask = project.tasks?.find(t => t.id === selectedTaskId)
+                    if (!selectedTask) return null
+                    return (
+                        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+                            <div
+                                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                                onClick={() => setSelectedTaskId(null)}
+                            />
+                            <div className="relative bg-background border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold">Sub-project Details</h3>
+                                    <button
+                                        onClick={() => setSelectedTaskId(null)}
+                                        className="p-2 hover:bg-muted rounded-full transition-colors"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Title</p>
+                                        <p className="font-semibold text-lg">{selectedTask.title}</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Status</p>
+                                            <span className={cn(
+                                                "inline-block px-3 py-1 rounded-full text-xs font-bold uppercase",
+                                                selectedTask.status === 'Done' ? 'bg-green-500/10 text-green-500' :
+                                                    selectedTask.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
+                                                        'bg-yellow-500/10 text-yellow-500'
+                                            )}>
+                                                {selectedTask.status}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Priority</p>
+                                            <span className={cn(
+                                                "inline-block px-3 py-1 rounded-full text-xs font-bold uppercase",
+                                                selectedTask.priority === 'High' ? 'bg-red-500/10 text-red-500' :
+                                                    selectedTask.priority === 'Medium' ? 'bg-yellow-500/10 text-yellow-500' :
+                                                        'bg-green-500/10 text-green-500'
+                                            )}>
+                                                {selectedTask.priority}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Assigned To</p>
+                                            <p className="font-medium">{selectedTask.assignedTo || 'Unassigned'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Due Date</p>
+                                            <p className="font-medium">
+                                                {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 pt-4">
+                                    <button
+                                        onClick={() => {
+                                            setSelectedTaskId(null)
+                                            setActiveTab('tasks')
+                                        }}
+                                        className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
+                                    >
+                                        View in Tasks Tab
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedTaskId(null)}
+                                        className="px-6 py-3 border border-white/10 rounded-xl font-medium hover:bg-muted transition-colors"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                })()
+            }
+
+            {/* Add Sub-project Dialog */}
+            {
+                isAddSubProjectOpen && (
                     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
                         <div
                             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                            onClick={() => setSelectedTaskId(null)}
+                            onClick={() => setIsAddSubProjectOpen(false)}
                         />
-                        <div className="relative bg-background border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold">Sub-project Details</h3>
-                                <button
-                                    onClick={() => setSelectedTaskId(null)}
-                                    className="p-2 hover:bg-muted rounded-full transition-colors"
-                                >
-                                    ✕
-                                </button>
+                        <div className="relative bg-background border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 animate-in slide-in-from-bottom-4">
+                            <h3 className="text-lg font-bold">Add Sub-project (โปรเจคย่อย)</h3>
+
+                            <div className="space-y-3">
+                                <input
+                                    type="text"
+                                    placeholder="Sub-project name..."
+                                    value={newSubProjectName}
+                                    onChange={(e) => setNewSubProjectName(e.target.value)}
+                                    className="w-full px-4 py-3 bg-muted/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none"
+                                    autoFocus
+                                />
                             </div>
 
-                            <div className="space-y-4">
-                                <div>
-                                    <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Title</p>
-                                    <p className="font-semibold text-lg">{selectedTask.title}</p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Status</p>
-                                        <span className={cn(
-                                            "inline-block px-3 py-1 rounded-full text-xs font-bold uppercase",
-                                            selectedTask.status === 'Done' ? 'bg-green-500/10 text-green-500' :
-                                                selectedTask.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
-                                                    'bg-yellow-500/10 text-yellow-500'
-                                        )}>
-                                            {selectedTask.status}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Priority</p>
-                                        <span className={cn(
-                                            "inline-block px-3 py-1 rounded-full text-xs font-bold uppercase",
-                                            selectedTask.priority === 'High' ? 'bg-red-500/10 text-red-500' :
-                                                selectedTask.priority === 'Medium' ? 'bg-yellow-500/10 text-yellow-500' :
-                                                    'bg-green-500/10 text-green-500'
-                                        )}>
-                                            {selectedTask.priority}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Assigned To</p>
-                                        <p className="font-medium">{selectedTask.assignedTo || 'Unassigned'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Due Date</p>
-                                        <p className="font-medium">
-                                            {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 pt-4">
+                            <div className="flex gap-3 pt-2">
                                 <button
                                     onClick={() => {
-                                        setSelectedTaskId(null)
-                                        setActiveTab('tasks')
+                                        if (newSubProjectName.trim()) {
+                                            addSubProject(project.id, {
+                                                name: newSubProjectName.trim(),
+                                                status: "Planning"
+                                            })
+                                            setNewSubProjectName("")
+                                            setIsAddSubProjectOpen(false)
+                                        }
                                     }}
-                                    className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
+                                    disabled={!newSubProjectName.trim()}
+                                    className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                                 >
-                                    View in Tasks Tab
+                                    Add Sub-project
                                 </button>
                                 <button
-                                    onClick={() => setSelectedTaskId(null)}
+                                    onClick={() => {
+                                        setNewSubProjectName("")
+                                        setIsAddSubProjectOpen(false)
+                                    }}
                                     className="px-6 py-3 border border-white/10 rounded-xl font-medium hover:bg-muted transition-colors"
                                 >
-                                    Close
+                                    Cancel
                                 </button>
                             </div>
                         </div>
                     </div>
                 )
-            })()}
-
-            {/* Add Sub-project Dialog */}
-            {isAddSubProjectOpen && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-                    <div
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        onClick={() => setIsAddSubProjectOpen(false)}
-                    />
-                    <div className="relative bg-background border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 animate-in slide-in-from-bottom-4">
-                        <h3 className="text-lg font-bold">Add Sub-project (โปรเจคย่อย)</h3>
-
-                        <div className="space-y-3">
-                            <input
-                                type="text"
-                                placeholder="Sub-project name..."
-                                value={newSubProjectName}
-                                onChange={(e) => setNewSubProjectName(e.target.value)}
-                                className="w-full px-4 py-3 bg-muted/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none"
-                                autoFocus
-                            />
-                        </div>
-
-                        <div className="flex gap-3 pt-2">
-                            <button
-                                onClick={() => {
-                                    if (newSubProjectName.trim()) {
-                                        addSubProject(project.id, {
-                                            name: newSubProjectName.trim(),
-                                            status: "Planning"
-                                        })
-                                        setNewSubProjectName("")
-                                        setIsAddSubProjectOpen(false)
-                                    }
-                                }}
-                                disabled={!newSubProjectName.trim()}
-                                className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-                            >
-                                Add Sub-project
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setNewSubProjectName("")
-                                    setIsAddSubProjectOpen(false)
-                                }}
-                                className="px-6 py-3 border border-white/10 rounded-xl font-medium hover:bg-muted transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            }
 
             {/* Sub-project Detail Sheet */}
-            {selectedSubProjectId && (() => {
-                const selectedSP = project.subProjects?.find(sp => sp.id === selectedSubProjectId)
-                if (!selectedSP) return null
-                return (
-                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-                        <div
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                            onClick={() => setSelectedSubProjectId(null)}
-                        />
-                        <div className="relative bg-background border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 animate-in slide-in-from-bottom-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold">Sub-project Details</h3>
-                                <button
-                                    onClick={() => setSelectedSubProjectId(null)}
-                                    className="p-2 hover:bg-muted rounded-full transition-colors"
-                                >
-                                    ✕
-                                </button>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Name</p>
-                                    <p className="font-semibold text-lg">{selectedSP.name}</p>
+            {
+                selectedSubProjectId && (() => {
+                    const selectedSP = project.subProjects?.find(sp => sp.id === selectedSubProjectId)
+                    if (!selectedSP) return null
+                    return (
+                        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+                            <div
+                                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                                onClick={() => setSelectedSubProjectId(null)}
+                            />
+                            <div className="relative bg-background border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 animate-in slide-in-from-bottom-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold">Sub-project Details</h3>
+                                    <button
+                                        onClick={() => setSelectedSubProjectId(null)}
+                                        className="p-2 hover:bg-muted rounded-full transition-colors"
+                                    >
+                                        ✕
+                                    </button>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-4">
                                     <div>
-                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Status</p>
-                                        <span className={cn(
-                                            "inline-block px-3 py-1 rounded-full text-xs font-bold uppercase",
-                                            selectedSP.status === 'Done' ? 'bg-green-500/10 text-green-500' :
-                                                selectedSP.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
-                                                    'bg-yellow-500/10 text-yellow-500'
-                                        )}>
-                                            {selectedSP.status}
-                                        </span>
+                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Name</p>
+                                        <p className="font-semibold text-lg">{selectedSP.name}</p>
                                     </div>
-                                    {selectedSP.budget && (
+
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Budget</p>
-                                            <p className="font-medium">{selectedSP.budget}</p>
+                                            <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Status</p>
+                                            <span className={cn(
+                                                "inline-block px-3 py-1 rounded-full text-xs font-bold uppercase",
+                                                selectedSP.status === 'Done' ? 'bg-green-500/10 text-green-500' :
+                                                    selectedSP.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
+                                                        'bg-yellow-500/10 text-yellow-500'
+                                            )}>
+                                                {selectedSP.status}
+                                            </span>
+                                        </div>
+                                        {selectedSP.budget && (
+                                            <div>
+                                                <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Budget</p>
+                                                <p className="font-medium">{selectedSP.budget}</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {selectedSP.description && (
+                                        <div>
+                                            <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Description</p>
+                                            <p className="text-sm text-muted-foreground">{selectedSP.description}</p>
                                         </div>
                                     )}
                                 </div>
 
-                                {selectedSP.description && (
-                                    <div>
-                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Description</p>
-                                        <p className="text-sm text-muted-foreground">{selectedSP.description}</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    onClick={() => setSelectedSubProjectId(null)}
-                                    className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
-                                >
-                                    Close
-                                </button>
+                                <div className="flex gap-3 pt-4">
+                                    <button
+                                        onClick={() => setSelectedSubProjectId(null)}
+                                        className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )
-            })()}
+                    )
+                })()
+            }
         </div >
     )
 }

@@ -64,7 +64,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/10 z-10" />
 
                 {/* Top Actions */}
-                <div className="absolute top-8 left-8 right-8 z-50 flex justify-between items-start pointer-events-none">
+                <div className="absolute top-4 left-4 right-4 md:top-8 md:left-8 md:right-8 z-[100] flex justify-between items-start pointer-events-none">
                     <Link href="/projects" className="p-3.5 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-xl transition-all inline-flex pointer-events-auto shadow-2xl hover:scale-110 active:scale-90 border border-white/10">
                         <ArrowLeft className="w-6 h-6" />
                     </Link>
@@ -82,7 +82,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
                                 <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
                                 <div className="absolute right-0 top-14 w-56 bg-card/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                     <Link
-                                        href={`/projects/${project.id}/edit`}
+                                        href={`/projects/edit?id=${project.id}`}
                                         className="flex items-center gap-3 px-5 py-4 hover:bg-muted/50 transition-colors text-sm font-semibold"
                                     >
                                         <Edit className="w-4.5 h-4.5 text-primary" />
