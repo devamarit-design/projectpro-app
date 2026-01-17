@@ -32,7 +32,7 @@ export function Sidebar({ className }: { className?: string }) {
     const navItems = [
         { href: "/", label: t.common.dashboard, icon: LayoutDashboard },
         { href: "/projects", label: t.common.projects, icon: FolderKanban },
-        { href: "/income", label: t.common.income, icon: FileText },
+        { href: "/income", label: t.common.income, icon: FileText, permission: "INCOME_CREATE" },
         { href: "/expenses", label: t.common.expenses, icon: CreditCard },
         { href: "/tasks", label: t.common.tasks, icon: CheckSquare },
         { href: "/storage", label: t.common.storage, icon: HardDrive },
