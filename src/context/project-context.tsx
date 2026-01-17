@@ -1053,18 +1053,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         })
 
         // 6. Incomes
-        let unsubIncomes: () => void = () => { }
-            ; (async () => {
-                // ... (Migration logic skipped for brevity, keeping existing structure if possible or assuming simple query for now to match strict replacement)
-                // Simplified for this replacement to avoid complexity:
-                const qIncomes = query(collection(db, "incomes"), where("teamId", "==", currentTeam.id))
-                unsubIncomes = onSnapshot(qIncomes, (snap) => {
-                    const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
-                    setIncomes(data)
-                    set(`incomes_${currentTeam.id}`, data) // Update Cache
-                    setIncomesLoading(false)
-                })
-            })()
+        const qIncomes = query(collection(db, "incomes"), where("teamId", "==", currentTeam.id))
+        const unsubIncomes = onSnapshot(qIncomes, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
+            setIncomes(data)
+            set(`incomes_${currentTeam.id}`, data) // Update Cache
+            setIncomesLoading(false)
+        })
 
         // 7. Contracts
         const qContracts = query(collection(db, "contracts"), where("teamId", "==", currentTeam.id))
@@ -1232,83 +1227,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             console.error("Error toggling task", e)
         }
     }
-
-    // SaaS Context
-
-
-    // Load Data Effect (SaaS Aware)
-    useEffect(() => {
-        // If no user or no org selected, we might clear data or show nothing
-        if (!currentUser) return // Auth handled by listener below, but data fetching depends on Org
-
-        // If generic listener below is for AUTH, we need a separate listener for DATA based on Org
-        if (!currentOrg) {
-            // Reset data if no org
-            setProjects([])
-            setExpenses([])
-            setIncomes([])
-
-            setTasks([])
-            return
-        }
-
-        setIsLoading(true)
-
-        // 1. Projects (Filtered by Org)
-        // Check if legacy user without orgId in projects? 
-        // For migration, we might need to handle projects with teamId matching orgId if we treat teamId as orgId temporarily.
-        // Or strictly look for orgId field. 
-        // Let's assume we are migrating to use teamId AS orgId for now or adding orgId field.
-        // STRATEGY: Use currentOrg.id as the filter.
-
-        const qProjects = query(
-            collection(db, "projects"),
-            where("teamId", "==", currentOrg.id) // Map teamId to OrgId for compatibility
-        )
-
-        const unsubProjects = onSnapshot(qProjects, (snapshot) => {
-            const projectsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project))
-            setProjects(projectsData)
-        })
-
-        // 2. Expenses
-        const qExpenses = query(collection(db, "expenses"), where("teamId", "==", currentOrg.id))
-        const unsubExpenses = onSnapshot(qExpenses, (snapshot) => {
-            const expensesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense))
-            setExpenses(expensesData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
-        })
-
-        // 3. Incomes/Docs
-        const qIncome = query(collection(db, "income"), where("teamId", "==", currentOrg.id))
-        const unsubIncome = onSnapshot(qIncome, (snapshot) => {
-            const incomeData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as IncomeDocument))
-
-            setIncomes(incomeData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
-        })
-
-        // 4. Tasks (Global list for board)
-        // Note: Tasks are usually sub-collection? Or root?
-        // In this app, tasks seem to be stored in 'projects' array mostly, but if there's a root collection:
-        // Checking seed-data, tasks are in 'projects' array.
-        // BUT if we have root tasks collection (for 'My Tasks' view across projects), we query it.
-        // Assuming we rely on project.tasks for now based on Task Board impl.
-
-        // 5. Team/Users
-        const qUsers = query(collection(db, "users"), where("teamIds", "array-contains", currentOrg.id))
-        const unsubUsers = onSnapshot(qUsers, (snapshot) => {
-            const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User))
-            setUsers(usersData)
-        })
-
-        setIsLoading(false)
-
-        return () => {
-            unsubProjects()
-            unsubExpenses()
-            unsubIncome()
-            unsubUsers()
-        }
-    }, [currentUser, currentOrg]) // Rerun when Org changes
 
     const payInstallment = async (contractId: string, installmentId: string) => {
         if (!currentTeam) return
