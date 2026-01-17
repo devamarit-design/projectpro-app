@@ -9,6 +9,7 @@ import { SettingsProvider } from "@/context/settings-context";
 import { SecurityProvider } from "@/context/security-context";
 import { LockScreen } from "@/components/auth/lock-screen";
 import { OrganizationProvider } from "@/context/organization-context"; // New Import
+import { ThemeSync } from "@/components/theme-sync";
 
 const kanit = Kanit({
   subsets: ["latin", "thai"],
@@ -55,6 +56,7 @@ export default function RootLayout({
                   <NotificationProvider>
                     <SecurityProvider>
                       <LockScreen />
+                      <ThemeSync />
                       {children}
                     </SecurityProvider>
                   </NotificationProvider>

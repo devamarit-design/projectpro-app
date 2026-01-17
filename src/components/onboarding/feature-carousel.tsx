@@ -60,7 +60,7 @@ export default function FeatureCarousel({ onComplete }: FeatureCarouselProps) {
     }
 
     return (
-        <div className="w-full h-full flex flex-col relative overflow-hidden bg-black text-white">
+        <div className="w-full min-h-screen flex flex-col relative overflow-hidden bg-black text-white">
             {/* Background Image with Overlay */}
             <div className="absolute inset-0 z-0">
                 <AnimatePresence mode="wait">

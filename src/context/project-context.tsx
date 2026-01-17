@@ -128,6 +128,8 @@ export interface User {
     avatar?: string // Profile picture URL
     status: "Active" | "Inactive"
     teamIds: string[] // Legacy support
+    display?: string // Display Mode (Compact/Comfortable)
+    theme?: string // Theme Preference (Light/Dark/System)
     organizations?: { orgId: string, role: string }[] // New SaaS Structure
 }
 
@@ -876,6 +878,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 status: "Active",
                 teamIds: [],
                 avatar: undefined,
+                theme: "system", // Default to system
                 joinedDate: new Date().toISOString()
             }
 
