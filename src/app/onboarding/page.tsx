@@ -2,12 +2,14 @@
 
 import * as React from "react"
 import { useProjects } from "@/context/project-context"
+import { useOrganization } from "@/context/organization-context"
 import { useRouter } from "next/navigation"
 import { Building2, Users, ArrowRight, Plus, Loader2 } from "lucide-react"
 import FeatureCarousel from "@/components/onboarding/feature-carousel"
 
 export default function OnboardingPage() {
     const { currentUser, teams, addTeam } = useProjects()
+    const { joinOrganizationByCode } = useOrganization()
     const router = useRouter()
 
     // Auto-redirect if already has teams
@@ -19,7 +21,9 @@ export default function OnboardingPage() {
 
     const [step, setStep] = React.useState<"showcase" | "welcome" | "create" | "join">("showcase")
     const [teamName, setTeamName] = React.useState("")
+    const [inviteCode, setInviteCode] = React.useState("")
     const [isLoading, setIsLoading] = React.useState(false)
+    const [error, setError] = React.useState<string | null>(null)
 
     const handleCreateTeam = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -31,6 +35,25 @@ export default function OnboardingPage() {
             // Redirect will happen automatically via useEffect once team is added
         } catch (error) {
             console.error("Failed to create team", error)
+            setIsLoading(false)
+        }
+    }
+
+    const handleJoinByCode = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!inviteCode.trim()) return
+
+        setIsLoading(true)
+        setError(null)
+        try {
+            const teamName = await joinOrganizationByCode(inviteCode)
+            // Success! Redirect handled by context reload or we can force it here
+            // But let's show success state briefly? 
+            // The context reload might be abrupt. 
+            // Actually context logic reloads page.
+        } catch (error: any) {
+            console.error("Failed to join team", error)
+            setError(error.message || "Failed to join team")
             setIsLoading(false)
         }
     }
@@ -179,7 +202,30 @@ export default function OnboardingPage() {
                             </div>
                         </div>
 
-                        {/* Future: Manual Code Input */}
+                        <form onSubmit={handleJoinByCode} className="space-y-4 pt-4 border-t border-white/10">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Or enter a code manualy</label>
+                                <div className="space-y-4">
+                                    <input
+                                        type="text"
+                                        value={inviteCode}
+                                        onChange={(e) => setInviteCode(e.target.value)}
+                                        placeholder="Enter Invite Code"
+                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono text-center tracking-widest uppercase"
+                                    />
+                                    {error && (
+                                        <p className="text-sm text-red-500 text-center bg-red-500/10 py-2 rounded-lg border border-red-500/20">{error}</p>
+                                    )}
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading || !inviteCode.trim()}
+                                        className="w-full bg-white text-black py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Join Team"}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 )}
             </div>
