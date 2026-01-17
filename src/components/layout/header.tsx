@@ -37,7 +37,13 @@ export function Header({ }: HeaderProps) {
                 <div className="relative flex flex-1 items-center">
                     <Search className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                     <input
-                        type="text"
+                        type="search"
+                        name="q"
+                        id="header-search"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck="false"
                         placeholder={t.common.search}
                         onKeyDown={(e) => {
                             if (e.key === "Enter") {
