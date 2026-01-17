@@ -33,16 +33,20 @@ function ExpensesContent() {
     const [monthFilter, setMonthFilter] = React.useState<string>("all")
 
     // Check for 'action=new' param
-    // Check for 'action=new' or 'editId' params (from Notifications)
+    // Check for 'action=new' or 'editId' or 'id' params (from Notifications)
     React.useEffect(() => {
         const action = searchParams.get('action')
         const editId = searchParams.get('editId')
+        const id = searchParams.get('id')
 
         if (action === 'new') {
             setIsAddOpen(true)
             router.replace('/expenses')
         } else if (editId) {
             setSelectedExpenseId(editId)
+            router.replace('/expenses')
+        } else if (id) {
+            setSelectedExpenseId(id)
             router.replace('/expenses')
         }
     }, [searchParams, router])

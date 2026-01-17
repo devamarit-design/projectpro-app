@@ -1467,7 +1467,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         if (!currentTeam) return
         try {
             // Ensure teamId is attached
-            await addDoc(collection(db, "expenses"), {
+            const docRef = await addDoc(collection(db, "expenses"), {
                 ...expense,
                 teamId: currentTeam.id
             })
@@ -1479,8 +1479,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 type: 'info',
                 date: new Date().toISOString(),
                 read: false,
-                link: '/expenses',
-                relatedId: 'expense-new',
+                link: `/expenses?id=${docRef.id}`,
+                relatedId: docRef.id,
                 target: 'all',
                 teamId: currentTeam.id,
                 creatorId: currentUser?.id
