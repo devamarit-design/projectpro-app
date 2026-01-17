@@ -957,7 +957,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     cachedIncomes,
                     cachedContracts,
                     cachedTasks,
-                    cachedUsers
+                    cachedUsers,
+                    cachedFiles
                 ] = await Promise.all([
                     get(`projects_${currentTeam.id}`),
                     get(`expenses_${currentTeam.id}`),
@@ -967,7 +968,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     get(`incomes_${currentTeam.id}`),
                     get(`contracts_${currentTeam.id}`),
                     get(`tasks_${currentTeam.id}`),
-                    get(`users_${currentTeam.id}`)
+                    get(`users_${currentTeam.id}`),
+                    get(`files_${currentTeam.id}`)
                 ])
 
                 if (cachedProjects) setProjects(cachedProjects)
@@ -982,6 +984,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 if (cachedContracts) setContracts(cachedContracts)
                 if (cachedTasks) setTasks(cachedTasks)
                 if (cachedUsers) setUsers(cachedUsers)
+                if (cachedFiles) setFiles(cachedFiles)
 
                 // If we found projects, we can assume initial loading is "done" visually
                 if (cachedProjects) setIsLoading(false)
@@ -1074,6 +1077,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             }
         })
 
+        // 10. Files
+        const qFiles = query(collection(db, "files"), where("teamId", "==", currentTeam.id))
+        const unsubFiles = onSnapshot(qFiles, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectFile))
+            setFiles(data)
+            set(`files_${currentTeam.id}`, data) // Update Cache
+        })
+
         return () => {
             unsubProjects()
             unsubExpenses()
@@ -1084,6 +1095,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             unsubContracts()
             unsubTasks()
             unsubUsers()
+            unsubFiles()
         }
     }, [currentTeam])
 
