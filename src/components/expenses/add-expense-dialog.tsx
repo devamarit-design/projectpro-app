@@ -383,6 +383,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                         <option value="">Select Role...</option>
                                         <option value="Staff">Staff</option>
                                         <option value="Foreman">Foreman</option>
+                                        <option value="Accountant">Accountant</option>
                                         <option value="Contractor">Contractor (ช่างเหมา)</option>
                                         <option value="Technician">Technician (ช่าง)</option>
                                         <option value="Admin">Admin</option>
