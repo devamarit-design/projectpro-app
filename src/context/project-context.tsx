@@ -764,7 +764,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         if (!currentUser) return []
         return userOrgs.map(org => {
             const member = org.members?.find(m => m.userId === currentUser.id)
-            const role = org.ownerId === currentUser.id ? "Owner" : (member?.role || "Member")
+            const role = org.ownerId === currentUser.id ? "Owner" : (member?.role || "Staff")
 
             return {
                 id: org.id,
