@@ -14,8 +14,7 @@ export default function JoinOrganizationPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
     const router = useRouter()
-    const { joinOrganization } = useOrganization()
-
+    const { joinOrganizationByCode } = useOrganization()
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -25,18 +24,14 @@ export default function JoinOrganizationPage() {
         setError("")
 
         try {
-            // Mock implementation until Context is updated
-            console.log("Joining org with code:", inviteCode)
-            // await joinOrganization(inviteCode)
-
-            // Simulating API call
-            await new Promise(resolve => setTimeout(resolve, 1000))
-
-            // For now, show error because logic isn't there
-            setError("Join functionality is coming soon! Please ask an admin to invite you via email.")
-
+            await joinOrganizationByCode(inviteCode)
+            router.push("/")
+            // Force reload to sync context if needed, though router.push might be enough. 
+            // Context reload handled in setCurrentOrg but join might not switch immediately without reload?
+            // Safer to let them land on dashboard.
         } catch (err) {
-            setError("Invalid invite code or unable to join.")
+            console.error(err)
+            setError(err instanceof Error ? err.message : "Invalid invite code or unable to join.")
         } finally {
             setIsLoading(false)
         }

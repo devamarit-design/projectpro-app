@@ -238,8 +238,10 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
         // Avoid duplicates in user profile too
         if (!existingOrgs.some((o: any) => o.orgId === orgId)) {
+            const teamIds = userData?.teamIds || []
             await setDoc(userRef, {
-                organizations: [...existingOrgs, { orgId: orgId, role: "Staff" }]
+                organizations: [...existingOrgs, { orgId: orgId, role: "Staff" }],
+                teamIds: Array.from(new Set([...teamIds, orgId])) // Legacy compatibility
             }, { merge: true })
         }
 

@@ -1296,15 +1296,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
 
     // User CRUD
-    const addUser = (userData: Omit<User, "id" | "joinedDate" | "status" | "teamIds">) => {
-        const newUser: User = {
-            ...userData,
-            id: Date.now().toString(),
-            joinedDate: new Date().toISOString().split('T')[0],
-            status: "Active",
-            teamIds: currentTeam ? [currentTeam.id] : []
+    const addUser = async (userData: Omit<User, "id" | "joinedDate" | "status" | "teamIds">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "users"), {
+                ...userData,
+                joinedDate: new Date().toISOString().split('T')[0],
+                status: "Active",
+                teamIds: [currentTeam.id],
+                role: userData.role || "Staff"
+            })
+        } catch (e) {
+            console.error("Error adding user", e)
         }
-        setUsers([...users, newUser])
     }
 
     const updateUser = async (id: string, updates: Partial<User>) => {
@@ -1322,8 +1326,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    const deleteUser = (id: string) => {
-        setUsers(prev => prev.filter(u => u.id !== id))
+    const deleteUser = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "users", id))
+        } catch (e) {
+            console.error("Error deleting user", e)
+        }
     }
 
     // Vendor CRUD
