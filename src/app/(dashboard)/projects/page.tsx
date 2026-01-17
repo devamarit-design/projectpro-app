@@ -9,7 +9,7 @@ import { useProjects } from "@/context/project-context"
 
 export default function ProjectsPage() {
     const { t } = useTranslation()
-    const { projects, expenses } = useProjects()
+    const { projects, expenses, isLoading } = useProjects()
     const [searchQuery, setSearchQuery] = useState("")
     const [showFilters, setShowFilters] = useState(false)
     const [statusFilter, setStatusFilter] = useState<string | null>(null)
@@ -115,7 +115,28 @@ export default function ProjectsPage() {
 
             {/* Projects Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {filteredProjects.length > 0 ? (
+                {isLoading ? (
+                    // Skeleton Loading State
+                    Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="rounded-2xl overflow-hidden border border-white/5 bg-muted/10 animate-pulse">
+                            <div className="h-48 bg-muted/20 w-full" />
+                            <div className="p-4 space-y-4">
+                                <div className="flex justify-between">
+                                    <div className="h-4 bg-muted/20 rounded w-1/3" />
+                                    <div className="h-4 bg-muted/20 rounded w-1/4" />
+                                </div>
+                                <div className="h-4 bg-muted/20 rounded w-1/2" />
+                                <div className="space-y-2 pt-2">
+                                    <div className="flex justify-between">
+                                        <div className="h-3 bg-muted/20 rounded w-1/4" />
+                                        <div className="h-3 bg-muted/20 rounded w-10" />
+                                    </div>
+                                    <div className="h-2 bg-muted/20 rounded-full" />
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                ) : filteredProjects.length > 0 ? (
                     filteredProjects.map((project) => (
                         <Link href={`/projects/detail?id=${project.id}`} key={project.id} className="group glass-card rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-white/5 block">
                             {/* Project Image */}
@@ -124,6 +145,8 @@ export default function ProjectsPage() {
                                 <img
                                     src={project.image || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80"}
                                     alt={project.name}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 />
                                 <div className="absolute top-4 right-4 z-20">
