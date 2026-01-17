@@ -62,7 +62,7 @@ export function MobileNav() {
     }
 
     const financeItems = [
-        { href: "/income", label: t.finance.income, icon: TrendingUp, color: "text-green-500 from-green-500/20 to-green-500/5" },
+        ...(hasPermission(currentUser, "INCOME_CREATE") ? [{ href: "/income", label: t.finance.income, icon: TrendingUp, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
         { href: "/expenses", label: t.finance.expense, icon: TrendingDown, color: "text-red-500 from-red-500/20 to-red-500/5" },
     ]
 
@@ -83,7 +83,7 @@ export function MobileNav() {
     ]
 
     const addItems = [
-        { href: "/income?action=new", label: t.finance.income, icon: FileText, color: "text-green-500 from-green-500/20 to-green-500/5" },
+        ...(hasPermission(currentUser, "INCOME_CREATE") ? [{ href: "/income?action=new", label: t.finance.income, icon: FileText, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
         { href: "/expenses?action=new", label: t.finance.expense, icon: CreditCard, color: "text-red-500 from-red-500/20 to-red-500/5" },
         { href: "/tasks?action=new", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 from-blue-500/20 to-blue-500/5" },
         { href: "/storage?action=new", label: "Media", icon: HardDrive, color: "text-purple-500 from-purple-500/20 to-purple-500/5" },
