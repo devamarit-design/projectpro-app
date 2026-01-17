@@ -262,7 +262,7 @@ export interface Team extends CompanyProfile {
     id: string
     name: string
     logo?: string // Emoji or Image URL
-    role: "Owner" | "Member"
+    role: "Owner" | "Admin" | "Member" | "Viewer"
 }
 
 interface ProjectContextType {
@@ -740,31 +740,46 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // SaaS Adapter
     const { currentOrg, userOrgs, setCurrentOrg, isLoading: isOrgLoading, createOrganization } = useOrganization()
 
-    const currentTeam: Team | null = React.useMemo(() => currentOrg ? {
-        id: currentOrg.id,
-        name: currentOrg.name,
-        role: "Owner", // Simplified for now, should check org member role
-        address: currentOrg.settings.address || "",
-        taxId: currentOrg.settings.taxId || "",
-        phone: currentOrg.settings.phone || "",
-        logo: currentOrg.settings.logoUrl,
-        description: "",
-        paymentInfo: "",
-        signatureName: ""
-    } : null, [currentOrg])
+    const currentTeam: Team | null = React.useMemo(() => {
+        if (!currentOrg || !currentUser) return null
 
-    const teams: Team[] = React.useMemo(() => userOrgs.map(org => ({
-        id: org.id,
-        name: org.name,
-        role: "Owner",
-        address: org.settings.address || "",
-        taxId: org.settings.taxId || "",
-        phone: org.settings.phone || "",
-        logo: org.settings.logoUrl,
-        description: "",
-        paymentInfo: "",
-        signatureName: ""
-    })), [userOrgs])
+        const member = currentOrg.members?.find(m => m.userId === currentUser.id)
+        const role = currentOrg.ownerId === currentUser.id ? "Owner" : (member?.role || "Member")
+
+        return {
+            id: currentOrg.id,
+            name: currentOrg.name,
+            role: role,
+            address: currentOrg.settings.address || "",
+            taxId: currentOrg.settings.taxId || "",
+            phone: currentOrg.settings.phone || "",
+            logo: currentOrg.settings.logoUrl,
+            description: "",
+            paymentInfo: "",
+            signatureName: ""
+        }
+    }, [currentOrg, currentUser])
+
+    const teams: Team[] = React.useMemo(() => {
+        if (!currentUser) return []
+        return userOrgs.map(org => {
+            const member = org.members?.find(m => m.userId === currentUser.id)
+            const role = org.ownerId === currentUser.id ? "Owner" : (member?.role || "Member")
+
+            return {
+                id: org.id,
+                name: org.name,
+                role: role,
+                address: org.settings.address || "",
+                taxId: org.settings.taxId || "",
+                phone: org.settings.phone || "",
+                logo: org.settings.logoUrl,
+                description: "",
+                paymentInfo: "",
+                signatureName: ""
+            }
+        })
+    }, [userOrgs, currentUser])
 
     const switchTeam = (teamId: string) => {
         const org = userOrgs.find(o => o.id === teamId)
