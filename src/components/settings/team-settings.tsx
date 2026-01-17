@@ -1,18 +1,25 @@
 "use client"
 
 import { useSettings } from "@/context/settings-context"
+import { useOrganization } from "@/context/organization-context"
 import { Copy, Users, Link as LinkIcon, Shield } from "lucide-react"
+
 import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
 
 export function TeamSettings() {
     const { teamSettings, updateTeamSettings } = useSettings()
+    const { currentOrg } = useOrganization()
     const { t } = useTranslation()
 
+
     const copyLink = () => {
-        navigator.clipboard.writeText("https://projectpro.app/invite/org_123456")
+        if (currentOrg) {
+            navigator.clipboard.writeText(currentOrg.id)
+        }
         // Would add toast here
     }
+
 
     return (
         <div className="space-y-8">
@@ -23,16 +30,17 @@ export function TeamSettings() {
                         {t.team_settings.invitation_link}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                        {t.team_settings.invitation_desc}
+                        Share this Organization ID with new members to let them join.
                     </p>
 
                     <div className="space-y-4">
                         <div className="flex gap-2">
                             <input
                                 readOnly
-                                value="https://projectpro.app/invite/org_123456"
-                                className="flex-1 h-10 rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
+                                value={currentOrg?.id || "Loading..."}
+                                className="flex-1 h-10 rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground font-mono"
                             />
+
                             <button
                                 onClick={copyLink}
                                 className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2"

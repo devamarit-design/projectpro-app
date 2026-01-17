@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { useTranslation } from "@/lib/i18n-context"
 import { Building2, FileText, Palette, Users, Database, Shield, Bell } from "lucide-react"
 import { CompanySettings } from "@/components/settings/company-settings"
@@ -13,7 +14,15 @@ import { NotificationSettings } from "@/components/settings/notifications-settin
 
 export default function SettingsPage() {
     const { t } = useTranslation()
+    const searchParams = useSearchParams()
     const [activeSection, setActiveSection] = useState("company")
+
+    useEffect(() => {
+        const tab = searchParams.get("tab")
+        if (tab) {
+            setActiveSection(tab)
+        }
+    }, [searchParams])
 
     const menuItems = [
         { id: "company", label: t.settings.menu.company, icon: Building2 },

@@ -195,20 +195,159 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
     const handleExport = async () => {
         setIsExporting(true)
         try {
-            const { generatePDF } = await import('./pdf-document')
-            await generatePDF({
-                document,
-                customer,
-                project,
+            const { generateServerPDF, generateIncomeDocumentHTML } = await import('@/lib/server-pdf')
+
+            // Flatten items for simple mode or from sections
+            const items = document.items?.length ? document.items :
+                (document.sections?.flatMap(s => s.items) || [])
+
+            const html = generateIncomeDocumentHTML(
+                {
+                    type: document.type,
+                    documentNumber: document.documentNumber,
+                    date: document.date,
+                    customerName: customer?.name,
+                    customerAddress: customer?.address,
+                    customerTaxId: customer?.taxId,
+                    projectName: project?.name,
+                    projectDescription: project?.description,
+                    items: items.map(i => ({
+                        name: i.name || i.description || 'Item',
+                        description: i.name && i.description ? i.description : undefined,
+                        quantity: i.quantity,
+                        unit: i.unit,
+                        unitPrice: i.unitPrice,
+                        total: i.total,
+                        image: i.image
+                    })),
+                    subtotal: document.subtotal || 0,
+                    discount: document.discount || 0,
+                    tax: document.tax || 0,
+                    grandTotal: document.grandTotal || document.total || 0,
+                    paymentDetails: documentSettings[document.type.toLowerCase()]?.terms || document.paymentDetails,
+                    note: document.note
+                },
+                {
+                    name: orgProfile?.name || 'Company Name',
+                    address: orgProfile?.address,
+                    taxId: orgProfile?.taxId,
+                    tel: orgProfile?.phone,
+                    email: orgProfile?.email,
+                    logo: orgProfile?.logo
+                },
                 themeColor,
-                lang,
-                manualPageBreaks: manualBreaks,
-                columns,
-                orgProfile
-            })
+                LABELS[lang]
+            )
+
+            const filename = `${document.type}_${document.documentNumber}.pdf`
+            await generateServerPDF(html, filename)
         } catch (error) {
             console.error('PDF Export Error:', error)
             alert(`PDF Export Failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        } finally {
+            setIsExporting(false)
+        }
+    }
+
+    const handleExportImage = async () => {
+        setIsExporting(true)
+        try {
+            // Import Dependencies
+            const { generateServerPDFBlob, generateIncomeDocumentHTML } = await import('@/lib/server-pdf')
+            const JSZip = (await import('jszip')).default
+            const { saveAs } = await import('file-saver')
+
+            // 1. Generate PDF on Server (Guarantees A4 & Unicode support)
+            const items = document.items?.length ? document.items :
+                (document.sections?.flatMap(s => s.items) || [])
+
+            const html = generateIncomeDocumentHTML(
+                {
+                    type: document.type,
+                    documentNumber: document.documentNumber,
+                    date: document.date,
+                    customerName: customer?.name,
+                    customerAddress: customer?.address,
+                    customerTaxId: customer?.taxId,
+                    projectName: project?.name,
+                    projectDescription: project?.description,
+                    items: items.map(i => ({
+                        name: i.name || i.description || 'Item',
+                        description: i.name && i.description ? i.description : undefined,
+                        quantity: i.quantity,
+                        unit: i.unit,
+                        unitPrice: i.unitPrice,
+                        total: i.total,
+                        image: i.image
+                    })),
+                    subtotal: document.subtotal || 0,
+                    discount: document.discount || 0,
+                    tax: document.tax || 0,
+                    grandTotal: document.grandTotal || document.total || 0,
+                    paymentDetails: documentSettings[document.type.toLowerCase()]?.terms || document.paymentDetails,
+                    note: document.note
+                },
+                {
+                    name: orgProfile?.name || 'Company Name',
+                    address: orgProfile?.address,
+                    taxId: orgProfile?.taxId,
+                    tel: orgProfile?.phone,
+                    email: orgProfile?.email,
+                    logo: orgProfile?.logo
+                },
+                themeColor,
+                LABELS[lang]
+            )
+
+            const pdfBlob = await generateServerPDFBlob(html)
+
+            // 2. Convert PDF to Images using pdfjs-dist
+            const pdfjsLib = await import('pdfjs-dist')
+            pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
+
+            const arrayBuffer = await pdfBlob.arrayBuffer()
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+
+            const images: { name: string, data: string }[] = []
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i)
+                const viewport = page.getViewport({ scale: 2.0 }) // 2.0 scale for high quality
+
+                const canvas = window.document.createElement('canvas')
+                const context = canvas.getContext('2d')
+                canvas.height = viewport.height
+                canvas.width = viewport.width
+
+                if (context) {
+                    await page.render({ canvasContext: context, viewport: viewport } as any).promise
+                    images.push({
+                        name: `${document.type}_${document.documentNumber}_Page_${i}.png`,
+                        data: canvas.toDataURL('image/png')
+                    })
+                }
+            }
+
+            if (images.length === 0) throw new Error("Failed to render items")
+
+            if (images.length === 1) {
+                const link = window.document.createElement('a')
+                link.href = images[0].data
+                link.download = images[0].name
+                link.click()
+            } else {
+                const zip = new JSZip()
+                images.forEach(img => {
+                    const base64Data = img.data.split(',')[1]
+                    zip.file(img.name, base64Data, { base64: true })
+                })
+                const content = await zip.generateAsync({ type: "blob" })
+                saveAs(content, `${document.type}_${document.documentNumber}.zip`)
+            }
+
+        } catch (error) {
+            console.error('Image Export Error:', error)
+            alert(`Failed to export image: ${error instanceof Error ? error.message : 'Unknown error'}`)
         } finally {
             setIsExporting(false)
         }
@@ -342,6 +481,15 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
 
                     <div className="flex items-center gap-2">
                         <button
+                            onClick={handleExportImage}
+                            disabled={isExporting}
+                            title="Export Image"
+                            className="p-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-all shadow active:scale-95 disabled:opacity-50 disabled:cursor-wait"
+                        >
+                            <ImageIcon className="w-5 h-5" />
+                        </button>
+
+                        <button
                             onClick={handleExport}
                             disabled={isExporting}
                             title="Export PDF"
@@ -363,6 +511,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                     {pages.map((page, index) => (
                         <div
                             key={index}
+                            id={`preview-page-${index}`}
                             className={cn(
                                 "bg-white text-black shadow-2xl relative print:shadow-none print:m-0 break-after-page print:w-full print:h-[297mm] print:static print:scale-100 print:mb-0 origin-top",
                                 currentStyle.font

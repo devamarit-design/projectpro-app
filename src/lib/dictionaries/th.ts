@@ -145,6 +145,7 @@ export const th = {
     },
     projects: {
         my_projects: "โครงการของฉัน",
+        new_project: "สร้างโครงการใหม่",
         create_project: "สร้างโครงการ",
         manage_projects: "จัดการโครงการก่อสร้างของคุณ",
         search_placeholder: "ค้นหาโครงการ...",
@@ -198,9 +199,11 @@ export const th = {
                 overview: "ภาพรวม",
                 financials: "การเงิน",
                 tasks: "งาน",
-                files: "ไฟล์"
+                files: "ไฟล์",
+                sub_projects: "โปรเจคย่อย"
             },
             overview: {
+                details: "ข้อมูลโครงการ",
                 description: "รายละเอียดโครงการ",
                 no_desc: "ไม่มีรายละเอียดสำหรับโครงการนี้",
                 timeline: "ระยะเวลา & สถานะ",
@@ -329,7 +332,8 @@ export const th = {
             combine_bill: "รวมบิล (โครงการเดียว)",
             split_bill: "แยกรายการ (หลายโครงการ)",
             project: "โครงการ",
-            task: "งานย่อย / ส่วนของงาน",
+            task: "โปรเจคย่อย",
+            add_new_sub_project: "+ เพิ่มโปรเจคย่อยใหม่...",
             item_breakdown: "รายการย่อย",
             vat_included: "ราคารวม VAT (7%)",
             add_line_item: "เพิ่มรายการ",
@@ -344,6 +348,8 @@ export const th = {
             save: "บันทึกรายจ่าย",
             cancel: "ยกเลิก",
             item_desc: "รายละเอียดสินค้า/บริการ",
+            quantity: "จำนวน",
+            unit_price: "ราคาต่อหน่วย",
             quick_add: "เพิ่มข้อมูลใหม่"
         }
     },

@@ -3,9 +3,10 @@
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { get, set } from "idb-keyval"
 import { auth, googleProvider, db } from "@/lib/firebase"
-import { signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseUser } from "firebase/auth"
-import { doc, getDoc, setDoc, onSnapshot, collection, query, where, addDoc, updateDoc, deleteDoc, documentId, orderBy } from "firebase/firestore"
+import { signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseUser, setPersistence, browserLocalPersistence } from "firebase/auth"
+import { doc, getDoc, getDocs, setDoc, onSnapshot, collection, query, where, addDoc, updateDoc, deleteDoc, documentId, orderBy, limit } from "firebase/firestore"
 import { seedDatabase } from "@/lib/seed-data"
+import { useOrganization } from "@/context/organization-context"
 
 export type ProjectStatus = "Planning" | "In Progress" | "On Hold" | "Completed"
 export type TaskStatus = "Todo" | "In Progress" | "Done"
@@ -20,6 +21,7 @@ export interface ProjectTask {
     dueDate?: string
     description?: string
     projectId: string // Link to project
+    subProjectId?: string // Link to sub-project
     teamId: string    // Link to team
 }
 
@@ -54,6 +56,7 @@ export interface ProjectFile {
     uploadedAt: string
     projectId?: string // Linked to project
     folder?: string // Virtual folder if needed
+    thumbnailUrl?: string
 }
 
 export type ExpenseCategory = "Material" | "Labor" | "Sub-contract" | "Other"
@@ -62,8 +65,11 @@ export interface ExpenseItem {
     id: string
     description: string
     amount: number
+    quantity?: number
+    unitPrice?: number
     category: ExpenseCategory
     projectId?: string
+    subProjectId?: string
     taskId?: string
 }
 
@@ -82,6 +88,9 @@ export interface Expense {
     items?: ExpenseItem[] // For split bills
     vatIncluded?: boolean
     receiptImage?: string
+    thumbnailUrl?: string
+    imageEdited?: boolean
+    subProjectId?: string
     teamId?: string
 }
 
@@ -118,7 +127,8 @@ export interface User {
     joinedDate?: string
     avatar?: string // Profile picture URL
     status: "Active" | "Inactive"
-    teamIds: string[] // Teams this user belongs to
+    teamIds: string[] // Legacy support
+    organizations?: { orgId: string, role: string }[] // New SaaS Structure
 }
 
 export interface Vendor {
@@ -306,6 +316,7 @@ interface ProjectContextType {
 
     // Income
     incomes: IncomeDocument[]
+    incomesLoading: boolean
     addIncome: (income: Omit<IncomeDocument, "id">) => void
     updateIncome: (id: string, updates: Partial<IncomeDocument>) => void
     deleteIncome: (id: string) => void
@@ -332,9 +343,11 @@ interface ProjectContextType {
     logout: () => void
     isAuthLoading: boolean
     // Backup & Restore
-    restoreData: (data: any) => Promise<boolean>
+    restoreData: (data: Record<string, unknown>) => Promise<boolean>
     seedData: () => Promise<void>
+    isOrgLoading: boolean
 }
+
 
 
 import { INITIAL_PROJECTS } from "@/lib/initial-data"
@@ -687,9 +700,8 @@ export const INITIAL_COMPANY_PROFILE: CompanyProfile = {
 }
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-    // --- Team / Workspace State ---
-    const [teams, setTeams] = useState<Team[]>([])
-    const [currentTeam, setCurrentTeam] = useState<Team | null>(null)
+    // --- Team / Workspace State (Refactored to SaaS Adapter) ---
+
 
     // Mock Projects
     // Real Data State (Initially Empty)
@@ -705,8 +717,57 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     // Mock Incomes -> Real Incomes
     const [incomes, setIncomes] = useState<IncomeDocument[]>([])
+    const [incomesLoading, setIncomesLoading] = useState(true)
 
-    // Derived Company Profile from Current Team
+    // Task Management Logic (Refactored to Top-level Collection)
+    const [tasks, setTasks] = useState<ProjectTask[]>([])
+
+    // Contracts Logic
+    const [contracts, setContracts] = useState<Contract[]>([])
+
+
+
+
+
+    const [currentUser, setCurrentUser] = useState<User | null>(null)
+    const [isAuthLoading, setIsAuthLoading] = useState(true)
+    const [isLoading, setIsLoading] = useState(true) // Added for data loading state
+
+    // SaaS Adapter
+    const { currentOrg, userOrgs, setCurrentOrg, isLoading: isOrgLoading, createOrganization } = useOrganization()
+
+    const currentTeam: Team | null = React.useMemo(() => currentOrg ? {
+        id: currentOrg.id,
+        name: currentOrg.name,
+        role: "Owner", // Simplified for now, should check org member role
+        address: currentOrg.settings.address || "",
+        taxId: currentOrg.settings.taxId || "",
+        phone: currentOrg.settings.phone || "",
+        logo: currentOrg.settings.logoUrl,
+        description: "",
+        paymentInfo: "",
+        signatureName: ""
+    } : null, [currentOrg])
+
+    const teams: Team[] = React.useMemo(() => userOrgs.map(org => ({
+        id: org.id,
+        name: org.name,
+        role: "Owner",
+        address: org.settings.address || "",
+        taxId: org.settings.taxId || "",
+        phone: org.settings.phone || "",
+        logo: org.settings.logoUrl,
+        description: "",
+        paymentInfo: "",
+        signatureName: ""
+    })), [userOrgs])
+
+    const switchTeam = (teamId: string) => {
+        const org = userOrgs.find(o => o.id === teamId)
+        if (org) setCurrentOrg(org)
+    }
+
+    // Derived Company Profile from Current Team (Moved here to fix hoisting)
     const companyProfile: CompanyProfile = currentTeam ? {
         name: currentTeam.name,
         address: currentTeam.address,
@@ -721,9 +782,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     } : INITIAL_COMPANY_PROFILE
 
 
-
-    const [currentUser, setCurrentUser] = useState<User | null>(null)
-    const [isAuthLoading, setIsAuthLoading] = useState(true)
 
     // Auth State Listener
     useEffect(() => {
@@ -750,8 +808,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 }
             } else {
                 setCurrentUser(null)
-                setCurrentTeam(null)
-                setTeams([])
+                // Teams and CurrentTeam are handled by OrgContext
             }
             setIsAuthLoading(false)
         })
@@ -765,21 +822,38 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // ... (existing code)
 
     const login = async (provider: string, credentials?: { email?: string, password?: string }) => {
-        if (provider === 'google') {
-            try {
-                await signInWithPopup(auth, googleProvider)
-            } catch (error) {
-                console.error("Login failed", error)
-                throw error
-            }
-        } else if ((provider === 'email' || provider === 'credentials') && credentials?.email && credentials?.password) {
-            try {
-                await signInWithEmailAndPassword(auth, credentials.email, credentials.password)
-            } catch (error) {
-                console.error("Login failed", error)
-                throw error
+        // iOS PWA Fix: Don't await persistence if not needed, or handle errors gracefully.
+        // We set persistence to LOCAL (default) but wrap it to avoid hanging.
+        try {
+            await setPersistence(auth, browserLocalPersistence)
+        } catch (e) {
+            console.warn("Persistence fallback (PWA restricted?)", e)
+        }
+
+        const loginPromise = async () => {
+            if (provider === 'google') {
+                try {
+                    await signInWithPopup(auth, googleProvider)
+                } catch (error) {
+                    console.error("Login failed", error)
+                    throw error
+                }
+            } else if ((provider === 'email' || provider === 'credentials') && credentials?.email && credentials?.password) {
+                try {
+                    await signInWithEmailAndPassword(auth, credentials.email, credentials.password)
+                } catch (error) {
+                    console.error("Login failed", error)
+                    throw error
+                }
             }
         }
+
+        // Add 10s timeout to prevent infinite hanging
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Login timed out. Check your connection.")), 15000)
+        )
+
+        await Promise.race([loginPromise(), timeoutPromise])
     }
 
     const register = async (name: string, email: string, password: string) => {
@@ -819,8 +893,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             await signOut(auth)
             // Clear all local state
             setCurrentUser(null)
-            setCurrentTeam(null)
-            setTeams([])
+            // Teams/CurrentTeam handled by OrgContext
+
 
             // Clear persistence
             if (typeof window !== 'undefined') {
@@ -833,60 +907,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    const switchTeam = (teamId: string) => {
-        const team = teams.find(t => t.id === teamId)
-        if (team) {
-            setCurrentTeam(team)
-            localStorage.setItem("projectpro_teamid", team.id)
-        }
-    }
 
-    // Load User's Teams (Real-time)
-    useEffect(() => {
-        if (!currentUser || !currentUser.teamIds || currentUser.teamIds.length === 0) {
-            setTeams([])
-            return
-        }
 
-        try {
-            // Fetch teams where ID is in user's teamIds
-            // Note: 'in' query limit is 10. For production, handle batches.
-            const validTeamIds = currentUser.teamIds.slice(0, 10).filter(id => id)
+    // Load User's Teams (Real-time) - REMOVED (Handled by OrganizationContext)
 
-            if (validTeamIds.length > 0) {
-                const qTeams = query(collection(db, "teams"), where(documentId(), "in", validTeamIds))
-                const unsubTeams = onSnapshot(qTeams, (snapshot) => {
-                    const loadedTeams = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as Team))
-                    setTeams(loadedTeams)
-
-                    // Auto-select first team if none selected
-                    // We use functional state update to ensure we don't overwrite if user just switched?
-                    // Actually, depend on currentTeam.
-                    if (loadedTeams.length > 0) {
-                        setCurrentTeam(prev => {
-                            if (!prev || !loadedTeams.find(t => t.id === prev.id)) {
-                                return loadedTeams[0]
-                            }
-                            return prev
-                        })
-                    }
-                })
-                return () => unsubTeams()
-            }
-        } catch (error) {
-            console.error("Error loading teams:", error)
-        }
-    }, [currentUser]) // Re-run when user (and their teamIds) changes
 
     // --- Real-time Data Sync ---
     useEffect(() => {
         if (!currentTeam) {
-            setProjects([])
-            setExpenses([])
-            setWorkers([])
-            setVendors([])
-            setCustomers([])
-            setIncomes([])
+            setTimeout(() => {
+                setProjects([])
+                setExpenses([])
+                setWorkers([])
+                setVendors([])
+                setCustomers([])
+                setIncomes([])
+                setIncomesLoading(false) // Set loading to false if no team
+            }, 0)
             return
         }
 
@@ -922,10 +959,37 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         })
 
         // 6. Incomes (Quotation, Invoice, Receipt)
-        const qIncomes = query(collection(db, "incomes"), where("teamId", "==", currentTeam.id))
-        const unsubIncomes = onSnapshot(qIncomes, (snap) => {
-            setIncomes(snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument)))
-        })
+        // Use IIFE to properly await migration before setting up listener
+        let unsubIncomes: () => void = () => { }
+            ; (async () => {
+                // Migration: Update old incomes that don't have teamId  
+                try {
+                    const allIncomesSnap = await getDocs(collection(db, "incomes"))
+                    console.log('[Income] Total docs in collection:', allIncomesSnap.docs.length)
+                    let migrated = 0
+                    for (const docSnap of allIncomesSnap.docs) {
+                        const data = docSnap.data()
+                        if (!data.teamId) {
+                            await updateDoc(doc(db, "incomes", docSnap.id), { teamId: currentTeam.id })
+                            migrated++
+                        }
+                    }
+                    if (migrated > 0) {
+                        console.log('[Income] Migrated', migrated, 'documents')
+                    }
+                } catch (err) {
+                    console.error('[Income] Migration failed:', err)
+                }
+
+                // Now set up listener AFTER migration completes
+                console.log('[Income] Setting up listener for teamId:', currentTeam.id)
+                const qIncomes = query(collection(db, "incomes"), where("teamId", "==", currentTeam.id))
+                unsubIncomes = onSnapshot(qIncomes, (snap) => {
+                    console.log('[Income] Loaded:', snap.docs.length, 'documents')
+                    setIncomes(snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument)))
+                    setIncomesLoading(false)
+                })
+            })()
 
         // 7. Contracts
         const qContracts = query(collection(db, "contracts"), where("teamId", "==", currentTeam.id))
@@ -968,43 +1032,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         await seedDatabase(currentTeam.id, currentUser.id)
     }
 
-    const addTeam = async (name: string) => {
-        const newTeam: Team = {
-            ...INITIAL_COMPANY_PROFILE,
-            id: Date.now().toString(),
-            name,
-            logo: '🏢',
-            role: 'Owner'
-        }
 
-        try {
-            // Firestore Logic
-            if (currentUser && currentUser.id) {
-                // 1. Create Team Document
-                const teamRef = doc(db, "teams", newTeam.id)
-                await setDoc(teamRef, newTeam)
-
-                // 2. Update User's teamIds
-                const userRef = doc(db, "users", currentUser.id)
-                const updatedTeamIds = [...(currentUser.teamIds || []), newTeam.id]
-                await setDoc(userRef, { teamIds: updatedTeamIds }, { merge: true })
-
-                // 3. Update Local State (Optimistic UI)
-                setTeams([...teams, newTeam])
-
-                const updatedUser = { ...currentUser, teamIds: updatedTeamIds }
-                setCurrentUser(updatedUser)
-                setCurrentTeam(newTeam)
-            } else {
-                // Fallback for non-auth / demo mode
-                setTeams([...teams, newTeam])
-                setCurrentTeam(newTeam)
-            }
-        } catch (error) {
-            console.error("Error creating team:", error)
-            throw error
-        }
-    }
 
 
 
@@ -1054,7 +1082,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Task Management Logic (Refactored to Top-level Collection)
-    const [tasks, setTasks] = useState<ProjectTask[]>([])
+
 
     const addTask = async (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "teamId">) => {
         if (!currentTeam) return
@@ -1118,28 +1146,88 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    // Contracts Logic
-    const [contracts, setContracts] = useState<Contract[]>([])
+    // SaaS Context
 
-    const addContract = async (data: Omit<Contract, "id" | "createdAt" | "status">) => {
-        if (!currentTeam) return
-        try {
-            await addDoc(collection(db, "contracts"), {
-                ...data,
-                status: "Active",
-                createdAt: new Date().toISOString(),
-                teamId: currentTeam.id,
-            })
-        } catch (e) {
-            console.error("Error adding contract", e)
+
+    // Load Data Effect (SaaS Aware)
+    useEffect(() => {
+        // If no user or no org selected, we might clear data or show nothing
+        if (!currentUser) return // Auth handled by listener below, but data fetching depends on Org
+
+        // If generic listener below is for AUTH, we need a separate listener for DATA based on Org
+        if (!currentOrg) {
+            // Reset data if no org
+            setProjects([])
+            setExpenses([])
+            setIncomes([])
+
+            setTasks([])
+            return
         }
-    }
+
+        setIsLoading(true)
+
+        // 1. Projects (Filtered by Org)
+        // Check if legacy user without orgId in projects? 
+        // For migration, we might need to handle projects with teamId matching orgId if we treat teamId as orgId temporarily.
+        // Or strictly look for orgId field. 
+        // Let's assume we are migrating to use teamId AS orgId for now or adding orgId field.
+        // STRATEGY: Use currentOrg.id as the filter.
+
+        const qProjects = query(
+            collection(db, "projects"),
+            where("teamId", "==", currentOrg.id) // Map teamId to OrgId for compatibility
+        )
+
+        const unsubProjects = onSnapshot(qProjects, (snapshot) => {
+            const projectsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project))
+            setProjects(projectsData)
+        })
+
+        // 2. Expenses
+        const qExpenses = query(collection(db, "expenses"), where("teamId", "==", currentOrg.id))
+        const unsubExpenses = onSnapshot(qExpenses, (snapshot) => {
+            const expensesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense))
+            setExpenses(expensesData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+        })
+
+        // 3. Incomes/Docs
+        const qIncome = query(collection(db, "income"), where("teamId", "==", currentOrg.id))
+        const unsubIncome = onSnapshot(qIncome, (snapshot) => {
+            const incomeData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as IncomeDocument))
+
+            setIncomes(incomeData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+        })
+
+        // 4. Tasks (Global list for board)
+        // Note: Tasks are usually sub-collection? Or root?
+        // In this app, tasks seem to be stored in 'projects' array mostly, but if there's a root collection:
+        // Checking seed-data, tasks are in 'projects' array.
+        // BUT if we have root tasks collection (for 'My Tasks' view across projects), we query it.
+        // Assuming we rely on project.tasks for now based on Task Board impl.
+
+        // 5. Team/Users
+        const qUsers = query(collection(db, "users"), where("teamIds", "array-contains", currentOrg.id))
+        const unsubUsers = onSnapshot(qUsers, (snapshot) => {
+            const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User))
+            setUsers(usersData)
+        })
+
+        setIsLoading(false)
+
+        return () => {
+            unsubProjects()
+            unsubExpenses()
+            unsubIncome()
+            unsubUsers()
+        }
+    }, [currentUser, currentOrg]) // Rerun when Org changes
 
     const payInstallment = async (contractId: string, installmentId: string) => {
         if (!currentTeam) return
-
         const contract = contracts.find(c => c.id === contractId)
         if (!contract) return
+
 
         const installment = contract.installments.find(i => i.id === installmentId)
         if (!installment || installment.status === 'Paid') return
@@ -1348,14 +1436,44 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 ...expense,
                 teamId: currentTeam.id
             })
+
+            // Notification: Everyone gets notified for every payment
+            await addDoc(collection(db, "notifications"), {
+                title: `${expense.title}`,
+                message: `New expense added by ${currentUser?.name || 'Unknown'}`,
+                type: 'info',
+                date: new Date().toISOString(),
+                read: false,
+                link: '/expenses',
+                relatedId: 'expense-new',
+                target: 'all',
+                teamId: currentTeam.id
+            })
         } catch (e) {
             console.error("Error adding expense", e)
         }
     }
 
     const updateExpense = async (id: string, updates: Partial<Expense>) => {
+        if (!currentTeam) return
         try {
             await updateDoc(doc(db, "expenses", id), updates)
+
+            // Notification: Status Change (Advanced/Credit -> Paid)
+            // We only notify Admin/Owner on status changes to 'Paid'
+            if (updates.status === 'Paid') {
+                await addDoc(collection(db, "notifications"), {
+                    title: `Expense Paid`,
+                    message: `Expense has been marked as PAID (previously Pending/Advanced/Credit)`,
+                    type: 'success',
+                    date: new Date().toISOString(),
+                    read: false,
+                    link: '/expenses',
+                    relatedId: id,
+                    target: 'admin',
+                    teamId: currentTeam.id
+                })
+            }
         } catch (e) {
             console.error("Error updating expense", e)
         }
@@ -1383,6 +1501,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 }).filter(([_, v]) => v !== undefined)
             )
             await addDoc(collection(db, "incomes"), cleanedData)
+
+            // Notification: Admin gets notified for Customer Withdrawals (Income)
+            await addDoc(collection(db, "notifications"), {
+                title: `New Income/Withdrawal`,
+                message: `New withdrawal recorded by ${currentUser?.name}`,
+                type: 'info', // or success
+                date: new Date().toISOString(),
+                read: false,
+                link: '/income',
+                relatedId: 'income-new',
+                target: 'admin',
+                teamId: currentTeam.id
+            })
         } catch (e) {
             console.error("Error adding income", e)
         }
@@ -1408,30 +1539,41 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         if (!currentTeam) return
 
         try {
-            // Update Firestore
-            const teamRef = doc(db, "teams", currentTeam.id)
-            await updateDoc(teamRef, updates)
+            // Update Firestore (Organization)
+            // Map CompanyProfile fields to Organization settings
+            const orgRef = doc(db, "organizations", currentTeam.id)
 
-            // Update Local State (Optimistic)
-            const updatedTeam: Team = { ...currentTeam, ...updates }
-            setTeams(teams.map(t => t.id === currentTeam.id ? updatedTeam : t))
-            setCurrentTeam(updatedTeam)
+            const orgUpdates: any = {}
+            if (updates.name) orgUpdates.name = updates.name
+
+            // Settings map
+            if (updates.address) orgUpdates['settings.address'] = updates.address
+            if (updates.taxId) orgUpdates['settings.taxId'] = updates.taxId
+            if (updates.phone) orgUpdates['settings.phone'] = updates.phone
+            if (updates.logo) orgUpdates['settings.logoUrl'] = updates.logo
+
+            await updateDoc(orgRef, orgUpdates)
+
+            // Local state update handled by OrgContext subscription potentially,
+            // or we might need to manually trigger refresh if strictly needed immediately.
+            // For now, rely on Firestore listener if it exists in OrgContext.
+
         } catch (e) {
             console.error("Error updating company profile", e)
         }
     }
 
-    const restoreData = async (data: any) => {
+    const restoreData = async (data: Record<string, unknown>) => {
         try {
-            if (data.projects) setProjects(data.projects)
-            if (data.expenses) setExpenses(data.expenses)
-            if (data.files) setFiles(data.files)
-            if (data.users) setUsers(data.users)
-            if (data.workers) setWorkers(data.workers)
-            if (data.vendors) setVendors(data.vendors)
-            if (data.customers) setCustomers(data.customers)
-            if (data.incomes) setIncomes(data.incomes)
-            if (data.contracts) setContracts(data.contracts)
+            if (data.projects) setProjects(data.projects as Project[])
+            if (data.expenses) setExpenses(data.expenses as Expense[])
+            if (data.files) setFiles(data.files as ProjectFile[])
+            if (data.users) setUsers(data.users as User[])
+            if (data.workers) setWorkers(data.workers as Worker[])
+            if (data.vendors) setVendors(data.vendors as Vendor[])
+            if (data.customers) setCustomers(data.customers as Customer[])
+            if (data.incomes) setIncomes(data.incomes as IncomeDocument[])
+            if (data.contracts) setContracts(data.contracts as Contract[])
 
             // Force save to disk immediately to be safe
             await Promise.all([
@@ -1456,6 +1598,25 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const filteredProjects = projects.filter(p => (p.teamId || '1') === currentTeam?.id)
     const filteredProjectIds = new Set(filteredProjects.map(p => p.id))
 
+    // Missing Functions Implementation
+    const addContract = async (contract: Omit<Contract, "id" | "createdAt" | "status">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "contracts"), {
+                ...contract,
+                createdAt: new Date().toISOString(),
+                status: "Active",
+                teamId: currentTeam.id
+            })
+        } catch (e) {
+            console.error("Error adding contract", e)
+        }
+    }
+
+
+
+
+
     return (
         <ProjectContext.Provider value={{
             projects: filteredProjects,
@@ -1465,10 +1626,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             getProject,
 
             // Teams
-            teams: teams.filter(t => currentUser?.teamIds?.includes(t.id)),
+            teams,
             currentTeam,
             switchTeam,
-            addTeam,
+            addTeam: async (name: string) => {
+                await createOrganization(name)
+            },
+
 
             addTask,
             tasks,
@@ -1497,6 +1661,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             updateCustomer,
             deleteCustomer,
             incomes: incomes.filter(i => filteredProjectIds.has(i.projectId)),
+            incomesLoading,
             addIncome,
             updateIncome,
             deleteIncome,
@@ -1505,6 +1670,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             currentUser,
             setCurrentUser,
             isAuthLoading,
+            isOrgLoading,
             login,
             register,
             logout,

@@ -204,7 +204,7 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
 
                                 <div className="space-y-4">
                                     {document.mode === "Simple" && document.items?.map((item, i) => (
-                                        <div key={item.id} className="flex justify-between items-start text-sm border-b border-white/5 pb-4 last:border-0">
+                                        <div key={`${item.id}-${i}`} className="flex justify-between items-start text-sm border-b border-white/5 pb-4 last:border-0">
                                             <div className="space-y-1">
                                                 <div className="font-medium">{item.description}</div>
                                                 <div className="text-xs text-muted-foreground">
@@ -215,14 +215,14 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
                                         </div>
                                     ))}
 
-                                    {document.mode === "Zone" && document.sections?.map((section) => (
-                                        <div key={section.id} className="space-y-3">
+                                    {document.mode === "Zone" && document.sections?.map((section, sIdx) => (
+                                        <div key={`${section.id}-${sIdx}`} className="space-y-3">
                                             <div className="font-medium text-primary text-sm bg-primary/10 px-3 py-1 rounded-lg inline-block">
                                                 {section.name}
                                             </div>
                                             <div className="pl-4 space-y-3 border-l-2 border-white/10">
-                                                {section.items.map((item) => (
-                                                    <div key={item.id} className="flex justify-between items-start text-sm">
+                                                {section.items.map((item, i) => (
+                                                    <div key={`${item.id}-${i}`} className="flex justify-between items-start text-sm">
                                                         <div className="space-y-0.5">
                                                             <div className="font-medium">{item.description}</div>
                                                             <div className="text-xs text-muted-foreground">

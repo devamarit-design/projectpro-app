@@ -76,8 +76,10 @@ export default function EditProjectClient() {
         }
     }
 
+    const initializedId = useRef<string | null>(null)
+
     useEffect(() => {
-        if (project) {
+        if (project && project.id !== initializedId.current) {
             setFormData({
                 name: project.name,
                 customer: project.customer,
@@ -91,6 +93,7 @@ export default function EditProjectClient() {
                 status: project.status,
                 image: project.image
             })
+            initializedId.current = project.id
         }
     }, [project])
 

@@ -114,7 +114,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     // Load from LocalStorage on mount
     useEffect(() => {
-        const load = (key: string, setter: any) => {
+        const load = <T,>(key: string, setter: (value: T) => void) => {
             const saved = localStorage.getItem(`projectpro_settings_${key}`)
             if (saved) {
                 try {
@@ -130,7 +130,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         load('appTheme', setAppTheme)
         load('teamSettings', setTeamSettings)
         load('notificationSettings', setNotificationSettings)
-        setIsLoaded(true)
+        setTimeout(() => setIsLoaded(true), 0)
     }, [])
 
     // Save to LocalStorage whenever state changes

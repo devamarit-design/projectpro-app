@@ -67,19 +67,18 @@ export function MobileNav() {
     ]
 
     const moreItems = [
-        { href: "/", label: t.navbar.home, icon: LayoutDashboard, color: "text-emerald-500 from-emerald-500/20 to-emerald-500/5" },
         { href: "/tasks", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 from-blue-500/20 to-blue-500/5" },
         { href: "/customers", label: t.common.customers, icon: Users, color: "text-orange-500 from-orange-500/20 to-orange-500/5" },
-        { href: "/profile", label: t.common.profile, icon: User, color: "text-rose-500 from-rose-500/20 to-rose-500/5" },
-        { href: "/storage", label: t.common.storage, icon: HardDrive, color: "text-indigo-500 from-indigo-500/20 to-indigo-500/5" },
+        { href: "/partners", label: t.common.partners, icon: Handshake, color: "text-cyan-500 from-cyan-500/20 to-cyan-500/5" },
         { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
+        { href: "/storage", label: t.common.storage, icon: HardDrive, color: "text-indigo-500 from-indigo-500/20 to-indigo-500/5" },
         ...(hasPermission(currentUser, "USER_CREATE") ? [{
             href: "/team",
             label: t.common.team,
             icon: Briefcase,
             color: "text-purple-500 from-purple-500/20 to-purple-500/5"
         }] : []),
-        { href: "/partners", label: t.common.partners, icon: Handshake, color: "text-cyan-500 from-cyan-500/20 to-cyan-500/5" },
+        { href: "/profile", label: t.common.profile, icon: User, color: "text-rose-500 from-rose-500/20 to-rose-500/5" },
         { href: "/settings", label: t.common.settings, icon: Settings, color: "text-gray-500 from-gray-500/20 to-gray-500/5" },
     ]
 

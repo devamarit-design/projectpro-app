@@ -2,7 +2,7 @@ import { IncomeDocument, IncomeItem, IncomeSection } from "@/context/project-con
 
 export interface PageItem {
     type: 'item' | 'header'
-    data: any
+    data: IncomeItem | IncomeSection
     originalIndex: number // Zero-based absolute index in the flattened list
     description?: string
     quantity?: number

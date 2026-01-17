@@ -147,6 +147,7 @@ export const en = {
     },
     projects: {
         my_projects: "My Projects",
+        new_project: "Create New Project",
         create_project: "New Project",
         manage_projects: "Manage your construction projects",
         search_placeholder: "Search projects...",
@@ -199,9 +200,11 @@ export const en = {
                 overview: "Overview",
                 financials: "Financials",
                 tasks: "Tasks",
-                files: "Files"
+                files: "Files",
+                sub_projects: "Sub-projects"
             },
             overview: {
+                details: "Project Details",
                 description: "Project Description",
                 no_desc: "No description provided for this project.",
                 timeline: "Timeline Details",
@@ -330,7 +333,8 @@ export const en = {
             combine_bill: "Combine Bill (Single Project)",
             split_bill: "Split Bill (Multi-Project)",
             project: "Project",
-            task: "Task / Sub-project",
+            task: "Sub-project",
+            add_new_sub_project: "+ Add New Sub-project...",
             item_breakdown: "Item Breakdown",
             vat_included: "VAT Included (7%)",
             add_line_item: "Add Line Item",
@@ -345,6 +349,8 @@ export const en = {
             save: "Save Expense",
             cancel: "Cancel",
             item_desc: "Item description",
+            quantity: "Qty",
+            unit_price: "Unit Price",
             quick_add: "Add New"
         }
     },

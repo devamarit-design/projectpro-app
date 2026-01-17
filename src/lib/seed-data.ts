@@ -1,7 +1,7 @@
 
 import { db } from "@/lib/firebase"
 import { collection, doc, writeBatch } from "firebase/firestore"
-import { Project, Expense, Team, User, Worker, Vendor, Customer, Contract } from "@/context/project-context"
+import { Project, Expense, Team, User, Worker, Vendor, Customer, Contract, ProjectTask, ExpenseCategory } from "@/context/project-context"
 
 // Helper to get random item from array
 const r = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
@@ -82,7 +82,7 @@ export const seedDatabase = async (teamId: string, userId: string) => {
 
     // Assign Tasks & Add Projects to Batch
     projects.forEach(p => {
-        p.tasks = generateTasks(p.id) as any
+        p.tasks = generateTasks(p.id) as ProjectTask[]
         const ref = doc(db, "projects", p.id)
         batch.set(ref, { ...p, createdAt: new Date().toISOString() })
     })
@@ -101,8 +101,8 @@ export const seedDatabase = async (teamId: string, userId: string) => {
             amount: `฿${amount.toLocaleString()}`,
             totalValue: amount,
             date: new Date(2024, Math.floor(Math.random() * 3), Math.floor(Math.random() * 28) + 1).toISOString().split('T')[0],
-            category: r(categories) as any,
-            status: r(statuses) as any,
+            category: r(categories) as ExpenseCategory,
+            status: r(statuses) as Expense["status"],
             projectId: project.id,
             teamId,
             payee: "Supplier ABC",

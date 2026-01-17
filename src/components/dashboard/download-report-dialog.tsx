@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useProjects } from "@/context/project-context"
-import { generateDashboardReport } from "./dashboard-report-pdf"
 import { Calendar, Building, Download, FileText, ChevronDown, FileSpreadsheet } from "lucide-react"
 
 interface DownloadReportDialogProps {
@@ -84,14 +83,34 @@ export function DownloadReportDialog({ open, onOpenChange }: DownloadReportDialo
             if (format === 'csv') {
                 generateCSV(filteredIncomes, filteredExpenses, filteredProjects)
             } else {
-                // 4. Generate PDF
-                await generateDashboardReport({
-                    projects: filteredProjects,
-                    incomes: filteredIncomes,
-                    expenses: filteredExpenses,
-                    companyProfile,
-                    dateRange: `${dateRangeLabel} ${scope === 'project' ? '(Project Specific)' : ''}`
+                // 4. Generate PDF via server-side for Thai font support
+                const { generateServerPDF, generateDashboardReportHTML } = await import('@/lib/server-pdf')
+
+                const html = generateDashboardReportHTML({
+                    companyName: companyProfile?.name || 'Company',
+                    dateRange: `${dateRangeLabel} ${scope === 'project' ? '(Project Specific)' : ''}`,
+                    totalIncome: filteredIncomes.reduce((sum, i) => sum + (i.grandTotal || 0), 0),
+                    totalExpense: filteredExpenses.reduce((sum, e) => sum + (e.totalValue || 0), 0),
+                    projects: filteredProjects.map(p => ({
+                        name: p.name,
+                        budget: Number(p.budget) || 0,
+                        progress: p.progress || 0
+                    })),
+                    recentIncomes: filteredIncomes.slice(0, 10).map(i => ({
+                        date: i.date,
+                        type: i.type,
+                        docNumber: i.documentNumber,
+                        amount: i.grandTotal || 0
+                    })),
+                    recentExpenses: filteredExpenses.slice(0, 10).map(e => ({
+                        date: e.date,
+                        category: e.category,
+                        title: e.title,
+                        amount: e.totalValue || 0
+                    }))
                 })
+
+                await generateServerPDF(html, `Report_${new Date().toISOString().split('T')[0]}.pdf`)
             }
 
             onOpenChange(false)
@@ -158,8 +177,8 @@ export function DownloadReportDialog({ open, onOpenChange }: DownloadReportDialo
                             <button
                                 onClick={() => setPeriod("all")}
                                 className={`px-2 py-3 rounded-xl border text-sm font-medium transition-all ${period === "all"
-                                        ? "bg-primary/20 border-primary text-primary"
-                                        : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
+                                    ? "bg-primary/20 border-primary text-primary"
+                                    : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
                                     }`}
                             >
                                 All Time
@@ -167,8 +186,8 @@ export function DownloadReportDialog({ open, onOpenChange }: DownloadReportDialo
                             <button
                                 onClick={() => setPeriod("month")}
                                 className={`px-2 py-3 rounded-xl border text-sm font-medium transition-all ${period === "month"
-                                        ? "bg-primary/20 border-primary text-primary"
-                                        : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
+                                    ? "bg-primary/20 border-primary text-primary"
+                                    : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
                                     }`}
                             >
                                 Monthly
@@ -176,8 +195,8 @@ export function DownloadReportDialog({ open, onOpenChange }: DownloadReportDialo
                             <button
                                 onClick={() => setPeriod("custom")}
                                 className={`px-2 py-3 rounded-xl border text-sm font-medium transition-all ${period === "custom"
-                                        ? "bg-primary/20 border-primary text-primary"
-                                        : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
+                                    ? "bg-primary/20 border-primary text-primary"
+                                    : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
                                     }`}
                             >
                                 Custom
@@ -233,8 +252,8 @@ export function DownloadReportDialog({ open, onOpenChange }: DownloadReportDialo
                             <button
                                 onClick={() => setScope("all")}
                                 className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${scope === "all"
-                                        ? "bg-primary/20 border-primary text-primary"
-                                        : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
+                                    ? "bg-primary/20 border-primary text-primary"
+                                    : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
                                     }`}
                             >
                                 All Projects
@@ -242,8 +261,8 @@ export function DownloadReportDialog({ open, onOpenChange }: DownloadReportDialo
                             <button
                                 onClick={() => setScope("project")}
                                 className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${scope === "project"
-                                        ? "bg-primary/20 border-primary text-primary"
-                                        : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
+                                    ? "bg-primary/20 border-primary text-primary"
+                                    : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
                                     }`}
                             >
                                 Specific Project
@@ -279,8 +298,8 @@ export function DownloadReportDialog({ open, onOpenChange }: DownloadReportDialo
                             <button
                                 onClick={() => setFormat("pdf")}
                                 className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2 ${format === "pdf"
-                                        ? "bg-primary/20 border-primary text-primary"
-                                        : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
+                                    ? "bg-primary/20 border-primary text-primary"
+                                    : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
                                     }`}
                             >
                                 <FileText className="w-4 h-4" /> PDF
@@ -288,8 +307,8 @@ export function DownloadReportDialog({ open, onOpenChange }: DownloadReportDialo
                             <button
                                 onClick={() => setFormat("csv")}
                                 className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2 ${format === "csv"
-                                        ? "bg-primary/20 border-primary text-primary"
-                                        : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
+                                    ? "bg-primary/20 border-primary text-primary"
+                                    : "bg-white/5 border-white/10 hover:bg-white/10 text-muted-foreground"
                                     }`}
                             >
                                 <FileSpreadsheet className="w-4 h-4" /> CSV / Excel

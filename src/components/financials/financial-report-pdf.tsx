@@ -1,20 +1,13 @@
 
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { format } from 'date-fns'
 
-// Register fonts (reuse from existing or standard)
-Font.register({
-    family: 'Sarabun',
-    fonts: [
-        { src: '/fonts/Sarabun-Regular.ttf' },
-        { src: '/fonts/Sarabun-Bold.ttf', fontWeight: 700 },
-    ],
-})
+// Using Helvetica to ensure PDF generation works
 
 const styles = StyleSheet.create({
     page: {
         padding: 40,
-        fontFamily: 'Sarabun',
+        fontFamily: 'Helvetica',
         fontSize: 10,
         color: '#333',
     },
@@ -27,12 +20,12 @@ const styles = StyleSheet.create({
         paddingBottom: 10,
     },
     title: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: 700,
         color: '#000',
     },
     subtitle: {
-        fontSize: 12,
+        fontSize: 14,
         color: '#666',
         marginTop: 4,
     },

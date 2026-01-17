@@ -4,6 +4,7 @@ import * as React from "react"
 import { useProjects } from "@/context/project-context"
 import { useRouter } from "next/navigation"
 import { Building2, Users, ArrowRight, Plus, Loader2 } from "lucide-react"
+import FeatureCarousel from "@/components/onboarding/feature-carousel"
 
 export default function OnboardingPage() {
     const { currentUser, teams, addTeam } = useProjects()
@@ -16,7 +17,7 @@ export default function OnboardingPage() {
         }
     }, [currentUser, teams, router])
 
-    const [step, setStep] = React.useState<"welcome" | "create" | "join">("welcome")
+    const [step, setStep] = React.useState<"showcase" | "welcome" | "create" | "join">("showcase")
     const [teamName, setTeamName] = React.useState("")
     const [isLoading, setIsLoading] = React.useState(false)
 
@@ -42,6 +43,11 @@ export default function OnboardingPage() {
         )
     }
 
+    // New Step 1: Feature Showcase
+    if (step === "showcase") {
+        return <FeatureCarousel onComplete={() => setStep("welcome")} />
+    }
+
     return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
             {/* Background Effects */}
@@ -58,7 +64,7 @@ export default function OnboardingPage() {
                                 Welcome, {currentUser.name}!
                             </h1>
                             <p className="text-muted-foreground text-lg">
-                                Let's get you valid started. How would you like to proceed?
+                                Let's get you started. How would you like to proceed?
                             </p>
                         </div>
 

@@ -12,6 +12,8 @@ import { useTranslation } from "@/lib/i18n-context"
 // Components
 import AddUserDialog from "./add-user-dialog"
 import EditTeamDialog from "./edit-team-dialog"
+import InviteMemberDialog from "./invite-member-dialog"
+
 
 export default function TeamPage() {
     const { users, deleteUser, currentUser, teams, currentTeam, switchTeam, addTeam } = useProjects()
@@ -24,6 +26,8 @@ export default function TeamPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = React.useState<User | null>(null)
     const [openMenuId, setOpenMenuId] = React.useState<string | null>(null)
     const [isEditTeamOpen, setIsEditTeamOpen] = React.useState(false)
+    const [isInviteOpen, setIsInviteOpen] = React.useState(false)
+
 
     // Click outside handler
     React.useEffect(() => {
@@ -61,34 +65,10 @@ export default function TeamPage() {
     const [inviteLink, setInviteLink] = React.useState("")
     const [isCopied, setIsCopied] = React.useState(false)
 
-    const handleInvite = async () => {
-        if (!currentTeam) return
-        try {
-            // Generate Code
-            const code = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10)
-
-            // Save to Firestore
-            await addDoc(collection(db, "invites"), {
-                code,
-                teamId: currentTeam.id,
-                createdAt: new Date().toISOString(),
-                expiresAt: null, // Never expires for now
-                createdBy: currentUser?.id
-            })
-
-            const link = `${window.location.origin}/invite/${code}`
-            setInviteLink(link)
-
-            // Auto copy
-            navigator.clipboard.writeText(link)
-            setIsCopied(true)
-            setTimeout(() => setIsCopied(false), 2000)
-
-        } catch (error) {
-            console.error("Failed to generate invite", error)
-            alert("Failed to generate invite link")
-        }
+    const handleInvite = () => {
+        setIsInviteOpen(true)
     }
+
 
     return (
         <div className="space-y-6 pb-20 md:pb-6">
@@ -346,6 +326,22 @@ export default function TeamPage() {
                     </div>
                 )
             }
+            <AddUserDialog
+                isOpen={isAddOpen}
+                onClose={() => setIsAddOpen(false)}
+                initialData={editingUser}
+            />
+            <InviteMemberDialog
+                isOpen={isInviteOpen}
+                onClose={() => setIsInviteOpen(false)}
+            />
+            {isEditTeamOpen && currentTeam && (
+                <EditTeamDialog
+                    isOpen={isEditTeamOpen}
+                    onClose={() => setIsEditTeamOpen(false)}
+                    team={currentTeam}
+                />
+            )}
         </div >
     )
 }

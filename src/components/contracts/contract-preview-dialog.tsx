@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react"
 import { Contract, useProjects } from "@/context/project-context"
 import { useSettings } from "@/context/settings-context"
-import { ContractDocument } from "./contract-document"
-import { pdf } from "@react-pdf/renderer"
-import { Printer, Edit, X, FileText } from "lucide-react"
+import { Printer, Edit, X, FileText, Download } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
 
 interface ContractPreviewDialogProps {
@@ -21,28 +19,52 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
     const { t } = useTranslation()
     const [blobUrl, setBlobUrl] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const [isDownloading, setIsDownloading] = useState(false)
 
     const project = projects.find(p => p.id === contract.projectId)
     const worker = workers.find(w => w.id === contract.workerId)
 
-    // Generate PDF on load/open
+    // Generate PDF preview on load/open
     useEffect(() => {
         const loadPdf = async () => {
             setIsLoading(true)
             try {
-                const blob = await pdf(
-                    <ContractDocument
-                        contract={contract}
-                        project={project}
-                        worker={worker}
-                        orgProfile={orgProfile}
+                const { generateContractHTML } = await import('@/lib/server-pdf')
 
-                        settings={documentSettings['contract']}
-                        dictionary={t}
-                    />
-                ).toBlob()
-                const url = URL.createObjectURL(blob)
-                setBlobUrl(url)
+                const html = generateContractHTML({
+                    contractNumber: contract.id,
+                    date: contract.createdAt,
+                    projectName: project?.name || 'Unknown Project',
+                    workerName: worker?.name || 'Unknown Worker',
+                    workerAddress: undefined,
+                    companyName: orgProfile?.name || 'Company',
+                    companyAddress: orgProfile?.address,
+                    scope: contract.scope,
+                    startDate: contract.startDate,
+                    endDate: contract.endDate,
+                    contractValue: contract.totalAmount,
+                    installments: contract.installments.map(inst => ({
+                        name: inst.description,
+                        amount: inst.amount,
+                        dueDate: inst.dueDate
+                    })),
+                    terms: undefined
+                })
+
+                // Call server API to generate PDF
+                const response = await fetch('/api/pdf/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ html, filename: `Contract_${contract.id}.pdf` })
+                })
+
+                if (response.ok) {
+                    const blob = await response.blob()
+                    const url = URL.createObjectURL(blob)
+                    setBlobUrl(url)
+                } else {
+                    console.error("Failed to generate PDF")
+                }
             } catch (error) {
                 console.error("Failed to generate PDF:", error)
             } finally {
@@ -53,7 +75,40 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
         if (isOpen) {
             loadPdf()
         }
-    }, [isOpen, contract, project, worker, orgProfile, documentSettings, t])
+    }, [isOpen, contract, project, worker, orgProfile])
+
+    const handleDownload = async () => {
+        setIsDownloading(true)
+        try {
+            const { generateServerPDF, generateContractHTML } = await import('@/lib/server-pdf')
+
+            const html = generateContractHTML({
+                contractNumber: contract.id,
+                date: contract.createdAt,
+                projectName: project?.name || 'Unknown Project',
+                workerName: worker?.name || 'Unknown Worker',
+                workerAddress: undefined,
+                companyName: orgProfile?.name || 'Company',
+                companyAddress: orgProfile?.address,
+                scope: contract.scope,
+                startDate: contract.startDate,
+                endDate: contract.endDate,
+                contractValue: contract.totalAmount,
+                installments: contract.installments.map(inst => ({
+                    name: inst.description,
+                    amount: inst.amount,
+                    dueDate: inst.dueDate
+                })),
+                terms: undefined
+            })
+
+            await generateServerPDF(html, `Contract_${contract.id}.pdf`)
+        } catch (error) {
+            console.error("Failed to download PDF:", error)
+        } finally {
+            setIsDownloading(false)
+        }
+    }
 
     if (!isOpen) return null
 

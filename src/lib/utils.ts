@@ -5,25 +5,54 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
 }
 
-export function generateNextDocumentNumber(type: string, incomes: any[]) {
+/**
+ * Generate document number in format: PREFIX-YYYYMMDD-XXX
+ * PREFIX: QT (Quotation), IN (Invoice), RC (Receipt)
+ * XXX: Sequential number for that day
+ */
+export function generateNextDocumentNumber(
+    type: string,
+    incomes: { type: string, documentNumber: string, date?: string }[],
+    forDate: string = new Date().toISOString().split('T')[0]
+) {
     const prefixMap: Record<string, string> = {
         'Quotation': 'QT',
-        'Invoice': 'IV',
+        'Invoice': 'IN',
         'Receipt': 'RC'
     }
     const prefix = prefixMap[type] || 'DOC'
 
-    const docs = incomes.filter(d => d.type === type)
+    // Format date as YYYYMMDD
+    const dateParts = forDate.split('-')
+    const dateStr = dateParts.join('')  // 20260116
 
-    if (docs.length === 0) return `${prefix}-001`
+    // Filter documents of same type and same date
+    const docsForToday = incomes.filter(d => {
+        if (d.type !== type) return false
+        // Check if document number starts with prefix and contains today's date
+        if (d.documentNumber && d.documentNumber.startsWith(`${prefix}-${dateStr}`)) {
+            return true
+        }
+        // Also check by date field if available
+        if (d.date && d.date.startsWith(forDate)) {
+            return true
+        }
+        return false
+    })
 
-    const numbers = docs.map(d => {
+    if (docsForToday.length === 0) return `${prefix}-${dateStr}-001`
+
+    // Extract sequence numbers from existing documents
+    const numbers = docsForToday.map(d => {
         const parts = d.documentNumber.split('-')
-        const num = parseInt(parts[parts.length - 1])
-        return isNaN(num) ? 0 : num
+        if (parts.length >= 3) {
+            const num = parseInt(parts[2])
+            return isNaN(num) ? 0 : num
+        }
+        return 0
     })
 
     const max = Math.max(...numbers, 0)
     const next = max + 1
-    return `${prefix}-${next.toString().padStart(3, '0')}`
+    return `${prefix}-${dateStr}-${next.toString().padStart(3, '0')}`
 }

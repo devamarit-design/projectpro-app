@@ -1,10 +1,9 @@
 "use client"
 
-import { Document, Page, Text, View, StyleSheet, pdf, Font } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer'
 import type { Project, Expense, IncomeDocument, CompanyProfile } from '@/context/project-context'
 
-// Register fonts if needed, otherwise fallback to Helvetica
-// Font.register({ family: 'ThaiSans', src: '...' }) 
+// Using Helvetica to ensure PDF generation works
 
 const styles = StyleSheet.create({
     page: {

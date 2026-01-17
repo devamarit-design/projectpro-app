@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Kanit } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -8,6 +8,7 @@ import { NotificationProvider } from "@/context/notification-context";
 import { SettingsProvider } from "@/context/settings-context";
 import { SecurityProvider } from "@/context/security-context";
 import { LockScreen } from "@/components/auth/lock-screen";
+import { OrganizationProvider } from "@/context/organization-context"; // New Import
 
 const kanit = Kanit({
   subsets: ["latin", "thai"],
@@ -22,15 +23,21 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
-  },
+  }
+};
+
+export const viewport: Viewport = {
   themeColor: "#000000",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -42,19 +49,21 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <LanguageProvider>
-            <ProjectProvider>
-              <SettingsProvider>
-                <NotificationProvider>
-                  <SecurityProvider>
-                    <LockScreen />
-                    {children}
-                  </SecurityProvider>
-                </NotificationProvider>
-              </SettingsProvider>
-            </ProjectProvider>
+            <OrganizationProvider>
+              <ProjectProvider>
+                <SettingsProvider>
+                  <NotificationProvider>
+                    <SecurityProvider>
+                      <LockScreen />
+                      {children}
+                    </SecurityProvider>
+                  </NotificationProvider>
+                </SettingsProvider>
+              </ProjectProvider>
+            </OrganizationProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>
-  );
+  )
 }

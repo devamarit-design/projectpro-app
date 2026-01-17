@@ -10,8 +10,18 @@ import { IncomeDetailSheet } from "@/components/income/income-detail-sheet"
 
 const documents = [] // Removed hardcoded data
 
+// Loading Component
+function IncomeLoading() {
+    return (
+        <div className="flex flex-col items-center justify-center p-12 space-y-4">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-muted-foreground animate-pulse">Loading documents...</p>
+        </div>
+    )
+}
+
 export default function IncomePage() {
-    const { incomes, customers, projects, workers } = useProjects()
+    const { incomes, customers, projects, workers, incomesLoading } = useProjects()
     const { t } = useTranslation()
     const [filter, setFilter] = useState("All")
     const [search, setSearch] = useState("")
@@ -34,13 +44,13 @@ export default function IncomePage() {
     const filteredIncomes = incomes.filter((doc: IncomeDocument) => {
         // 1. Basic Filters
         const matchesType = filter === "All" || doc.type === filter
-        const matchesSearch =
-            doc.documentNumber.toLowerCase().includes(search.toLowerCase()) ||
-            getCustomerName(doc.customerId).toLowerCase().includes(search.toLowerCase())
+        const matchesSearch = search === "" ||
+            (doc.documentNumber?.toLowerCase() || "").includes(search.toLowerCase()) ||
+            (getCustomerName(doc.customerId) || "").toLowerCase().includes(search.toLowerCase())
 
         // 2. Advanced Filters
         const matchesProject = projectFilter === "all" || doc.projectId === projectFilter
-        const matchesMonth = monthFilter === "all" || doc.date.startsWith(monthFilter)
+        const matchesMonth = monthFilter === "all" || doc.date?.startsWith(monthFilter)
         const matchesCustomer = customerFilter === "all" || doc.customerId === customerFilter
 
         // 3. Technician Filter (Indirect: Is this technician working on the project?)
@@ -66,6 +76,8 @@ export default function IncomePage() {
 
         return matchesType && matchesSearch && matchesProject && matchesMonth && matchesCustomer && matchesTechnician
     })
+
+
 
     return (
         <div className="space-y-6 pb-20 md:pb-0">
@@ -175,7 +187,18 @@ export default function IncomePage() {
                     </div>
                 </div>
                 <div className="overflow-x-auto">
-                    {filteredIncomes.length > 0 ? (
+                    {incomesLoading ? (
+                        <div className="bg-card rounded-xl border border-border p-8 py-20 min-h-[400px] flex items-center justify-center">
+                            <IncomeLoading />
+                        </div>
+                    ) : filteredIncomes.length === 0 ? (
+                        <div className="p-12 text-center space-y-3">
+                            <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto text-muted-foreground">
+                                <FileText className="w-8 h-8" />
+                            </div>
+                            <p className="text-muted-foreground">{t.income.empty}</p>
+                        </div>
+                    ) : (
                         <table className="w-full text-sm text-left">
                             <thead className="bg-muted/50 text-muted-foreground">
                                 <tr>
@@ -234,13 +257,6 @@ export default function IncomePage() {
                                 ))}
                             </tbody>
                         </table>
-                    ) : (
-                        <div className="p-12 text-center space-y-3">
-                            <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto text-muted-foreground">
-                                <FileText className="w-8 h-8" />
-                            </div>
-                            <p className="text-muted-foreground">{t.income.empty}</p>
-                        </div>
                     )}
                 </div>
             </div>

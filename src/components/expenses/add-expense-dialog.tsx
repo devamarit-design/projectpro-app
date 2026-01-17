@@ -5,6 +5,7 @@ import { X, Receipt, ScanLine, Plus, Trash2, Layers, User, Building, Camera, Upl
 import { useProjects, ExpenseCategory, ExpenseItem } from "@/context/project-context"
 import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
 import { cn } from "@/lib/utils"
+import { uploadWithThumbnail } from "@/lib/upload"
 
 interface AddExpenseDialogProps {
     isOpen: boolean
@@ -16,7 +17,7 @@ interface AddExpenseDialogProps {
 import { useTranslation } from "@/lib/i18n-context"
 
 export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, startScanning }: AddExpenseDialogProps) {
-    const { addExpense, addProject, addTask, addUser, addVendor, addWorker, projects, tasks, users, vendors, workers } = useProjects()
+    const { addExpense, addProject, addTask, addSubProject, addUser, addVendor, addWorker, projects, tasks, users, vendors, workers, currentUser } = useProjects()
     const { t } = useTranslation()
 
     const [isScanOpen, setIsScanOpen] = React.useState(false)
@@ -25,21 +26,25 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     const [title, setTitle] = React.useState("")
     const [date, setDate] = React.useState(new Date().toISOString().split('T')[0])
     const [payee, setPayee] = React.useState("")
+
     const [status, setStatus] = React.useState<"Paid" | "Pending" | "Unpaid" | "Advanced" | "Credit">("Paid")
     const [receiptImage, setReceiptImage] = React.useState<string | null>(null)
+    const [receiptFile, setReceiptFile] = React.useState<File | null>(null)
+    const [isUploading, setIsUploading] = React.useState(false)
     const [receiptExpanded, setReceiptExpanded] = React.useState(false)
 
     // Split Bill Logic
     const [billType, setBillType] = React.useState<"combine" | "split">("combine")
     const [globalProjectId, setGlobalProjectId] = React.useState("")
     const [globalTaskId, setGlobalTaskId] = React.useState("")
+    const [globalSubProjectId, setGlobalSubProjectId] = React.useState("")
 
     // Advanced Status Fields
     const [paidBy, setPaidBy] = React.useState("") // For "Advanced"
     const [vendor, setVendor] = React.useState("") // For "Credit"
 
     // Quick Add State
-    const [quickAdd, setQuickAdd] = React.useState<{ type: 'project' | 'task' | 'user' | 'vendor' | 'worker', parentId?: string } | null>(null)
+    const [quickAdd, setQuickAdd] = React.useState<{ type: 'project' | 'task' | 'user' | 'vendor' | 'worker' | 'sub-project', parentId?: string } | null>(null)
 
     const [newItemName, setNewItemName] = React.useState("")
     const [newItemSecondary, setNewItemSecondary] = React.useState("") // Role or Category
@@ -47,7 +52,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     // Billing
     const [vatIncluded, setVatIncluded] = React.useState(true)
     const [items, setItems] = React.useState<ExpenseItem[]>([
-        { id: "1", description: "", amount: 0, category: "Material", projectId: defaultProjectId }
+        { id: "1", description: "", amount: 0, quantity: 1, unitPrice: 0, category: "Material", projectId: defaultProjectId }
     ])
 
     // Scroll tracking for receipt section auto-expand/collapse
@@ -60,8 +65,9 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             setBillType("combine")
             setGlobalProjectId(defaultProjectId || "")
             setGlobalTaskId("")
+            setGlobalSubProjectId("")
 
-            setItems([{ id: "1", description: "", amount: 0, category: "Material", projectId: defaultProjectId }])
+            setItems([{ id: "1", description: "", amount: 0, quantity: 1, unitPrice: 0, category: "Material", projectId: defaultProjectId }])
             setTitle("")
             setPayee("")
             setStatus("Paid")
@@ -69,6 +75,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             setVendor("")
             setVatIncluded(true)
             setReceiptImage(null)
+            setReceiptFile(null)
             setReceiptExpanded(false)
             setQuickAdd(null)
 
@@ -129,6 +136,12 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 assignedTo: "Unassigned",
                 dueDate: new Date().toISOString()
             })
+        } else if (quickAdd.type === 'sub-project' && quickAdd.parentId) {
+            addSubProject(quickAdd.parentId, {
+                name: newItemName,
+                status: "Planning",
+                description: "Quickly added sub-project"
+            })
         } else if (quickAdd.type === 'user') {
             addUser({ name: newItemName, role: newItemSecondary || "Staff" })
         } else if (quickAdd.type === 'worker') {
@@ -148,7 +161,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     const handleSelectChange = (
         value: string,
         setter: (val: string) => void,
-        type: 'project' | 'task' | 'user' | 'vendor' | 'worker',
+        type: 'project' | 'task' | 'user' | 'vendor' | 'worker' | 'sub-project',
         parentId?: string
     ) => {
         if (value === 'NEW') {
@@ -181,9 +194,12 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             id: Math.random().toString(),
             description: "",
             amount: 0,
+            quantity: 1,
+            unitPrice: 0,
             category: "Material",
             projectId: billType === 'combine' ? globalProjectId : undefined,
-            taskId: billType === 'combine' ? globalTaskId : undefined
+            taskId: billType === 'combine' ? globalTaskId : undefined,
+            subProjectId: billType === 'combine' ? globalSubProjectId : undefined
         }])
     }
 
@@ -200,6 +216,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
+            setReceiptFile(file)
             const reader = new FileReader()
             reader.onloadend = () => {
                 setReceiptImage(reader.result as string)
@@ -212,74 +229,108 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         setReceiptImage(null)
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        setIsUploading(true)
 
-        if (billType === 'combine') {
-            // COMBINE MODE: One expense with all items under the same project
-            const finalItems = items.map(item => ({
-                ...item,
-                projectId: globalProjectId,
-                taskId: globalTaskId
-            }))
+        try {
+            let finalReceiptUrl = receiptImage
+            let finalThumbnailUrl = undefined
 
-            const expenseData: Parameters<typeof addExpense>[0] = {
-                title: title || payee || "New Expense",
-                amount: `฿${subtotal.toLocaleString()}`,
-                totalValue: subtotal,
-                date,
-                category: items[0]?.category || "Other",
-                items: finalItems,
-                payee: payee || "",
-                status,
-                vatIncluded,
-                projectId: globalProjectId || ""
+            if (receiptFile) {
+                // Determine path based on organization or project
+                // For now, simpler path structure
+                const path = `expenses/${new Date().getFullYear()}`
+                const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(receiptFile, path)
+                finalReceiptUrl = originalUrl
+                finalThumbnailUrl = thumbnailUrl
             }
 
-            if (status === 'Advanced' && paidBy) expenseData.paidBy = paidBy
-            if (status === 'Credit' && vendor) expenseData.vendor = vendor
-            if (receiptImage) expenseData.receiptImage = receiptImage
-
-            addExpense(expenseData)
-        } else {
-            // SPLIT MODE: Group items by projectId and create separate expenses
-            const itemsByProject: Record<string, typeof items> = {}
-
-            items.forEach(item => {
-                const pid = item.projectId || "unassigned"
-                if (!itemsByProject[pid]) {
-                    itemsByProject[pid] = []
-                }
-                itemsByProject[pid].push(item)
-            })
-
-            // Create one expense per project
-            Object.entries(itemsByProject).forEach(([projectId, projectItems]) => {
-                const projectTotal = projectItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
-                const projectName = projects.find(p => p.id === projectId)?.name || "Unassigned"
+            if (billType === 'combine') {
+                // COMBINE MODE: One expense with all items under the same project
+                const finalItems = items.map(item => {
+                    const cleanItem: any = {
+                        ...item,
+                        projectId: globalProjectId || undefined,
+                        taskId: globalTaskId || undefined,
+                    }
+                    if (globalSubProjectId) cleanItem.subProjectId = globalSubProjectId
+                    // Remove undefined values
+                    Object.keys(cleanItem).forEach(key => {
+                        if (cleanItem[key] === undefined || cleanItem[key] === '') {
+                            delete cleanItem[key]
+                        }
+                    })
+                    return cleanItem
+                })
 
                 const expenseData: Parameters<typeof addExpense>[0] = {
-                    title: `${title || payee || "Split Bill"} (${projectName})`,
-                    amount: `฿${projectTotal.toLocaleString()}`,
-                    totalValue: projectTotal,
+                    title: title || payee || "New Expense",
+                    amount: `฿${subtotal.toLocaleString()}`,
+                    totalValue: subtotal,
                     date,
-                    category: projectItems[0]?.category || "Other",
-                    items: projectItems,
+                    category: items[0]?.category || "Other",
+                    items: finalItems,
                     payee: payee || "",
                     status,
                     vatIncluded,
-                    projectId: projectId === "unassigned" ? "" : projectId
+                    projectId: globalProjectId || "",
                 }
+
+                if (globalSubProjectId) expenseData.subProjectId = globalSubProjectId
 
                 if (status === 'Advanced' && paidBy) expenseData.paidBy = paidBy
                 if (status === 'Credit' && vendor) expenseData.vendor = vendor
-                if (receiptImage) expenseData.receiptImage = receiptImage
+                if (finalReceiptUrl) expenseData.receiptImage = finalReceiptUrl
+                if (finalThumbnailUrl) expenseData.thumbnailUrl = finalThumbnailUrl
 
                 addExpense(expenseData)
-            })
-        }
+            } else {
+                // SPLIT MODE: Group items by projectId and create separate expenses
+                const itemsByProject: Record<string, typeof items> = {}
 
-        onClose()
+                items.forEach(item => {
+                    const pid = item.projectId || "unassigned"
+                    if (!itemsByProject[pid]) {
+                        itemsByProject[pid] = []
+                    }
+                    itemsByProject[pid].push(item)
+                })
+
+                // Create one expense per project
+                Object.entries(itemsByProject).forEach(([projectId, projectItems]) => {
+                    const projectTotal = projectItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+                    const projectName = projects.find(p => p.id === projectId)?.name || "Unassigned"
+
+                    const expenseData: Parameters<typeof addExpense>[0] = {
+                        title: `${title || payee || "Split Bill"} (${projectName})`,
+                        amount: `฿${projectTotal.toLocaleString()}`,
+                        totalValue: projectTotal,
+                        date,
+                        category: projectItems[0]?.category || "Other",
+                        items: projectItems,
+                        payee: payee || "",
+                        status,
+                        vatIncluded,
+                        projectId: projectId === "unassigned" ? "" : projectId
+                    }
+
+                    if (status === 'Advanced' && paidBy) expenseData.paidBy = paidBy
+                    if (status === 'Credit' && vendor) expenseData.vendor = vendor
+                    if (finalReceiptUrl) expenseData.receiptImage = finalReceiptUrl
+                    if (finalThumbnailUrl) expenseData.thumbnailUrl = finalThumbnailUrl
+
+                    addExpense(expenseData)
+                })
+            }
+
+            onClose()
+        } catch (error) {
+            console.error("Error adding expense:", error)
+            alert("Failed to upload image or save expense")
+        } finally {
+            setIsUploading(false)
+        }
     }
 
     // Helper to get tasks for a project
@@ -564,19 +615,19 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             </div>
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.task}</label>
+                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.task} / Sub-project</label>
                                             <div className="relative">
                                                 <select
-                                                    value={globalTaskId}
-                                                    onChange={(e) => handleSelectChange(e.target.value, setGlobalTaskId, 'task', globalProjectId)}
+                                                    value={globalSubProjectId}
+                                                    onChange={(e) => handleSelectChange(e.target.value, setGlobalSubProjectId, 'sub-project', globalProjectId)}
                                                     disabled={!globalProjectId}
                                                     className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 appearance-none"
                                                 >
                                                     <option value="">General Project Expense</option>
-                                                    {getProjectTasks(globalProjectId).map(t => (
-                                                        <option key={t.id} value={t.id}>{t.title}</option>
+                                                    {projects.find(p => p.id === globalProjectId)?.subProjects?.map(sp => (
+                                                        <option key={sp.id} value={sp.id}>{sp.name}</option>
                                                     ))}
-                                                    <option value="NEW" className="font-bold text-primary">+ Add New Sub-project...</option>
+                                                    <option value="NEW" className="font-bold text-primary">{t.expenses.dialog.add_new_sub_project}</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -609,20 +660,49 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             </div>
                                             <div className="col-span-11 grid grid-cols-1 sm:grid-cols-12 gap-3">
                                                 {/* Description & Amount */}
-                                                <div className="sm:col-span-12 grid grid-cols-6 gap-3">
+                                                {/* Description, Qty, Price, Total */}
+                                                <div className="sm:col-span-12 grid grid-cols-12 gap-2">
                                                     <input
                                                         placeholder={t.expenses.dialog.item_desc}
                                                         value={item.description}
                                                         onChange={(e) => updateItem(item.id, { description: e.target.value })}
-                                                        className="col-span-4 bg-background border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                        className="col-span-12 sm:col-span-5 bg-background border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                                                     />
-                                                    <div className="col-span-2 relative">
+                                                    <input
+                                                        type="number"
+                                                        placeholder={t.expenses.dialog.quantity || "Qty"}
+                                                        value={item.quantity || ""}
+                                                        onChange={(e) => {
+                                                            const qty = parseFloat(e.target.value)
+                                                            const price = item.unitPrice || 0
+                                                            updateItem(item.id, {
+                                                                quantity: qty,
+                                                                amount: qty * price
+                                                            })
+                                                        }}
+                                                        className="col-span-4 sm:col-span-2 bg-background border border-white/10 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        placeholder={t.expenses.dialog.unit_price || "Price"}
+                                                        value={item.unitPrice || ""}
+                                                        onChange={(e) => {
+                                                            const price = parseFloat(e.target.value)
+                                                            const qty = item.quantity || 0
+                                                            updateItem(item.id, {
+                                                                unitPrice: price,
+                                                                amount: qty * price
+                                                            })
+                                                        }}
+                                                        className="col-span-4 sm:col-span-2 bg-background border border-white/10 rounded-lg px-2 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                    />
+                                                    <div className="col-span-4 sm:col-span-3 relative">
                                                         <input
                                                             type="number"
                                                             placeholder="0.00"
                                                             value={item.amount || ""}
                                                             onChange={(e) => updateItem(item.id, { amount: parseFloat(e.target.value) })}
-                                                            className="w-full bg-background border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-right"
+                                                            className="w-full bg-background border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-right font-bold text-primary"
                                                         />
                                                         <span className="absolute left-2 top-2 text-xs text-muted-foreground">฿</span>
                                                     </div>
@@ -749,6 +829,9 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                 className="w-full bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
                                             >
                                                 <option value="">Select User...</option>
+                                                {currentUser && (
+                                                    <option value={currentUser.name} className="font-bold text-primary">Assign to Me ({currentUser.name})</option>
+                                                )}
                                                 {users.map(u => (
                                                     <option key={u.id} value={u.name}>{u.name} ({u.role})</option>
                                                 ))}
@@ -841,10 +924,17 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                         <div className="p-6 border-t border-white/10 bg-background/20 backdrop-blur-md shrink-0">
                             <button
                                 type="submit"
-                                className="w-full bg-primary text-primary-foreground hover:opacity-90 rounded-xl py-3 font-bold uppercase tracking-wider shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
+                                disabled={isUploading}
+                                className="w-full bg-primary text-primary-foreground hover:opacity-90 rounded-xl py-3 font-bold uppercase tracking-wider shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-
-                                {t.expenses.dialog.save}
+                                {isUploading ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white/90 rounded-full animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    t.expenses.dialog.save
+                                )}
                             </button>
                         </div>
                     </form>

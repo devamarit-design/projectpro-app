@@ -1,25 +1,31 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useProjects } from "@/context/project-context"
 import { useRouter } from "next/navigation"
 import { LayoutDashboard, Loader2 } from "lucide-react"
 import Link from "next/link"
 
 export default function LoginPage() {
-    const { login } = useProjects()
+    const { login, currentUser, isAuthLoading } = useProjects()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    // Auto-redirect if already logged in
+    useEffect(() => {
+        if (!isAuthLoading && currentUser) {
+            router.push("/")
+        }
+    }, [currentUser, isAuthLoading, router])
 
     const handleGoogleLogin = async () => {
         setIsLoading(true)
         try {
             await login("google")
-            router.push("/")
+            // Navigation handled by useEffect
         } catch (error) {
             console.error("Login failed", error)
-        } finally {
             setIsLoading(false)
         }
     }
@@ -52,9 +58,9 @@ export default function LoginPage() {
 
                         try {
                             await login("credentials", { email, password })
-                            router.push("/")
+                            // Navigation handled by useEffect
                         } catch (err) {
-                            setError("Invalid credentials. Try admin@projectpro.com / 123456")
+                            setError("Invalid email or password.")
                             setIsLoading(false)
                         }
                     }} className="space-y-4">

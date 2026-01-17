@@ -18,6 +18,8 @@ import {
     ArrowDownRight,
     DollarSign,
     Target,
+    MapPin,
+    User,
     Filter,
     Download,
     Upload,
@@ -26,10 +28,9 @@ import {
     FileSpreadsheet,
     Film,
     AlertCircle,
-    User,
     ChevronRight,
     Check
-} from "lucide-react" // Ensure icons are correct, Step 85 didn't show imports 1-35 but they are standard. 
+} from "lucide-react"
 import Link from "next/link"
 import { ProjectHeader } from "@/components/projects/project-header"
 import { cn } from "@/lib/utils"
@@ -87,7 +88,7 @@ export default function ProjectDetailClient() {
                 e.status
             ]) as any
         } else {
-            const data = incomes.filter(i => i.projectId === id)
+            const data = incomes.filter(i => i.projectId === id || i.projectId === project?.name)
             headers = ['Date', 'Doc No', 'Type', 'Customer', 'Amount', 'Status']
             rows = data.map(d => [
                 d.date,
@@ -112,9 +113,37 @@ export default function ProjectDetailClient() {
         document.body.removeChild(link)
     }
 
+    // Generic CSV Export for Sub-project data
+    const exportSubProjectCSV = (data: any[], fileName: string) => {
+        const headers = ["Date", "Description", "Category", "Amount", "Status", "Payee"]
+        const csvContent = [
+            headers.join(","),
+            ...data.map(item => [
+                item.date,
+                `"${item.title.replace(/"/g, '""')}"`,
+                item.category,
+                item.totalValue || 0,
+                item.status,
+                item.payee || ""
+            ].join(","))
+        ].join("\n")
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+        const link = document.createElement("a")
+        const url = URL.createObjectURL(blob)
+        link.setAttribute("href", url)
+        link.setAttribute("download", fileName)
+        link.style.visibility = "hidden"
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }
+
     // 1. Get all raw data for this project
+    // Match incomes by projectId OR by project name (for backward compatibility with old data)
+    const allIncomesForProject = incomes.filter(i => i.projectId === id || i.projectId === project?.name)
     const allProjectExpenses = expenses.filter(e => e.projectId === id || e.items?.some(i => i.projectId === id))
-    const allProjectIncomes = incomes.filter(i => i.projectId === id && (i.status === 'Paid' || i.status === 'Accepted')) // Only count realized income for financials
+    const allProjectIncomes = allIncomesForProject.filter(i => i.status === 'Paid' || i.status === 'Accepted') // Only count realized income for financials
 
     // 2. Extract available months from both expenses and incomes
     const availableMonths = Array.from(new Set([
@@ -179,6 +208,18 @@ export default function ProjectDetailClient() {
                     {t.projects.detail.tabs.overview}
                 </button>
                 <button
+                    onClick={() => setActiveTab("sub_projects")}
+                    className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
+                        activeTab === "sub_projects"
+                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                            : "bg-background/50 hover:bg-muted/50 text-muted-foreground"
+                    )}
+                >
+                    <Target className="w-4 h-4" />
+                    {t.projects.detail.tabs.sub_projects}
+                </button>
+                <button
                     onClick={() => setActiveTab("financials")}
                     className={cn(
                         "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
@@ -233,92 +274,103 @@ export default function ProjectDetailClient() {
 
                             <div className="glass-card p-6 rounded-2xl space-y-4">
                                 <h3 className="font-bold text-lg flex items-center gap-2">
-                                    <Calendar className="w-5 h-5 text-primary" />
-                                    {t.projects.detail.overview.timeline}
+                                    <FileText className="w-5 h-5 text-primary" />
+                                    {t.projects.detail.overview.details}
                                 </h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                        <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.start_date}</span>
-                                        <span className="font-bold">
-                                            {project.startDate ? new Date(project.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-                                        </span>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="p-3 bg-muted/30 rounded-xl space-y-1">
+                                            <p className="text-xs text-muted-foreground font-medium uppercase">Customer</p>
+                                            <div className="flex items-center gap-2 font-semibold">
+                                                <User className="w-4 h-4 text-primary" />
+                                                {project.customer}
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-muted/30 rounded-xl space-y-1">
+                                            <p className="text-xs text-muted-foreground font-medium uppercase">Location</p>
+                                            <div className="flex items-center gap-2 font-semibold">
+                                                <MapPin className="w-4 h-4 text-primary" />
+                                                {project.location}
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-muted/30 rounded-xl space-y-1">
+                                            <p className="text-xs text-muted-foreground font-medium uppercase">Contract Value</p>
+                                            <div className="flex items-center gap-2 font-semibold text-green-500">
+                                                <DollarSign className="w-4 h-4" />
+                                                {project.budget}
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-muted/30 rounded-xl space-y-1">
+                                            <p className="text-xs text-muted-foreground font-medium uppercase">Total Tasks</p>
+                                            <div className="flex items-center gap-2 font-semibold">
+                                                <CheckSquare className="w-4 h-4 text-blue-500" />
+                                                {project.tasks?.length || 0} Tasks
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                        <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.end_date}</span>
-                                        <span className="font-bold">
-                                            {project.endDate ? new Date(project.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-                                        </span>
+
+                                    <div className="pt-2 border-t border-white/5">
+                                        <p className="text-xs text-muted-foreground font-medium uppercase mb-2">Description</p>
+                                        <p className="text-muted-foreground leading-relaxed text-sm">
+                                            {project.description || t.projects.detail.overview.no_desc}
+                                        </p>
                                     </div>
-                                    <div className="flex justify-between items-center py-2">
-                                        <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.current_status}</span>
-                                        <span className="px-3 py-1 bg-primary/10 text-primary self-start rounded-full text-xs font-bold uppercase tracking-wider border border-primary/20">
-                                            {project.status}
-                                        </span>
+                                </div>
+                            </div>
+
+                            <div className="glass-card p-6 rounded-2xl space-y-4 flex flex-col">
+                                <h3 className="font-bold text-lg flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-primary" />
+                                    {t.projects.detail.overview.timeline} & Status
+                                </h3>
+
+                                <div className="space-y-4 flex-1">
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                            <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.start_date}</span>
+                                            <span className="font-bold">
+                                                {project.startDate ? new Date(project.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                            <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.end_date}</span>
+                                            <span className="font-bold">
+                                                {project.endDate ? new Date(project.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center py-2">
+                                            <span className="text-muted-foreground text-sm font-medium">{t.projects.detail.overview.current_status}</span>
+                                            <span className={cn(
+                                                "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border",
+                                                project.status === 'Completed' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                                    project.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                                        'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                            )}>
+                                                {project.status}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Mini Task Stats */}
+                                    <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
+                                        <p className="text-xs text-muted-foreground font-medium uppercase">Task Progress</p>
+                                        <div className="flex gap-2">
+                                            <div className="flex-1 bg-muted/30 h-2 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-green-500"
+                                                    style={{ width: `${(project.tasks?.filter(t => t.status === 'Done').length || 0) / (project.tasks?.length || 1) * 100}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between text-xs text-muted-foreground">
+                                            <span>{project.tasks?.filter(t => t.status === 'Done').length || 0} Done</span>
+                                            <span>{project.tasks?.length || 0} Total</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Sub-projects Section */}
-                        <div className="glass-card p-6 rounded-2xl space-y-4 mt-6">
-                            <div className="flex items-center justify-between">
-                                <h3 className="font-bold text-lg flex items-center gap-2">
-                                    <Folder className="w-5 h-5 text-primary" />
-                                    {locale === 'th' ? "โปรเจคย่อย (Sub-projects)" : "Sub-projects"}
-                                </h3>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">
-                                        {project.subProjects?.length || 0} items
-                                    </span>
-                                    <button
-                                        onClick={() => setIsAddSubProjectOpen(true)}
-                                        className="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground rounded-full text-xs font-bold hover:opacity-90 transition-opacity"
-                                    >
-                                        <Plus className="w-3 h-3" /> Add
-                                    </button>
-                                </div>
-                            </div>
-                            {project.subProjects && project.subProjects.length > 0 ? (
-                                <div className="space-y-2">
-                                    {project.subProjects.map((sp) => (
-                                        <div
-                                            key={sp.id}
-                                            onClick={() => setSelectedSubProjectId(sp.id)}
-                                            className="flex items-center justify-between p-3 bg-background/50 rounded-xl border border-white/5 hover:border-primary/20 hover:bg-background/80 transition-colors cursor-pointer"
-                                        >
-                                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                <div className={cn(
-                                                    "w-2 h-2 rounded-full shrink-0",
-                                                    sp.status === 'Done' ? 'bg-green-500' :
-                                                        sp.status === 'In Progress' ? 'bg-blue-500' :
-                                                            'bg-yellow-500'
-                                                )} />
-                                                <span className="font-medium truncate">{sp.name}</span>
-                                            </div>
-                                            <span className={cn(
-                                                "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border",
-                                                sp.status === 'Done' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                                                    sp.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                                        'bg-muted text-muted-foreground border-white/10'
-                                            )}>
-                                                {sp.status}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    <Folder className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                                    <p className="text-sm">No sub-projects yet</p>
-                                    <button
-                                        onClick={() => setIsAddSubProjectOpen(true)}
-                                        className="mt-3 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
-                                    >
-                                        Add Sub-project
-                                    </button>
-                                </div>
-                            )}
-                        </div>
                     </>
                 )}
 
@@ -457,17 +509,27 @@ export default function ProjectDetailClient() {
                                                 <FileSpreadsheet className="w-4 h-4" />
                                             </button>
                                             {isClient && (
-                                                <PDFDownloadLink
-                                                    document={<FinancialReportPDF type="Expense" projectName={project?.name || ''} items={projectExpenses} />}
-                                                    fileName={`${project?.name || 'Project'}_Expense_Report.pdf`}
+                                                <button
+                                                    onClick={async () => {
+                                                        const { generateServerPDF, generateExpenseReportHTML } = await import('@/lib/server-pdf')
+                                                        const html = generateExpenseReportHTML(
+                                                            project?.name || 'Project',
+                                                            projectExpenses.map(e => ({
+                                                                date: e.date,
+                                                                category: e.category,
+                                                                title: e.title,
+                                                                status: e.status,
+                                                                amount: e.amount,
+                                                                totalValue: e.totalValue
+                                                            }))
+                                                        )
+                                                        await generateServerPDF(html, `${project?.name || 'Project'}_Expense_Report.pdf`)
+                                                    }}
                                                     className="w-9 h-9 flex items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
                                                     title="Export PDF"
                                                 >
-                                                    {/* @ts-ignore */}
-                                                    {({ loading }) => (
-                                                        <Download className="w-4 h-4" />
-                                                    )}
-                                                </PDFDownloadLink>
+                                                    <Download className="w-4 h-4" />
+                                                </button>
                                             )}
                                             <button
                                                 onClick={() => setIsAddExpenseOpen(true)}
@@ -549,26 +611,28 @@ export default function ProjectDetailClient() {
                                                 <FileSpreadsheet className="w-4 h-4" />
                                             </button>
                                             {isClient && (
-                                                <PDFDownloadLink
-                                                    document={
-                                                        <FinancialReportPDF
-                                                            type="Income"
-                                                            projectName={project?.name || ''}
-                                                            items={incomes.filter(i => i.projectId === id).map(i => ({
-                                                                ...i,
-                                                                customerName: users.find(u => u.id === i.customerId)?.name || 'Unknown'
-                                                            }))}
-                                                        />
-                                                    }
-                                                    fileName={`${project?.name || 'Project'}_Income_Report.pdf`}
+                                                <button
+                                                    onClick={async () => {
+                                                        const { generateServerPDF, generateExpenseReportHTML } = await import('@/lib/server-pdf')
+                                                        const projectIncomes = incomes.filter(i => i.projectId === id)
+                                                        const html = generateExpenseReportHTML(
+                                                            project?.name || 'Project',
+                                                            projectIncomes.map(i => ({
+                                                                date: i.date,
+                                                                category: i.type,
+                                                                title: i.documentNumber,
+                                                                status: i.status,
+                                                                amount: i.grandTotal,
+                                                                totalValue: i.grandTotal
+                                                            }))
+                                                        )
+                                                        await generateServerPDF(html, `${project?.name || 'Project'}_Income_Report.pdf`)
+                                                    }}
                                                     className="w-9 h-9 flex items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
                                                     title="Export PDF"
                                                 >
-                                                    {/* @ts-ignore */}
-                                                    {({ loading }) => (
-                                                        <Download className="w-4 h-4" />
-                                                    )}
-                                                </PDFDownloadLink>
+                                                    <Download className="w-4 h-4" />
+                                                </button>
                                             )}
                                             <Link
                                                 href="/income"
@@ -582,9 +646,9 @@ export default function ProjectDetailClient() {
 
                                     {/* All Income Documents List */}
                                     <div className="space-y-3">
-                                        {/* Filter incomes by project ID manually here to get ALL items including Quotations */}
-                                        {incomes.filter(i => i.projectId === id).length > 0 ? (
-                                            incomes.filter(i => i.projectId === id).map((doc) => (
+                                        {/* Use allIncomesForProject to include backward compatible project matching */}
+                                        {allIncomesForProject.length > 0 ? (
+                                            allIncomesForProject.map((doc) => (
                                                 <div
                                                     key={doc.id}
                                                     // Link to income page or open preview? For now, simple div or link
@@ -759,7 +823,98 @@ export default function ProjectDetailClient() {
                         )}
                     </div>
                 )}
+                {activeTab === 'sub_projects' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                <Target className="w-5 h-5 text-primary" />
+                                {t.projects.detail.tabs.sub_projects}
+                            </h3>
+                            <button
+                                onClick={() => setIsAddSubProjectOpen(true)}
+                                className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                            >
+                                <Plus className="w-4 h-4" /> {locale === 'th' ? "เพิ่มโปรเจคย่อย" : "Add Sub-project"}
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {project.subProjects && project.subProjects.length > 0 ? (
+                                project.subProjects.map((sp) => (
+                                    <div
+                                        key={sp.id}
+                                        onClick={() => setSelectedSubProjectId(sp.id)}
+                                        className="group bg-card/50 backdrop-blur-sm border border-white/5 rounded-2xl p-5 hover:bg-white/5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all cursor-pointer relative overflow-hidden"
+                                    >
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+
+                                        <div className="relative">
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div className="p-2.5 bg-primary/10 rounded-xl text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                                    <Target className="w-5 h-5" />
+                                                </div>
+                                                <span className={cn(
+                                                    "px-2.5 py-1 rounded-lg text-xs font-bold uppercase border",
+                                                    sp.status === 'Done' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                                        sp.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                                            'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                                )}>
+                                                    {sp.status}
+                                                </span>
+                                            </div>
+
+                                            <h4 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors">{sp.name}</h4>
+                                            <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                                                {sp.description || (locale === 'th' ? "ไม่มีรายละเอียด" : "No description provided")}
+                                            </p>
+
+                                            <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground border-t border-white/5 pt-3">
+                                                {sp.budget && (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <DollarSign className="w-3.5 h-3.5" />
+                                                        {sp.budget}
+                                                    </div>
+                                                )}
+                                                {sp.startDate && (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Calendar className="w-3.5 h-3.5" />
+                                                        {new Date(sp.startDate).toLocaleDateString()}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
+                                            <div className="p-1.5 bg-primary rounded-full text-primary-foreground shadow-sm">
+                                                <ArrowUpRight className="w-4 h-4" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-full py-12 flex flex-col items-center justify-center text-center space-y-4 bg-muted/20 rounded-3xl border border-dashed border-white/10">
+                                    <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center">
+                                        <Target className="w-8 h-8 text-muted-foreground/50" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h3 className="font-bold text-lg">{t.projects.detail.tabs.sub_projects}</h3>
+                                        <p className="text-sm text-muted-foreground">
+                                            {locale === 'th' ? "ยังไม่มีโปรเจคย่อย เริ่มต้นสร้างเลย!" : "No sub-projects found. Create one to get started!"}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setIsAddSubProjectOpen(true)}
+                                        className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                                    >
+                                        {locale === 'th' ? "สร้างโปรเจคย่อย" : "Create Sub-project"}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div >
+
 
 
             {/* Dialogs */}
@@ -793,7 +948,7 @@ export default function ProjectDetailClient() {
                             />
                             <div className="relative bg-background border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-bold">Sub-project Details</h3>
+                                    <h3 className="text-lg font-bold">Task Details</h3>
                                     <button
                                         onClick={() => setSelectedTaskId(null)}
                                         className="p-2 hover:bg-muted rounded-full transition-colors"
@@ -978,6 +1133,147 @@ export default function ProjectDetailClient() {
                                             <p className="text-sm text-muted-foreground">{selectedSP.description}</p>
                                         </div>
                                     )}
+
+                                    {/* Linked Content: Tasks & Expenses */}
+                                    <div className="pt-2 space-y-4 border-t border-white/10">
+                                        {/* Tasks */}
+                                        <div>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h4 className="text-sm font-bold flex items-center gap-2">
+                                                    <CheckSquare className="w-3 h-3 text-primary" /> Tasks
+                                                </h4>
+                                                <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                                                    {(project.tasks || []).filter(t => t.subProjectId === selectedSP.id).length}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-1">
+                                                {(project.tasks || []).filter(t => t.subProjectId === selectedSP.id).length > 0 ? (
+                                                    (project.tasks || []).filter(t => t.subProjectId === selectedSP.id).map(task => (
+                                                        <div
+                                                            key={task.id}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                setSelectedTaskId(task.id)
+                                                            }}
+                                                            className="text-xs p-2 bg-muted/30 rounded-lg flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors group"
+                                                        >
+                                                            <span className="truncate group-hover:text-primary transition-colors">{task.title}</span>
+                                                            <span className={cn(
+                                                                "px-1.5 py-0.5 rounded text-[10px]",
+                                                                task.status === 'Done' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'
+                                                            )}>{task.status}</span>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <p className="text-xs text-muted-foreground italic">No tasks assigned</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Expenses */}
+
+                                        <div>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h4 className="text-sm font-bold flex items-center gap-2">
+                                                    <DollarSign className="w-4 h-4 text-primary" /> Expenses
+                                                    <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                                                        {expenses.filter(e => e.subProjectId === selectedSP.id).length}
+                                                    </span>
+                                                </h4>
+
+                                                <div className="flex gap-2">
+                                                    {/* CSV Export */}
+                                                    {/* CSV Export */}
+                                                    <button
+                                                        onClick={() => exportSubProjectCSV(
+                                                            expenses.filter(e => e.subProjectId === selectedSP.id),
+                                                            `Expenses-${selectedSP.name}.csv`
+                                                        )}
+                                                        className="p-1.5 text-xs bg-muted hover:bg-muted/80 rounded-lg flex items-center gap-1 transition-colors"
+                                                        title="Export CSV"
+                                                    >
+                                                        <FileSpreadsheet className="w-3.5 h-3.5" /> CSV
+                                                    </button>
+
+                                                    {/* PDF Export - Server-side with Thai support */}
+                                                    <button
+                                                        onClick={async () => {
+                                                            const { generateServerPDF, generateExpenseReportHTML } = await import('@/lib/server-pdf')
+                                                            const subProjectExpenses = expenses.filter(e => e.subProjectId === selectedSP.id)
+                                                            const html = generateExpenseReportHTML(
+                                                                `${project.name} - ${selectedSP.name}`,
+                                                                subProjectExpenses.map(e => ({
+                                                                    date: e.date,
+                                                                    category: e.category,
+                                                                    title: e.title,
+                                                                    status: e.status,
+                                                                    amount: e.amount,
+                                                                    totalValue: e.totalValue
+                                                                }))
+                                                            )
+                                                            await generateServerPDF(html, `Expenses-${selectedSP.name}.pdf`)
+                                                        }}
+                                                        className="p-1.5 text-xs bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg flex items-center gap-1 transition-colors"
+                                                    >
+                                                        <File className="w-3.5 h-3.5" /> PDF
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                {expenses.filter(e => e.subProjectId === selectedSP.id).length > 0 ? (
+                                                    <div className="space-y-2">
+                                                        {/* Total Summary */}
+                                                        <div className="bg-primary/5 p-3 rounded-xl border border-primary/10 flex justify-between items-center mb-2">
+                                                            <span className="text-xs font-bold uppercase text-primary">Total Expenses</span>
+                                                            <span className="font-bold text-lg text-primary">
+                                                                ฿{expenses
+                                                                    .filter(e => e.subProjectId === selectedSP.id)
+                                                                    .reduce((sum, e) => sum + (e.totalValue || 0), 0)
+                                                                    .toLocaleString()}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Detailed List */}
+                                                        {expenses.filter(e => e.subProjectId === selectedSP.id).map(expense => (
+                                                            <div
+                                                                key={expense.id}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    setSelectedExpenseId(expense.id)
+                                                                }}
+                                                                className="p-3 bg-muted/30 rounded-xl border border-white/5 hover:bg-muted/50 transition-all cursor-pointer group space-y-2"
+                                                            >
+                                                                <div className="flex justify-between items-start">
+                                                                    <div className="space-y-0.5">
+                                                                        <p className="font-medium text-sm group-hover:text-primary transition-colors">{expense.title}</p>
+                                                                        <p className="text-xs text-muted-foreground">{expense.date} • {expense.category}</p>
+                                                                    </div>
+                                                                    <span className="font-bold text-sm">{expense.amount}</span>
+                                                                </div>
+                                                                <div className="flex justify-between items-center text-xs">
+                                                                    <span className={cn(
+                                                                        "px-2 py-0.5 rounded-full uppercase text-[10px] font-bold",
+                                                                        expense.status === 'Paid' ? "bg-green-500/10 text-green-500" :
+                                                                            expense.status === 'Unpaid' ? "bg-red-500/10 text-red-500" :
+                                                                                "bg-yellow-500/10 text-yellow-500"
+                                                                    )}>
+                                                                        {expense.status}
+                                                                    </span>
+                                                                    {expense.payee && <span className="text-muted-foreground">Payee: {expense.payee}</span>}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-white/10">
+                                                        <DollarSign className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                                                        <p className="text-sm">No expenses recorded for this sub-project</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="flex gap-3 pt-4">

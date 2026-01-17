@@ -11,7 +11,7 @@ interface TaskDetailSheetProps {
 }
 
 export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProps) {
-    const { projects, tasks, updateTask, deleteTask, users } = useProjects()
+    const { projects, tasks, updateTask, deleteTask, users, currentUser } = useProjects()
 
     // Find the task and its project
     const taskData = React.useMemo(() => {
@@ -135,6 +135,11 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                                     className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
                                 >
                                     <option value="">Unassigned</option>
+                                    {currentUser && (
+                                        <option value={currentUser.name} className="font-bold text-primary">
+                                            Assign to Me ({currentUser.name})
+                                        </option>
+                                    )}
                                     {users.map(user => (
                                         <option key={user.id} value={user.name}>{user.name}</option>
                                     ))}

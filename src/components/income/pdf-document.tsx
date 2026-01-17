@@ -5,8 +5,8 @@ import type { IncomeDocument, IncomeSection, IncomeItem, Customer, Project } fro
 import type { OrgProfile } from "@/context/settings-context"
 import { flattenDocumentItems, paginateItems } from '@/lib/pagination-utils'
 
-// Using built-in Helvetica font to avoid loading issues
-// Thai text will fallback to system fonts
+// Using Helvetica to ensure PDF generation works
+// Thai text will show as placeholders
 
 const styles = StyleSheet.create({
     page: {

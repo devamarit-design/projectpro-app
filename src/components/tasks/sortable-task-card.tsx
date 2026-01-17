@@ -23,7 +23,7 @@ export function SortableTaskCard({ task, status, onSelect }: SortableTaskCardPro
     } = useSortable({ id: task.id })
 
     const style = {
-        transform: CSS.Transform.toString(transform),
+        transform: CSS.Translate.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
     }
@@ -41,7 +41,7 @@ export function SortableTaskCard({ task, status, onSelect }: SortableTaskCardPro
             {...attributes}
             {...listeners}
             onClick={() => onSelect(task.id)}
-            className="glass-card w-full p-4 rounded-xl border border-white/5 hover:border-primary/20 hover:-translate-y-1 cursor-grab active:cursor-grabbing transition-all group relative overflow-hidden mb-3 bg-card/50 touch-none"
+            className="w-full p-4 rounded-xl border border-white/10 hover:border-primary/50 bg-card/50 backdrop-blur-sm cursor-grab active:cursor-grabbing transition-all group relative overflow-hidden mb-3 shadow-sm touch-none"
         >
             <div className="flex justify-between items-start mb-3">
                 <span className={cn(

@@ -28,6 +28,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
     const [mode, setMode] = useState<"Simple" | "Zone">(initialData?.mode || "Simple")
 
     // Dialog States
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const [showAddCustomer, setShowAddCustomer] = useState(false)
     const [showAddProject, setShowAddProject] = useState(false)
 
@@ -70,12 +71,20 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                 // Add New Mode
                 resetForm()
                 setType(defaultType)
-                setDocNumber("")
-                setDate(new Date().toISOString().split('T')[0])
+                const today = new Date().toISOString().split('T')[0]
+                setDate(today)
+                setDocNumber(generateNextDocumentNumber(defaultType, incomes, today))
                 setMode("Simple")
             }
         }
-    }, [open, initialData, defaultType])
+    }, [open, initialData, defaultType, incomes])
+
+    // Auto-generate document number when type or date changes (only in Add mode)
+    useEffect(() => {
+        if (!initialData && open) {
+            setDocNumber(generateNextDocumentNumber(type, incomes, date))
+        }
+    }, [type, date, open, initialData, incomes])
 
     const [simpleItems, setSimpleItems] = useState(initialData?.items || [
         { id: "1", description: "", quantity: 1, unit: "unit", unitPrice: 0, total: 0, image: "" }
@@ -104,42 +113,67 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
     const tax = subtotal * 0.07
     const grandTotal = subtotal + tax
 
-    const handleSave = () => {
-        const finalDocNumber = docNumber || generateNextDocumentNumber(type, incomes)
+    const handleSave = async () => {
+        if (isSubmitting) return
+        setIsSubmitting(true)
 
-        // Determine status
-        let status = initialData?.status || "Draft"
+        try {
+            const finalDocNumber = docNumber || generateNextDocumentNumber(type, incomes)
 
-        // Logic: If editing a Quotation that was already 'Invoiced', reset it to 'Sent' so it can be re-invoiced if needed.
-        if (initialData && type === 'Quotation' && initialData.status === 'Invoiced') {
-            status = 'Sent'
+            // Determine status
+            let status = initialData?.status || "Draft"
+
+            // Logic: If editing a Quotation that was already 'Invoiced', reset it to 'Sent' so it can be re-invoiced if needed.
+            if (initialData && type === 'Quotation' && initialData.status === 'Invoiced') {
+                status = 'Sent'
+            }
+
+            // Sanitize items recursively to remove undefined
+            const sanitizeItem = (item: any) => {
+                const { id, ...rest } = item
+                return {
+                    ...rest,
+                    description: rest.description || "",
+                    unit: rest.unit || "unit",
+                    image: rest.image || ""
+                }
+            }
+
+            const docPayload = {
+                documentNumber: finalDocNumber,
+                type,
+                date,
+                projectId: selectedProject,
+                customerId: selectedCustomer,
+                mode,
+                ...(mode === "Simple" ? { items: simpleItems.map(sanitizeItem) } : {}),
+                ...(mode === "Zone" ? {
+                    sections: sections.map(s => ({
+                        name: s.name,
+                        items: s.items.map(sanitizeItem)
+                    }))
+                } : {}),
+                subtotal,
+                discount: 0,
+                tax,
+                total: grandTotal,
+                grandTotal,
+                status: status
+            }
+
+            if (initialData) {
+                await updateIncome(initialData.id, docPayload as any)
+            } else {
+                await addIncome(docPayload as any)
+            }
+
+            onOpenChange(false)
+            if (!initialData) resetForm()
+        } catch (error) {
+            console.error("Failed to save income:", error)
+        } finally {
+            setIsSubmitting(false)
         }
-
-        const docPayload = {
-            documentNumber: finalDocNumber,
-            type,
-            date,
-            projectId: selectedProject,
-            customerId: selectedCustomer,
-            mode,
-            items: mode === "Simple" ? simpleItems : undefined,
-            sections: mode === "Zone" ? sections : undefined,
-            subtotal,
-            discount: 0,
-            tax,
-            total: grandTotal,
-            grandTotal,
-            status: status
-        }
-
-        if (initialData) {
-            updateIncome(initialData.id, docPayload as any)
-        } else {
-            addIncome(docPayload as any)
-        }
-
-        onOpenChange(false)
-        if (!initialData) resetForm()
     }
 
     const resetForm = () => {
@@ -162,26 +196,82 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
         }))
     }
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, itemId: string, type: 'simple' | 'sectionItem' | 'sectionHeader' = 'simple', sectionId?: string) => {
+    const readFileAsBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(file)
+        })
+    }
+
+    const compressBase64 = (base64: string): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image()
+            img.src = base64
+            img.onload = () => {
+                const canvas = document.createElement('canvas')
+                const MAX_WIDTH = 800
+                const MAX_HEIGHT = 800
+                let width = img.width
+                let height = img.height
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width
+                        width = MAX_WIDTH
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height
+                        height = MAX_HEIGHT
+                    }
+                }
+
+                canvas.width = width
+                canvas.height = height
+                const ctx = canvas.getContext('2d')
+                ctx?.drawImage(img, 0, 0, width, height)
+
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+                resolve(dataUrl)
+            }
+            img.onerror = (e) => reject(new Error("Image load failed"))
+        })
+    }
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, itemId: string, type: 'simple' | 'sectionItem' | 'sectionHeader' = 'simple', sectionId?: string) => {
         const file = e.target.files?.[0]
         if (!file) return
 
-        const reader = new FileReader()
-        reader.onloadend = () => {
-            const base64 = reader.result as string
+        try {
+            // 1. Read file first
+            const rawBase64 = await readFileAsBase64(file)
+            let finalData = rawBase64
 
+            // 2. Try compress
+            try {
+                finalData = await compressBase64(rawBase64)
+            } catch (compressError) {
+                console.warn("Image compression failed, using original:", compressError)
+                // Fallback to rawBase64
+            }
+
+            // 3. Save
             if (type === 'sectionHeader' && sectionId) {
-                setSections(prev => prev.map(s => s.id === sectionId ? { ...s, coverImage: base64 } : s))
+                setSections(prev => prev.map(s => s.id === sectionId ? { ...s, coverImage: finalData } : s))
             } else if (type === 'sectionItem' && sectionId) {
                 setSections(prev => prev.map(s => s.id === sectionId ? {
                     ...s,
-                    items: s.items.map(i => i.id === itemId ? { ...i, image: base64 } : i)
+                    items: s.items.map(i => i.id === itemId ? { ...i, image: finalData } : i)
                 } : s))
             } else {
-                updateSimpleItem(itemId, "image", base64)
+                updateSimpleItem(itemId, "image", finalData)
             }
+        } catch (error) {
+            console.error("Failed to process image:", error)
+            alert("Failed to upload image. Please try another file.")
         }
-        reader.readAsDataURL(file)
     }
 
     // Filter projects based on selected customer
@@ -291,6 +381,16 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                         className="w-full bg-muted/30 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/50"
                                     />
                                 </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-muted-foreground">เลขที่เอกสาร</label>
+                                <input
+                                    type="text"
+                                    value={docNumber}
+                                    onChange={(e) => setDocNumber(e.target.value)}
+                                    placeholder="Auto-generated"
+                                    className="w-full bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/50 font-mono"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-muted-foreground">{t.income.dialog.fields.doc_type}</label>
@@ -619,10 +719,19 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                         </button>
                         <button
                             onClick={handleSave}
-                            disabled={!selectedCustomer || !selectedProject}
+                            disabled={!selectedCustomer || !selectedProject || isSubmitting}
                             className="bg-primary text-primary-foreground px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                            <Save className="w-4 h-4" /> {t.income.dialog.save} {t.income.dialog.doc_types[type.toLowerCase() as keyof typeof t.income.dialog.doc_types]}
+                            {isSubmitting ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white/90 rounded-full animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" /> {t.income.dialog.save} {t.income.dialog.doc_types[type.toLowerCase() as keyof typeof t.income.dialog.doc_types]}
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>

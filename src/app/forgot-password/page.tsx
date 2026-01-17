@@ -15,11 +15,22 @@ export default function ForgotPasswordPage() {
         e.preventDefault()
         setIsLoading(true)
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500))
+        try {
+            const { auth } = await import("@/lib/firebase")
+            const { sendPasswordResetEmail } = await import("firebase/auth")
 
-        setIsLoading(false)
-        setIsSent(true)
+            await sendPasswordResetEmail(auth, email)
+            setIsSent(true)
+        } catch (error) {
+            console.error("Error sending password reset email", error)
+            // Optional: Set specific error state if needed, but for security we might not want to reveal too much
+            // For now, let's just show sent to avoid enumeration attacks, or maybe a generic error toast
+            // But to be user friendly let's show success even if email not found (security best practice)
+            // However, for this app level, let's just let it succeed visually.
+            setIsSent(true)
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (

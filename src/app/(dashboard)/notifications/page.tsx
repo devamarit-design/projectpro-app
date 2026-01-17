@@ -2,7 +2,7 @@
 
 import { useNotifications } from "@/context/notification-context"
 import { useTranslation } from "@/lib/i18n-context"
-import { Bell, Check, Trash2, Calendar, FileText, AlertTriangle, CheckCircle, Info } from "lucide-react"
+import { Bell, Check, Trash2, Calendar, FileText, AlertTriangle, CheckCircle, Info, Settings } from "lucide-react"
 import Link from "next/link"
 import { format, isToday, isYesterday } from "date-fns"
 
@@ -57,6 +57,12 @@ export default function NotificationsPage() {
                     <p className="text-muted-foreground mt-1">{t.notifications.stay_updated}</p>
                 </div>
                 <div className="flex gap-2">
+                    <Link
+                        href="/settings?tab=notifications"
+                        className="flex items-center justify-center p-2 bg-background border border-border rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                        <Settings className="w-5 h-5" />
+                    </Link>
                     <button
                         onClick={markAllAsRead}
                         className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border rounded-lg text-sm hover:bg-muted/50 transition-colors"

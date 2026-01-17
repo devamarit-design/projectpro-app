@@ -5,8 +5,9 @@ import {
     DndContext,
     DragOverlay,
     closestCorners,
+    MouseSensor,
+    TouchSensor,
     KeyboardSensor,
-    PointerSensor,
     useSensor,
     useSensors,
     DragStartEvent,
@@ -23,7 +24,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { ProjectTask, User } from "@/context/project-context"
 import { cn } from "@/lib/utils"
-import { Calendar, Check, MoreVertical, Trash2, GripVertical } from "lucide-react"
+import { Calendar, Check, Trash2 } from "lucide-react"
 
 // Types
 type BoardProps = {
@@ -35,12 +36,14 @@ type BoardProps = {
     onUpdateTask: (projectId: string, taskId: string, updates: Partial<ProjectTask>) => void
     onDeleteTask: (projectId: string, taskId: string) => void
     onToggleTask: (projectId: string, taskId: string) => void
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     t: any // Translation object
 }
 
 type SortableTaskItemProps = {
     task: ProjectTask
     projectUsers: User[]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     t: any
     onDelete: (id: string) => void
     onToggle: (id: string) => void
@@ -131,7 +134,7 @@ function SortableTaskItem(props: SortableTaskItemProps) {
     } = useSortable({ id: props.task.id, data: { task: props.task } })
 
     const style = {
-        transform: CSS.Transform.toString(transform),
+        transform: CSS.Translate.toString(transform),
         transition,
         opacity: isDragging ? 0.3 : 1,
     }
@@ -215,9 +218,15 @@ export function TaskBoard({
 
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {
+        useSensor(MouseSensor, {
             activationConstraint: {
-                distance: 5, // Require slight movement to start drag (prevents checks needing double clicks)
+                distance: 10,
+            },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 250,
+                tolerance: 5,
             },
         }),
         useSensor(KeyboardSensor, {

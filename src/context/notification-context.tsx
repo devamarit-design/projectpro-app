@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect } from "react"
 import { useProjects, ProjectTask, Expense } from "./project-context"
 import { useSettings } from "./settings-context"
 import { differenceInDays, parseISO, isPast, addDays } from "date-fns"
+import { collection, query, where, onSnapshot, orderBy, limit } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 export type NotificationType = "info" | "success" | "warning" | "error" | "reminder"
 
@@ -16,6 +18,8 @@ export interface Notification {
     read: boolean
     link?: string
     relatedId?: string // e.g. project ID, task ID
+    target?: 'all' | 'admin' | string // Audience
+    teamId?: string
 }
 
 interface NotificationContextType {
@@ -86,7 +90,7 @@ const MOCK_NOTIFICATIONS: Notification[] = [
 import { useTranslation } from "@/lib/i18n-context"
 
 // Helper for string interpolation
-const format = (template: string, args: Record<string, any>) => {
+const format = (template: string, args: Record<string, string | number>) => {
     return template.replace(/{(\w+)}/g, (_, key) => {
         return args[key] !== undefined ? String(args[key]) : `{${key}}`
     })
@@ -94,7 +98,7 @@ const format = (template: string, args: Record<string, any>) => {
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
     const [notifications, setNotifications] = useState<Notification[]>([])
-    const { projects, expenses, contracts, currentUser } = useProjects()
+    const { projects, expenses, contracts, currentUser, currentTeam } = useProjects()
     const { notificationSettings } = useSettings()
     const { t } = useTranslation()
 
@@ -104,7 +108,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     useEffect(() => {
         const storedReadStatus = localStorage.getItem("pp_notifications_read")
         if (storedReadStatus) {
-            setReadStatus(JSON.parse(storedReadStatus))
+            setTimeout(() => setReadStatus(JSON.parse(storedReadStatus)), 0)
         }
     }, [])
 
@@ -113,6 +117,35 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             localStorage.setItem("pp_notifications_read", JSON.stringify(readStatus))
         }
     }, [readStatus])
+
+    const [realtimeNotifications, setRealtimeNotifications] = useState<Notification[]>([])
+
+    // Load Real-time Notifications from Firestore
+    useEffect(() => {
+        if (!currentTeam) return
+
+        // Simple query without orderBy to avoid composite index requirement
+        const q = query(
+            collection(db, "notifications"),
+            where("teamId", "==", currentTeam.id),
+            limit(50)
+        )
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const manualNotifs = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as Notification[]
+            // Sort client-side by date descending
+            manualNotifs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            setRealtimeNotifications(manualNotifs)
+        }, (error) => {
+            console.warn("Notification query error:", error.message)
+            setRealtimeNotifications([])
+        })
+
+        return () => unsubscribe()
+    }, [currentTeam])
 
     // Generate System Notifications
     useEffect(() => {
@@ -256,9 +289,29 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             })
         })
 
-        setNotifications(newNotifications)
+        // MERGE: System + Realtime
+        const allNotifications = [...realtimeNotifications, ...newNotifications]
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-    }, [projects, expenses, contracts, notificationSettings, readStatus, currentUser, t])
+        // Filter by Role/Target
+        const filtered = allNotifications.filter(n => {
+            // 1. Targeted specifically to me
+            if (n.target === currentUser?.id) return true
+
+            // 2. Broadcast to all
+            if (n.target === 'all') return true
+
+            // 3. Admin broadcast
+            if (n.target === 'admin' && (currentUser?.role === 'Admin' || currentUser?.role === 'Owner')) return true
+
+            // 4. Legacy (no target) - keep
+            if (!n.target) return true
+
+            return false
+        })
+
+        setNotifications(filtered)
+    }, [projects, expenses, contracts, notificationSettings, readStatus, currentUser, t, currentTeam, realtimeNotifications])
 
 
     const unreadCount = notifications.filter(n => !n.read).length
