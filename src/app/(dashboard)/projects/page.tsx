@@ -4,12 +4,13 @@ import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
 import { Search, Plus, Filter, Calendar, MapPin, MoreHorizontal } from "lucide-react"
 import { useState, useMemo } from "react"
+import { hasPermission } from "@/lib/permissions"
 
 import { useProjects } from "@/context/project-context"
 
 export default function ProjectsPage() {
     const { t } = useTranslation()
-    const { projects, expenses, isLoading } = useProjects()
+    const { projects, expenses, isLoading, currentUser } = useProjects()
     const [searchQuery, setSearchQuery] = useState("")
     const [showFilters, setShowFilters] = useState(false)
     const [statusFilter, setStatusFilter] = useState<string | null>(null)
@@ -173,35 +174,39 @@ export default function ProjectsPage() {
                                     <span className="text-muted-foreground">{t.projects.customer}</span>
                                     <span className="font-medium">{project.customer}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-muted-foreground">{t.projects.budget}</span>
-                                    <span className="font-medium">{project.budget}</span>
-                                </div>
+                                {hasPermission(currentUser, "FINANCIAL_VIEW") && (
+                                    <>
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-muted-foreground">{t.projects.budget}</span>
+                                            <span className="font-medium">{project.budget}</span>
+                                        </div>
 
-                                {/* Progress Bar */}
-                                <div className="space-y-2">
-                                    {(() => {
-                                        const projectExpenses = getProjectExpenses[project.id] || 0
-                                        const budgetValue = parseInt(String(project.budget || "0").replace(/[^0-9]/g, '')) || 1
-                                        const costPercent = Math.min(Math.round((projectExpenses / budgetValue) * 100), 100)
-                                        return (
-                                            <>
-                                                <div className="flex justify-between text-xs">
-                                                    <span className="text-muted-foreground">{t.projects.cost_value}</span>
-                                                    <span className="font-medium text-primary">
-                                                        {costPercent}%
-                                                    </span>
-                                                </div>
-                                                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-primary rounded-full transition-all duration-500"
-                                                        style={{ width: `${costPercent}%` }}
-                                                    />
-                                                </div>
-                                            </>
-                                        )
-                                    })()}
-                                </div>
+                                        {/* Progress Bar */}
+                                        <div className="space-y-2">
+                                            {(() => {
+                                                const projectExpenses = getProjectExpenses[project.id] || 0
+                                                const budgetValue = parseInt(String(project.budget || "0").replace(/[^0-9]/g, '')) || 1
+                                                const costPercent = Math.min(Math.round((projectExpenses / budgetValue) * 100), 100)
+                                                return (
+                                                    <>
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="text-muted-foreground">{t.projects.cost_value}</span>
+                                                            <span className="font-medium text-primary">
+                                                                {costPercent}%
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-primary rounded-full transition-all duration-500"
+                                                                style={{ width: `${costPercent}%` }}
+                                                            />
+                                                        </div>
+                                                    </>
+                                                )
+                                            })()}
+                                        </div>
+                                    </>
+                                )}
 
                                 {/* Footer */}
                                 <div className="pt-2 flex justify-between items-center border-t border-border/50">
