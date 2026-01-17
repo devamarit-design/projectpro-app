@@ -1122,17 +1122,7 @@ export default function ProjectDetailClient() {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Status</p>
-                                            <span className={cn(
-                                                "inline-block px-3 py-1 rounded-full text-xs font-bold uppercase",
-                                                selectedSP.status === 'Done' ? 'bg-green-500/10 text-green-500' :
-                                                    selectedSP.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
-                                                        'bg-yellow-500/10 text-yellow-500'
-                                            )}>
-                                                {selectedSP.status}
-                                            </span>
-                                        </div>
+
                                         {selectedSP.budget && (
                                             <div>
                                                 <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Budget</p>
