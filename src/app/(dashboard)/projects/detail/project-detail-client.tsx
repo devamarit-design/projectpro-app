@@ -143,7 +143,11 @@ export default function ProjectDetailClient() {
     // 1. Get all raw data for this project
     // Match incomes by projectId OR by project name (for backward compatibility with old data)
     const allIncomesForProject = incomes.filter(i => i.projectId === id || i.projectId === project?.name)
-    const allProjectExpenses = expenses.filter(e => e.projectId === id || e.items?.some(i => i.projectId === id))
+    const rawProjectExpenses = expenses.filter(e => e.projectId === id || e.items?.some(i => i.projectId === id))
+    // Filter: If user has FINANCIAL_VIEW, show all. Else, show only their own (Payee/PaidBy).
+    const allProjectExpenses = hasPermission(currentUser, "FINANCIAL_VIEW")
+        ? rawProjectExpenses
+        : rawProjectExpenses.filter(e => e.payee === currentUser?.name || e.paidBy === currentUser?.name)
     const allProjectIncomes = allIncomesForProject.filter(i => i.status === 'Paid' || i.status === 'Accepted') // Only count realized income for financials
 
     // 2. Extract available months from both expenses and incomes
@@ -414,7 +418,7 @@ export default function ProjectDetailClient() {
 
                         {/* High Level Stats */}
                         <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-                            {hasPermission(currentUser, "FINANCIAL_VIEW") ? (
+                            {hasPermission(currentUser, "FINANCIAL_VIEW") && (
                                 <>
                                     <div className="glass-card p-5 rounded-2xl border-l-4 border-l-primary hover:translate-y-[-2px] transition-transform">
                                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.contract_value}</p>
@@ -424,23 +428,25 @@ export default function ProjectDetailClient() {
                                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.received}</p>
                                         <p className="text-xl md:text-2xl font-black text-green-500">฿{totalIncome.toLocaleString()}</p>
                                     </div>
-                                    <div className="glass-card p-5 rounded-2xl border-l-4 border-l-red-500 hover:translate-y-[-2px] transition-transform">
-                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.total_expenses}</p>
-                                        <p className="text-xl md:text-2xl font-black text-red-500">฿{totalExpenses.toLocaleString()}</p>
-                                    </div>
-                                    <div className="glass-card p-5 rounded-2xl border-l-4 border-l-blue-500 hover:translate-y-[-2px] transition-transform">
-                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.profit_est}</p>
-                                        <p className={cn(
-                                            "text-xl md:text-2xl font-black",
-                                            totalProfit >= 0 ? "text-blue-500" : "text-red-500"
-                                        )}>
-                                            ฿{totalProfit.toLocaleString()}
-                                        </p>
-                                    </div>
                                 </>
-                            ) : (
-                                <div className="glass-card p-8 rounded-2xl col-span-2 md:col-span-4 text-center border border-white/5">
-                                    <p className="text-muted-foreground">Financial summary hidden based on your permissions.</p>
+                            )}
+
+                            <div className="glass-card p-5 rounded-2xl border-l-4 border-l-red-500 hover:translate-y-[-2px] transition-transform">
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                                    {hasPermission(currentUser, "FINANCIAL_VIEW") ? t.projects.detail.financials.total_expenses : "My Expenses"}
+                                </p>
+                                <p className="text-xl md:text-2xl font-black text-red-500">฿{totalExpenses.toLocaleString()}</p>
+                            </div>
+
+                            {hasPermission(currentUser, "FINANCIAL_VIEW") && (
+                                <div className="glass-card p-5 rounded-2xl border-l-4 border-l-blue-500 hover:translate-y-[-2px] transition-transform">
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.profit_est}</p>
+                                    <p className={cn(
+                                        "text-xl md:text-2xl font-black",
+                                        totalProfit >= 0 ? "text-blue-500" : "text-red-500"
+                                    )}>
+                                        ฿{totalProfit.toLocaleString()}
+                                    </p>
                                 </div>
                             )}
                         </div>
