@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from "@/lib/i18n-context"
 import { useProjects } from "@/context/project-context"
+import { hasPermission } from "@/lib/permissions"
 import {
     LayoutDashboard,
     Receipt,
@@ -447,17 +448,19 @@ export default function ProjectDetailClient() {
                             >
                                 Expenses (รายจ่าย)
                             </button>
-                            <button
-                                onClick={() => setActiveFinancialTab('incomes')}
-                                className={cn(
-                                    "px-4 py-2 rounded-lg text-sm font-bold transition-all",
-                                    activeFinancialTab === 'incomes'
-                                        ? "bg-white text-black shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                Incomes (รายรับ)
-                            </button>
+                            {hasPermission(currentUser, "INCOME_CREATE") && (
+                                <button
+                                    onClick={() => setActiveFinancialTab('incomes')}
+                                    className={cn(
+                                        "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                        activeFinancialTab === 'incomes'
+                                            ? "bg-white text-black shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    Incomes (รายรับ)
+                                </button>
+                            )}
                         </div>
 
                         {/* EXPENSES TAB CONTENT */}
@@ -611,7 +614,7 @@ export default function ProjectDetailClient() {
                         )}
 
                         {/* INCOMES TAB CONTENT */}
-                        {activeFinancialTab === 'incomes' && (
+                        {activeFinancialTab === 'incomes' && hasPermission(currentUser, "INCOME_CREATE") && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">

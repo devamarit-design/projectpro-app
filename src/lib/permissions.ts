@@ -49,6 +49,9 @@ export const PERMISSIONS: Record<Role, Action[]> = {
     ],
     Staff: [
         "EXPENSE_CREATE"
+    ],
+    Member: [ // Legacy Role Mapped to Staff
+        "EXPENSE_CREATE"
     ]
 }
 
