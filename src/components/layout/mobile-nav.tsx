@@ -292,16 +292,29 @@ export function MobileNav() {
                     </button>
 
                     {/* 4. Finance (Expense + Income) */}
-                    <button
-                        onClick={toggleFinanceMenu}
-                        className={cn(
-                            "flex flex-col items-center justify-center w-full space-y-1 transition-colors relative",
-                            isFinanceActive || showFinanceMenu ? "text-primary scale-110" : "text-muted-foreground"
-                        )}
-                    >
-                        <Wallet className="w-5 h-5" />
-                        <span className="text-[10px]">{t.navbar.finance}</span>
-                    </button>
+                    {hasPermission(currentUser, "INCOME_CREATE") ? (
+                        <button
+                            onClick={toggleFinanceMenu}
+                            className={cn(
+                                "flex flex-col items-center justify-center w-full space-y-1 transition-colors relative",
+                                isFinanceActive || showFinanceMenu ? "text-primary scale-110" : "text-muted-foreground"
+                            )}
+                        >
+                            <Wallet className="w-5 h-5" />
+                            <span className="text-[10px]">{t.navbar.finance}</span>
+                        </button>
+                    ) : (
+                        <Link
+                            href="/expenses"
+                            className={cn(
+                                "flex flex-col items-center justify-center w-full space-y-1 transition-colors relative",
+                                pathname === "/expenses" ? "text-primary scale-110" : "text-muted-foreground"
+                            )}
+                        >
+                            <CreditCard className="w-5 h-5" />
+                            <span className="text-[10px]">{t.finance.expense}</span>
+                        </Link>
+                    )}
 
                     {/* 5. More */}
                     <button

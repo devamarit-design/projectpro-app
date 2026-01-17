@@ -308,13 +308,15 @@ export default function ProjectDetailClient() {
                                                 {project.location}
                                             </div>
                                         </div>
-                                        <div className="p-3 bg-muted/30 rounded-xl space-y-1">
-                                            <p className="text-xs text-muted-foreground font-medium uppercase">Contract Value</p>
-                                            <div className="flex items-center gap-2 font-semibold text-green-500">
-                                                <DollarSign className="w-4 h-4" />
-                                                {project.budget}
+                                        {hasPermission(currentUser, "FINANCIAL_VIEW") && (
+                                            <div className="p-3 bg-muted/30 rounded-xl space-y-1">
+                                                <p className="text-xs text-muted-foreground font-medium uppercase">Contract Value</p>
+                                                <div className="flex items-center gap-2 font-semibold text-green-500">
+                                                    <DollarSign className="w-4 h-4" />
+                                                    {project.budget}
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
                                         <div className="p-3 bg-muted/30 rounded-xl space-y-1">
                                             <p className="text-xs text-muted-foreground font-medium uppercase">Total Tasks</p>
                                             <div className="flex items-center gap-2 font-semibold">
@@ -412,27 +414,35 @@ export default function ProjectDetailClient() {
 
                         {/* High Level Stats */}
                         <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-                            <div className="glass-card p-5 rounded-2xl border-l-4 border-l-primary hover:translate-y-[-2px] transition-transform">
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.contract_value}</p>
-                                <p className="text-xl md:text-2xl font-black">{project.budget}</p>
-                            </div>
-                            <div className="glass-card p-5 rounded-2xl border-l-4 border-l-green-500 hover:translate-y-[-2px] transition-transform">
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.received}</p>
-                                <p className="text-xl md:text-2xl font-black text-green-500">฿{totalIncome.toLocaleString()}</p>
-                            </div>
-                            <div className="glass-card p-5 rounded-2xl border-l-4 border-l-red-500 hover:translate-y-[-2px] transition-transform">
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.total_expenses}</p>
-                                <p className="text-xl md:text-2xl font-black text-red-500">฿{totalExpenses.toLocaleString()}</p>
-                            </div>
-                            <div className="glass-card p-5 rounded-2xl border-l-4 border-l-blue-500 hover:translate-y-[-2px] transition-transform">
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.profit_est}</p>
-                                <p className={cn(
-                                    "text-xl md:text-2xl font-black",
-                                    totalProfit >= 0 ? "text-blue-500" : "text-red-500"
-                                )}>
-                                    ฿{totalProfit.toLocaleString()}
-                                </p>
-                            </div>
+                            {hasPermission(currentUser, "FINANCIAL_VIEW") ? (
+                                <>
+                                    <div className="glass-card p-5 rounded-2xl border-l-4 border-l-primary hover:translate-y-[-2px] transition-transform">
+                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.contract_value}</p>
+                                        <p className="text-xl md:text-2xl font-black">{project.budget}</p>
+                                    </div>
+                                    <div className="glass-card p-5 rounded-2xl border-l-4 border-l-green-500 hover:translate-y-[-2px] transition-transform">
+                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.received}</p>
+                                        <p className="text-xl md:text-2xl font-black text-green-500">฿{totalIncome.toLocaleString()}</p>
+                                    </div>
+                                    <div className="glass-card p-5 rounded-2xl border-l-4 border-l-red-500 hover:translate-y-[-2px] transition-transform">
+                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.total_expenses}</p>
+                                        <p className="text-xl md:text-2xl font-black text-red-500">฿{totalExpenses.toLocaleString()}</p>
+                                    </div>
+                                    <div className="glass-card p-5 rounded-2xl border-l-4 border-l-blue-500 hover:translate-y-[-2px] transition-transform">
+                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.profit_est}</p>
+                                        <p className={cn(
+                                            "text-xl md:text-2xl font-black",
+                                            totalProfit >= 0 ? "text-blue-500" : "text-red-500"
+                                        )}>
+                                            ฿{totalProfit.toLocaleString()}
+                                        </p>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="glass-card p-8 rounded-2xl col-span-2 md:col-span-4 text-center border border-white/5">
+                                    <p className="text-muted-foreground">Financial summary hidden based on your permissions.</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Sub-Tabs Switcher */}
