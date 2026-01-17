@@ -252,29 +252,32 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     const joinOrganizationByCode = async (code: string): Promise<string> => {
         if (!firebaseUser) throw new Error("Not authenticated")
 
-        // 1. Find Invite
+        let targetOrgId = ""
+
+        // 1. Try Find Invite
         const q = query(collection(db, "invites"), where("code", "==", code))
         const snap = await getDocs(q)
 
-        if (snap.empty) {
-            throw new Error("Invalid or expired invite code")
+        if (!snap.empty) {
+            const inviteData = snap.docs[0].data()
+            targetOrgId = inviteData.teamId
+        } else {
+            // 2. FALLBACK: Try checking if code is a valid Org ID directly
+            const possibleOrgRef = doc(db, "organizations", code)
+            const possibleOrgSnap = await getDoc(possibleOrgRef)
+
+            if (possibleOrgSnap.exists()) {
+                targetOrgId = code
+            } else {
+                throw new Error("Invalid or expired invite code")
+            }
         }
 
-        const inviteData = snap.docs[0].data()
-        // Optional: Check expiry date here
-
-        // 2. Get Team Details to confirm existence
-        const orgRef = doc(db, "organizations", inviteData.teamId) // Assuming teamId links to Organizations collection now
-        // Fallback: If "teams" collection is still separate, we might need to check there. 
-        // But context says we are migrating. Let's assume teamId IS orgId for SaaS structure.
-        // Actually, previous file analysis showed 'teams' collection usage in invite/page.tsx.
-        // Let's check 'organizations' first, if not found, check 'teams' (legacy) and migrate?
-        // Simpler: Just try to joinOrganization(inviteData.teamId).
-
         // 3. Join
-        await joinOrganization(inviteData.teamId)
+        await joinOrganization(targetOrgId)
 
         // 4. Return Team Name for UI feedback
+        const orgRef = doc(db, "organizations", targetOrgId)
         const teamSnap = await getDoc(orgRef)
         return teamSnap.exists() ? teamSnap.data().name : "Unknown Team"
     }
