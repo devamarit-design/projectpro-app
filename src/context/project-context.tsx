@@ -812,14 +812,26 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 if (userSnap.exists()) {
                     setCurrentUser({ ...userSnap.data(), id: firebaseUser.uid } as User)
                 } else {
-                    // New User - Create Profile
+                    // New User - Check for Placeholder (Invite)
+                    const q = query(collection(db, "users"), where("email", "==", firebaseUser.email))
+                    const snapshot = await getDocs(q)
+
+                    let initialData: Partial<User> = {}
+                    if (!snapshot.empty) {
+                        const placeholderDoc = snapshot.docs[0]
+                        initialData = placeholderDoc.data() as User
+                        // Delete placeholder
+                        await deleteDoc(placeholderDoc.ref)
+                    }
+
+                    // Create Profile
                     const newUser: User = {
                         id: firebaseUser.uid,
-                        name: firebaseUser.displayName || "User",
+                        name: firebaseUser.displayName || initialData.name || "User",
                         email: firebaseUser.email || "",
-                        role: "Member",
+                        role: initialData.role || "Member",
                         status: "Active",
-                        teamIds: [],
+                        teamIds: initialData.teamIds || [],
                         avatar: firebaseUser.photoURL || undefined
                     }
                     await setDoc(userRef, newUser)
@@ -884,14 +896,24 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             // 2. Update Profile Name
             await updateProfile(firebaseUser, { displayName: name })
 
-            // 3. Create Firestore User Doc
+            // 3. Create Firestore User Doc (Check for Placeholder)
+            const q = query(collection(db, "users"), where("email", "==", email))
+            const snapshot = await getDocs(q)
+
+            let initialData: Partial<User> = {}
+            if (!snapshot.empty) {
+                const placeholderDoc = snapshot.docs[0]
+                initialData = placeholderDoc.data() as User
+                await deleteDoc(placeholderDoc.ref)
+            }
+
             const newUser: User = {
                 id: firebaseUser.uid,
                 name: name,
                 email: email,
-                role: "Member",
+                role: initialData.role || "Member",
                 status: "Active",
-                teamIds: [],
+                teamIds: initialData.teamIds || [],
                 avatar: undefined,
                 theme: "system", // Default to system
                 joinedDate: new Date().toISOString()
@@ -1460,7 +1482,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 link: '/expenses',
                 relatedId: 'expense-new',
                 target: 'all',
-                teamId: currentTeam.id
+                teamId: currentTeam.id,
+                creatorId: currentUser?.id
             })
         } catch (e) {
             console.error("Error adding expense", e)
@@ -1525,7 +1548,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 link: '/income',
                 relatedId: 'income-new',
                 target: 'admin',
-                teamId: currentTeam.id
+                teamId: currentTeam.id,
+                creatorId: currentUser?.id
             })
         } catch (e) {
             console.error("Error adding income", e)

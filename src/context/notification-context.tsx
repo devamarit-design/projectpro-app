@@ -20,6 +20,7 @@ export interface Notification {
     relatedId?: string // e.g. project ID, task ID
     target?: 'all' | 'admin' | string // Audience
     teamId?: string
+    creatorId?: string // Dynamic user name support
 }
 
 interface NotificationContextType {

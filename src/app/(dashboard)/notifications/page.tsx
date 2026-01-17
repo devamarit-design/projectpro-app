@@ -1,6 +1,7 @@
 "use client"
 
 import { useNotifications } from "@/context/notification-context"
+import { useProjects } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { Bell, Check, Trash2, Calendar, FileText, AlertTriangle, CheckCircle, Info, Settings } from "lucide-react"
 import Link from "next/link"
@@ -9,6 +10,7 @@ import { format, isToday, isYesterday } from "date-fns"
 export default function NotificationsPage() {
     const { t } = useTranslation()
     const { notifications, markAsRead, markAllAsRead, clearAll } = useNotifications()
+    const { users } = useProjects()
 
     // Group notifications by date
     const groupedNotifications = notifications.reduce((acc, notification) => {
@@ -127,7 +129,15 @@ export default function NotificationsPage() {
                                                     </span>
                                                 </div>
                                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                                    {notification.message}
+                                                    {(() => {
+                                                        if (notification.creatorId) {
+                                                            const creator = users.find(u => u.id === notification.creatorId)
+                                                            if (creator) {
+                                                                return notification.message.replace(/by .*/, `by ${creator.name}`)
+                                                            }
+                                                        }
+                                                        return notification.message
+                                                    })()}
                                                 </p>
                                                 {notification.link && (
                                                     <div className="pt-2">
