@@ -25,6 +25,12 @@ export function HeaderProfile() {
     const dropdownRef = React.useRef<HTMLDivElement>(null)
     const buttonRef = React.useRef<HTMLButtonElement>(null)
     const [position, setPosition] = React.useState({ top: 0, right: 0 })
+    const [hasImageError, setHasImageError] = React.useState(false)
+
+    // Reset error when avatar changes
+    React.useEffect(() => {
+        setHasImageError(false)
+    }, [currentUser?.avatar])
 
     // Close dropdown when clicking outside
     React.useEffect(() => {
@@ -184,9 +190,14 @@ export function HeaderProfile() {
                 onClick={toggleDropdown}
                 className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
             >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold shadow-md">
-                    {currentUser.avatar ? (
-                        <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full rounded-full object-cover" />
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold shadow-md overflow-hidden relative">
+                    {currentUser.avatar && !hasImageError ? (
+                        <img
+                            src={currentUser.avatar}
+                            alt={currentUser.name}
+                            className="w-full h-full rounded-full object-cover"
+                            onError={() => setHasImageError(true)}
+                        />
                     ) : (
                         currentUser.name.charAt(0).toUpperCase()
                     )}
