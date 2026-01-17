@@ -262,7 +262,7 @@ export interface Team extends CompanyProfile {
     id: string
     name: string
     logo?: string // Emoji or Image URL
-    role: "Owner" | "Admin" | "Member" | "Viewer"
+    role: "Owner" | "Admin" | "Manager" | "Accountant" | "Staff"
 }
 
 interface ProjectContextType {
@@ -744,7 +744,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         if (!currentOrg || !currentUser) return null
 
         const member = currentOrg.members?.find(m => m.userId === currentUser.id)
-        const role = currentOrg.ownerId === currentUser.id ? "Owner" : (member?.role || "Member")
+        const role = currentOrg.ownerId === currentUser.id ? "Owner" : (member?.role || "Staff")
 
         return {
             id: currentOrg.id,

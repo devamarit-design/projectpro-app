@@ -28,7 +28,7 @@ export interface Organization {
 
 export interface OrgMember {
     userId: string
-    role: "Owner" | "Admin" | "Member" | "Viewer"
+    role: "Owner" | "Admin" | "Manager" | "Accountant" | "Staff"
     joinedAt: string
 }
 
@@ -223,7 +223,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         // 3. Add User to Org Members
         const newMember: OrgMember = {
             userId: firebaseUser.uid,
-            role: "Member",
+            role: "Staff",
             joinedAt: new Date().toISOString()
         }
         const updatedMembers = [...(orgData.members || []), newMember]
@@ -239,7 +239,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         // Avoid duplicates in user profile too
         if (!existingOrgs.some((o: any) => o.orgId === orgId)) {
             await setDoc(userRef, {
-                organizations: [...existingOrgs, { orgId: orgId, role: "Member" }]
+                organizations: [...existingOrgs, { orgId: orgId, role: "Staff" }]
             }, { merge: true })
         }
 

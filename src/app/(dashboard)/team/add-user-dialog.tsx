@@ -129,8 +129,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                                 >
                                     <option value="Admin">Admin</option>
                                     <option value="Manager">Manager</option>
-                                    <option value="Foreman">Foreman</option>
-                                    <option value="Engineer">Engineer</option>
+                                    <option value="Accountant">Accountant</option>
                                     <option value="Staff">Staff</option>
                                     <option value="Owner">Owner</option>
                                 </select>
