@@ -38,7 +38,7 @@ export function Sidebar({ className }: { className?: string }) {
         { href: "/storage", label: t.common.storage, icon: HardDrive },
         { href: "/contracts", label: t.common.contracts, icon: FileText }, // Added Contracts item
         { href: "/partners", label: t.common.partners, icon: Handshake },
-        { href: "/team", label: t.common.team, icon: Briefcase, permission: "USER_CREATE" }, // Requires USER_CREATE permission
+        { href: "/team", label: t.common.team, icon: Briefcase, permission: "TEAM_VIEW" }, // Requires TEAM_VIEW permission
         { href: "/settings", label: t.common.settings, icon: Settings, permission: "COMPANY_UPDATE" }, // Requires COMPANY_UPDATE permission
     ]
 

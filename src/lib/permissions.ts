@@ -16,6 +16,7 @@ export type Action =
     | "INCOME_UPDATE"
     | "INCOME_DELETE"
     | "FINANCIAL_VIEW"
+    | "TEAM_VIEW"
 
 export type Role = "Owner" | "Admin" | "Manager" | "Accountant" | "Staff" | string
 
@@ -27,7 +28,7 @@ export const PERMISSIONS: Record<Role, Action[]> = {
         "PROJECT_CREATE", "PROJECT_UPDATE", "PROJECT_DELETE",
         "EXPENSE_CREATE", "EXPENSE_APPROVE", "EXPENSE_DELETE",
         "INCOME_CREATE", "INCOME_UPDATE", "INCOME_DELETE",
-        "FINANCIAL_VIEW"
+        "FINANCIAL_VIEW", "TEAM_VIEW"
     ],
     Admin: [
         "USER_CREATE", "USER_UPDATE", "USER_DELETE",
@@ -35,23 +36,27 @@ export const PERMISSIONS: Record<Role, Action[]> = {
         "PROJECT_CREATE", "PROJECT_UPDATE",
         "EXPENSE_CREATE", "EXPENSE_APPROVE", "EXPENSE_DELETE",
         "INCOME_CREATE", "INCOME_UPDATE", "INCOME_DELETE",
-        "FINANCIAL_VIEW"
+        "FINANCIAL_VIEW", "TEAM_VIEW"
     ],
     Manager: [
         "PROJECT_CREATE", "PROJECT_UPDATE",
         "EXPENSE_CREATE", "EXPENSE_APPROVE",
-        "FINANCIAL_VIEW"
+        "FINANCIAL_VIEW",
+        "TEAM_VIEW"
     ],
     Accountant: [
         "EXPENSE_CREATE",
         "INCOME_CREATE", "INCOME_UPDATE", "INCOME_DELETE",
-        "FINANCIAL_VIEW"
+        "FINANCIAL_VIEW",
+        "TEAM_VIEW"
     ],
     Staff: [
-        "EXPENSE_CREATE"
+        "EXPENSE_CREATE",
+        "TEAM_VIEW"
     ],
     Member: [ // Legacy Role Mapped to Staff
-        "EXPENSE_CREATE"
+        "EXPENSE_CREATE",
+        "TEAM_VIEW"
     ]
 }
 

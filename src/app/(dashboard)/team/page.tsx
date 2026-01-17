@@ -104,27 +104,31 @@ export default function TeamPage() {
                         </select>
                     </div>
 
-                    <button
-                        onClick={() => {
-                            const name = window.prompt(t.team_settings.enter_team_name)
-                            if (name) {
-                                // Add random mock team data (optional)
-                                addTeam(name)
-                            }
-                        }}
-                        className="p-2 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-colors"
-                        title="Create New Team"
-                    >
-                        <Plus className="w-5 h-5" />
-                    </button>
-                    {/* Edit Team Button */}
-                    <button
-                        onClick={() => setIsEditTeamOpen(true)}
-                        className="p-2 bg-muted hover:bg-muted/80 text-foreground rounded-xl transition-colors border border-border"
-                        title="Edit Team Details"
-                    >
-                        <Edit className="w-5 h-5 text-muted-foreground" />
-                    </button>
+                    {hasPermission(currentUser, "COMPANY_UPDATE") && (
+                        <>
+                            <button
+                                onClick={() => {
+                                    const name = window.prompt(t.team_settings.enter_team_name)
+                                    if (name) {
+                                        // Add random mock team data (optional)
+                                        addTeam(name)
+                                    }
+                                }}
+                                className="p-2 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-colors"
+                                title="Create New Team"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                            {/* Edit Team Button */}
+                            <button
+                                onClick={() => setIsEditTeamOpen(true)}
+                                className="p-2 bg-muted hover:bg-muted/80 text-foreground rounded-xl transition-colors border border-border"
+                                title="Edit Team Details"
+                            >
+                                <Edit className="w-5 h-5 text-muted-foreground" />
+                            </button>
+                        </>
+                    )}
                 </div>
 
                 <div className="flex-1"></div>

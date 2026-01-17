@@ -72,7 +72,7 @@ export function MobileNav() {
         { href: "/partners", label: t.common.partners, icon: Handshake, color: "text-cyan-500 from-cyan-500/20 to-cyan-500/5" },
         { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
         { href: "/storage", label: t.common.storage, icon: HardDrive, color: "text-indigo-500 from-indigo-500/20 to-indigo-500/5" },
-        ...(hasPermission(currentUser, "USER_CREATE") ? [{
+        ...(hasPermission(currentUser, "TEAM_VIEW") ? [{
             href: "/team",
             label: t.common.team,
             icon: Briefcase,
