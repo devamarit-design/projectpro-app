@@ -22,9 +22,10 @@ interface ProjectHeaderProps {
         budget: string
         expenses?: string
     }
+    totalExpenses?: number
 }
 
-export function ProjectHeader({ project }: ProjectHeaderProps) {
+export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
     const { deleteProject, updateProject } = useProjects()
     const router = useRouter()
     const [showMenu, setShowMenu] = useState(false)
@@ -47,7 +48,11 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
 
     // Calculate progress based on Expenses / Budget if both exist
     const budgetValue = parseInt(project.budget.replace(/[^0-9]/g, '')) || 1
-    const expensesValue = parseInt((project.expenses || "0").replace(/[^0-9]/g, '')) || 0
+    // Use totalExpenses if provided, otherwise fallback to project.expenses string parsing
+    const expensesValue = totalExpenses !== undefined
+        ? totalExpenses
+        : (parseInt((project.expenses || "0").replace(/[^0-9]/g, '')) || 0)
+
     const calculatedProgress = Math.min(Math.round((expensesValue / budgetValue) * 100), 100)
 
     // Formatting shorthand for budget/expenses (e.g. 8.5M)

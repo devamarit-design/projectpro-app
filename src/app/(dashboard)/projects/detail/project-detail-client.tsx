@@ -165,6 +165,9 @@ export default function ProjectDetailClient() {
     const totalIncome = projectIncomes.reduce((sum, i) => sum + i.grandTotal, 0)
     const totalProfit = totalIncome - totalExpenses
 
+    // Calculate All-Time Expenses specifically for the Header (ignoring month filters)
+    const allTimeExpenses = allProjectExpenses.reduce((sum, e) => sum + e.totalValue, 0)
+
     useEffect(() => {
         // Scroll to top of both window and our custom scroll container
         window.scrollTo(0, 0)
@@ -191,7 +194,7 @@ export default function ProjectDetailClient() {
 
     return (
         <div className="space-y-6 pb-20">
-            <ProjectHeader project={project} />
+            <ProjectHeader project={project} totalExpenses={allTimeExpenses} />
 
             {/* Tabs Navigation */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
