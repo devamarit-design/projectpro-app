@@ -48,7 +48,7 @@ export default function ProjectDetailClient() {
     const searchParams = useSearchParams()
     const id = searchParams.get("id") || ""
     const { t, locale } = useTranslation()
-    const { getProject, addTask, addSubProject, deleteTask, toggleTask, updateTask, expenses, files, addFile, currentUser, users, incomes } = useProjects()
+    const { getProject, addTask, addSubProject, deleteTask, toggleTask, updateTask, expenses, files, addFile, currentUser, users, incomes, isLoading } = useProjects()
     const [activeTab, setActiveTab] = useState("overview")
     const project = getProject(id)
 
@@ -176,6 +176,17 @@ export default function ProjectDetailClient() {
             container.scrollTo({ top: 0, behavior: 'instant' })
         }
     }, [id])
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-[60vh]">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <p className="text-muted-foreground animate-pulse">Loading project data...</p>
+                </div>
+            </div>
+        )
+    }
 
     if (!project) {
         return (

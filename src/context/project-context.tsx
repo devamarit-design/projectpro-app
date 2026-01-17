@@ -346,6 +346,7 @@ interface ProjectContextType {
     restoreData: (data: Record<string, unknown>) => Promise<boolean>
     seedData: () => Promise<void>
     isOrgLoading: boolean
+    isLoading: boolean // Global Data Loading State
 }
 
 
@@ -1671,6 +1672,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             setCurrentUser,
             isAuthLoading,
             isOrgLoading,
+            isLoading,
             login,
             register,
             logout,
