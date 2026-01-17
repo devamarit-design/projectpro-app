@@ -5,6 +5,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { useProjects, ProjectStatus } from "@/context/project-context"
+import { hasPermission } from "@/lib/permissions"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n-context"
 
@@ -26,7 +27,7 @@ interface ProjectHeaderProps {
 }
 
 export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
-    const { deleteProject, updateProject } = useProjects()
+    const { deleteProject, updateProject, currentUser } = useProjects()
     const router = useRouter()
     const [showMenu, setShowMenu] = useState(false)
     const [showStatusPicker, setShowStatusPicker] = useState(false)
@@ -173,34 +174,36 @@ export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
                         </div>
 
                         {/* Quick Stats Cards */}
-                        <div className="flex flex-wrap items-center gap-4 md:gap-6 bg-black/60 backdrop-blur-2xl p-6 rounded-3xl border border-white/10 shadow-2xl border-t border-l border-white/20">
-                            <div>
-                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">{t.projects.detail.header.cost_paid}</p>
-                                <div className="flex items-baseline gap-2">
-                                    <p className="text-2xl md:text-3xl font-black text-green-400">
-                                        {calculatedProgress}
-                                        <span className="text-sm ml-0.5">%</span>
-                                    </p>
-                                    <span className="text-xs font-bold text-white/60">
-                                        (฿{formatShorthand(expensesValue)} / ฿{formatShorthand(budgetValue)})
-                                    </span>
+                        {hasPermission(currentUser, "FINANCIAL_VIEW") && (
+                            <div className="flex flex-wrap items-center gap-4 md:gap-6 bg-black/60 backdrop-blur-2xl p-6 rounded-3xl border border-white/10 shadow-2xl border-t border-l border-white/20">
+                                <div>
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">{t.projects.detail.header.cost_paid}</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <p className="text-2xl md:text-3xl font-black text-green-400">
+                                            {calculatedProgress}
+                                            <span className="text-sm ml-0.5">%</span>
+                                        </p>
+                                        <span className="text-xs font-bold text-white/60">
+                                            (฿{formatShorthand(expensesValue)} / ฿{formatShorthand(budgetValue)})
+                                        </span>
+                                    </div>
+                                    {/* Progress Bar Mini */}
+                                    <div className="mt-2 w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-1000"
+                                            style={{ width: `${calculatedProgress}%` }}
+                                        />
+                                    </div>
                                 </div>
-                                {/* Progress Bar Mini */}
-                                <div className="mt-2 w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-1000"
-                                        style={{ width: `${calculatedProgress}%` }}
-                                    />
+
+                                <div className="hidden md:block w-px h-12 bg-white/10" />
+
+                                <div className="w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 border-white/5">
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">{t.projects.detail.financials.contract_value}</p>
+                                    <p className="text-xl md:text-2xl font-black text-white tracking-tight leading-none">{project.budget}</p>
                                 </div>
                             </div>
-
-                            <div className="hidden md:block w-px h-12 bg-white/10" />
-
-                            <div className="w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 border-white/5">
-                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">{t.projects.detail.financials.contract_value}</p>
-                                <p className="text-xl md:text-2xl font-black text-white tracking-tight leading-none">{project.budget}</p>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
