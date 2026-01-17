@@ -128,6 +128,12 @@ export const en = {
             role: "Role"
         }
     },
+    auth: {
+        new_password: "New Password",
+        confirm_password: "Confirm New Password",
+        password_mismatch: "Passwords do not match",
+        password_length: "Password must be at least 6 characters"
+    },
     navbar: {
         home: "Home",
         finance: "Finance",

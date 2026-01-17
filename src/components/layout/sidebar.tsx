@@ -79,8 +79,12 @@ export function Sidebar({ className }: { className?: string }) {
 
             <div className="p-4 border-t border-sidebar-border/50">
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-sidebar-accent/30 border border-sidebar-border/50">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-sm">
-                        {currentUser?.name?.charAt(0) || "U"}
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-sm overflow-hidden">
+                        {currentUser?.avatar ? (
+                            <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" />
+                        ) : (
+                            currentUser?.name?.charAt(0) || "U"
+                        )}
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate text-sidebar-foreground">

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { get, set } from "idb-keyval"
 import { auth, googleProvider, db } from "@/lib/firebase"
-import { signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseUser, setPersistence, browserLocalPersistence } from "firebase/auth"
+import { signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseUser, setPersistence, browserLocalPersistence, updatePassword } from "firebase/auth"
 import { doc, getDoc, getDocs, setDoc, onSnapshot, collection, query, where, addDoc, updateDoc, deleteDoc, documentId, orderBy, limit } from "firebase/firestore"
 import { seedDatabase } from "@/lib/seed-data"
 import { useOrganization } from "@/context/organization-context"
@@ -340,6 +340,7 @@ interface ProjectContextType {
     setCurrentUser: (user: User | null) => void
     login: (provider: string, credentials?: { email?: string, password?: string }) => Promise<void>
     register: (name: string, email: string, password: string) => Promise<void>
+    updateUserPassword: (password: string) => Promise<void>
     logout: () => void
     isAuthLoading: boolean
     // Backup & Restore
@@ -885,6 +886,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
         } catch (error) {
             console.error("Registration failed", error)
+            throw error
+        }
+    }
+
+    const updateUserPassword = async (password: string) => {
+        if (!auth.currentUser) return
+        try {
+            await updatePassword(auth.currentUser, password)
+        } catch (error) {
+            console.error("Failed to update password", error)
             throw error
         }
     }
@@ -1675,6 +1686,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             isLoading,
             login,
             register,
+            updateUserPassword,
             logout,
             restoreData,
             seedData,

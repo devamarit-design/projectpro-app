@@ -126,6 +126,12 @@ export const th = {
             role: "ตำแหน่ง"
         }
     },
+    auth: {
+        new_password: "รหัสผ่านใหม่",
+        confirm_password: "ยืนยันรหัสผ่านใหม่",
+        password_mismatch: "รหัสผ่านไม่ตรงกัน",
+        password_length: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"
+    },
     navbar: {
         home: "หน้าแรก",
         finance: "การเงิน",

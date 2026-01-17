@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useProjects } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
-import { Mail, Phone, Shield, User as UserIcon, Save, X, Camera, LogOut } from "lucide-react"
+import { Mail, Phone, Shield, User as UserIcon, Save, X, Camera, LogOut, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export default function ProfilePage() {
@@ -242,6 +242,103 @@ export default function ProfilePage() {
                         {t.common.log_out}
                     </button>
                 </div>
+            </div>
+
+            {/* Security Section */}
+            <SecuritySection />
+        </div>
+    )
+}
+
+function SecuritySection() {
+    const { updateUserPassword } = useProjects()
+    const { t } = useTranslation()
+    const [password, setPassword] = React.useState("")
+    const [confirmPassword, setConfirmPassword] = React.useState("")
+    const [isLoading, setIsLoading] = React.useState(false)
+    const [status, setStatus] = React.useState<{ type: 'success' | 'error', message: string } | null>(null)
+
+    const handleUpdatePassword = async () => {
+        if (!password) return
+        if (password !== confirmPassword) {
+            setStatus({ type: 'error', message: "Passwords do not match" })
+            return
+        }
+        if (password.length < 6) {
+            setStatus({ type: 'error', message: "Password must be at least 6 characters" })
+            return
+        }
+
+        setIsLoading(true)
+        setStatus(null)
+
+        try {
+            await updateUserPassword(password)
+            setStatus({ type: 'success', message: "Password updated successfully" })
+            setPassword("")
+            setConfirmPassword("")
+        } catch (error: any) {
+            if (error.code === 'auth/requires-recent-login') {
+                setStatus({ type: 'error', message: "Please log out and log in again to change your password." })
+            } else {
+                setStatus({ type: 'error', message: "Failed to update password. Please try again." })
+            }
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    return (
+        <div className="bg-card border border-border rounded-3xl p-8 shadow-sm space-y-6">
+            <div className="flex items-center gap-3 text-primary">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                    <Shield className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl font-bold">Security</h2>
+            </div>
+            <div className="h-px bg-border/50" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">{t.auth?.new_password || "New Password"}</label>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
+                        placeholder="••••••••"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">{t.auth?.confirm_password || "Confirm Password"}</label>
+                    <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
+                        placeholder="••••••••"
+                    />
+                </div>
+            </div>
+
+            {status && (
+                <div className={cn(
+                    "p-3 rounded-xl text-sm font-medium flex items-center gap-2",
+                    status.type === 'success' ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"
+                )}>
+                    {status.type === 'success' ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                    {status.message}
+                </div>
+            )}
+
+            <div className="flex justify-end">
+                <button
+                    onClick={handleUpdatePassword}
+                    disabled={!password || isLoading}
+                    className="bg-primary text-primary-foreground px-6 py-2.5 rounded-xl font-bold shadow-lg hover:translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                    {isLoading ? "Updating..." : "Update Password"}
+                </button>
             </div>
         </div>
     )
