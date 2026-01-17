@@ -142,14 +142,7 @@ export default function ProfilePage() {
                             <Shield className="w-3 h-3" />
                             {currentUser.role}
                         </div>
-                        {currentUser.role !== 'Owner' && (
-                            <button
-                                onClick={() => updateUser(currentUser.id, { role: 'Owner' })}
-                                className="ml-2 text-xs bg-yellow-500/10 text-yellow-600 border border-yellow-200 px-2 py-1 rounded-full hover:bg-yellow-500/20 transition-colors"
-                            >
-                                Claim Ownership
-                            </button>
-                        )}
+
                     </div>
                 </div>
 

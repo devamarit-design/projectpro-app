@@ -13,7 +13,7 @@ interface AddUserDialogProps {
 }
 
 export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserDialogProps) {
-    const { addUser, updateUser } = useProjects()
+    const { addUser, updateUser, currentUser } = useProjects()
     const { t } = useTranslation()
 
     // Form State
@@ -124,7 +124,8 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                                 <select
                                     value={role}
                                     onChange={(e) => setRole(e.target.value)}
-                                    className="w-full bg-background border border-input rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
+                                    disabled={currentUser?.role !== "Owner"}
+                                    className="w-full bg-background border border-input rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <option value="Admin">Admin</option>
                                     <option value="Manager">Manager</option>
