@@ -416,29 +416,21 @@ export default function ProjectDetailClient() {
                             </div>
                         </div>
 
-                        {/* High Level Stats */}
-                        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-                            {hasPermission(currentUser, "FINANCIAL_VIEW") && (
-                                <>
-                                    <div className="glass-card p-5 rounded-2xl border-l-4 border-l-primary hover:translate-y-[-2px] transition-transform">
-                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.contract_value}</p>
-                                        <p className="text-xl md:text-2xl font-black">{project.budget}</p>
-                                    </div>
-                                    <div className="glass-card p-5 rounded-2xl border-l-4 border-l-green-500 hover:translate-y-[-2px] transition-transform">
-                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.received}</p>
-                                        <p className="text-xl md:text-2xl font-black text-green-500">฿{totalIncome.toLocaleString()}</p>
-                                    </div>
-                                </>
-                            )}
-
-                            <div className="glass-card p-5 rounded-2xl border-l-4 border-l-red-500 hover:translate-y-[-2px] transition-transform">
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
-                                    {hasPermission(currentUser, "FINANCIAL_VIEW") ? t.projects.detail.financials.total_expenses : "My Expenses"}
-                                </p>
-                                <p className="text-xl md:text-2xl font-black text-red-500">฿{totalExpenses.toLocaleString()}</p>
-                            </div>
-
-                            {hasPermission(currentUser, "FINANCIAL_VIEW") && (
+                        {/* High Level Stats - Only for Financial Viewers */}
+                        {hasPermission(currentUser, "FINANCIAL_VIEW") && (
+                            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                                <div className="glass-card p-5 rounded-2xl border-l-4 border-l-primary hover:translate-y-[-2px] transition-transform">
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.contract_value}</p>
+                                    <p className="text-xl md:text-2xl font-black">{project.budget}</p>
+                                </div>
+                                <div className="glass-card p-5 rounded-2xl border-l-4 border-l-green-500 hover:translate-y-[-2px] transition-transform">
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.received}</p>
+                                    <p className="text-xl md:text-2xl font-black text-green-500">฿{totalIncome.toLocaleString()}</p>
+                                </div>
+                                <div className="glass-card p-5 rounded-2xl border-l-4 border-l-red-500 hover:translate-y-[-2px] transition-transform">
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.total_expenses}</p>
+                                    <p className="text-xl md:text-2xl font-black text-red-500">฿{totalExpenses.toLocaleString()}</p>
+                                </div>
                                 <div className="glass-card p-5 rounded-2xl border-l-4 border-l-blue-500 hover:translate-y-[-2px] transition-transform">
                                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.profit_est}</p>
                                     <p className={cn(
@@ -448,8 +440,8 @@ export default function ProjectDetailClient() {
                                         ฿{totalProfit.toLocaleString()}
                                     </p>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
 
                         {/* Sub-Tabs Switcher */}
                         <div className="flex bg-muted/30 p-1 rounded-xl w-fit">
@@ -597,6 +589,12 @@ export default function ProjectDetailClient() {
                                                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                                 <span>{expense.date}</span>
                                                                 <span>•</span>
+                                                                {expense.paidBy && (
+                                                                    <>
+                                                                        <span className="text-primary font-medium">By {expense.paidBy}</span>
+                                                                        <span>•</span>
+                                                                    </>
+                                                                )}
                                                                 <span>{expense.payee || t.projects.detail.financials.no_payee}</span>
                                                             </div>
                                                         </div>
