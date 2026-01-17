@@ -1174,6 +1174,8 @@ export default function ProjectDetailClient() {
                                                             key={task.id}
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
+                                                                setSelectedSubProjectId(null)
+                                                                setActiveTab('tasks')
                                                                 setSelectedTaskId(task.id)
                                                             }}
                                                             className="text-xs p-2 bg-muted/30 rounded-lg flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors group"
