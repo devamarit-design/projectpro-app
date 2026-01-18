@@ -112,11 +112,11 @@ function TaskCard({ task, projectUsers, t, onDelete, onToggle, onSelect, isOverl
                 <div className="flex items-center gap-1.5">
                     <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10">
                         <span className="text-[10px] font-bold text-primary">
-                            {(task.assignedTo || "U").charAt(0)}
+                            {(projectUsers.find(u => u.name === task.assignedTo || u.id === task.assignedTo)?.name || task.assignedTo || "U").charAt(0)}
                         </span>
                     </div>
                     <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px]">
-                        {task.assignedTo || "Unassigned"}
+                        {projectUsers.find(u => u.name === task.assignedTo || u.id === task.assignedTo)?.name || task.assignedTo || "Unassigned"}
                     </span>
                 </div>
                 {task.dueDate && (

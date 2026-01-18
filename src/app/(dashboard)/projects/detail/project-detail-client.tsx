@@ -1060,6 +1060,7 @@ export default function ProjectDetailClient() {
                                     <button
                                         onClick={() => {
                                             setSelectedTaskId(null)
+                                            setSelectedSubProjectId(null)
                                             setActiveTab('tasks')
                                         }}
                                         className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
