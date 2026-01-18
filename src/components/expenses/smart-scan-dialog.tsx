@@ -147,16 +147,21 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 gap-4 pt-4">
-                                    <label className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-border rounded-xl hover:bg-muted transition-colors cursor-pointer">
-                                        <Camera className="w-6 h-6 text-primary" />
-                                        <span className="text-sm font-medium">Take Photo</span>
-                                        <input type="file" className="hidden" accept="image/*" capture="environment" onChange={handleFileSelect} />
-                                    </label>
-                                    <label className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-border rounded-xl hover:bg-muted transition-colors cursor-pointer">
-                                        <Upload className="w-6 h-6 text-primary" />
-                                        <span className="text-sm font-medium">Upload File</span>
-                                        <input type="file" className="hidden" accept="image/*" onChange={handleFileSelect} />
+                                <div className="pt-4">
+                                    <label className="flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed border-border rounded-2xl hover:bg-muted/30 hover:border-primary/50 transition-all cursor-pointer group">
+                                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                                            <Camera className="w-8 h-8 text-primary" />
+                                        </div>
+                                        <div className="text-center space-y-1">
+                                            <span className="text-lg font-bold">Tap to Scan Receipt</span>
+                                            <p className="text-xs text-muted-foreground">Supports Camera & File Upload</p>
+                                        </div>
+                                        <input
+                                            type="file"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={handleFileSelect}
+                                        />
                                     </label>
                                 </div>
                             )}
