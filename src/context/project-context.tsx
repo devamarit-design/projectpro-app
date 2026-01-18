@@ -912,8 +912,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const loginPromise = async () => {
             if (provider === 'google') {
                 try {
-                    // Use redirect instead of popup for better cross-browser compatibility
-                    await signInWithRedirect(auth, googleProvider)
+                    // Detect iOS PWA (standalone) mode - signInWithRedirect doesn't work there
+                    const isIOSPWA = typeof window !== 'undefined' &&
+                        (window.navigator as any).standalone === true
+
+                    if (isIOSPWA) {
+                        // Use popup for iOS PWA since redirect fails in standalone mode
+                        console.log("iOS PWA detected, using popup for Google login")
+                        await signInWithPopup(auth, googleProvider)
+                    } else {
+                        // Use redirect for all other cases (better UX on mobile browsers)
+                        await signInWithRedirect(auth, googleProvider)
+                    }
                 } catch (error) {
                     console.error("Login failed", error)
                     throw error
