@@ -824,14 +824,26 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     // Handle Google Sign-In Redirect Result
     useEffect(() => {
+        // Detect iOS PWA for debug alerts
+        const isIOSPWA = typeof window !== 'undefined' &&
+            (window.navigator as any).standalone === true
+
         getRedirectResult(auth)
             .then((result) => {
                 if (result) {
                     console.log("Google redirect sign-in successful:", result.user.email)
+                    if (isIOSPWA) {
+                        alert("✅ Login Success: " + result.user.email)
+                    }
+                } else {
+                    console.log("No redirect result (first visit or popup was used)")
                 }
             })
             .catch((error) => {
                 console.error("Redirect result error:", error)
+                if (isIOSPWA) {
+                    alert("❌ Redirect Error: " + error.code + " - " + error.message)
+                }
             })
     }, [])
 
