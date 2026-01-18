@@ -28,16 +28,32 @@ export async function analyzeReceipt(base64Image: string): Promise<ExtractedExpe
         const base64Data = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
 
         const prompt = `
-        Analyze this receipt image and extract the following information in JSON format:
-        - merchant: The name of the store or merchant.
-        - date: The date of the transaction in YYYY-MM-DD format. If not found, use today's date.
-        - total: The total amount/grand total as a number.
-        - items: An array of items purchased. Each item should have:
-            - description: Product name or description.
-            - amount: The price of the item (number).
-            - category: Guess the category (Material, Labor, Sub-contract, Equipment, Other) based on the description. Default to 'Material' if unsure.
+        Analyze this image (Receipt, Tax Invoice, or Bank Transfer Slip) and extract the following information in JSON format:
 
-        Return ONLY the JSON. Do not include markdown formatting like \`\`\`json.
+        **Context**: This is for a Thai construction expense tracking app. The image might be:
+        1. A **Receipt/Tax Invoice** (ใบเสร็จรับเงิน/ใบกำกับภาษี): Look for "Merchant/Seller Name" and "Items".
+        2. A **Bank Transfer Slip** (สลิปโอนเงิน): Look for "Receiver Name" (to account) as Merchant. "Amount" is the Total.
+
+        **Fields to Extract**:
+        - **merchant**: The name of the store, biller, or receiver (User "Mr." or "Company" name if visible).
+            - Keywords to look for: "ผู้รับเงิน", "บริษัท", "ร้าน", "To", "Received By".
+        - **date**: The transaction date in YYYY-MM-DD format. (Convert BE 2567 -> 2024, 2568 -> 2025).
+        - **total**: The Grand Total amount paid (Net Amount).
+            - Keywords: "ยอดรวม", "ยอดสุทธิ", "จำนวนเงิน", "Amount", "Total".
+        - **items**: An array of items purchased.
+            - If it's a Transfer Slip with no item list, create **ONE** item with description "Transfer to [Merchant]" or "Payment for [Note]".
+            - If it's a Receipt, list the actual items.
+            - **description**: Product name or brief description (Thai or English).
+            - **amount**: Price of that specific item.
+            - **category**: EXACTLY ONE OF: ['Material', 'Labor', 'Sub-contract', 'Equipment', 'Fuel', 'Other'].
+                - 'Material': Concrete, Steel, Wood, Paint, Hardware, Supplies.
+                - 'Labor': Wages, Salary, Daily pay.
+                - 'Fuels': Gas, Petrol, Diesel.
+                - 'Equipment': Tools, Machines rental.
+
+        **Important**: 
+        - Return ONLY raw JSON. No Markdown.
+        - Handle Thai numbers or text correctly.
         `;
 
         const result = await model.generateContent([
