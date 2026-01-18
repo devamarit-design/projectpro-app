@@ -825,27 +825,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const [debugLogs, setDebugLogs] = useState<string[]>([]) // Removed, keeping simple state for cleanliness if needed or just remove lines.
     // Actually, I should remove the whole block.
 
-    // Handle Google Sign-In Redirect Result
-    useEffect(() => {
-        // Detect iOS (PWA or Browser)
-        const isIOS = typeof window !== 'undefined' &&
-            /iPad|iPhone|iPod/.test(navigator.userAgent)
 
-        getRedirectResult(auth)
-            .then((result) => {
-                if (result) {
-                    console.log("Google redirect sign-in successful:", result.user.email)
-                } else {
-                    console.log("No redirect result (first visit or popup was used)")
-                }
-            })
-            .catch((error) => {
-                console.error("Redirect result error:", error)
-                if (isIOS) {
-                    alert("❌ Redirect Error: " + error.code + " - " + error.message)
-                }
-            })
-    }, [])
 
     // Auth State Listener
     useEffect(() => {
@@ -912,25 +892,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const loginPromise = async () => {
             if (provider === 'google') {
                 try {
-                    // Detect iOS PWA (standalone) mode - popup doesn't work there
-                    const isIOSPWA = typeof window !== 'undefined' &&
-                        (window.navigator as any).standalone === true
-
-                    // Detect iOS Safari (not PWA)
-                    const isIOS = typeof window !== 'undefined' &&
-                        /iPad|iPhone|iPod/.test(navigator.userAgent)
-
                     await setPersistence(auth, browserLocalPersistence)
-
-                    if (isIOS || isIOSPWA) {
-                        // iOS (Safari, Chrome, PWA): Always use redirect to avoid popup blocking issues
-                        console.log("iOS detected - forcing redirect")
-                        await signInWithRedirect(auth, googleProvider)
-                        return // Stop further execution as page will redirect
-                    } else {
-                        // Desktop/Android: Use popup
-                        await signInWithPopup(auth, googleProvider)
-                    }
+                    await signInWithPopup(auth, googleProvider)
                     console.log("Google Sign-In Success!")
                 } catch (error: any) {
                     console.error("Login failed", error)

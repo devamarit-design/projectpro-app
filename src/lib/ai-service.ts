@@ -12,6 +12,8 @@ export interface ExtractedExpenseData {
     items: {
         description: string;
         amount: number;
+        quantity: number;
+        unitPrice: number;
         category: string;
     }[];
 }
@@ -49,7 +51,11 @@ export async function analyzeReceipt(base64Image: string): Promise<AnalyzeReceip
             - If it's a Transfer Slip with no item list, create **ONE** item with description "Transfer to [Merchant]" or "Payment for [Note]".
             - If it's a Receipt, list the actual items.
             - **description**: Product name or brief description (Thai or English).
-            - **amount**: Price of that specific item.
+            - **amount**: Total price of this line item (quantity * unitPrice).
+            - **quantity**: The quantity of items. 
+                - **CRITICAL**: If NO quantity is explicitly visible, YOU MUST RETURN 1.
+            - **unitPrice**: The price per unit.
+                - If not visible, calculate it as amount / quantity.
             - **category**: EXACTLY ONE OF: ['Material', 'Labor', 'Sub-contract', 'Equipment', 'Fuel', 'Other'].
                 - 'Material': Concrete, Steel, Wood, Paint, Hardware, Supplies.
                 - 'Labor': Wages, Salary, Daily pay.

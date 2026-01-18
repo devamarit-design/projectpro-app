@@ -67,13 +67,21 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
 
             // Map API response to internal state
             const extractedItems: ExpenseItem[] = Array.isArray(data.items)
-                ? data.items.map((item: any) => ({
-                    id: Math.random().toString(),
-                    description: item.description || "Unknown Item",
-                    amount: Number(item.amount) || 0,
-                    category: (item.category as any) || "Other",
-                    projectId: undefined
-                }))
+                ? data.items.map((item: any) => {
+                    const qty = Number(item.quantity) || 1
+                    const totalAmount = Number(item.amount) || 0
+                    const unitPrice = Number(item.unitPrice) || (totalAmount / qty)
+
+                    return {
+                        id: Math.random().toString(),
+                        description: item.description || "Unknown Item",
+                        amount: totalAmount,
+                        quantity: qty,
+                        unitPrice: unitPrice,
+                        category: (item.category as any) || "Other",
+                        projectId: undefined
+                    }
+                })
                 : []
 
             setExtractedData({
@@ -84,6 +92,8 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
                     id: Math.random().toString(),
                     description: "Total Expense",
                     amount: Number(data.total) || 0,
+                    quantity: 1,
+                    unitPrice: Number(data.total) || 0,
                     category: "Other",
                     projectId: undefined
                 }]
