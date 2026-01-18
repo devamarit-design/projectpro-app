@@ -185,3 +185,140 @@
     @apply bg-card/40 backdrop-blur-md border-none shadow-md hover:bg-card/50 transition-all duration-300 dark:bg-card/30 dark:shadow-none;
   }
 }
+
+/* Rainbow Theme Styles */
+:root[data-theme-rainbow] .bg-primary {
+  background: var(--primary-gradient) !important;
+}
+
+:root[data-theme-rainbow] .text-primary {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+:root[data-theme-rainbow] .border-primary {
+  border-color: #1dd1a1 !important;
+  /* Mint Green fallback for rounded borders */
+}
+
+
+
+:root[data-theme-rainbow] button.bg-primary,
+:root[data-theme-rainbow] a.bg-primary,
+:root[data-theme-rainbow] [class*="bg-primary"] {
+  background: var(--primary-gradient) !important;
+  color: white !important;
+}
+
+:root[data-theme-rainbow] .ring-primary {
+  --tw-ring-color: #ff9ff3;
+}
+
+/* Rainbow gradient animation for special elements */
+:root[data-theme-rainbow] .animate-rainbow {
+  background: linear-gradient(90deg, #ff6b6b, #feca57, #1dd1a1, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b);
+  background-size: 200% 100%;
+  animation: rainbow-shift 3s linear infinite;
+}
+
+@keyframes rainbow-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Glass Theme Styles - Frosted Blur Effect */
+:root[data-theme-glass] .bg-primary {
+  background: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  color: hsl(210 40% 30%) !important;
+}
+
+.dark:root[data-theme-glass] .bg-primary,
+:root[data-theme-glass].dark .bg-primary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
+:root[data-theme-glass] button.bg-primary,
+:root[data-theme-glass] a.bg-primary,
+:root[data-theme-glass] [class*="bg-primary"]:not(.text-primary) {
+  background: rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: none !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  color: hsl(210 40% 25%) !important;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+:root[data-theme-glass] button.bg-primary:hover,
+:root[data-theme-glass] a.bg-primary:hover {
+  background: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.dark:root[data-theme-glass] button.bg-primary,
+.dark:root[data-theme-glass] a.bg-primary,
+:root[data-theme-glass].dark button.bg-primary,
+:root[data-theme-glass].dark a.bg-primary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: none !important;
+  color: white !important;
+}
+
+:root[data-theme-glass] .text-primary {
+  color: hsl(210 50% 40%) !important;
+  text-shadow: 0 0 20px rgba(100, 150, 200, 0.3);
+}
+
+.dark:root[data-theme-glass] .text-primary,
+:root[data-theme-glass].dark .text-primary {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+:root[data-theme-glass] .border-primary {
+  border-color: rgba(100, 150, 200, 0.3) !important;
+}
+
+:root[data-theme-glass] .ring-primary {
+  --tw-ring-color: rgba(100, 150, 200, 0.5);
+}
+
+/* Glass cards enhancement */
+:root[data-theme-glass] .bg-card {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.dark:root[data-theme-glass] .bg-card,
+:root[data-theme-glass].dark .bg-card {
+  background: rgba(30, 30, 40, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Glass popovers - More opaque for readability */
+:root[data-theme-glass] .bg-popover {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark:root[data-theme-glass] .bg-popover,
+:root[data-theme-glass].dark .bg-popover {
+  background: rgba(30, 30, 40, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}

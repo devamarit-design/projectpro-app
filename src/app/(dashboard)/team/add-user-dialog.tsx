@@ -21,7 +21,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
     const [role, setRole] = React.useState("Staff")
     const [phone, setPhone] = React.useState("")
     const [email, setEmail] = React.useState("")
-    const [status, setStatus] = React.useState<"Active" | "Inactive">("Active")
+    const [status, setStatus] = React.useState<"Active" | "Inactive" | "Pending">("Active")
 
     // Reset/Fill form
     React.useEffect(() => {
@@ -39,7 +39,11 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                 setRole("Staff")
                 setPhone("")
                 setEmail("")
-                setStatus("Active")
+                // If creating new, let it handle default (usually Active if manually set, but logic sets Pending for new)
+                // However, if manual creation, we might want to default to Active or Pending? 
+                // The prompt says "Status pending for User created waiting for signup".
+                // If the dialog is "Add Member", showing "Pending" as initial might be good.
+                setStatus("Pending")
             }
         }
     }, [isOpen, initialData])
@@ -151,6 +155,16 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                                         )}
                                     >
                                         {t.dialogs.add_user.active}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStatus("Pending")}
+                                        className={cn(
+                                            "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
+                                            status === "Pending" ? "bg-background text-orange-500 shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        Pending
                                     </button>
                                     <button
                                         type="button"

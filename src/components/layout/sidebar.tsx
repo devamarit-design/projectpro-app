@@ -16,27 +16,33 @@ import {
     LogOut,
     User,
     Handshake,
-    Shield
+    Shield,
+    Calendar,
+    Archive
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
 import { useProjects } from "@/context/project-context"
 import { hasPermission } from "@/lib/permissions"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 export function Sidebar({ className }: { className?: string }) {
     const pathname = usePathname()
     const { t } = useTranslation()
     const { currentUser, logout } = useProjects()
+    const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false)
 
     const navItems = [
         { href: "/", label: t.common.dashboard, icon: LayoutDashboard },
         { href: "/projects", label: t.common.projects, icon: FolderKanban },
+        { href: "/calendar", label: t.calendar?.title || "ปฏิทิน", icon: Calendar },
         { href: "/income", label: t.common.income, icon: FileText, permission: "INCOME_CREATE" },
         { href: "/expenses", label: t.common.expenses, icon: CreditCard },
         { href: "/tasks", label: t.common.tasks, icon: CheckSquare },
         { href: "/storage", label: t.common.storage, icon: HardDrive },
         { href: "/contracts", label: t.common.contracts, icon: FileText }, // Added Contracts item
+        { href: "/customers", label: t.common.customers, icon: Users },
         { href: "/partners", label: t.common.partners, icon: Handshake },
         { href: "/team", label: t.common.team, icon: Briefcase, permission: "TEAM_VIEW" }, // Requires TEAM_VIEW permission
         { href: "/settings", label: t.common.settings, icon: Settings, permission: "COMPANY_UPDATE" }, // Requires COMPANY_UPDATE permission
@@ -44,6 +50,19 @@ export function Sidebar({ className }: { className?: string }) {
 
     return (
         <aside className={cn("hidden md:flex flex-col w-64 h-screen bg-transparent text-sidebar-foreground", className)}>
+            <ConfirmDialog
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={async () => {
+                    await logout()
+                    window.location.href = "/login"
+                }}
+                title="ออกจากระบบ"
+                message="คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?"
+                confirmText="ออกจากระบบ"
+                cancelText="ยกเลิก"
+                variant="danger"
+            />
             <div className="p-6">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-sidebar-primary to-purple-600 bg-clip-text text-transparent">
                     PROJECTPRO
@@ -95,11 +114,7 @@ export function Sidebar({ className }: { className?: string }) {
                         </p>
                     </div>
                     <button
-                        onClick={() => {
-                            if (window.confirm("Are you sure you want to sign out?")) {
-                                logout();
-                            }
-                        }}
+                        onClick={() => setShowLogoutConfirm(true)}
                         className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10"
                         title="Sign Out"
                     >

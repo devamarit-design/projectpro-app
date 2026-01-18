@@ -13,11 +13,11 @@ export default function OnboardingPage() {
     const router = useRouter()
 
     // Auto-redirect if already has teams
-    React.useEffect(() => {
-        if (currentUser && teams.length > 0) {
-            router.push(`/projects/detail?id=${teams[0].id}`) // Or dashboard
-        }
-    }, [currentUser, teams, router])
+    // React.useEffect(() => {
+    //     if (currentUser && teams.length > 0) {
+    //         router.push(`/projects/detail?id=${teams[0].id}`) // Or dashboard
+    //     }
+    // }, [currentUser, teams, router])
 
     const [step, setStep] = React.useState<"showcase" | "welcome" | "create" | "join">("showcase")
     const [teamName, setTeamName] = React.useState("")
@@ -31,8 +31,8 @@ export default function OnboardingPage() {
 
         setIsLoading(true)
         try {
-            await addTeam(teamName)
-            // Redirect will happen automatically via useEffect once team is added
+            const newTeamId = await addTeam(teamName)
+            router.push(`/projects/detail?id=${newTeamId}`)
         } catch (error) {
             console.error("Failed to create team", error)
             setIsLoading(false)
@@ -47,10 +47,8 @@ export default function OnboardingPage() {
         setError(null)
         try {
             const teamName = await joinOrganizationByCode(inviteCode)
-            // Success! Redirect handled by context reload or we can force it here
-            // But let's show success state briefly? 
-            // The context reload might be abrupt. 
-            // Actually context logic reloads page.
+            // Force reload to ensure context updates or just replace URL
+            window.location.href = "/"
         } catch (error: any) {
             console.error("Failed to join team", error)
             setError(error.message || "Failed to join team")
@@ -68,6 +66,7 @@ export default function OnboardingPage() {
 
     // New Step 1: Feature Showcase
     if (step === "showcase") {
+        if (teams.length > 0) return <FeatureCarousel onComplete={() => router.push(`/projects/detail?id=${teams[0].id}`)} />
         return <FeatureCarousel onComplete={() => setStep("welcome")} />
     }
 
@@ -92,6 +91,23 @@ export default function OnboardingPage() {
                         </div>
 
                         <div className="grid gap-4">
+                            {teams.length > 0 && (
+                                <button
+                                    onClick={() => router.push(`/projects/detail?id=${teams[0].id}`)}
+                                    className="group relative overflow-hidden bg-primary/10 border border-primary/50 p-6 rounded-2xl hover:bg-primary/20 transition-all text-left"
+                                >
+                                    <div className="relative flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground">
+                                            <ArrowRight className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold">Continue to {teams[0].name}</h3>
+                                            <p className="text-muted-foreground text-sm">Enter your existing workspace</p>
+                                        </div>
+                                    </div>
+                                </button>
+                            )}
+
                             <button
                                 onClick={() => setStep("create")}
                                 className="group relative overflow-hidden bg-card border border-white/10 p-6 rounded-2xl hover:border-primary/50 transition-all text-left"

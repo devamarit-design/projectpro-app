@@ -39,9 +39,9 @@ import { cn } from "@/lib/utils"
 import AddExpenseDialog from "@/components/expenses/add-expense-dialog"
 import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
 import AddTaskDialog from "@/components/tasks/add-task-dialog"
-import { FinancialReportPDF } from '@/components/financials/financial-report-pdf'
-import { PDFDownloadLink } from '@react-pdf/renderer'
+
 import { TaskBoard } from "@/components/tasks/task-board"
+import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
 
 import { useSearchParams } from "next/navigation"
 
@@ -49,7 +49,7 @@ export default function ProjectDetailClient() {
     const searchParams = useSearchParams()
     const id = searchParams.get("id") || ""
     const { t, locale } = useTranslation()
-    const { getProject, addTask, addSubProject, deleteTask, toggleTask, updateTask, expenses, files, addFile, currentUser, users, incomes, isLoading } = useProjects()
+    const { getProject, addTask, addSubProject, deleteTask, toggleTask, updateTask, expenses, files, addFile, currentUser, users, incomes, customers, isLoading } = useProjects()
     const [activeTab, setActiveTab] = useState("overview")
     const project = getProject(id)
 
@@ -95,7 +95,7 @@ export default function ProjectDetailClient() {
                 d.date,
                 d.documentNumber,
                 d.type,
-                `"${(users.find(u => u.id === d.customerId)?.name || 'Unknown').replace(/"/g, '""')}"`,
+                `"${(customers.find(c => c.id === d.customerId)?.name || project?.customer || 'Unknown').replace(/"/g, '""')}"`,
                 d.grandTotal || 0,
                 d.status
             ]) as any
@@ -702,7 +702,7 @@ export default function ProjectDetailClient() {
                                                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                                 <span>{doc.date}</span>
                                                                 <span>•</span>
-                                                                <span className="truncate max-w-[150px]">{users.find(u => u.id === doc.customerId)?.name || "Unknown Customer"}</span>
+                                                                <span className="truncate max-w-[150px]">{customers.find(c => c.id === doc.customerId)?.name || project?.customer || "Unknown Customer"}</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -780,6 +780,7 @@ export default function ProjectDetailClient() {
                                 onUpdateTask={updateTask}
                                 onDeleteTask={deleteTask}
                                 onToggleTask={toggleTask}
+                                onSelectTask={(id) => setSelectedTaskId(id)}
                                 t={t}
                             />
                         </div>

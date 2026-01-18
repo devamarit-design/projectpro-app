@@ -36,6 +36,7 @@ type BoardProps = {
     onUpdateTask: (projectId: string, taskId: string, updates: Partial<ProjectTask>) => void
     onDeleteTask: (projectId: string, taskId: string) => void
     onToggleTask: (projectId: string, taskId: string) => void
+    onSelectTask?: (taskId: string) => void
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     t: any // Translation object
 }
@@ -47,23 +48,32 @@ type SortableTaskItemProps = {
     t: any
     onDelete: (id: string) => void
     onToggle: (id: string) => void
+    onSelect?: (id: string) => void
 }
 
 // --- Inner Components ---
 
-function TaskCard({ task, projectUsers, t, onDelete, onToggle, isOverlay = false }: SortableTaskItemProps & { isOverlay?: boolean }) {
+function TaskCard({ task, projectUsers, t, onDelete, onToggle, onSelect, isOverlay = false }: SortableTaskItemProps & { isOverlay?: boolean }) {
     const priorityColors: Record<string, string> = {
         High: "bg-red-500/10 text-red-500 border-red-500/20",
         Medium: "bg-orange-500/10 text-orange-500 border-orange-500/20",
         Low: "bg-slate-500/10 text-slate-500 border-slate-500/20"
     }
 
+    const handleCardClick = (e: React.MouseEvent) => {
+        // Only trigger onSelect if not clicking on buttons
+        if ((e.target as HTMLElement).closest('button')) return
+        if (onSelect) onSelect(task.id)
+    }
+
     return (
-        <div className={cn(
-            "glass-card w-full p-4 rounded-xl border border-white/5 relative group bg-card/50",
-            task.status === 'Done' && "opacity-75",
-            isOverlay ? "cursor-grabbing shadow-2xl scale-105 border-primary/50" : "hover:border-primary/20 hover:-translate-y-1 transition-all cursor-grab"
-        )}>
+        <div
+            onClick={handleCardClick}
+            className={cn(
+                "glass-card w-full p-4 rounded-xl border border-white/5 relative group bg-card/50",
+                task.status === 'Done' && "opacity-75",
+                isOverlay ? "cursor-grabbing shadow-2xl scale-105 border-primary/50" : "hover:border-primary/20 hover:-translate-y-1 transition-all cursor-pointer"
+            )}>
             <div className="flex justify-between items-start mb-3">
                 <span className={cn(
                     "text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide border",
@@ -204,9 +214,11 @@ export function TaskBoard({
     onUpdateTask,
     onDeleteTask,
     onToggleTask,
+    onSelectTask,
     t
 }: BoardProps) {
     const [activeId, setActiveId] = useState<string | null>(null)
+    const [originalStatus, setOriginalStatus] = useState<string | null>(null)
     const [localTasks, setLocalTasks] = useState<ProjectTask[]>([])
 
     // Sync local tasks with props, but allow local override during drag? 
@@ -254,7 +266,9 @@ export function TaskBoard({
     }
 
     const handleDragStart = (event: DragStartEvent) => {
+        const task = event.active.data.current?.task
         setActiveId(event.active.id as string)
+        setOriginalStatus(task?.status || null)
     }
 
     const handleDragOver = (event: DragOverEvent) => {
@@ -311,12 +325,15 @@ export function TaskBoard({
         const { active, over } = event
         setActiveId(null)
 
-        if (!over) return
+        if (!over) {
+            setOriginalStatus(null)
+            return
+        }
 
         const activeData = active.data.current?.task
 
         // Determine new status
-        let newStatus = activeData.status
+        let newStatus = activeData?.status
 
         if (over.data.current?.type === "Column") {
             newStatus = over.data.current.status
@@ -324,10 +341,12 @@ export function TaskBoard({
             newStatus = over.data.current.task.status
         }
 
-        if (activeData && activeData.status !== newStatus) {
+        // Compare against original status (before any optimistic updates)
+        if (activeData && originalStatus && originalStatus !== newStatus) {
             // Commit to DB
             onUpdateTask(projectId, activeData.id, { status: newStatus })
         }
+        setOriginalStatus(null)
     }
 
     const getStatusTranslation = (status: string) => {
@@ -371,6 +390,7 @@ export function TaskBoard({
                                 t={t}
                                 onDelete={(id) => onDeleteTask(projectId, id)}
                                 onToggle={(id) => onToggleTask(projectId, id)}
+                                onSelect={onSelectTask}
                             />
                         ))}
                     </DroppableColumn>

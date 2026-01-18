@@ -81,9 +81,10 @@ export function TeamSettings() {
                             onChange={(e) => updateTeamSettings({ defaultRole: e.target.value as any })}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         >
-                            <option value="Member">{t.team_settings.roles.member}</option>
-                            <option value="Editor">{t.team_settings.roles.editor}</option>
-                            <option value="Admin">{t.team_settings.roles.admin}</option>
+                            <option value="Staff">Staff</option>
+                            <option value="Accountant">Accountant</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Admin">Admin</option>
                         </select>
                     </div>
                 </div>

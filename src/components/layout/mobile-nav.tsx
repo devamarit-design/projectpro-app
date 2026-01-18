@@ -22,9 +22,12 @@ import {
     Handshake,
     Briefcase,
     Globe,
-    LogOut
+    LogOut,
+    CalendarDays,
+    Archive
 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 import { useScrollDirection } from "@/hooks/use-scroll-direction"
 import { cn } from "@/lib/utils"
@@ -39,6 +42,7 @@ export function MobileNav() {
     const [showAddMenu, setShowAddMenu] = React.useState(false)
     const [showMoreMenu, setShowMoreMenu] = React.useState(false)
     const [showFinanceMenu, setShowFinanceMenu] = React.useState(false)
+    const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false)
     const scrollDirection = useScrollDirection()
 
     // Main 4 Items: Finance, Add, Project, More
@@ -67,11 +71,13 @@ export function MobileNav() {
     ]
 
     const moreItems = [
+        { href: "/calendar", label: "ปฏิทิน", icon: CalendarDays, color: "text-teal-500 from-teal-500/20 to-teal-500/5" },
         { href: "/tasks", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 from-blue-500/20 to-blue-500/5" },
         { href: "/customers", label: t.common.customers, icon: Users, color: "text-orange-500 from-orange-500/20 to-orange-500/5" },
         { href: "/partners", label: t.common.partners, icon: Handshake, color: "text-cyan-500 from-cyan-500/20 to-cyan-500/5" },
         { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
         { href: "/storage", label: t.common.storage, icon: HardDrive, color: "text-indigo-500 from-indigo-500/20 to-indigo-500/5" },
+        { href: "/archive", label: "Archive", icon: Archive, color: "text-amber-600 from-amber-600/20 to-amber-600/5" },
         ...(hasPermission(currentUser, "TEAM_VIEW") ? [{
             href: "/team",
             label: t.common.team,
@@ -166,6 +172,19 @@ export function MobileNav() {
             {/* More Menu Overlay */}
             {showMoreMenu && (
                 <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-in fade-in-0 flex items-end pb-24 px-4 justify-center" onClick={() => setShowMoreMenu(false)}>
+                    <ConfirmDialog
+                        isOpen={showLogoutConfirm}
+                        onClose={() => setShowLogoutConfirm(false)}
+                        onConfirm={async () => {
+                            await logout()
+                            window.location.href = "/login"
+                        }}
+                        title="ออกภจากระบบ"
+                        message="คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?"
+                        confirmText="ออกจากระบบ"
+                        cancelText="ยกเลิก"
+                        variant="danger"
+                    />
                     <div
                         className="w-full max-w-sm bg-background/95 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 animate-in slide-in-from-bottom-10 zoom-in-95 shadow-2xl space-y-4"
                         onClick={(e) => e.stopPropagation()}
@@ -230,12 +249,7 @@ export function MobileNav() {
 
                             {/* Mobile Logout Button */}
                             <button
-                                onClick={async () => {
-                                    if (window.confirm("Are you sure you want to log out?")) {
-                                        await logout()
-                                        window.location.href = "/login"
-                                    }
-                                }}
+                                onClick={() => setShowLogoutConfirm(true)}
                                 className="w-full mt-4 flex items-center justify-center gap-2 p-3 rounded-xl bg-red-500/10 text-red-500 font-medium hover:bg-red-500/20 transition-colors"
                             >
                                 <LogOut className="w-4 h-4" />

@@ -1,0 +1,400 @@
+/* FullCalendar Customization */
+.fc {
+    font-family: var(--font-sans);
+    --fc-border-color: var(--border);
+    --fc-button-bg-color: transparent;
+    --fc-button-border-color: var(--border);
+    --fc-button-text-color: var(--foreground);
+    --fc-button-hover-bg-color: var(--muted);
+    --fc-button-hover-border-color: var(--border);
+    --fc-button-active-bg-color: var(--primary);
+    --fc-button-active-border-color: var(--primary);
+
+    --fc-page-bg-color: transparent;
+    --fc-neutral-bg-color: var(--muted);
+}
+
+/* Toolbar */
+.fc .fc-toolbar-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--foreground);
+    letter-spacing: -0.025em;
+}
+
+.fc .fc-button {
+    border-radius: 0.5rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s;
+    box-shadow: none;
+}
+
+.fc .fc-button-primary:not(:disabled):active,
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--primary-foreground);
+}
+
+/* Header */
+.fc .fc-col-header-cell-cushion {
+    padding: 12px 0;
+    color: var(--muted-foreground);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+/* Grid Styling */
+.fc-theme-standard td,
+.fc-theme-standard th {
+    border-color: var(--border);
+}
+
+/* Today Highlight - Circle on number */
+.fc .fc-daygrid-day.fc-day-today {
+    background-color: transparent;
+}
+
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px;
+}
+
+/* Event Pills */
+.fc-daygrid-event {
+    border-radius: 6px;
+    margin-top: 2px;
+    border: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Premium Calendar Styles --- */
+
+/* Base Font & Colors */
+.fc {
+    font-family: var(--font-sans);
+    --fc-border-color: color-mix(in srgb, var(--border) 40%, transparent);
+    /* Faded grid */
+    --fc-today-bg-color: color-mix(in srgb, var(--primary) 5%, transparent);
+    --fc-neutral-bg-color: var(--background);
+    --fc-list-event-hover-bg-color: var(--muted);
+}
+
+/* Header Toolbar */
+.fc .fc-toolbar-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+.fc .fc-button-primary {
+    background-color: var(--primary);
+
+    /* Main Calendar Container */
+    .fc {
+        --fc-border-color: rgba(0, 0, 0, 0.08);
+        --fc-today-bg-color: rgba(59, 130, 246, 0.05);
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 20px;
+        /* Make calendar rounded */
+        overflow: hidden;
+        /* Ensure content stays inside rounded corners */
+    }
+
+    /* Ensure the view container respects the border radius */
+    .fc-view-harness {
+        border-radius: 16px;
+        overflow: hidden;
+        background-color: white;
+    }
+
+    /* View specific rounded adjustments */
+    .fc-timegrid-slots table,
+    .fc-daygrid-body table,
+    .fc-scrollgrid {
+        border-radius: 16px !important;
+    }
+
+    .fc-theme-standard .fc-scrollgrid {
+        border: 1px solid var(--fc-border-color);
+    }
+
+    border-color: var(--primary);
+    font-weight: 500;
+    text-transform: capitalize;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s;
+}
+
+.fc .fc-button-primary:hover {
+    background-color: color-mix(in srgb, var(--primary), transparent 10%);
+    border-color: color-mix(in srgb, var(--primary), transparent 10%);
+    box-shadow: 0 4px 12px var(--shadow-sm);
+    /* Elevated hover */
+}
+
+/* Clickable Days (Month View) */
+.fc-daygrid-day-frame {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Enhanced Hover Effect */
+.fc-daygrid-day-frame:hover {
+    background-color: var(--muted);
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary), transparent 80%);
+    /* Subtle inner border on hover */
+}
+
+/* Remove old empty state opacity transition as we simplified render */
+.calendar-empty-cell {
+    display: none;
+}
+
+/* Week View Polish */
+.fc-timegrid-slot {
+    height: 3.5rem !important;
+    /* Taller slots for breathing room */
+    border-bottom: 1px dashed color-mix(in srgb, var(--border), transparent 70%) !important;
+}
+
+.fc-timegrid-slot-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    vertical-align: middle;
+}
+
+.fc-timegrid-col-events {
+    margin: 0 2px;
+}
+
+/* List View: Colorful Glass Cards */
+.fc-list-event td {
+    border: none !important;
+    background: transparent !important;
+    padding: 0.75rem 0.5rem !important;
+}
+
+.fc-list-event {
+    margin: 0.5rem 0;
+    border-radius: 12px;
+    background: linear-gradient(90deg,
+            var(--event-color-bg, var(--card)) 0%,
+            var(--card) 100%) !important;
+    /* Gentle gradient */
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05);
+    /* Soft shadow */
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.fc-list-event:hover {
+    transform: translateY(-2px) scale-[1.01];
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+    background: var(--card) !important;
+    /* Reset on hover to show border mainly */
+    border-color: var(--event-color, var(--primary));
+}
+
+/* Thick colored bar on left */
+.fc-list-event::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background-color: var(--event-color, var(--primary));
+}
+
+.fc-list-event-time {
+    font-weight: 600;
+    color: var(--event-color, var(--primary));
+    /* Match text to event color */
+    font-size: 0.85rem;
+    padding-left: 1.25rem !important;
+}
+
+.fc-list-event-title {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+    .fc-toolbar-title {
+        font-size: 1.25rem !important;
+    }
+}
+
+/* List View Customization (Mobile) */
+.fc-list {
+    border: none !important;
+}
+
+.fc-list-day-cushion {
+    background-color: transparent !important;
+    /* Fixed: removed invalid /30 */
+    border-bottom: 1px solid var(--border) !important;
+    color: var(--muted-foreground);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    padding: 1rem !important;
+}
+
+/* Table rows as glass cards */
+.fc-list-event td {
+    border: none !important;
+    background: transparent !important;
+    padding: 0.75rem 0.5rem !important;
+    /* Fixed padding */
+}
+
+.fc-list-event {
+    display: block;
+    margin: 0.25rem 0;
+    /* Reduced margin */
+    border-radius: 8px;
+    /* Slightly smaller radius */
+    background-color: var(--card) !important;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.fc-list-event:hover {
+    background-color: var(--muted) !important;
+    transform: translateX(2px);
+}
+
+/* Custom layout for list item */
+.fc-list-event-graphic {
+    display: none !important;
+}
+
+.fc-list-event-time {
+    padding: 0 0 0 1rem !important;
+    /* Adjusted padding */
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 500;
+    width: auto !important;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.fc-list-event-title {
+    padding: 0 1rem 0 0.5rem !important;
+    color: var(--foreground);
+    font-weight: 600;
+    display: inline-block;
+    width: auto !important;
+    vertical-align: middle;
+}
+
+/* Add colored stripe to left of list item based on event color */
+.fc-list-event::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: var(--primary);
+    /* Fallback, overridden by JS color */
+    border-radius: 4px 0 0 4px;
+}
+
+/* Since we can't easily access event color in ::before, let's use the dot color which FullCalendar sets on style */
+
+/* Week View Customization */
+.fc-timegrid-slot {
+    height: 3em !important;
+    border-bottom: 1px dashed var(--border) !important;
+}
+
+.fc-timegrid-slot-label {
+    font-size: 0.7rem;
+    color: var(--muted-foreground);
+    border: none !important;
+}
+
+.fc-timegrid-col {
+    border-color: var(--border) !important;
+}
+
+.fc-timegrid-now-indicator-line {
+    border-color: var(--primary);
+    border-width: 2px;
+}
+
+.fc-timegrid-now-indicator-arrow {
+    border-color: var(--primary);
+    border-width: 6px;
+    margin-top: -6px;
+}
+
+.fc-timegrid-event {
+    border-radius: 4px;
+    border: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    padding: 1px 2px;
+}
+
+/* View Specific Adjustments */
+.fc-daygrid-more-link {
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .fc .fc-toolbar {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 1.1rem !important;
+        /* Reduced size significantly */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .fc .fc-button {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.7rem;
+        height: 32px;
+    }
+
+    .fc-view-harness {
+        background: transparent;
+    }
+}

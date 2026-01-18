@@ -9,12 +9,13 @@ interface AddTaskDialogProps {
     isOpen: boolean
     onClose: () => void
     defaultProjectId?: string
+    defaultDate?: string
 }
 
 import { useTranslation } from "@/lib/i18n-context"
 
-export default function AddTaskDialog({ isOpen, onClose, defaultProjectId }: AddTaskDialogProps) {
-    const { projects, addTask, addProject, users, currentUser } = useProjects()
+export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defaultDate, taskToEdit }: AddTaskDialogProps & { taskToEdit?: any }) {
+    const { projects, addTask, updateTask, addProject, users, currentUser } = useProjects()
     const { t } = useTranslation()
     const [title, setTitle] = React.useState("")
     const [selectedProjectId, setSelectedProjectId] = React.useState(defaultProjectId || "")
@@ -22,19 +23,83 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId }: Add
     const [priority, setPriority] = React.useState<Priority>("Medium")
     const [status, setStatus] = React.useState<TaskStatus>("Todo")
     const [assignedTo, setAssignedTo] = React.useState("")
-    const [dueDate, setDueDate] = React.useState("")
+    const [dueDate, setDueDate] = React.useState(defaultDate || "")
     const [description, setDescription] = React.useState("")
+
+    // AI Suggestion State
+    const [isAiLoading, setIsAiLoading] = React.useState(false)
+    const [aiReason, setAiReason] = React.useState<string | null>(null)
+
+    const handleAiSuggest = async () => {
+        if (!title) {
+            alert("Please enter a task title first")
+            return
+        }
+
+        setIsAiLoading(true)
+        setAiReason(null)
+
+        try {
+            const response = await fetch('/api/ai/suggest-assignee', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taskTitle: title,
+                    taskDescription: description,
+                    projectContext: projects.find(p => p.id === selectedProjectId)?.name || "General Project",
+                    teamMembers: users
+                })
+            })
+
+            const data = await response.json()
+            if (data.assigneeId) {
+                setAssignedTo(data.assigneeId)
+                setAiReason(data.reason)
+            }
+        } catch (error) {
+            console.error("AI Suggest fn error", error)
+        } finally {
+            setIsAiLoading(false)
+        }
+    }
+
+    // Update state when defaultDate changes if the dialog opens
+    React.useEffect(() => {
+        if (isOpen) {
+            if (taskToEdit) {
+                // Edit Mode: Pre-fill data
+                setTitle(taskToEdit.title)
+                setSelectedProjectId(taskToEdit.projectId)
+                setSelectedSubProjectId(taskToEdit.subProjectId || "")
+                setPriority(taskToEdit.priority)
+                setStatus(taskToEdit.status)
+                setAssignedTo(taskToEdit.assignedTo || "")
+                setDueDate(taskToEdit.dueDate || "")
+                setDescription(taskToEdit.description || "")
+            } else {
+                // Create Mode: Reset or use defaults
+                setTitle("")
+                setSelectedProjectId(defaultProjectId || "")
+                setSelectedSubProjectId("")
+                setPriority("Medium")
+                setStatus("Todo")
+                setAssignedTo("")
+                setDueDate(defaultDate || "")
+                setDescription("")
+            }
+        }
+    }, [isOpen, defaultDate, defaultProjectId, taskToEdit])
 
     // Quick Add Project State
     const [isQuickAddProject, setIsQuickAddProject] = React.useState(false)
     const [newProjectName, setNewProjectName] = React.useState("")
 
     React.useEffect(() => {
-        if (defaultProjectId) {
+        if (defaultProjectId && !taskToEdit) {
             setSelectedProjectId(defaultProjectId)
             setSelectedSubProjectId("")
         }
-    }, [defaultProjectId])
+    }, [defaultProjectId, taskToEdit])
 
     if (!isOpen) return null
 
@@ -91,7 +156,7 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId }: Add
             } catch (err) {
                 console.error("Failed to quick add project", err)
             }
-        } else if (!selectedProjectId) {
+        } else if (!selectedProjectId && !taskToEdit) { // Only require project if creating a new task
             return // Must have project
         }
 
@@ -148,16 +213,27 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId }: Add
             if (createdProject) finalProjectId = createdProject.id
         }
 
-        if (finalProjectId) {
-            addTask(finalProjectId, {
+        if (finalProjectId || taskToEdit) {
+            const commonData = {
                 title,
                 status,
                 priority,
                 assignedTo,
                 dueDate: dueDate,
                 description,
-                subProjectId: selectedSubProjectId || undefined
-            })
+                ...(selectedSubProjectId ? { subProjectId: selectedSubProjectId } : {})
+            }
+
+            if (taskToEdit) {
+                // UPDATE Existing Task
+                updateTask(taskToEdit.projectId, taskToEdit.id, {
+                    ...commonData,
+                    projectId: finalProjectId || taskToEdit.projectId,
+                })
+            } else {
+                // CREATE New Task
+                addTask(finalProjectId, commonData)
+            }
         }
 
 
@@ -182,7 +258,9 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId }: Add
                 <div className="p-8">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h2 className="text-2xl font-bold tracking-tight text-primary">{t.tasks.dialog.title}</h2>
+                            <h2 className="text-2xl font-bold tracking-tight text-primary">
+                                {taskToEdit ? ((t.tasks?.dialog as any)?.edit_title || "Edit Task") : t.tasks.dialog.title}
+                            </h2>
                             <p className="text-sm text-muted-foreground mt-1">{t.tasks.dialog.subtitle}</p>
                         </div>
                         <button
@@ -321,12 +399,37 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId }: Add
                                         ...(currentUser ? [currentUser] : []),
                                         ...users.filter(u => u.id !== currentUser?.id)
                                     ].map(user => (
-                                        <option key={user.id} value={user.name}>
+                                        <option key={user.id} value={user.id}>
                                             {user.id === currentUser?.id ? `Assign to Me (${user.name})` : user.name}
                                         </option>
                                     ))}
                                 </select>
                                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                            </div>
+
+                            {/* AI Suggest Button */}
+                            <div className="flex items-center justify-between mt-2 pl-1">
+                                <button
+                                    type="button"
+                                    onClick={handleAiSuggest}
+                                    disabled={isAiLoading || !title}
+                                    className="text-xs flex items-center gap-1.5 text-purple-400 hover:text-purple-300 transition-colors font-medium disabled:opacity-50"
+                                >
+                                    {isAiLoading ? (
+                                        <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                                        </svg>
+                                    )}
+                                    {(t.tasks as any)?.ai_suggest || "AI Suggest"}
+                                </button>
+
+                                {aiReason && (
+                                    <span className="text-[10px] text-purple-400 bg-purple-500/10 px-2 py-1 rounded-md border border-purple-500/20 animate-in fade-in slide-in-from-left-2 truncate max-w-[220px]">
+                                        ✨ {aiReason}
+                                    </span>
+                                )}
                             </div>
                         </div>
 
@@ -334,7 +437,7 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId }: Add
                             type="submit"
                             className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all mt-4"
                         >
-                            {t.tasks.dialog.create}
+                            {(t.common as any)?.save || "บันทึก"}
                         </button>
                     </form>
                 </div>

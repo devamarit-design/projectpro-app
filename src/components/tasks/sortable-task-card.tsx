@@ -1,6 +1,7 @@
+import * as React from "react"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { ProjectTask, Priority, TaskStatus } from "@/context/project-context"
+import { useProjects, ProjectTask, Priority, TaskStatus, User as UserType } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { User, Clock } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
@@ -13,6 +14,15 @@ interface SortableTaskCardProps {
 
 export function SortableTaskCard({ task, status, onSelect }: SortableTaskCardProps) {
     const { t } = useTranslation()
+    const { users } = useProjects()
+
+    // Resolve assignee name if it's an ID
+    const assigneeName = React.useMemo(() => {
+        if (!task.assignedTo) return t.tasks.unassigned
+        const user = users.find((u: UserType) => u.id === task.assignedTo)
+        return user ? user.name : task.assignedTo
+    }, [task.assignedTo, users, t])
+
     const {
         attributes,
         listeners,
@@ -41,7 +51,10 @@ export function SortableTaskCard({ task, status, onSelect }: SortableTaskCardPro
             {...attributes}
             {...listeners}
             onClick={() => onSelect(task.id)}
-            className="w-full p-4 rounded-xl border border-white/10 hover:border-primary/50 bg-card/50 backdrop-blur-sm cursor-grab active:cursor-grabbing transition-all group relative overflow-hidden mb-3 shadow-sm touch-none"
+            className={cn(
+                "w-full p-4 rounded-xl border border-white/10 hover:border-primary/50 bg-card/50 backdrop-blur-sm cursor-grab active:cursor-grabbing transition-all group relative overflow-hidden mb-3 shadow-sm touch-none",
+                task.isArchived && "opacity-60 grayscale bg-gray-500/5 hover:bg-gray-500/10 border-gray-500/20"
+            )}
         >
             <div className="flex justify-between items-start mb-3">
                 <span className={cn(
@@ -64,7 +77,7 @@ export function SortableTaskCard({ task, status, onSelect }: SortableTaskCardPro
                     <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10">
                         <User className="w-3 h-3 text-primary" />
                     </div>
-                    <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px]">{task.assignedTo || t.tasks.unassigned}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px]">{assigneeName}</span>
                 </div>
                 <div className={cn(
                     "flex items-center gap-1 text-[10px] font-bold uppercase tracking-tight",

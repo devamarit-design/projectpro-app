@@ -6,11 +6,11 @@ import { Project, Expense, Team, User, Worker, Vendor, Customer, Contract, Proje
 // Helper to get random item from array
 const r = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
 
-export const seedDatabase = async (teamId: string, userId: string) => {
+export const seedDatabase = async (orgId: string, userId: string) => {
     const batch = writeBatch(db)
 
     // Helper to generate team-scoped ID
-    const tid = (prefix: string) => `${prefix}_${teamId}_${Math.floor(Math.random() * 1000)}`
+    const tid = (prefix: string) => `${prefix}_${orgId}_${Math.floor(Math.random() * 1000)}`
 
     // 1. Projects
     const projects: Project[] = [
@@ -28,7 +28,7 @@ export const seedDatabase = async (teamId: string, userId: string) => {
             endDate: "2024-06-30",
             image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80",
             description: "Complete interior renovation including mezzanine construction.",
-            teamId,
+            orgId,
             tasks: []
         },
         {
@@ -45,7 +45,7 @@ export const seedDatabase = async (teamId: string, userId: string) => {
             endDate: "2025-04-15",
             image: "https://images.unsplash.com/photo-1600596542815-e32c2159c82c?w=800&q=80",
             description: "Luxury 3-storey villa with swimming pool.",
-            teamId,
+            orgId,
             tasks: []
         },
         {
@@ -62,7 +62,7 @@ export const seedDatabase = async (teamId: string, userId: string) => {
             endDate: "2024-02-28",
             image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
             description: "Meeting room expansion and acoustic treatment.",
-            teamId,
+            orgId,
             tasks: []
         }
     ]
@@ -104,7 +104,7 @@ export const seedDatabase = async (teamId: string, userId: string) => {
             category: r(categories) as ExpenseCategory,
             status: r(statuses) as Expense["status"],
             projectId: project.id,
-            teamId,
+            orgId,
             payee: "Supplier ABC",
         }
         const ref = doc(db, "expenses", id)
@@ -113,9 +113,9 @@ export const seedDatabase = async (teamId: string, userId: string) => {
 
     // 4. Workers
     const workers: Worker[] = [
-        { id: tid("w1"), name: "Somchai (Foreman)", role: "Foreman", dailyRate: 800, status: "Active", phone: "081-111-1111", teamId },
-        { id: tid("w2"), name: "Lek (Electrician)", role: "Worker", dailyRate: 600, status: "Active", phone: "081-222-2222", teamId },
-        { id: tid("w3"), name: "Dang (General)", role: "Worker", dailyRate: 500, status: "Active", phone: "081-333-3333", teamId },
+        { id: tid("w1"), name: "Somchai (Foreman)", role: "Foreman", dailyRate: 800, status: "Active", phone: "081-111-1111", orgId },
+        { id: tid("w2"), name: "Lek (Electrician)", role: "Worker", dailyRate: 600, status: "Active", phone: "081-222-2222", orgId },
+        { id: tid("w3"), name: "Dang (General)", role: "Worker", dailyRate: 500, status: "Active", phone: "081-333-3333", orgId },
     ]
     workers.forEach(w => {
         const ref = doc(db, "workers", w.id)

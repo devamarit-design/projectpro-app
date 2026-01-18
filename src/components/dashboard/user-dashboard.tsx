@@ -6,10 +6,11 @@ import { useProjects } from "@/context/project-context"
 import { DashboardTasks } from "./dashboard-tasks"
 import { DashboardActivity } from "./dashboard-activity"
 import { DashboardFiles } from "./dashboard-files"
+import { WeatherCard } from "./weather-card"
 import { useTranslation } from "@/lib/i18n-context"
 
 export function UserDashboard() {
-    const { currentUser, projects } = useProjects()
+    const { currentUser, projects, tasks } = useProjects()
     const { t } = useTranslation()
 
     // Greeting based on time
@@ -29,6 +30,9 @@ export function UserDashboard() {
                 <p className="text-muted-foreground">{t.dashboard.personal_overview}</p>
             </header>
 
+            {/* Weather Card */}
+            <WeatherCard />
+
             {/* Quick Stats */}
             <div className="glass-card rounded-2xl p-6 border border-white/5 bg-gradient-to-br from-primary/10 to-transparent">
                 <h3 className="font-bold text-lg mb-2">{t.dashboard.quick_stats}</h3>
@@ -37,9 +41,7 @@ export function UserDashboard() {
                         <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold group-hover:text-primary transition-colors">{t.dashboard.pending_tasks}</p>
                         <p className="text-2xl font-black text-primary">
                             {currentUser ?
-                                projects.flatMap(p => p.tasks || [])
-                                    .filter(t => t.assignedTo === currentUser.name && t.status !== 'Done')
-                                    .length
+                                tasks.filter(t => (t.assignedTo === currentUser.id || t.assignedTo === currentUser.name) && t.status !== 'Done').length
                                 : 0}
                         </p>
                     </Link>

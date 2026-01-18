@@ -146,7 +146,7 @@ export default function CustomerDetailSheet({ customerId, onClose }: CustomerDet
                                         <Link
                                             key={project.id}
                                             href={`/projects/detail?id=${project.id}`}
-                                            target="_blank"
+                                            onClick={onClose}
                                             className="block group"
                                         >
                                             <div className="glass-card p-4 rounded-xl border border-white/5 hover:border-primary/50 transition-all hover:translate-x-1">

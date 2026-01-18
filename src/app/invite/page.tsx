@@ -63,7 +63,7 @@ function InviteContent() {
         try {
             // Add user to team in Firestore
             await updateDoc(doc(db, "users", currentUser.id), {
-                teamIds: arrayUnion(teamId)
+                orgIds: arrayUnion(teamId)
             })
 
             // Update local state (optimistic)

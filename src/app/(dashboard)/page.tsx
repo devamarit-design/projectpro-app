@@ -1,12 +1,18 @@
 "use client"
 
 import { useProjects } from "@/context/project-context"
-import { OverviewChart } from "@/components/dashboard/overview-chart"
+// import { OverviewChart } from "@/components/dashboard/overview-chart" 
 import { StatsCards } from "@/components/dashboard/stats-cards"
 import { UserDashboard } from "@/components/dashboard/user-dashboard"
 import { useTranslation } from "@/lib/i18n-context"
 import { DownloadReportDialog } from "@/components/dashboard/download-report-dialog"
 import { useState } from "react"
+import dynamic from "next/dynamic"
+
+const OverviewChart = dynamic(() => import("@/components/dashboard/overview-chart").then(mod => mod.OverviewChart), {
+  ssr: false,
+  loading: () => <div className="h-[350px] w-full animate-pulse bg-muted/10 rounded-xl" />
+})
 // import { cn } from "@/lib/utils"
 
 function AdminDashboard() {

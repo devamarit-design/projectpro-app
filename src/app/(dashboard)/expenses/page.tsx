@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Search, Filter, Camera, ScanLine, Tag, Wallet, TrendingDown, LayoutGrid, Hammer, Users, FileText, CreditCard } from "lucide-react"
+import { Plus, Search, Filter, Camera, ScanLine, Tag, Wallet, TrendingDown, LayoutGrid, Hammer, Users, FileText, CreditCard, Archive, RefreshCcw } from "lucide-react"
 import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
 import { useProjects, ExpenseCategory } from "@/context/project-context"
 import { cn } from "@/lib/utils"
@@ -15,7 +15,7 @@ import { CheckCircle2 } from "lucide-react"
 import { Suspense } from "react"
 
 function ExpensesContent() {
-    const { expenses, projects, users, currentUser } = useProjects()
+    const { expenses, archivedExpenses, projects, users, currentUser } = useProjects()
     const { t } = useTranslation()
     const searchParams = useSearchParams()
     const router = useRouter()
@@ -31,6 +31,7 @@ function ExpensesContent() {
     const [projectFilter, setProjectFilter] = React.useState<string>("all")
     const [userFilter, setUserFilter] = React.useState<string>("all")
     const [monthFilter, setMonthFilter] = React.useState<string>("all")
+    const [showArchived, setShowArchived] = React.useState(false)
 
     // Check for 'action=new' param
     // Check for 'action=new' or 'editId' or 'id' params (from Notifications)
@@ -72,9 +73,11 @@ function ExpensesContent() {
     }, [expenses])
 
     // Filter Logic
-    // Step 1: Base Filter (Everything EXCEPT Status) - used for Summary Cards calculation
+    // Step 1: Base Filter
+    const sourceExpenses = React.useMemo(() => showArchived ? archivedExpenses : expenses, [showArchived, archivedExpenses, expenses])
+
     const baseFilteredExpenses = React.useMemo(() => {
-        return expenses.filter(expense => {
+        return sourceExpenses.filter(expense => {
             const matchesSearch = expense.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 expense.payee?.toLowerCase().includes(searchQuery.toLowerCase())
             const matchesCategory = categoryFilter === "All" || expense.category === categoryFilter
@@ -92,7 +95,7 @@ function ExpensesContent() {
 
             return matchesSearch && matchesCategory && matchesProject && matchesUser && matchesMonth
         })
-    }, [expenses, searchQuery, categoryFilter, projectFilter, userFilter, monthFilter])
+    }, [sourceExpenses, searchQuery, categoryFilter, projectFilter, userFilter, monthFilter])
 
     // Step 2: Final Filter (Base + Status) - used for List View
     const filteredExpenses = React.useMemo(() => {
@@ -241,33 +244,45 @@ function ExpensesContent() {
             {/* Filters & Search - Glass Component */}
             <div className="z-30 pt-4 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
                 <div className="bg-background/80 backdrop-blur-xl border border-white/10 p-3 rounded-2xl shadow-xl flex flex-col xl:flex-row gap-4 justify-between">
-                    {/* Filter Tabs */}
-                    <div className="flex p-1 bg-muted/30 rounded-xl overflow-x-auto no-scrollbar min-w-0 shrink-0">
-                        <div className="flex items-center gap-1">
-                            {[
-                                { id: 'All', icon: LayoutGrid, label: t.expenses.categories.all },
-                                { id: 'Material', icon: Hammer, label: t.expenses.categories.material },
-                                { id: 'Labor', icon: Users, label: t.expenses.categories.labor },
-                                { id: 'Sub-contract', icon: FileText, label: t.expenses.categories.subcontract },
-                                { id: 'Other', icon: Tag, label: t.expenses.categories.other }
-                            ].map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setCategoryFilter(tab.id as any)}
-                                    className={cn(
-                                        "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative whitespace-nowrap",
-                                        categoryFilter === tab.id
-                                            ? "text-primary-foreground shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                                    )}
-                                >
-                                    {categoryFilter === tab.id && (
-                                        <div className="absolute inset-0 bg-primary rounded-lg z-0" />
-                                    )}
-                                    <tab.icon className={cn("w-4 h-4 z-10 relative", categoryFilter === tab.id ? "text-primary-foreground" : "")} />
-                                    <span className="z-10 relative">{tab.label}</span>
-                                </button>
-                            ))}
+                    <div className="flex gap-4 items-center overflow-x-auto no-scrollbar">
+                        <button
+                            onClick={() => setShowArchived(!showArchived)}
+                            className={cn(
+                                "flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 border shrink-0",
+                                showArchived
+                                    ? "bg-gray-500/20 text-gray-500 border-gray-500/50"
+                                    : "bg-muted/30 border-white/5 hover:bg-muted/50 text-muted-foreground"
+                            )}
+                            title={showArchived ? "Show Active" : "Show Archived"}
+                        >
+                            <Archive className="w-4 h-4" />
+                            {showArchived && <span className="text-sm font-semibold">Archived</span>}
+                        </button>
+                        {/* Filter Tabs */}
+                        <div className="flex p-1 bg-muted/30 rounded-xl overflow-x-auto no-scrollbar min-w-0 shrink-0">
+                            <div className="flex items-center gap-1">
+                                {[
+                                    { id: 'All', icon: LayoutGrid, label: t.expenses.categories.all },
+                                    { id: 'Material', icon: Hammer, label: t.expenses.categories.material },
+                                    { id: 'Labor', icon: Users, label: t.expenses.categories.labor },
+                                    { id: 'Sub-contract', icon: FileText, label: t.expenses.categories.subcontract },
+                                    { id: 'Other', icon: Tag, label: t.expenses.categories.other }
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setCategoryFilter(tab.id as any)}
+                                        className={cn(
+                                            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative whitespace-nowrap",
+                                            categoryFilter === tab.id
+                                                ? "bg-foreground text-background shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                        )}
+                                    >
+                                        <tab.icon className="w-4 h-4" />
+                                        <span>{tab.label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
@@ -367,7 +382,10 @@ function ExpensesContent() {
                     <div
                         key={expense.id}
                         onClick={() => setSelectedExpenseId(expense.id)}
-                        className="glass-card p-4 rounded-xl border border-white/5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group overflow-hidden"
+                        className={cn(
+                            "glass-card p-4 rounded-xl border border-white/5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group overflow-hidden",
+                            expense.isArchived && "opacity-60 grayscale bg-gray-500/5 hover:bg-gray-500/10 border-gray-500/20"
+                        )}
                     >
                         <div className="flex gap-4 items-center w-full sm:w-auto min-w-0">
                             <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors group-hover:scale-110 duration-200",

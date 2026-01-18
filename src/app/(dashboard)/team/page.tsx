@@ -8,11 +8,13 @@ import { useProjects, User } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { hasPermission } from "@/lib/permissions"
 import { useTranslation } from "@/lib/i18n-context"
+import Link from "next/link"
 
 // Components
 import AddUserDialog from "./add-user-dialog"
 import EditTeamDialog from "./edit-team-dialog"
 import InviteMemberDialog from "./invite-member-dialog"
+import CreateTeamDialog from "./create-team-dialog"
 
 
 export default function TeamPage() {
@@ -26,6 +28,7 @@ export default function TeamPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = React.useState<User | null>(null)
     const [openMenuId, setOpenMenuId] = React.useState<string | null>(null)
     const [isEditTeamOpen, setIsEditTeamOpen] = React.useState(false)
+    const [isCreateTeamOpen, setIsCreateTeamOpen] = React.useState(false)
     const [isInviteOpen, setIsInviteOpen] = React.useState(false)
 
 
@@ -107,13 +110,7 @@ export default function TeamPage() {
                     {hasPermission(currentUser, "COMPANY_UPDATE") && (
                         <>
                             <button
-                                onClick={() => {
-                                    const name = window.prompt(t.team_settings.enter_team_name)
-                                    if (name) {
-                                        // Add random mock team data (optional)
-                                        addTeam(name)
-                                    }
-                                }}
+                                onClick={() => setIsCreateTeamOpen(true)}
                                 className="p-2 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-colors"
                                 title="Create New Team"
                             >
@@ -173,101 +170,106 @@ export default function TeamPage() {
             {/* Users Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {displayUsers.map(user => (
-                    <div key={user.id} className="group bg-card border border-border/50 hover:border-primary/50 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300">
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                                {/* Avatar */}
-                                <div className={cn(
-                                    "w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold shadow-inner",
-                                    user.role === 'Admin' || user.role === 'Owner' ? "bg-purple-500/10 text-purple-500" : "bg-blue-500/10 text-blue-500"
-                                )}>
-                                    {user.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-base">{user.name}</h3>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        <span className={cn(
-                                            "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border",
-                                            user.role === 'Admin' || user.role === 'Owner'
-                                                ? "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-900"
-                                                : "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-900"
-                                        )}>
-                                            {user.role}
-                                        </span>
-                                        <span className={cn(
-                                            "w-2 h-2 rounded-full",
-                                            user.status === 'Active' ? "bg-green-500" : "bg-gray-300"
-                                        )} title={user.status} />
+                    <Link href={`/team/detail?userId=${user.id}`} key={user.id} className="block group">
+                        <div className="bg-card border border-border/50 hover:border-primary/50 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 h-full relative">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    {/* Avatar */}
+                                    <div className={cn(
+                                        "w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold shadow-inner",
+                                        user.role === 'Admin' || user.role === 'Owner' ? "bg-purple-500/10 text-purple-500" : "bg-blue-500/10 text-blue-500"
+                                    )}>
+                                        {user.name.charAt(0).toUpperCase()}
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Actions Dropdown / Buttons */}
-                            {/* Actions Dropdown / Buttons */}
-                            <div className="relative">
-                                {(hasPermission(currentUser, "USER_UPDATE") || (hasPermission(currentUser, "USER_DELETE") && user.role !== 'Owner')) && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            setOpenMenuId(openMenuId === user.id ? null : user.id)
-                                        }}
-                                        className="action-menu-trigger p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                                    >
-                                        <MoreHorizontal className="w-5 h-5" />
-                                    </button>
-                                )}
-
-                                {/* Custom Dropdown */}
-                                {openMenuId === user.id && (
-                                    <div className="absolute right-0 top-full mt-1 w-32 bg-card border border-border shadow-xl rounded-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                                        <div className="p-1">
-                                            {hasPermission(currentUser, "USER_UPDATE") && (
-                                                <button
-                                                    onClick={() => {
-                                                        setOpenMenuId(null)
-                                                        handleEdit(user)
-                                                    }}
-                                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
-                                                >
-                                                    <Edit className="w-3.5 h-3.5" />
-                                                    {t.common.edit}
-                                                </button>
-                                            )}
-                                            {hasPermission(currentUser, "USER_DELETE") && user.role !== 'Owner' && (
-                                                <button
-                                                    onClick={() => {
-                                                        setOpenMenuId(null)
-                                                        setShowDeleteConfirm(user)
-                                                    }}
-                                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                    {t.common.delete}
-                                                </button>
-                                            )}
+                                    <div>
+                                        <h3 className="font-bold text-base group-hover:text-primary transition-colors">{user.name}</h3>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <span className={cn(
+                                                "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border",
+                                                user.role === 'Admin' || user.role === 'Owner'
+                                                    ? "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-900"
+                                                    : "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-900"
+                                            )}>
+                                                {user.role}
+                                            </span>
+                                            <span className={cn(
+                                                "w-2 h-2 rounded-full",
+                                                user.status === 'Active' ? "bg-green-500" :
+                                                    user.status === 'Pending' ? "bg-orange-500" : "bg-gray-300"
+                                            )} title={user.status} />
                                         </div>
                                     </div>
-                                )}
+                                </div>
+
+                                {/* Actions Dropdown / Buttons */}
+                                <div className="relative z-10">
+                                    {(hasPermission(currentUser, "USER_UPDATE") || (hasPermission(currentUser, "USER_DELETE") && user.role !== 'Owner')) && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault() // Prevent navigation
+                                                e.stopPropagation()
+                                                setOpenMenuId(openMenuId === user.id ? null : user.id)
+                                            }}
+                                            className="action-menu-trigger p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                                        >
+                                            <MoreHorizontal className="w-5 h-5" />
+                                        </button>
+                                    )}
+
+                                    {/* Custom Dropdown */}
+                                    {openMenuId === user.id && (
+                                        <div className="absolute right-0 top-full mt-1 w-32 bg-card border border-border shadow-xl rounded-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="p-1">
+                                                {hasPermission(currentUser, "USER_UPDATE") && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault()
+                                                            setOpenMenuId(null)
+                                                            handleEdit(user)
+                                                        }}
+                                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
+                                                    >
+                                                        <Edit className="w-3.5 h-3.5" />
+                                                        {t.common.edit}
+                                                    </button>
+                                                )}
+                                                {hasPermission(currentUser, "USER_DELETE") && user.role !== 'Owner' && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault()
+                                                            setOpenMenuId(null)
+                                                            setShowDeleteConfirm(user)
+                                                        }}
+                                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                        {t.common.delete}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+
                             </div>
 
-
+                            <div className="mt-4 space-y-2">
+                                {user.email && (
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Mail className="w-3.5 h-3.5" />
+                                        <span className="truncate">{user.email}</span>
+                                    </div>
+                                )}
+                                {user.phone && (
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Phone className="w-3.5 h-3.5" />
+                                        <span className="font-mono">{user.phone}</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-
-                        <div className="mt-4 space-y-2">
-                            {user.email && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <Mail className="w-3.5 h-3.5" />
-                                    <span className="truncate">{user.email}</span>
-                                </div>
-                            )}
-                            {user.phone && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <Phone className="w-3.5 h-3.5" />
-                                    <span className="font-mono">{user.phone}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    </Link>
                 ))}
 
                 {displayUsers.length === 0 && (
@@ -295,6 +297,12 @@ export default function TeamPage() {
                     />
                 )
             }
+
+            {/* Create Team Dialog */}
+            <CreateTeamDialog
+                isOpen={isCreateTeamOpen}
+                onClose={() => setIsCreateTeamOpen(false)}
+            />
 
             {/* Delete Confirmation */}
             {
@@ -339,13 +347,6 @@ export default function TeamPage() {
                 isOpen={isInviteOpen}
                 onClose={() => setIsInviteOpen(false)}
             />
-            {isEditTeamOpen && currentTeam && (
-                <EditTeamDialog
-                    isOpen={isEditTeamOpen}
-                    onClose={() => setIsEditTeamOpen(false)}
-                    team={currentTeam}
-                />
-            )}
         </div >
     )
 }

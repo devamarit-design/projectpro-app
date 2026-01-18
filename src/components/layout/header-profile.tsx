@@ -11,21 +11,27 @@ import {
     Plus,
     Check,
     Building2,
-    Briefcase
+    Briefcase,
+    UserPlus
 } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { useOrganization } from "@/context/organization-context"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 import { createPortal } from "react-dom"
 
 export function HeaderProfile() {
     const { currentUser, setCurrentUser, teams, currentTeam, switchTeam, addTeam } = useProjects()
+    const { joinOrganizationByCode } = useOrganization()
     const { t } = useTranslation()
     const [isOpen, setIsOpen] = React.useState(false)
+    const [isJoining, setIsJoining] = React.useState(false)
     const dropdownRef = React.useRef<HTMLDivElement>(null)
     const buttonRef = React.useRef<HTMLButtonElement>(null)
     const [position, setPosition] = React.useState({ top: 0, right: 0 })
     const [hasImageError, setHasImageError] = React.useState(false)
+    const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false)
 
     // Reset error when avatar changes
     React.useEffect(() => {
@@ -67,11 +73,9 @@ export function HeaderProfile() {
 
     const { logout } = useProjects()
     // ...
-    const handleLogout = async () => {
-        if (window.confirm("Are you sure you want to log out?")) {
-            await logout()
-            window.location.href = "/login"
-        }
+    const handleLogoutConfirm = async () => {
+        await logout()
+        window.location.href = "/login"
     }
 
     const handleCreateTeam = () => {
@@ -101,7 +105,7 @@ export function HeaderProfile() {
                 right: position.right,
                 zIndex: 9999
             }}
-            className="w-72 bg-card border border-border rounded-xl shadow-xl py-2 animate-in fade-in zoom-in-95 duration-200"
+            className="w-72 bg-popover border border-border rounded-xl shadow-xl py-2 animate-in fade-in zoom-in-95 duration-200"
         >
             {/* User Info Header */}
             <div className="px-4 py-3 border-b border-border bg-muted/20">
@@ -158,6 +162,29 @@ export function HeaderProfile() {
                     <Plus className="w-3 h-3" />
                     Create New Team
                 </button>
+                <button
+                    onClick={async () => {
+                        const code = window.prompt("Enter Team Code or Invite Code:")
+                        if (code && code.trim()) {
+                            setIsJoining(true)
+                            try {
+                                const teamName = await joinOrganizationByCode(code.trim())
+                                alert(`Successfully joined team: ${teamName}`)
+                                window.location.reload() // Reload to refresh team list
+                            } catch (e: any) {
+                                alert(e.message || "Failed to join team. Please check the code and try again.")
+                            } finally {
+                                setIsJoining(false)
+                            }
+                        }
+                        setIsOpen(false)
+                    }}
+                    disabled={isJoining}
+                    className="w-full px-4 py-2 flex items-center gap-2 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                >
+                    <UserPlus className="w-3 h-3" />
+                    {isJoining ? "Joining..." : "Join Team"}
+                </button>
             </div>
 
             <div className="h-px bg-border my-1" />
@@ -173,7 +200,10 @@ export function HeaderProfile() {
                     Profile Settings
                 </Link>
                 <button
-                    onClick={handleLogout}
+                    onClick={() => {
+                        setIsOpen(false)
+                        setShowLogoutConfirm(true)
+                    }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-500/10 transition-colors"
                 >
                     <LogOut className="w-4 h-4" />
@@ -185,6 +215,16 @@ export function HeaderProfile() {
 
     return (
         <>
+            <ConfirmDialog
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={handleLogoutConfirm}
+                title="ออกจากระบบ"
+                message="คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?"
+                confirmText="ออกจากระบบ"
+                cancelText="ยกเลิก"
+                variant="danger"
+            />
             <button
                 ref={buttonRef}
                 onClick={toggleDropdown}

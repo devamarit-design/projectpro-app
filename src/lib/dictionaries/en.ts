@@ -30,6 +30,19 @@ export const en = {
         confirm_logout: "Are you sure you want to log out?",
     },
 
+    calendar: {
+        title: "Organization Calendar",
+        subtitle: "View tasks and payment schedules in one place",
+        all_events: "All Events",
+        payments: "Payments",
+        payment: "Payment",
+        due_date: "Due Date",
+        amount: "Amount",
+        month: "Month",
+        week: "Week",
+        today: "Today",
+    },
+
     partners: {
         title: "Partners",
         subtitle: "Manage technicians, contractors, and material stores.",
@@ -668,6 +681,30 @@ export const en = {
         edit_team: "Edit Team Details",
         search_placeholder: "Search name, title or email...",
         empty: "No team members found",
+        user_detail: {
+            edit_profile: "Edit Profile",
+            no_phone: "No phone",
+            member_since: "Member since",
+            rating: "Rating",
+            stats: {
+                completed_tasks: "COMPLETED TASKS",
+                active_projects: "ACTIVE PROJECTS",
+                expenses_claimed: "EXPENSES CLAIMED"
+            },
+            tabs: {
+                overview: "Overview",
+                activity: "Activity Timeline"
+            },
+            employment: {
+                title: "Employment Details",
+                joined_date: "Joined Date",
+                employee_id: "Employee ID"
+            },
+            activity: {
+                title: "Activity Timeline",
+                export_csv: "Export CSV"
+            }
+        },
         onboarding: {
             welcome: "Welcome to ProjectPro",
             subtitle: "To get started, please create your first team or workspace.",

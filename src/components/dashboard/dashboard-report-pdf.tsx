@@ -3,13 +3,14 @@
 import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer'
 import type { Project, Expense, IncomeDocument, CompanyProfile } from '@/context/project-context'
 
-// Using Helvetica to ensure PDF generation works
+// Note: Thai font loading is currently disabled due to "Unknown font format" error
+// Using Helvetica as fallback. Thai text may not render correctly.
 
 const styles = StyleSheet.create({
     page: {
         padding: 40,
         fontFamily: 'Helvetica',
-        fontSize: 10,
+        fontSize: 12,
         backgroundColor: '#ffffff'
     },
     header: {
@@ -26,12 +27,12 @@ const styles = StyleSheet.create({
         color: '#3b82f6'
     },
     subtitle: {
-        fontSize: 10,
+        fontSize: 12,
         color: '#666666',
         marginTop: 4
     },
     sectionTitle: {
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: 'bold',
         marginTop: 15,
         marginBottom: 8,
@@ -53,12 +54,12 @@ const styles = StyleSheet.create({
         borderRadius: 4
     },
     summaryLabel: {
-        fontSize: 8,
+        fontSize: 10,
         color: '#6b7280',
         marginBottom: 4
     },
     summaryValue: {
-        fontSize: 16,
+        fontSize: 20,
         fontWeight: 'bold',
         color: '#111827'
     },
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
     col4: { width: '20%', textAlign: 'right' },
 
     textBold: { fontWeight: 'bold' },
-    textSmall: { fontSize: 8, color: '#6b7280' },
+    textSmall: { fontSize: 10, color: '#6b7280' },
 
     footer: {
         position: 'absolute',
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
         left: 40,
         right: 40,
         textAlign: 'center',
-        fontSize: 8,
+        fontSize: 10,
         color: '#9ca3af'
     }
 })
@@ -110,8 +111,7 @@ interface DashboardReportProps {
 }
 
 const formatCurrency = (amount: number) => {
-    // Use 'code' to display THB instead of symbol ฿ to avoid font glyph issues in PDF
-    return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', currencyDisplay: 'code' }).format(amount)
+    return new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount)
 }
 
 const formatDate = (dateStr: string) => {
@@ -119,24 +119,12 @@ const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('th-TH')
 }
 
-// Logic: Parse "฿1,000" strings to number if needed, or stick to provided numbers
-const parseAmount = (str: string | number | undefined) => {
-    if (typeof str === 'number') return str
-    if (!str) return 0
-    return parseFloat(str.replace(/[^0-9.-]+/g, ""))
-}
-
 export const DashboardReportPDF = ({ projects, incomes, expenses, companyProfile, dateRange }: DashboardReportProps) => {
 
     // 1. Calculate Summary
-    // Revenue: Sum of all Invoices (Assuming 'Invoice' type is key)
-    // Note: ProjectContext uses string for Project.income, but let's use the IncomeDocument source for accuracy?
-    // Actually, let's use standard Incomes where status is VALID
     const validIncomes = incomes.filter(i => (i.type === 'Invoice' || i.type === 'Receipt') && i.status !== 'Void' && i.status !== 'Draft')
     const totalRevenue = validIncomes.reduce((sum, item) => sum + item.grandTotal, 0)
 
-    // Expenses: Sum of all Expenses where status is not 'Unpaid' or just all?
-    // Let's use all recorded expenses
     const totalExpenses = expenses.reduce((sum, item) => sum + item.totalValue, 0)
 
     const netProfit = totalRevenue - totalExpenses
@@ -149,11 +137,11 @@ export const DashboardReportPDF = ({ projects, incomes, expenses, companyProfile
                 {/* Header */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.title}>Company Performance Report</Text>
-                        <Text style={styles.subtitle}>{dateRange || `Generated on ${new Date().toLocaleDateString()}`}</Text>
+                        <Text style={styles.title}>รายงานภาพรวม (Company Report)</Text>
+                        <Text style={styles.subtitle}>{dateRange || `สร้างเมื่อ ${new Date().toLocaleDateString('th-TH')}`}</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ fontSize: 12, fontWeight: 'bold' }}>{companyProfile?.name || 'My Company'}</Text>
+                        <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{companyProfile?.name || 'My Company'}</Text>
                         <Text style={styles.subtitle}>{companyProfile?.taxId ? `Tax ID: ${companyProfile.taxId}` : ''}</Text>
                     </View>
                 </View>
@@ -161,15 +149,15 @@ export const DashboardReportPDF = ({ projects, incomes, expenses, companyProfile
                 {/* Executive Summary */}
                 <View style={styles.summaryContainer}>
                     <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Total Revenue</Text>
+                        <Text style={styles.summaryLabel}>รายรับรวม (Total Revenue)</Text>
                         <Text style={[styles.summaryValue, { color: '#10b981' }]}>{formatCurrency(totalRevenue)}</Text>
                     </View>
                     <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Total Expenses</Text>
+                        <Text style={styles.summaryLabel}>รายจ่ายรวม (Total Expenses)</Text>
                         <Text style={[styles.summaryValue, { color: '#ef4444' }]}>{formatCurrency(totalExpenses)}</Text>
                     </View>
                     <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Net Profit</Text>
+                        <Text style={styles.summaryLabel}>กำไรสุทธิ (Net Profit)</Text>
                         <Text style={[styles.summaryValue, { color: netProfit >= 0 ? '#3b82f6' : '#ef4444' }]}>
                             {formatCurrency(netProfit)}
                         </Text>
@@ -177,13 +165,13 @@ export const DashboardReportPDF = ({ projects, incomes, expenses, companyProfile
                 </View>
 
                 {/* Active Projects */}
-                <Text style={styles.sectionTitle}>Active Projects ({activeProjects})</Text>
+                <Text style={styles.sectionTitle}>โครงการที่ดำเนินการอยู่ ({activeProjects})</Text>
                 <View style={styles.table}>
                     <View style={styles.tableHeader}>
-                        <Text style={[styles.col1, styles.textSmall, styles.textBold]}>PROJECT NAME</Text>
-                        <Text style={[styles.col2, styles.textSmall, styles.textBold]}>CUSTOMER</Text>
-                        <Text style={[styles.col3, styles.textSmall, styles.textBold]}>PROGRESS</Text>
-                        <Text style={[styles.col4, styles.textSmall, styles.textBold]}>STATUS</Text>
+                        <Text style={[styles.col1, styles.textSmall, styles.textBold]}>ชื่อโครงการ</Text>
+                        <Text style={[styles.col2, styles.textSmall, styles.textBold]}>ลูกค้า</Text>
+                        <Text style={[styles.col3, styles.textSmall, styles.textBold]}>ความคืบหน้า</Text>
+                        <Text style={[styles.col4, styles.textSmall, styles.textBold]}>สถานะ</Text>
                     </View>
                     {projects.slice(0, 10).map((project, i) => (
                         <View key={i} style={styles.tableRow}>
@@ -193,17 +181,17 @@ export const DashboardReportPDF = ({ projects, incomes, expenses, companyProfile
                             <Text style={styles.col4}>{project.status}</Text>
                         </View>
                     ))}
-                    {projects.length === 0 && <Text style={{ padding: 10, textAlign: 'center', color: '#6b7280' }}>No projects found</Text>}
+                    {projects.length === 0 && <Text style={{ padding: 10, textAlign: 'center', color: '#6b7280' }}>ไม่พบโครงการ</Text>}
                 </View>
 
                 {/* Recent Incomes */}
-                <Text style={styles.sectionTitle}>Recent Incomes</Text>
+                <Text style={styles.sectionTitle}>รายรับล่าสุด</Text>
                 <View style={styles.table}>
                     <View style={styles.tableHeader}>
-                        <Text style={[styles.col1, styles.textSmall, styles.textBold]}>DOCUMENT (เอกสาร)</Text>
-                        <Text style={[styles.col2, styles.textSmall, styles.textBold]}>DATE (วันที่)</Text>
-                        <Text style={[styles.col3, styles.textSmall, styles.textBold]}>STATUS (สถานะ)</Text>
-                        <Text style={[styles.col4, styles.textSmall, styles.textBold]}>AMOUNT (จำนวนเงิน)</Text>
+                        <Text style={[styles.col1, styles.textSmall, styles.textBold]}>เอกสาร</Text>
+                        <Text style={[styles.col2, styles.textSmall, styles.textBold]}>วันที่</Text>
+                        <Text style={[styles.col3, styles.textSmall, styles.textBold]}>สถานะ</Text>
+                        <Text style={[styles.col4, styles.textSmall, styles.textBold]}>จำนวนเงิน</Text>
                     </View>
                     {validIncomes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5).map((inc, i) => (
                         <View key={i} style={styles.tableRow}>
@@ -216,13 +204,13 @@ export const DashboardReportPDF = ({ projects, incomes, expenses, companyProfile
                 </View>
 
                 {/* Recent Expenses */}
-                <Text style={styles.sectionTitle}>Recent Expenses</Text>
+                <Text style={styles.sectionTitle}>รายจ่ายล่าสุด</Text>
                 <View style={styles.table}>
                     <View style={styles.tableHeader}>
-                        <Text style={[styles.col1, styles.textSmall, styles.textBold]}>DESCRIPTION (รายการ)</Text>
-                        <Text style={[styles.col2, styles.textSmall, styles.textBold]}>DATE (วันที่)</Text>
-                        <Text style={[styles.col3, styles.textSmall, styles.textBold]}>CATEGORY (หมวดหมู่)</Text>
-                        <Text style={[styles.col4, styles.textSmall, styles.textBold]}>AMOUNT (จำนวนเงิน)</Text>
+                        <Text style={[styles.col1, styles.textSmall, styles.textBold]}>รายการ</Text>
+                        <Text style={[styles.col2, styles.textSmall, styles.textBold]}>วันที่</Text>
+                        <Text style={[styles.col3, styles.textSmall, styles.textBold]}>หมวดหมู่</Text>
+                        <Text style={[styles.col4, styles.textSmall, styles.textBold]}>จำนวนเงิน</Text>
                     </View>
                     {expenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5).map((exp, i) => (
                         <View key={i} style={styles.tableRow}>
@@ -235,7 +223,7 @@ export const DashboardReportPDF = ({ projects, incomes, expenses, companyProfile
                 </View>
 
                 <Text style={styles.footer}>
-                    Generated by ProjectPro • {new Date().toLocaleString()}
+                    Generated by ProjectPro • {new Date().toLocaleString('th-TH')}
                 </Text>
             </Page>
         </Document>
@@ -243,20 +231,25 @@ export const DashboardReportPDF = ({ projects, incomes, expenses, companyProfile
 }
 
 export async function generateDashboardReport(props: DashboardReportProps) {
-    // Generate PDF Blob
-    const blob = await pdf(<DashboardReportPDF {...props} />).toBlob()
-    const url = URL.createObjectURL(blob)
+    try {
+        // Generate PDF Blob (using Helvetica font for compatibility)
+        const blob = await pdf(<DashboardReportPDF {...props} />).toBlob()
+        const url = URL.createObjectURL(blob)
 
-    // Download logic
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `Dashboard_Report_${new Date().toISOString().split('T')[0]}.pdf`
-    document.body.appendChild(link)
-    link.click()
+        // Download logic
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `Report_${new Date().toISOString().split('T')[0]}.pdf`
+        document.body.appendChild(link)
+        link.click()
 
-    // Cleanup
-    setTimeout(() => {
-        document.body.removeChild(link)
-        URL.revokeObjectURL(url)
-    }, 1000)
+        // Cleanup
+        setTimeout(() => {
+            document.body.removeChild(link)
+            URL.revokeObjectURL(url)
+        }, 1000)
+    } catch (error: any) {
+        console.error("Failed to generate PDF:", error)
+        alert(`Could not generate report PDF: ${error.message || error}`)
+    }
 }

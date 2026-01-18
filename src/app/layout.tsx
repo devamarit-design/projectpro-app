@@ -18,8 +18,37 @@ const kanit = Kanit({
 });
 
 export const metadata: Metadata = {
-  title: "PROJECTPRO App",
-  description: "Modern Project Management for Teams",
+  title: {
+    default: "PROJECTPRO App",
+    template: "%s | PROJECTPRO",
+  },
+  description: "Modern Construction & Project Management for Teams. Track projects, expenses, and site work in one place.",
+  keywords: ["Construction", "Project Management", "Thai Construction", "SME", "Site Management"],
+  authors: [{ name: "ProjectPro Team" }],
+  creator: "ProjectPro Team",
+  metadataBase: new URL("https://projectpro.app"),
+  openGraph: {
+    title: "PROJECTPRO - Modern Construction Management",
+    description: "Manage your construction projects, expenses, and team efficiently.",
+    url: "https://projectpro.app",
+    siteName: "PROJECTPRO",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "PROJECTPRO Dashboard",
+      },
+    ],
+    locale: "th_TH",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PROJECTPRO App",
+    description: "Modern Construction & Project Management for Teams",
+    images: ["/og-image.png"],
+  },
   manifest: "/manifest.json",
   icons: {
     icon: "/icon.png",

@@ -12,11 +12,12 @@ interface AddExpenseDialogProps {
     onClose: () => void
     defaultProjectId?: string
     startScanning?: boolean
+    defaultDate?: string
 }
 
 import { useTranslation } from "@/lib/i18n-context"
 
-export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, startScanning }: AddExpenseDialogProps) {
+export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, startScanning, defaultDate }: AddExpenseDialogProps) {
     const { addExpense, addProject, addTask, addSubProject, addUser, addVendor, addWorker, projects, tasks, users, vendors, workers, currentUser } = useProjects()
     const { t } = useTranslation()
 
@@ -69,6 +70,8 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
             setItems([{ id: "1", description: "", amount: 0, quantity: 1, unitPrice: 0, category: "Material", projectId: defaultProjectId }])
             setTitle("")
+            // Use defaultDate if provided, otherwise today
+            setDate(defaultDate || new Date().toISOString().split('T')[0])
             setPayee("")
             setStatus("Paid")
             setPaidBy("")
@@ -83,7 +86,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 setIsScanOpen(true)
             }
         }
-    }, [isOpen, defaultProjectId, startScanning])
+    }, [isOpen, defaultProjectId, startScanning, defaultDate])
 
     // Scroll listener for auto-expand/collapse receipt section
     React.useEffect(() => {

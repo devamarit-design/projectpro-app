@@ -8,30 +8,26 @@ import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
 
 export function DashboardTasks() {
-    const { projects, currentUser } = useProjects()
+    const { projects, currentUser, tasks } = useProjects()
     const { t } = useTranslation()
 
     // Get tasks assigned to current user
     const userTasks = React.useMemo(() => {
         if (!currentUser) return []
 
-        return projects.flatMap(project =>
-            (project.tasks || [])
-                .filter(task => task.assignedTo === currentUser.name)
-                .map(task => ({
-                    ...task,
-                    projectId: project.id,
-                    projectName: project.name
-                }))
-        )
-            // Sort by Due Date (soonest first)
+        return tasks
+            .filter(task => task.assignedTo === currentUser.id || task.assignedTo === currentUser.name)
+            .map(task => ({
+                ...task,
+                projectName: projects.find(p => p.id === task.projectId)?.name || "Unknown Project"
+            }))
             .sort((a, b) => {
                 if (!a.dueDate) return 1
                 if (!b.dueDate) return -1
                 return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
             })
             .slice(0, 5) // Show top 5
-    }, [projects, currentUser])
+    }, [tasks, projects, currentUser])
 
     const priorityColors: Record<Priority, string> = {
         High: "text-red-500 bg-red-500/10 border-red-500/20",

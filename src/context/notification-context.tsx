@@ -19,7 +19,7 @@ export interface Notification {
     link?: string
     relatedId?: string // e.g. project ID, task ID
     target?: 'all' | 'admin' | string // Audience
-    teamId?: string
+    orgId?: string
     creatorId?: string // Dynamic user name support
 }
 
@@ -128,7 +128,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         // Simple query without orderBy to avoid composite index requirement
         const q = query(
             collection(db, "notifications"),
-            where("teamId", "==", currentTeam.id),
+            where("orgId", "==", currentTeam.id),
             limit(50)
         )
 

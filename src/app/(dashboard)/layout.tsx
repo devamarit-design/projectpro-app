@@ -39,6 +39,9 @@ export default function DashboardLayout({
 
     // Don't block UI with full screen loader for teams, let the effect redirect.
     // Or show loader briefly.
+    // REMOVED: This was causing a hang when teams.length === 0 and redirect was disabled.
+    // AppShell handles the empty state via TeamOnboarding component.
+    /*
     if (currentUser && teams.length === 0 && !isOrgLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
@@ -49,6 +52,7 @@ export default function DashboardLayout({
             </div>
         )
     }
+    */
 
 
     if (currentUser === null) {

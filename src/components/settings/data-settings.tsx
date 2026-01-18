@@ -200,30 +200,7 @@ export function DataSettings() {
                 </div>
             </div>
 
-            {/* Demo Data Section */}
-            <div className="pt-6 border-t border-white/5">
-                <h3 className="text-lg font-medium text-white mb-2">Demo / Testing</h3>
-                <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div>
-                        <h4 className="font-medium text-white">GENERATE MOCK DATA (จำลองข้อมูลตัวอย่าง)</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Use this to populate your database with sample projects, expenses, and tasks for testing purposes.
-                            <br /><span className="text-red-400">Warning: This writes directly to your Firestore database.</span>
-                        </p>
-                    </div>
-                    <button
-                        onClick={async () => {
-                            if (confirm("Are you sure? This will add sample data to your database.")) {
-                                await seedData()
-                                alert("Mock Data Generated Successfully!")
-                            }
-                        }}
-                        className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-medium transition-colors border border-white/10 whitespace-nowrap"
-                    >
-                        Generate Mock Data
-                    </button>
-                </div>
-            </div>
+
         </div>
     )
 }

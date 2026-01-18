@@ -23,7 +23,7 @@ export type DocumentTemplate = {
 export type OrgProfile = CompanyProfile
 
 export type AppTheme = {
-    color: 'blue' | 'orange' | 'green' | 'purple' | 'slate'
+    color: 'blue' | 'orange' | 'green' | 'purple' | 'slate' | 'pink' | 'teal' | 'rose' | 'amber' | 'indigo' | 'pastel-pink' | 'pastel-blue' | 'pastel-green' | 'pastel-purple' | 'rainbow' | 'glass'
     mode: 'light' | 'dark'
     radius: number
     font: string
@@ -31,7 +31,7 @@ export type AppTheme = {
 
 export type TeamSettings = {
     allowInvite: boolean
-    defaultRole: 'Member' | 'Admin'
+    defaultRole: 'Staff' | 'Accountant' | 'Manager' | 'Admin'
 }
 
 export type NotificationSettings = {
@@ -87,7 +87,7 @@ const defaultTheme: AppTheme = {
 
 const defaultTeamSettings: TeamSettings = {
     allowInvite: true,
-    defaultRole: 'Member'
+    defaultRole: 'Staff'
 }
 
 const defaultNotificationSettings: NotificationSettings = {
@@ -145,20 +145,59 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
         // Apply theme to DOM
         const colorMap: Record<string, string> = {
+            // Vibrant Colors
             orange: '24.6 95% 53.1%', // Orange 500
             blue: '221.2 83.2% 53.3%', // Blue 500
             green: '142.1 76.2% 36.3%', // Green 500
             purple: '262.1 83.3% 57.8%', // Purple 500
-            slate: '215.4 16.3% 46.9%' // Slate 500
+            slate: '215.4 16.3% 46.9%', // Slate 500
+            pink: '330.4 81.2% 60.4%', // Pink 500
+            teal: '172.5 66% 50.4%', // Teal 500
+            rose: '346.8 77.2% 49.8%', // Rose 500
+            amber: '37.7 92.1% 50.2%', // Amber 500
+            indigo: '238.7 83.5% 66.7%', // Indigo 500
+            // Pastel Colors
+            'pastel-pink': '326 78% 75%',
+            'pastel-blue': '210 100% 75%',
+            'pastel-green': '150 80% 70%',
+            'pastel-purple': '270 67% 75%',
+            // Special Themes
+            'rainbow': '280 85% 55%', // Violet base for rainbow
+            'glass': '210 40% 50%' // Muted blue-gray for glass
         }
 
         const primaryColor = colorMap[appTheme.color] || '240 5.9% 10%' // Default to Zinc 950/Black
 
-        // Update CSS Variable for Tailwind
-        document.documentElement.style.setProperty('--primary', `hsl(${primaryColor})`)
+        // Handle Rainbow theme specially
+        if (appTheme.color === 'rainbow') {
+            // Set data attribute for rainbow mode
+            document.documentElement.setAttribute('data-theme-rainbow', 'true')
+            // Use a vibrant purple as fallback for non-gradient contexts
+            document.documentElement.style.setProperty('--primary', 'hsl(280 85% 55%)')
+            // Set a gradient variable for use in rainbow-aware components
+            document.documentElement.style.setProperty('--primary-gradient', 'linear-gradient(135deg, #ff6b6b, #feca57, #1dd1a1, #48dbfb, #ff9ff3, #54a0ff)')
+            document.documentElement.style.setProperty('--ring', 'hsl(280 85% 55%)')
+        } else {
+            // Remove rainbow attribute if not rainbow
+            document.documentElement.removeAttribute('data-theme-rainbow')
+            document.documentElement.style.removeProperty('--primary-gradient')
 
-        // Also update ring for consistency
-        document.documentElement.style.setProperty('--ring', `hsl(${primaryColor})`)
+            // Handle Glass theme
+            if (appTheme.color === 'glass') {
+                document.documentElement.setAttribute('data-theme-glass', 'true')
+            } else {
+                document.documentElement.removeAttribute('data-theme-glass')
+            }
+
+            // Update CSS Variable for Tailwind
+            document.documentElement.style.setProperty('--primary', `hsl(${primaryColor})`)
+            // Also update ring for consistency
+            document.documentElement.style.setProperty('--ring', `hsl(${primaryColor})`)
+        }
+
+        // Apply Global Radius - 0 = 0rem, 0.5 = 0.5rem, 1 = 1rem
+        const radiusValue = `${appTheme.radius}rem`
+        document.documentElement.style.setProperty('--radius', radiusValue)
 
         // Apply Global Font
         document.body.style.fontFamily = appTheme.font === 'Kanit' ? 'var(--font-sans), sans-serif'

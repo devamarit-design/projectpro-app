@@ -1,6 +1,7 @@
 import { useProjects, ExpenseItem } from "@/context/project-context"
 import { useState, useEffect } from "react"
 import { Camera, Upload, Loader2, CheckCircle } from "lucide-react"
+import { analyzeReceipt } from "@/lib/ai-service"
 
 export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
     isOpen: boolean
@@ -55,20 +56,8 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
         setScanning(true)
 
         try {
-            const response = await fetch('/api/scan-receipt', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ image: previewUrl }),
-            })
-
-            if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Scan failed')
-            }
-
-            const data = await response.json()
+            // Client-Side AI Call
+            const data = await analyzeReceipt(previewUrl!)
 
             // Map API response to internal state
             const extractedItems: ExpenseItem[] = Array.isArray(data.items)
@@ -95,9 +84,9 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
             })
 
             setCompleted(true)
-        } catch (error) {
+        } catch (error: any) {
             console.error("Scan failed:", error)
-            alert("Scan failed. Please check your API Key or try again.")
+            alert(`Scan failed: ${error.message}. Please check your API Key.`)
         } finally {
             setScanning(false)
         }

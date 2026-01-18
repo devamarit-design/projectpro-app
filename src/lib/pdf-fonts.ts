@@ -8,25 +8,13 @@ export async function registerThaiFonts() {
     if (fontsRegistered) return true
 
     try {
-        // Fetch fonts as ArrayBuffer - this is the most reliable method
-        const [regularRes, boldRes] = await Promise.all([
-            fetch('/fonts/THSarabunNew.ttf'),
-            fetch('/fonts/THSarabunNew-Bold.ttf')
-        ])
-
-        if (!regularRes.ok || !boldRes.ok) {
-            console.error('Failed to fetch font files')
-            return false
-        }
-
-        const regularBuffer = await regularRes.arrayBuffer()
-        const boldBuffer = await boldRes.arrayBuffer()
-
+        // Register fonts using standard URLs
+        // React-pdf handles the loading internally
         Font.register({
             family: 'THSarabunNew',
             fonts: [
-                { src: regularBuffer as unknown as string },
-                { src: boldBuffer as unknown as string, fontWeight: 700 },
+                { src: '/fonts/THSarabunNew.ttf' },
+                { src: '/fonts/THSarabunNew-Bold.ttf', fontWeight: 700 },
             ],
         })
 

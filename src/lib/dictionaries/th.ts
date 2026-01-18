@@ -28,6 +28,19 @@ export const th = {
         confirm_logout: "คุณแน่ใจหรือไม่ที่จะออกจากระบบ?",
     },
 
+    calendar: {
+        title: "ปฏิทินองค์กร",
+        subtitle: "ดูงานและกำหนดการจ่ายเงินในที่เดียว",
+        all_events: "ทั้งหมด",
+        payments: "งวดจ่าย",
+        payment: "งวดจ่าย",
+        due_date: "กำหนด",
+        amount: "จำนวนเงิน",
+        month: "เดือน",
+        week: "สัปดาห์",
+        today: "วันนี้",
+    },
+
     partners: {
         title: "คู่ค้าและช่าง",
         subtitle: "จัดการรายชื่อช่าง ผู้รับเหมา และร้านวัสดุ",
@@ -668,6 +681,30 @@ export const th = {
         edit_team: "แก้ไขรายละเอียดทีม",
         search_placeholder: "ค้นหาชื่อ, ตำแหน่ง หรืออีเมล...",
         empty: "ไม่พบข้อมูลทีมงาน",
+        user_detail: {
+            edit_profile: "แก้ไขโปรไฟล์",
+            no_phone: "ไม่มีเบอร์โทร",
+            member_since: "สมาชิกตั้งแต่",
+            rating: "คะแนน",
+            stats: {
+                completed_tasks: "งานที่เสร็จแล้ว",
+                active_projects: "โครงการที่ดำเนินการ",
+                expenses_claimed: "ค่าใช้จ่ายที่เบิก"
+            },
+            tabs: {
+                overview: "ภาพรวม",
+                activity: "ไทม์ไลน์กิจกรรม"
+            },
+            employment: {
+                title: "ข้อมูลพนักงาน",
+                joined_date: "วันที่เข้าร่วม",
+                employee_id: "รหัสพนักงาน"
+            },
+            activity: {
+                title: "ไทม์ไลน์กิจกรรม",
+                export_csv: "ส่งออก CSV"
+            }
+        },
         onboarding: {
             welcome: "ยินดีต้อนรับสู่ ProjectPro",
             subtitle: "เพื่อเริ่มต้นใช้งาน กรุณาสร้างทีมหรือพื้นที่ทำงานแรกของคุณ",

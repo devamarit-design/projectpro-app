@@ -13,7 +13,7 @@ export const INITIAL_PROJECTS = [
         endDate: "2024-11-30",
         image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
         description: "Renovation of existing office space including new electrical systems, HVAC, and interior design for a modern tech workspace.",
-        teamId: '1' // Headquarters
+        orgId: '1' // Headquarters
     },
     {
         id: "2",
@@ -29,7 +29,7 @@ export const INITIAL_PROJECTS = [
         endDate: "2024-08-30",
         image: "https://images.unsplash.com/photo-1600596542815-e32c2159c82c?w=800&q=80",
         description: "Complete overhaul of a 3-bedroom pool villa, including landscape redesign and smart home integration.",
-        teamId: '2' // Site Operations
+        orgId: '2' // Site Operations
     },
     {
         id: "3",
@@ -45,7 +45,7 @@ export const INITIAL_PROJECTS = [
         endDate: "2024-01-15",
         image: "https://images.unsplash.com/photo-1567446537708-ac4aa75c9c28?w=800&q=80",
         description: "Interior fit-out for a new flagship retail store in a high-traffic shopping district.",
-        teamId: '1' // Headquarters
+        orgId: '1' // Headquarters
     },
     {
         id: "4",
@@ -61,7 +61,7 @@ export const INITIAL_PROJECTS = [
         endDate: "2025-05-30",
         image: "https://images.unsplash.com/photo-1448630360428-65456885c650?w=800&q=80",
         description: "Construction of a sustainable low-rise condominium with solar power and massive rain harvesting systems.",
-        teamId: '2' // Site Operations
+        orgId: '2' // Site Operations
     },
     {
         id: "5",
@@ -77,7 +77,7 @@ export const INITIAL_PROJECTS = [
         endDate: "2024-10-30",
         image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800&q=80",
         description: "Adding a new wing to the existing school building containing 4 classrooms and a science lab.",
-        teamId: '1' // Headquarters
+        orgId: '1' // Headquarters
     },
     {
         id: "6",
@@ -93,6 +93,6 @@ export const INITIAL_PROJECTS = [
         endDate: "2024-09-01",
         image: "https://images.unsplash.com/photo-1497215842964-222b430dc0a1?w=800&q=80",
         description: "Renovation of an old shop house into a modern co-working space with cafe and meeting rooms.",
-        teamId: '1' // Headquarters
+        orgId: '1' // Headquarters
     }
 ]

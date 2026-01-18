@@ -1,7 +1,8 @@
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export',
+  output: 'standalone', // Optimized for Docker/Cloud Run
   images: {
     unoptimized: true,
   },

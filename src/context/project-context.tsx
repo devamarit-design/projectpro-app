@@ -3,10 +3,11 @@
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { get, set } from "idb-keyval"
 import { auth, googleProvider, db } from "@/lib/firebase"
-import { signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseUser, setPersistence, browserLocalPersistence, updatePassword } from "firebase/auth"
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseUser, setPersistence, browserLocalPersistence, updatePassword, deleteUser as deleteAuthUser, reauthenticateWithPopup, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth"
 import { doc, getDoc, getDocs, setDoc, onSnapshot, collection, query, where, addDoc, updateDoc, deleteDoc, documentId, orderBy, limit } from "firebase/firestore"
 import { seedDatabase } from "@/lib/seed-data"
 import { useOrganization } from "@/context/organization-context"
+import { logActivity } from "@/lib/activity-logger"
 
 export type ProjectStatus = "Planning" | "In Progress" | "On Hold" | "Completed"
 export type TaskStatus = "Todo" | "In Progress" | "Done"
@@ -22,7 +23,8 @@ export interface ProjectTask {
     description?: string
     projectId: string // Link to project
     subProjectId?: string // Link to sub-project
-    teamId: string    // Link to team
+    orgId: string    // Link to organization
+    isArchived?: boolean // Archive flag
 }
 
 // Sub-project (โปรเจคย่อย) - Different from Task
@@ -91,7 +93,8 @@ export interface Expense {
     thumbnailUrl?: string
     imageEdited?: boolean
     subProjectId?: string
-    teamId?: string
+    orgId?: string
+    isArchived?: boolean // Archive flag
 }
 
 export interface Project {
@@ -110,7 +113,8 @@ export interface Project {
     description?: string
     tasks?: ProjectTask[]
     subProjects?: SubProject[] // โปรเจคย่อย - separate from Tasks
-    teamId?: string // Workspace/Team ID
+    orgId?: string // Organization ID
+    isArchived?: boolean // Archive flag
 }
 
 export interface User {
@@ -126,8 +130,8 @@ export interface User {
     skills?: string[]
     joinedDate?: string
     avatar?: string // Profile picture URL
-    status: "Active" | "Inactive"
-    teamIds: string[] // Legacy support
+    status: "Active" | "Inactive" | "Pending"
+    orgIds: string[] // Legacy support
     display?: string // Display Mode (Compact/Comfortable)
     theme?: string // Theme Preference (Light/Dark/System)
     organizations?: { orgId: string, role: string }[] // New SaaS Structure
@@ -143,7 +147,7 @@ export interface Vendor {
     rating?: number
     products?: string[]
     status: "Active" | "Inactive"
-    teamId?: string
+    orgId?: string
 }
 
 export interface Worker {
@@ -158,7 +162,7 @@ export interface Worker {
     rating?: number
     status: "Active" | "Inactive"
     joinedDate?: string
-    teamId?: string
+    orgId?: string
 }
 
 export interface Customer {
@@ -174,7 +178,7 @@ export interface Customer {
     projects?: string[] // IDs of linked projects
     totalValue?: number // Calculated
     status: "Active" | "Inactive"
-    teamId?: string
+    orgId?: string
 }
 
 export interface IncomeItem {
@@ -229,6 +233,7 @@ export interface IncomeDocument {
     paymentDetails?: string
     remarks?: string
     referenceDocumentId?: string // Link QT -> BN -> RE
+    isArchived?: boolean // Archive flag
 }
 
 export interface ContractInstallment {
@@ -276,11 +281,11 @@ interface ProjectContextType {
     teams: Team[]
     currentTeam: Team | null
     switchTeam: (teamId: string) => void
-    addTeam: (name: string) => void
+    addTeam: (name: string) => Promise<string>
 
     // Task Management
     tasks: ProjectTask[] // Exposed global tasks
-    addTask: (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "teamId">) => void
+    addTask: (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "orgId">) => void
     updateTask: (projectId: string, taskId: string, updates: Partial<ProjectTask>) => void
     deleteTask: (projectId: string, taskId: string) => void
     toggleTask: (projectId: string, taskId: string) => void
@@ -297,7 +302,7 @@ interface ProjectContextType {
     // Master Data
     users: User[]
     vendors: Vendor[]
-    addUser: (user: Omit<User, "id" | "joinedDate" | "status" | "teamIds">) => void
+    addUser: (user: Omit<User, "id" | "joinedDate" | "status" | "orgIds">) => void
     updateUser: (id: string, updates: Partial<User>) => void
     deleteUser: (id: string) => void
 
@@ -344,12 +349,28 @@ interface ProjectContextType {
     register: (name: string, email: string, password: string) => Promise<void>
     updateUserPassword: (password: string) => Promise<void>
     logout: () => void
+    deleteAccount: (password?: string) => Promise<void>
     isAuthLoading: boolean
     // Backup & Restore
     restoreData: (data: Record<string, unknown>) => Promise<boolean>
     seedData: () => Promise<void>
     isOrgLoading: boolean
     isLoading: boolean // Global Data Loading State
+
+    // Archive System
+    archiveProject: (id: string) => Promise<void>
+    unarchiveProject: (id: string) => Promise<void>
+    archiveTask: (projectId: string, taskId: string) => Promise<void>
+    unarchiveTask: (projectId: string, taskId: string) => Promise<void>
+    archiveExpense: (id: string) => Promise<void>
+    unarchiveExpense: (id: string) => Promise<void>
+    archiveIncome: (id: string) => Promise<void>
+    unarchiveIncome: (id: string) => Promise<void>
+    // Archived data for Archive page
+    archivedProjects: Project[]
+    archivedTasks: ProjectTask[]
+    archivedExpenses: Expense[]
+    archivedIncomes: IncomeDocument[]
 }
 
 
@@ -485,10 +506,10 @@ const INITIAL_EXPENSES: Expense[] = [
 
 // Mock Master Data
 const MOCK_USERS: User[] = [
-    { id: "u1", name: "Foreman Chai", role: "Foreman", phone: "081-123-4567", location: "Bangkok", rating: 5, status: "Active", joinedDate: "2023-01-15", teamIds: ['1'] },
-    { id: "u2", name: "Engineer Som", role: "Structural Engineer", phone: "089-987-6543", location: "Bangkok", rating: 4.8, status: "Active", joinedDate: "2023-03-10", teamIds: ['1'] },
-    { id: "u3", name: "Admin Ply", role: "Admin", status: "Active", phone: "02-123-4567", teamIds: ['1', '2', '3'] },
-    { id: "u4", name: "Boss", role: "Owner", status: "Active", teamIds: ['1', '2', '3'] }
+    { id: "u1", name: "Foreman Chai", role: "Foreman", phone: "081-123-4567", location: "Bangkok", rating: 5, status: "Active", joinedDate: "2023-01-15", orgIds: ['1'] },
+    { id: "u2", name: "Engineer Som", role: "Structural Engineer", phone: "089-987-6543", location: "Bangkok", rating: 4.8, status: "Active", joinedDate: "2023-03-10", orgIds: ['1'] },
+    { id: "u3", name: "Admin Ply", role: "Admin", status: "Active", phone: "02-123-4567", orgIds: ['1', '2', '3'] },
+    { id: "u4", name: "Boss", role: "Owner", status: "Active", orgIds: ['1', '2', '3'] }
 ]
 
 const MOCK_WORKERS: Worker[] = [
@@ -801,6 +822,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     } : INITIAL_COMPANY_PROFILE
 
 
+    // Handle Google Sign-In Redirect Result
+    useEffect(() => {
+        getRedirectResult(auth)
+            .then((result) => {
+                if (result) {
+                    console.log("Google redirect sign-in successful:", result.user.email)
+                }
+            })
+            .catch((error) => {
+                console.error("Redirect result error:", error)
+            })
+    }, [])
 
     // Auth State Listener
     useEffect(() => {
@@ -810,7 +843,22 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 const userSnap = await getDoc(userRef)
 
                 if (userSnap.exists()) {
-                    setCurrentUser({ ...userSnap.data(), id: firebaseUser.uid } as User)
+                    const userData = userSnap.data() as User & { organizations?: { orgId: string; role: string }[] }
+                    setCurrentUser({ ...userData, id: firebaseUser.uid } as User)
+
+                    // SYNC: Ensure orgIds is in sync with organizations (for legacy data)
+                    if (userData.organizations && userData.organizations.length > 0) {
+                        const orgIds = userData.organizations.map(o => o.orgId)
+                        const currentTeamIds = userData.orgIds || []
+                        const missingTeamIds = orgIds.filter(id => !currentTeamIds.includes(id))
+
+                        if (missingTeamIds.length > 0) {
+                            // Background sync - update orgIds to include all org IDs
+                            const updatedTeamIds = Array.from(new Set([...currentTeamIds, ...orgIds]))
+                            setDoc(userRef, { orgIds: updatedTeamIds }, { merge: true })
+                                .catch(err => console.warn("Failed to sync orgIds:", err))
+                        }
+                    }
                 } else {
                     // New User - Check for Placeholder (Invite)
                     const q = query(collection(db, "users"), where("email", "==", firebaseUser.email))
@@ -831,8 +879,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                         email: firebaseUser.email || "",
                         role: initialData.role || "Member",
                         status: "Active",
-                        teamIds: initialData.teamIds || [],
-                        avatar: firebaseUser.photoURL || undefined
+                        orgIds: initialData.orgIds || [],
+                        ...(firebaseUser.photoURL ? { avatar: firebaseUser.photoURL } : {})
                     }
                     await setDoc(userRef, newUser)
                     setCurrentUser(newUser)
@@ -864,7 +912,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const loginPromise = async () => {
             if (provider === 'google') {
                 try {
-                    await signInWithPopup(auth, googleProvider)
+                    // Use redirect instead of popup for better cross-browser compatibility
+                    await signInWithRedirect(auth, googleProvider)
                 } catch (error) {
                     console.error("Login failed", error)
                     throw error
@@ -913,8 +962,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 email: email,
                 role: initialData.role || "Member",
                 status: "Active",
-                teamIds: initialData.teamIds || [],
-                avatar: undefined,
+                orgIds: initialData.orgIds || [],
+                // avatar: undefined, // Removed to avoid Firestore error
                 theme: "system", // Default to system
                 joinedDate: new Date().toISOString()
             }
@@ -936,6 +985,42 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             await updatePassword(auth.currentUser, password)
         } catch (error) {
             console.error("Failed to update password", error)
+            throw error
+        }
+    }
+
+    const deleteAccount = async (password?: string) => {
+        if (!auth.currentUser) return
+
+        try {
+            const user = auth.currentUser
+            const providerId = user.providerData[0]?.providerId
+
+            // Re-authenticate
+            if (providerId === 'google.com') {
+                await reauthenticateWithPopup(user, googleProvider)
+            } else if (providerId === 'password') {
+                if (!password) throw new Error("Password confirmation required")
+                if (!user.email) throw new Error("User email not found")
+
+                const credential = EmailAuthProvider.credential(user.email, password)
+                await reauthenticateWithCredential(user, credential)
+            }
+
+            const uid = user.uid
+
+            // 1. Delete Firestore Data
+            await deleteDoc(doc(db, "users", uid))
+
+            // 2. Delete Auth Account
+            await deleteAuthUser(user)
+
+            // 3. Cleanup
+            setCurrentUser(null)
+            window.location.href = "/"
+
+        } catch (error) {
+            console.error("Delete account failed", error)
             throw error
         }
     }
@@ -977,6 +1062,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 setCustomers([])
                 setIncomes([])
                 setIncomesLoading(false)
+                setIsLoading(false) // FIX: Ensure global loading stops so redirections can happen
             }, 0)
             return
         }
@@ -1034,87 +1120,112 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         hydrateFromCache()
 
         // 1. Projects
-        const qProjects = query(collection(db, "projects"), where("teamId", "==", currentTeam.id))
+        const qProjects = query(collection(db, "projects"), where("orgId", "==", currentTeam.id))
         const unsubProjects = onSnapshot(qProjects, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Project))
             setProjects(data)
-            set(`projects_${currentTeam.id}`, data) // Update Cache
+            set(`projects_${currentTeam.id}`, data)
             setIsLoading(false)
         })
 
         // 2. Expenses
-        const qExpenses = query(collection(db, "expenses"), where("teamId", "==", currentTeam.id))
+        const qExpenses = query(collection(db, "expenses"), where("orgId", "==", currentTeam.id))
         const unsubExpenses = onSnapshot(qExpenses, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
             setExpenses(data)
-            set(`expenses_${currentTeam.id}`, data) // Update Cache
+            set(`expenses_${currentTeam.id}`, data)
         })
 
         // 3. Workers
-        const qWorkers = query(collection(db, "workers"), where("teamId", "==", currentTeam.id))
+        const qWorkers = query(collection(db, "workers"), where("orgId", "==", currentTeam.id))
         const unsubWorkers = onSnapshot(qWorkers, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Worker))
             setWorkers(data)
-            set(`workers_${currentTeam.id}`, data) // Update Cache
+            set(`workers_${currentTeam.id}`, data)
         })
 
         // 4. Vendors
-        const qVendors = query(collection(db, "vendors"), where("teamId", "==", currentTeam.id))
+        const qVendors = query(collection(db, "vendors"), where("orgId", "==", currentTeam.id))
         const unsubVendors = onSnapshot(qVendors, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Vendor))
             setVendors(data)
-            set(`vendors_${currentTeam.id}`, data) // Update Cache
+            set(`vendors_${currentTeam.id}`, data)
         })
 
         // 5. Customers
-        const qCustomers = query(collection(db, "customers"), where("teamId", "==", currentTeam.id))
+        const qCustomers = query(collection(db, "customers"), where("orgId", "==", currentTeam.id))
         const unsubCustomers = onSnapshot(qCustomers, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer))
             setCustomers(data)
-            set(`customers_${currentTeam.id}`, data) // Update Cache
+            set(`customers_${currentTeam.id}`, data)
         })
 
         // 6. Incomes
-        const qIncomes = query(collection(db, "incomes"), where("teamId", "==", currentTeam.id))
+        const qIncomes = query(collection(db, "incomes"), where("orgId", "==", currentTeam.id))
         const unsubIncomes = onSnapshot(qIncomes, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
             setIncomes(data)
-            set(`incomes_${currentTeam.id}`, data) // Update Cache
+            set(`incomes_${currentTeam.id}`, data)
             setIncomesLoading(false)
         })
 
         // 7. Contracts
-        const qContracts = query(collection(db, "contracts"), where("teamId", "==", currentTeam.id))
+        const qContracts = query(collection(db, "contracts"), where("orgId", "==", currentTeam.id))
         const unsubContracts = onSnapshot(qContracts, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract))
             setContracts(data)
-            set(`contracts_${currentTeam.id}`, data) // Update Cache
+            set(`contracts_${currentTeam.id}`, data)
         })
 
         // 8. Tasks
-        const qTasks = query(collection(db, "tasks"), where("teamId", "==", currentTeam.id))
+        const qTasks = query(collection(db, "tasks"), where("orgId", "==", currentTeam.id))
         const unsubTasks = onSnapshot(qTasks, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask))
             setTasks(data)
-            set(`tasks_${currentTeam.id}`, data) // Update Cache
+            set(`tasks_${currentTeam.id}`, data)
         })
 
-        // 9. Team Members
-        const qUsers = query(collection(db, "users"), where("teamIds", "array-contains", currentTeam.id))
-        const unsubUsers = onSnapshot(qUsers, (snap) => {
-            const realUsers = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
-            if (realUsers.length > 0) {
-                setUsers(realUsers)
-                set(`users_${currentTeam.id}`, realUsers) // Update Cache
+        // 9. Team Members - Query both orgIds and teamIds for compatibility
+        const qUsersOrgIds = query(collection(db, "users"), where("orgIds", "array-contains", currentTeam.id))
+        const qUsersTeamIds = query(collection(db, "users"), where("teamIds", "array-contains", currentTeam.id))
+
+        let usersFromOrgIds: User[] = []
+        let usersFromTeamIds: User[] = []
+
+        const mergeUsers = () => {
+            // Merge and dedupe by id - combine both arrays
+            const userMap = new Map<string, User>()
+            // Add from orgIds first
+            usersFromOrgIds.forEach(u => userMap.set(u.id, u))
+            // Add from teamIds (will overwrite or add new)
+            usersFromTeamIds.forEach(u => userMap.set(u.id, u))
+
+            const merged = Array.from(userMap.values())
+            console.log(`[DEBUG] Merged users:`, merged.map(u => u.name))
+            setUsers(merged)
+            if (merged.length > 0) {
+                set(`users_${currentTeam.id}`, merged)
             }
+        }
+
+        const unsubUsersOrgIds = onSnapshot(qUsersOrgIds, (snap) => {
+            usersFromOrgIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
+            console.log(`[DEBUG] Users from orgIds (${currentTeam.id}):`, usersFromOrgIds.map(u => u.name))
+            mergeUsers()
+        })
+
+        const unsubUsersTeamIds = onSnapshot(qUsersTeamIds, (snap) => {
+            usersFromTeamIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
+            console.log(`[DEBUG] Users from teamIds (${currentTeam.id}):`, usersFromTeamIds.map(u => u.name))
+            mergeUsers()
         })
 
         // 10. Files
-        const qFiles = query(collection(db, "files"), where("teamId", "==", currentTeam.id))
+        const qFiles = query(collection(db, "files"), where("orgId", "==", currentTeam.id))
         const unsubFiles = onSnapshot(qFiles, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectFile))
             setFiles(data)
-            set(`files_${currentTeam.id}`, data) // Update Cache
+            set(`files_${currentTeam.id}`, data)
         })
 
         return () => {
@@ -1126,7 +1237,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             unsubIncomes()
             unsubContracts()
             unsubTasks()
-            unsubUsers()
+            unsubUsersOrgIds()
+            unsubUsersTeamIds()
             unsubFiles()
         }
     }, [currentTeam])
@@ -1153,9 +1265,25 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         try {
             await addDoc(collection(db, "projects"), {
                 ...project,
-                teamId: currentTeam.id,
+                orgId: currentTeam.id,
                 createdAt: new Date().toISOString()
             })
+
+            // Log Activity
+            await logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "PROJECT",
+                entityId: "",
+                entityTitle: project.name,
+                details: `Created new project: ${project.name}`,
+                performedBy: {
+                    uid: currentUser?.id || "unknown",
+                    name: currentUser?.name || "Unknown",
+                    role: currentUser?.role || "Staff"
+                },
+                relatedUserIds: []
+            })
+
         } catch (e) {
             console.error("Error adding project", e)
         }
@@ -1167,6 +1295,22 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
             console.error("Error updating project", e)
         }
+
+        if (currentTeam && currentUser) {
+            logActivity(db, currentTeam.id, {
+                action: "UPDATE",
+                entityType: "PROJECT",
+                entityId: id,
+                entityTitle: updates.name || "Project",
+                details: `Updated project details`,
+                performedBy: {
+                    uid: currentUser.id,
+                    name: currentUser.name,
+                    role: currentUser.role
+                },
+                relatedUserIds: []
+            })
+        }
     }
 
     const deleteProject = async (id: string) => {
@@ -1175,12 +1319,96 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
             console.error("Error deleting project", e)
         }
+
+        if (currentTeam && currentUser) {
+            const proj = projects.find(p => p.id === id)
+            logActivity(db, currentTeam.id, {
+                action: "DELETE",
+                entityType: "PROJECT",
+                entityId: id,
+                entityTitle: proj?.name || "Unknown Project",
+                details: `Deleted project`,
+                performedBy: {
+                    uid: currentUser.id,
+                    name: currentUser.name,
+                    role: currentUser.role
+                },
+                relatedUserIds: []
+            })
+        }
+    }
+
+    // ========== ARCHIVE SYSTEM ==========
+    const archiveProject = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "projects", id), { isArchived: true })
+        } catch (e) {
+            console.error("Error archiving project", e)
+        }
+    }
+
+    const unarchiveProject = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "projects", id), { isArchived: false })
+        } catch (e) {
+            console.error("Error unarchiving project", e)
+        }
+    }
+
+    const archiveTask = async (projectId: string, taskId: string) => {
+        try {
+            await updateDoc(doc(db, "tasks", taskId), { isArchived: true })
+        } catch (e) {
+            console.error("Error archiving task", e)
+        }
+    }
+
+    const unarchiveTask = async (projectId: string, taskId: string) => {
+        try {
+            await updateDoc(doc(db, "tasks", taskId), { isArchived: false })
+        } catch (e) {
+            console.error("Error unarchiving task", e)
+        }
+    }
+
+    const archiveExpense = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "expenses", id), { isArchived: true })
+        } catch (e) {
+            console.error("Error archiving expense", e)
+        }
+    }
+
+    const unarchiveExpense = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "expenses", id), { isArchived: false })
+        } catch (e) {
+            console.error("Error unarchiving expense", e)
+        }
+    }
+
+    const archiveIncome = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "incomes", id), { isArchived: true })
+        } catch (e) {
+            console.error("Error archiving income", e)
+        }
+    }
+
+    const unarchiveIncome = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "incomes", id), { isArchived: false })
+        } catch (e) {
+            console.error("Error unarchiving income", e)
+        }
     }
 
     const getProject = (id: string) => {
+        // use raw state arrays which contain both active and archived items
         const project = projects.find(p => p.id === id)
         if (!project) return undefined
-        // Merge tasks from global state
+
+        // Merge tasks from global state (including archived ones)
         const projectTasks = tasks.filter(t => t.projectId === id)
         return { ...project, tasks: projectTasks }
     }
@@ -1188,17 +1416,38 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // Task Management Logic (Refactored to Top-level Collection)
 
 
-    const addTask = async (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "teamId">) => {
+    const addTask = async (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "orgId">) => {
         if (!currentTeam) return
 
         try {
-            await addDoc(collection(db, "tasks"), {
-                ...task,
-                projectId,
-                teamId: currentTeam.id,
-                status: task.status || "Todo",
-                priority: task.priority || "Medium"
+            // Clean undefined values
+            const payload = Object.fromEntries(
+                Object.entries({
+                    ...task,
+                    projectId,
+                    orgId: currentTeam.id,
+                    status: task.status || "Todo",
+                    priority: task.priority || "Medium"
+                }).filter(([_, v]) => v !== undefined)
+            )
+
+            const docRef = await addDoc(collection(db, "tasks"), payload)
+
+            // Log Activity
+            await logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "TASK",
+                entityId: docRef.id,
+                entityTitle: task.title,
+                details: `Created new task in project`,
+                performedBy: {
+                    uid: currentUser?.id || "unknown",
+                    name: currentUser?.name || "Unknown",
+                    role: currentUser?.role || "Staff"
+                },
+                relatedUserIds: task.assignedTo ? [task.assignedTo] : []
             })
+
         } catch (e) {
             console.error("Error adding task", e)
         }
@@ -1225,6 +1474,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const updateTask = async (projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
         try {
             await updateDoc(doc(db, "tasks", taskId), updates)
+
+            if (currentTeam && currentUser) {
+                const t = tasks.find(t => t.id === taskId)
+                logActivity(db, currentTeam.id, {
+                    action: "UPDATE",
+                    entityType: "TASK",
+                    entityId: taskId,
+                    entityTitle: t?.title || "Task",
+                    details: `Updated task`,
+                    performedBy: {
+                        uid: currentUser.id,
+                        name: currentUser.name,
+                        role: currentUser.role
+                    },
+                    relatedUserIds: t?.assignedTo ? [t.assignedTo] : []
+                })
+            }
         } catch (e) {
             console.error("Error updating task", e)
         }
@@ -1233,6 +1499,22 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const deleteTask = async (projectId: string, taskId: string) => {
         try {
             await deleteDoc(doc(db, "tasks", taskId))
+
+            if (currentTeam && currentUser) {
+                logActivity(db, currentTeam.id, {
+                    action: "DELETE",
+                    entityType: "TASK",
+                    entityId: taskId,
+                    entityTitle: "Deleted Task",
+                    details: `Deleted task`,
+                    performedBy: {
+                        uid: currentUser.id,
+                        name: currentUser.name,
+                        role: currentUser.role
+                    },
+                    relatedUserIds: []
+                })
+            }
         } catch (e) {
             console.error("Error deleting task", e)
         }
@@ -1245,6 +1527,22 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const newStatus = task.status === 'Done' ? 'Todo' : 'Done'
         try {
             await updateDoc(doc(db, "tasks", taskId), { status: newStatus })
+
+            if (currentTeam && currentUser) {
+                logActivity(db, currentTeam.id, {
+                    action: "UPDATE",
+                    entityType: "TASK",
+                    entityId: taskId,
+                    entityTitle: task.title,
+                    details: `Changed status to ${newStatus}`,
+                    performedBy: {
+                        uid: currentUser.id,
+                        name: currentUser.name,
+                        role: currentUser.role
+                    },
+                    relatedUserIds: task.assignedTo ? [task.assignedTo] : []
+                })
+            }
         } catch (e) {
             console.error("Error toggling task", e)
         }
@@ -1271,7 +1569,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 payee: worker ? worker.name : "Worker",
                 status: "Paid",
                 projectId: contract.projectId,
-                teamId: currentTeam.id,
+                orgId: currentTeam.id,
                 items: [
                     {
                         id: Math.random().toString(),
@@ -1318,16 +1616,51 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
 
     // User CRUD
-    const addUser = async (userData: Omit<User, "id" | "joinedDate" | "status" | "teamIds">) => {
+    // User CRUD
+    const addUser = async (userData: Omit<User, "id" | "joinedDate" | "status" | "orgIds">) => {
         if (!currentTeam) return
         try {
-            await addDoc(collection(db, "users"), {
-                ...userData,
-                joinedDate: new Date().toISOString().split('T')[0],
-                status: "Active",
-                teamIds: [currentTeam.id],
-                role: userData.role || "Staff"
-            })
+            // 1. Check if user with this email already exists
+            const q = query(collection(db, "users"), where("email", "==", userData.email))
+            const snapshot = await getDocs(q)
+
+            if (!snapshot.empty) {
+                // User exists - Update their permissions
+                const existingUserDoc = snapshot.docs[0]
+                const existingUserData = existingUserDoc.data() as User
+
+                // Check if already in this org
+                if (existingUserData.orgIds?.includes(currentTeam.id)) {
+                    return
+                }
+
+                // Add to Org
+                const updatedOrgIds = [...(existingUserData.orgIds || []), currentTeam.id]
+                const updatedOrganizations = [
+                    ...(existingUserData.organizations || []),
+                    { orgId: currentTeam.id, role: userData.role || "Staff" }
+                ]
+
+                await updateDoc(doc(db, "users", existingUserDoc.id), {
+                    orgIds: updatedOrgIds,
+                    organizations: updatedOrganizations
+                })
+
+            } else {
+                // 2. User does not exist - Create new placeholder
+                await addDoc(collection(db, "users"), {
+                    ...userData,
+                    joinedDate: new Date().toISOString().split('T')[0],
+                    status: "Pending", // Default to Pending for invites
+                    orgIds: [currentTeam.id],
+                    organizations: [{ // Forward compatibility
+                        orgId: currentTeam.id,
+                        role: userData.role || "Staff"
+                    }],
+                    role: userData.role || "Staff"
+                })
+            }
+
         } catch (e) {
             console.error("Error adding user", e)
         }
@@ -1364,10 +1697,26 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             await addDoc(collection(db, "vendors"), {
                 ...vendorData,
                 status: "Active",
-                teamId: currentTeam.id
+                orgId: currentTeam.id
             })
         } catch (e) {
             console.error("Error adding vendor", e)
+        }
+
+        if (currentTeam && currentUser) {
+            logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "USER", // Vendor as User/Entity
+                entityId: "",
+                entityTitle: vendorData.name,
+                details: `Added new vendor: ${vendorData.category}`,
+                performedBy: {
+                    uid: currentUser.id,
+                    name: currentUser.name,
+                    role: currentUser.role
+                },
+                relatedUserIds: []
+            })
         }
     }
 
@@ -1395,10 +1744,26 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 ...workerData,
                 status: "Active",
                 joinedDate: new Date().toISOString().split('T')[0],
-                teamId: currentTeam.id
+                orgId: currentTeam.id
             })
         } catch (e) {
             console.error("Error adding worker", e)
+        }
+
+        if (currentTeam && currentUser) {
+            logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "USER", // Or OTHER if no worker type
+                entityId: "",
+                entityTitle: workerData.name,
+                details: `Added new worker: ${workerData.role}`,
+                performedBy: {
+                    uid: currentUser.id,
+                    name: currentUser.name,
+                    role: currentUser.role
+                },
+                relatedUserIds: []
+            })
         }
     }
 
@@ -1418,15 +1783,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-
     // Customer CRUD
-    // 4. Customers
     const addCustomer = async (customer: Omit<Customer, "id" | "status" | "totalValue">) => {
         if (!currentTeam) return
         try {
             await addDoc(collection(db, "customers"), {
                 ...customer,
-                teamId: currentTeam.id,
+                orgId: currentTeam.id,
                 status: "Active",
                 totalValue: 0
             })
@@ -1446,11 +1809,27 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         try {
             await addDoc(collection(db, "files"), {
                 ...file,
-                teamId: currentTeam.id,
+                orgId: currentTeam.id,
                 uploadedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
             })
         } catch (e) {
             console.error("Error adding file", e)
+        }
+
+        if (currentTeam && currentUser) {
+            logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "FILE",
+                entityId: "",
+                entityTitle: file.name,
+                details: `Uploaded file (${file.type})`,
+                performedBy: {
+                    uid: currentUser.id,
+                    name: currentUser.name,
+                    role: currentUser.role
+                },
+                relatedUserIds: []
+            })
         }
     }
 
@@ -1469,7 +1848,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             // Ensure teamId is attached
             const docRef = await addDoc(collection(db, "expenses"), {
                 ...expense,
-                teamId: currentTeam.id
+                orgId: currentTeam.id
             })
 
             // Notification: Everyone gets notified for every payment
@@ -1482,7 +1861,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 link: `/expenses?id=${docRef.id}`,
                 relatedId: docRef.id,
                 target: 'all',
-                teamId: currentTeam.id,
+                orgId: currentTeam.id,
                 creatorId: currentUser?.id
             })
         } catch (e) {
@@ -1507,7 +1886,24 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     link: '/expenses',
                     relatedId: id,
                     target: 'admin',
-                    teamId: currentTeam.id
+                    orgId: currentTeam.id
+                })
+            }
+
+            if (currentTeam && currentUser) {
+                const exp = expenses.find(e => e.id === id)
+                logActivity(db, currentTeam.id, {
+                    action: "UPDATE",
+                    entityType: "EXPENSE",
+                    entityId: id,
+                    entityTitle: exp?.title || "Expense",
+                    details: `Updated expense`,
+                    performedBy: {
+                        uid: currentUser.id,
+                        name: currentUser.name,
+                        role: currentUser.role
+                    },
+                    relatedUserIds: []
                 })
             }
         } catch (e) {
@@ -1531,7 +1927,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const cleanedData = Object.fromEntries(
                 Object.entries({
                     ...income,
-                    teamId: currentTeam.id,
+                    orgId: currentTeam.id,
                     items: income.items || [],
                     sections: income.sections || undefined,
                 }).filter(([_, v]) => v !== undefined)
@@ -1545,12 +1941,28 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 type: 'info', // or success
                 date: new Date().toISOString(),
                 read: false,
-                link: '/income',
+                link: '/incomes',
                 relatedId: 'income-new',
                 target: 'admin',
-                teamId: currentTeam.id,
+                orgId: currentTeam.id,
                 creatorId: currentUser?.id
             })
+
+            // Log Activity
+            await logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "INCOME",
+                entityId: "", // ID not easily available in void return but harmless
+                entityTitle: `${income.type} ${income.documentNumber}`,
+                details: `Created ${income.type}: ${income.total}`,
+                performedBy: {
+                    uid: currentUser?.id || "unknown",
+                    name: currentUser?.name || "Unknown",
+                    role: currentUser?.role || "Staff"
+                },
+                relatedUserIds: [income.customerId]
+            })
+
         } catch (e) {
             console.error("Error adding income", e)
         }
@@ -1588,6 +2000,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             if (updates.taxId) orgUpdates['settings.taxId'] = updates.taxId
             if (updates.phone) orgUpdates['settings.phone'] = updates.phone
             if (updates.logo) orgUpdates['settings.logoUrl'] = updates.logo
+            if (updates.email) orgUpdates['settings.email'] = updates.email
+            if (updates.website) orgUpdates['settings.website'] = updates.website
 
             await updateDoc(orgRef, orgUpdates)
 
@@ -1632,7 +2046,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    const filteredProjects = projects.filter(p => (p.teamId || '1') === currentTeam?.id)
+    const filteredProjects = projects.filter(p => p.orgId === currentTeam?.id)
     const filteredProjectIds = new Set(filteredProjects.map(p => p.id))
 
     // Missing Functions Implementation
@@ -1643,12 +2057,30 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 ...contract,
                 createdAt: new Date().toISOString(),
                 status: "Active",
-                teamId: currentTeam.id
+                orgId: currentTeam.id
             })
+
+
+            // Log Activity
+            await logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "CONTRACT",
+                entityId: "",
+                entityTitle: contract.title,
+                details: `Created contract with total amount: ${contract.totalAmount}`,
+                performedBy: {
+                    uid: currentUser?.id || "unknown",
+                    name: currentUser?.name || "Unknown",
+                    role: currentUser?.role || "Staff"
+                },
+                relatedUserIds: [contract.workerId]
+            })
+
         } catch (e) {
             console.error("Error adding contract", e)
         }
     }
+    // End of addContract
 
 
 
@@ -1656,7 +2088,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <ProjectContext.Provider value={{
-            projects: filteredProjects,
+            projects: filteredProjects.filter(p => !p.isArchived), // Hide archived
             addProject,
             updateProject,
             deleteProject,
@@ -1667,21 +2099,21 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             currentTeam,
             switchTeam,
             addTeam: async (name: string) => {
-                await createOrganization(name)
+                return await createOrganization(name)
             },
 
 
             addTask,
-            tasks,
+            tasks: tasks.filter(t => !t.isArchived), // Hide archived
             addSubProject,
             updateTask,
             deleteTask,
             toggleTask,
-            expenses: expenses.filter(e => !e.projectId || filteredProjectIds.has(e.projectId)),
+            expenses: expenses.filter(e => (!e.projectId || filteredProjectIds.has(e.projectId)) && !e.isArchived), // Hide archived
             addExpense,
             updateExpense,
             deleteExpense,
-            users: users.filter(u => u.teamIds?.includes(currentTeam?.id || '')),
+            users: users.filter(u => u.orgIds?.includes(currentTeam?.id || '')),
             workers,
             addUser,
             updateUser,
@@ -1697,7 +2129,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             addCustomer,
             updateCustomer,
             deleteCustomer,
-            incomes: incomes.filter(i => filteredProjectIds.has(i.projectId)),
+            incomes: incomes.filter(i => filteredProjectIds.has(i.projectId) && !i.isArchived),
             incomesLoading,
             addIncome,
             updateIncome,
@@ -1713,6 +2145,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             register,
             updateUserPassword,
             logout,
+            deleteAccount,
             restoreData,
             seedData,
             files: files.filter(f => !f.projectId || filteredProjectIds.has(f.projectId)),
@@ -1723,6 +2156,20 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             payInstallment,
             updateContract,
             deleteContract,
+            // Archive System
+            archiveProject,
+            unarchiveProject,
+            archiveTask,
+            unarchiveTask,
+            archiveExpense,
+            unarchiveExpense,
+            archiveIncome,
+            unarchiveIncome,
+            // Archived data for Archive page
+            archivedProjects: projects.filter(p => p.isArchived === true),
+            archivedTasks: tasks.filter(t => t.isArchived === true),
+            archivedExpenses: expenses.filter(e => e.isArchived === true),
+            archivedIncomes: incomes.filter(i => i.isArchived === true),
         }}>
             {children}
         </ProjectContext.Provider>

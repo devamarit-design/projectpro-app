@@ -3,7 +3,9 @@
 import * as React from "react"
 import { useProjects } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
-import { Mail, Phone, Shield, User as UserIcon, Save, X, Camera, LogOut, Check } from "lucide-react"
+import { createPortal } from "react-dom"
+import { auth } from "@/lib/firebase"
+import { Mail, Phone, Shield, User as UserIcon, Save, X, Camera, LogOut, Check, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export default function ProfilePage() {
@@ -221,25 +223,204 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Log Out Button */}
-                <div className="pt-6 border-t border-border flex justify-center">
-                    <button
-                        onClick={() => {
-                            if (window.confirm(t.common.confirm_logout)) {
-                                setCurrentUser(null)
-                                window.location.href = "/"
-                            }
-                        }}
-                        className="flex items-center gap-2 px-6 py-3 bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-400 rounded-xl font-bold transition-all"
-                    >
-                        <LogOut className="w-5 h-5" />
-                        {t.common.log_out}
-                    </button>
-                </div>
+                <LogoutButton />
             </div>
 
             {/* Security Section */}
             <SecuritySection />
-        </div>
+
+            {/* Danger Zone */}
+            <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 shadow-sm space-y-6">
+                <div className="flex items-center gap-3 text-red-600">
+                    <div className="p-2 bg-red-500/10 rounded-lg">
+                        <AlertTriangle className="w-5 h-5" />
+                    </div>
+                    <h2 className="text-xl font-bold">Danger Zone</h2>
+                </div>
+                <div className="h-px bg-red-500/10" />
+
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="font-medium text-red-900">Delete Account</h3>
+                        <p className="text-sm text-red-700/70">Permanently delete your account and all data.</p>
+                    </div>
+                    <DeleteAccountButton />
+                </div>
+            </div>
+        </div >
+    )
+}
+
+function LogoutButton() {
+    const { logout } = useProjects()
+    const { t } = useTranslation()
+    const [isOpen, setIsOpen] = React.useState(false)
+
+    const handleLogout = async () => {
+        try {
+            await logout()
+            window.location.href = "/login"
+        } catch (error) {
+            console.error("Logout failed", error)
+            alert("Failed to log out")
+        }
+    }
+
+    return (
+        <>
+            <button
+                type="button"
+                onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setIsOpen(true)
+                }}
+                className="flex items-center gap-2 px-6 py-3 bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-400 rounded-xl font-bold transition-all"
+            >
+                <LogOut className="w-5 h-5" />
+                {t.common.log_out}
+            </button>
+
+            {isOpen && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-xl animate-in zoom-in-95 text-left">
+                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600">
+                            <LogOut className="w-6 h-6 ml-1" />
+                        </div>
+                        <div className="text-center space-y-2">
+                            <h3 className="text-xl font-bold text-gray-900">{t.common.log_out}?</h3>
+                            <p className="text-gray-500 text-sm">
+                                {t.common.confirm_logout}
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsOpen(false)}
+                                className="px-4 py-3 rounded-xl font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="px-4 py-3 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 transition-colors"
+                            >
+                                {t.common.log_out}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+        </>
+    )
+}
+
+function DeleteAccountButton() {
+    const { deleteAccount } = useProjects()
+    const { t } = useTranslation()
+    const [isOpen, setIsOpen] = React.useState(false)
+    const [isDeleting, setIsDeleting] = React.useState(false)
+    const [password, setPassword] = React.useState("")
+    const [error, setError] = React.useState("")
+
+    // Check if user needs password confirmation (Password Provider)
+    const isPasswordUser = auth.currentUser?.providerData.some(p => p.providerId === 'password')
+
+    const handleDelete = async () => {
+        setError("")
+        if (isPasswordUser && !password) {
+            setError("Password is required to confirm deletion.")
+            return
+        }
+
+        setIsDeleting(true)
+        try {
+            await deleteAccount(password)
+        } catch (error: any) {
+            console.error(error)
+            const msg = error.message || "Failed to delete account."
+            setError(msg)
+            alert(msg)
+            setIsDeleting(false)
+        }
+    }
+
+    return (
+        <>
+            <button
+                type="button"
+                onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setIsOpen(true)
+                    setPassword("")
+                    setError("")
+                }}
+                className="bg-red-500 text-white px-4 py-2 rounded-xl font-bold shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all active:scale-95"
+            >
+                Delete Account
+            </button>
+
+
+
+            {isOpen && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in text-left">
+                    <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-xl animate-in zoom-in-95">
+                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600">
+                            <AlertTriangle className="w-6 h-6" />
+                        </div>
+                        <div className="text-center space-y-2">
+                            <h3 className="text-xl font-bold text-gray-900">Delete Account?</h3>
+                            <p className="text-gray-500 text-sm">
+                                This action cannot be undone. All your data will be permanently removed.
+                            </p>
+                        </div>
+
+                        {/* Password Prompt for Email Users */}
+                        {isPasswordUser && (
+                            <div className="space-y-2">
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Enter your password to confirm"
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-gray-900"
+                                />
+                            </div>
+                        )}
+
+                        {error && (
+                            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium flex items-center gap-2 text-left">
+                                <AlertTriangle className="w-4 h-4 shrink-0" />
+                                <span>{error}</span>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsOpen(false)}
+                                className="px-4 py-3 rounded-xl font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                disabled={isDeleting || (isPasswordUser && !password)}
+                                className="px-4 py-3 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isDeleting ? "Deleting..." : "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )
+            }
+        </>
     )
 }
 

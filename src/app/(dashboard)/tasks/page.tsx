@@ -35,11 +35,12 @@ import { SortableTaskCard } from "@/components/tasks/sortable-task-card"
 import { TasksColumn } from "@/components/tasks/tasks-column"
 
 export default function TasksPage() {
-    const { projects, tasks, updateTask, deleteTask, toggleTask, currentUser, users } = useProjects()
+    const { projects, tasks, archivedTasks, updateTask, deleteTask, toggleTask, currentUser, users } = useProjects()
     const { t } = useTranslation()
     const [searchQuery, setSearchQuery] = React.useState("")
     const [projectFilter, setProjectFilter] = React.useState<string>("all")
     const [userFilter, setUserFilter] = React.useState<string>("all")
+    const [showArchived, setShowArchived] = React.useState(false)
     const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
     const [showAddTask, setShowAddTask] = React.useState(false)
 
@@ -57,7 +58,8 @@ export default function TasksPage() {
 
     // Aggregate all tasks from global state
     const allTasks: DetailedTask[] = React.useMemo(() => {
-        return tasks.map(task => {
+        const sourceTasks = showArchived ? archivedTasks : tasks
+        return sourceTasks.map(task => {
             const project = projects.find(p => p.id === task.projectId)
             return {
                 ...task,
@@ -65,7 +67,7 @@ export default function TasksPage() {
                 projectName: project?.name || "Unknown Project"
             }
         })
-    }, [tasks, projects])
+    }, [tasks, projects, showArchived, archivedTasks])
 
     // Filter tasks based on search, project, and user permissions
     const filteredTasks = React.useMemo(() => {
@@ -85,7 +87,7 @@ export default function TasksPage() {
                 }
             } else {
                 // Non-admin can ONLY see their own tasks
-                matchesUser = task.assignedTo === currentUser?.name
+                matchesUser = task.assignedTo === currentUser?.id || task.assignedTo === currentUser?.name
             }
 
             return matchesSearch && matchesProject && matchesUser
@@ -204,7 +206,7 @@ export default function TasksPage() {
                                 >
                                     <option value="all">{t.tasks.filters.all_users}</option>
                                     {users.map(u => (
-                                        <option key={u.id} value={u.name}>{u.name}</option>
+                                        <option key={u.id} value={u.id}>{u.name}</option>
                                     ))}
                                 </select>
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
@@ -214,13 +216,29 @@ export default function TasksPage() {
                         )}
                     </div>
 
-                    <button
-                        onClick={() => setShowAddTask(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all w-full sm:w-auto justify-center whitespace-nowrap"
-                    >
-                        <Plus className="w-5 h-5" />
-                        {t.tasks.new_task}
-                    </button>
+                    <div className="flex gap-3 w-full sm:w-auto">
+                        <button
+                            onClick={() => setShowArchived(!showArchived)}
+                            className={cn(
+                                "px-3 py-2 border rounded-xl transition-all duration-300 flex items-center gap-2",
+                                showArchived
+                                    ? "bg-gray-500/20 text-gray-500 border-gray-500/50"
+                                    : "bg-background/50 border-white/10 hover:bg-muted/50 text-muted-foreground"
+                            )}
+                            title={showArchived ? "Show Active Tasks" : "Show Archived Tasks"}
+                        >
+                            <Filter className="w-4 h-4" />
+                            {showArchived && <span className="text-xs font-semibold">Archived</span>}
+                        </button>
+
+                        <button
+                            onClick={() => setShowAddTask(true)}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all w-full sm:w-auto justify-center whitespace-nowrap"
+                        >
+                            <Plus className="w-5 h-5" />
+                            {t.tasks.new_task}
+                        </button>
+                    </div>
                 </div>
             </div>
 

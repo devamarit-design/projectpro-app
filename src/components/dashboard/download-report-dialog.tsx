@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useProjects } from "@/context/project-context"
 import { Calendar, Building, Download, FileText, ChevronDown, FileSpreadsheet } from "lucide-react"
+import { generateDashboardReport } from "./dashboard-report-pdf"
 
 interface DownloadReportDialogProps {
     open: boolean
@@ -83,34 +84,21 @@ export function DownloadReportDialog({ open, onOpenChange }: DownloadReportDialo
             if (format === 'csv') {
                 generateCSV(filteredIncomes, filteredExpenses, filteredProjects)
             } else {
-                // 4. Generate PDF via server-side for Thai font support
-                const { generateServerPDF, generateDashboardReportHTML } = await import('@/lib/server-pdf')
+                // 4. Generate printable HTML and open in new window for Print-to-PDF (supports Thai fonts)
+                const totalIncome = filteredIncomes.reduce((sum, i) => sum + (i.grandTotal || 0), 0)
+                const totalExpense = filteredExpenses.reduce((sum, e) => sum + (e.totalValue || 0), 0)
+                const profit = totalIncome - totalExpense
 
-                const html = generateDashboardReportHTML({
+                printReportHTML({
                     companyName: companyProfile?.name || 'Company',
                     dateRange: `${dateRangeLabel} ${scope === 'project' ? '(Project Specific)' : ''}`,
-                    totalIncome: filteredIncomes.reduce((sum, i) => sum + (i.grandTotal || 0), 0),
-                    totalExpense: filteredExpenses.reduce((sum, e) => sum + (e.totalValue || 0), 0),
-                    projects: filteredProjects.map(p => ({
-                        name: p.name,
-                        budget: Number(p.budget) || 0,
-                        progress: p.progress || 0
-                    })),
-                    recentIncomes: filteredIncomes.slice(0, 10).map(i => ({
-                        date: i.date,
-                        type: i.type,
-                        docNumber: i.documentNumber,
-                        amount: i.grandTotal || 0
-                    })),
-                    recentExpenses: filteredExpenses.slice(0, 10).map(e => ({
-                        date: e.date,
-                        category: e.category,
-                        title: e.title,
-                        amount: e.totalValue || 0
-                    }))
+                    totalIncome,
+                    totalExpense,
+                    profit,
+                    projects: filteredProjects,
+                    incomes: filteredIncomes,
+                    expenses: filteredExpenses
                 })
-
-                await generateServerPDF(html, `Report_${new Date().toISOString().split('T')[0]}.pdf`)
             }
 
             onOpenChange(false)
@@ -157,6 +145,147 @@ export function DownloadReportDialog({ open, onOpenChange }: DownloadReportDialo
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
+    }
+
+    // Print-to-PDF function (supports Thai fonts via browser)
+    const printReportHTML = (data: {
+        companyName: string
+        dateRange: string
+        totalIncome: number
+        totalExpense: number
+        profit: number
+        projects: any[]
+        incomes: any[]
+        expenses: any[]
+    }) => {
+        const formatCurrency = (amt: number) => amt.toLocaleString('th-TH', { minimumFractionDigits: 2 })
+        const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('th-TH') : '-'
+
+        const projectRows = data.projects.slice(0, 10).map(p => `
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${p.name}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${p.customer || '-'}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${p.progress || 0}%</td>
+                <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${p.status}</td>
+            </tr>
+        `).join('')
+
+        const incomeRows = data.incomes.slice(0, 10).map(i => `
+            <tr>
+                <td style="padding: 6px; border-bottom: 1px solid #f3f4f6;">${formatDate(i.date)}</td>
+                <td style="padding: 6px; border-bottom: 1px solid #f3f4f6;">${i.documentNumber} (${i.type})</td>
+                <td style="padding: 6px; border-bottom: 1px solid #f3f4f6;">${i.status}</td>
+                <td style="padding: 6px; border-bottom: 1px solid #f3f4f6; text-align: right; color: #10b981;">+฿${formatCurrency(i.grandTotal || 0)}</td>
+            </tr>
+        `).join('')
+
+        const expenseRows = data.expenses.slice(0, 10).map(e => `
+            <tr>
+                <td style="padding: 6px; border-bottom: 1px solid #f3f4f6;">${formatDate(e.date)}</td>
+                <td style="padding: 6px; border-bottom: 1px solid #f3f4f6;">${e.title}</td>
+                <td style="padding: 6px; border-bottom: 1px solid #f3f4f6;">${e.category}</td>
+                <td style="padding: 6px; border-bottom: 1px solid #f3f4f6; text-align: right; color: #ef4444;">-฿${formatCurrency(e.totalValue || 0)}</td>
+            </tr>
+        `).join('')
+
+        const html = `
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>รายงานภาพรวม - ${data.companyName}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+        @page { size: A4; margin: 15mm; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Sarabun', 'TH Sarabun New', sans-serif; font-size: 12px; color: #1f2937; padding: 0; max-width: 100%; margin: 0; }
+        @media print { body { padding: 0; } }
+        h1 { font-size: 22px; color: #3b82f6; margin-bottom: 4px; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #3b82f6; padding-bottom: 12px; margin-bottom: 16px; }
+        .meta { text-align: right; color: #6b7280; font-size: 10px; }
+        .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+        .card { background: #f9fafb; border-radius: 8px; padding: 10px; border: 1px solid #e5e7eb; }
+        .card-label { font-size: 9px; color: #6b7280; text-transform: uppercase; margin-bottom: 2px; }
+        .card-value { font-size: 18px; font-weight: 700; }
+        .income { color: #10b981; }
+        .expense { color: #ef4444; }
+        .profit { color: #3b82f6; }
+        .loss { color: #ef4444; }
+        .section { margin-bottom: 14px; }
+        .section-title { font-size: 13px; font-weight: 700; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-bottom: 8px; color: #374151; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { text-align: left; padding: 4px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-size: 9px; text-transform: uppercase; color: #6b7280; }
+        td { padding: 4px; }
+        .footer { text-align: center; font-size: 9px; color: #9ca3af; margin-top: 16px; padding-top: 8px; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>รายงานภาพรวม</h1>
+            <p style="color: #6b7280;">${data.companyName}</p>
+        </div>
+        <div class="meta">
+            <p>ช่วงเวลา: ${data.dateRange}</p>
+            <p>สร้างเมื่อ: ${new Date().toLocaleDateString('th-TH')}</p>
+        </div>
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <div class="card-label">รายรับรวม</div>
+            <div class="card-value income">฿${formatCurrency(data.totalIncome)}</div>
+        </div>
+        <div class="card">
+            <div class="card-label">รายจ่ายรวม</div>
+            <div class="card-value expense">฿${formatCurrency(data.totalExpense)}</div>
+        </div>
+        <div class="card">
+            <div class="card-label">กำไร/ขาดทุน</div>
+            <div class="card-value ${data.profit >= 0 ? 'profit' : 'loss'}">${data.profit >= 0 ? '' : '-'}฿${formatCurrency(Math.abs(data.profit))}</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">โครงการ (${data.projects.length})</div>
+        <table>
+            <thead><tr><th>ชื่อโครงการ</th><th>ลูกค้า</th><th style="text-align:right;">ความคืบหน้า</th><th>สถานะ</th></tr></thead>
+            <tbody>${projectRows || '<tr><td colspan="4" style="padding: 16px; text-align: center; color: #9ca3af;">ไม่พบโครงการ</td></tr>'}</tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">รายรับล่าสุด</div>
+        <table>
+            <thead><tr><th>วันที่</th><th>เอกสาร</th><th>สถานะ</th><th style="text-align:right;">จำนวนเงิน</th></tr></thead>
+            <tbody>${incomeRows || '<tr><td colspan="4" style="padding: 16px; text-align: center; color: #9ca3af;">ไม่มีข้อมูล</td></tr>'}</tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">รายจ่ายล่าสุด</div>
+        <table>
+            <thead><tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th style="text-align:right;">จำนวนเงิน</th></tr></thead>
+            <tbody>${expenseRows || '<tr><td colspan="4" style="padding: 16px; text-align: center; color: #9ca3af;">ไม่มีข้อมูล</td></tr>'}</tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        Generated by ProjectPro • ${new Date().toLocaleString('th-TH')}
+    </div>
+
+    <script>window.onload = function() { window.print(); }</script>
+</body>
+</html>
+        `
+
+        const printWindow = window.open('', '_blank')
+        if (printWindow) {
+            printWindow.document.write(html)
+            printWindow.document.close()
+        } else {
+            alert('กรุณาอนุญาต Popup เพื่อเปิดหน้าพิมพ์')
+        }
     }
 
     return (

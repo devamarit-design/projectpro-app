@@ -164,14 +164,9 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         // Critical Path: Create the Org Document
         await setDoc(newOrgRef, newOrg)
 
-        // OPTIMIZATION: Update Local State IMMEDIATELY to unblock UI
-        // We don't wait for the User Profile update (which can take 1-2s)
-        const updatedOrgs = [...userOrgs, newOrg]
-        setUserOrgs(updatedOrgs)
-        setCurrentOrg(newOrg)
-
-        // 3. Update User Profile to include this Org (Background)
-        // We don't await this for the UI response
+        // 3. Update User Profile to include this Org (Background -> Foreground)
+        // We MUST await this to ensure the user has the org in their profile
+        // before the app reloads/re-initializes.
         const updateUserProfile = async () => {
             try {
                 const userRef = doc(db, "users", firebaseUser.uid)
@@ -180,24 +175,33 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                 if (userSnap.exists()) {
                     const userData = userSnap.data()
                     const existingOrgs = userData.organizations || []
+                    const existingTeamIds = userData.orgIds || []
                     await setDoc(userRef, {
                         ...userData,
-                        organizations: [...existingOrgs, { orgId: newOrg.id, role: "Owner" }]
+                        organizations: [...existingOrgs, { orgId: newOrg.id, role: "Owner" }],
+                        orgIds: Array.from(new Set([...existingTeamIds, newOrg.id]))
                     }, { merge: true })
                 } else {
                     await setDoc(userRef, {
                         id: firebaseUser.uid,
                         email: firebaseUser.email,
-                        organizations: [{ orgId: newOrg.id, role: "Owner" }]
+                        organizations: [{ orgId: newOrg.id, role: "Owner" }],
+                        orgIds: [newOrg.id]
                     })
                 }
             } catch (err) {
-                console.error("Background User Profile Update Failed:", err)
-                // In a real app, we might need a retry queue or rollback
+                console.error("User Profile Update Failed:", err)
+                throw err // Re-throw to block navigation if this fails
             }
         }
 
-        updateUserProfile()
+        await updateUserProfile()
+
+        // 4. Update Local State & Redirect
+        // Now it is safe to reload because Firestore has the link.
+        const updatedOrgs = [...userOrgs, newOrg]
+        setUserOrgs(updatedOrgs)
+        setCurrentOrg(newOrg)
 
         return newOrg.id
     }
@@ -238,10 +242,10 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
         // Avoid duplicates in user profile too
         if (!existingOrgs.some((o: any) => o.orgId === orgId)) {
-            const teamIds = userData?.teamIds || []
+            const orgIds = userData?.orgIds || []
             await setDoc(userRef, {
                 organizations: [...existingOrgs, { orgId: orgId, role: "Staff" }],
-                teamIds: Array.from(new Set([...teamIds, orgId])) // Legacy compatibility
+                orgIds: Array.from(new Set([...orgIds, orgId])) // Legacy compatibility
             }, { merge: true })
         }
 
@@ -292,9 +296,9 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         localStorage.setItem("lastOrgId", org.id)
         setCurrentOrgState(org)
 
-        // FORCE RELOAD: Tearing down the app ensures all Firestore listeners are unsubscribed
-        // and memory is cleared, focused solely on the new organization's data.
-        window.location.reload()
+        // NO RELOAD: ProjectContext handles switching teams via useEffect cleanup and re-subscription.
+        // Reloading caused infinite loops and memory crashes.
+        // window.location.reload() 
     }
 
     const refreshOrgs = async () => {

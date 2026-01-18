@@ -195,52 +195,20 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
     const handleExport = async () => {
         setIsExporting(true)
         try {
-            const { generateServerPDF, generateIncomeDocumentHTML } = await import('@/lib/server-pdf')
+            const { generatePDF } = await import('@/components/income/pdf-document')
 
-            // Flatten items for simple mode or from sections
-            const items = document.items?.length ? document.items :
-                (document.sections?.flatMap(s => s.items) || [])
+            await generatePDF({
+                document,
+                customer: customer,
+                project: project,
+                themeColor: themeColor,
+                lang: lang,
+                manualPageBreaks: manualBreaks,
+                orgProfile: orgProfile,
+                columns: visibleColumns,
+                template: template
+            })
 
-            const html = generateIncomeDocumentHTML(
-                {
-                    type: document.type,
-                    documentNumber: document.documentNumber,
-                    date: document.date,
-                    customerName: customer?.name,
-                    customerAddress: customer?.address,
-                    customerTaxId: customer?.taxId,
-                    projectName: project?.name,
-                    projectDescription: project?.description,
-                    items: items.map(i => ({
-                        name: i.name || i.description || 'Item',
-                        description: i.name && i.description ? i.description : undefined,
-                        quantity: i.quantity,
-                        unit: i.unit,
-                        unitPrice: i.unitPrice,
-                        total: i.total,
-                        image: i.image
-                    })),
-                    subtotal: document.subtotal || 0,
-                    discount: document.discount || 0,
-                    tax: document.tax || 0,
-                    grandTotal: document.grandTotal || document.total || 0,
-                    paymentDetails: documentSettings[document.type.toLowerCase()]?.terms || document.paymentDetails,
-                    note: document.note
-                },
-                {
-                    name: orgProfile?.name || 'Company Name',
-                    address: orgProfile?.address,
-                    taxId: orgProfile?.taxId,
-                    tel: orgProfile?.phone,
-                    email: orgProfile?.email,
-                    logo: orgProfile?.logo
-                },
-                themeColor,
-                LABELS[lang]
-            )
-
-            const filename = `${document.type}_${document.documentNumber}.pdf`
-            await generateServerPDF(html, filename)
         } catch (error) {
             console.error('PDF Export Error:', error)
             alert(`PDF Export Failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -253,53 +221,22 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
         setIsExporting(true)
         try {
             // Import Dependencies
-            const { generateServerPDFBlob, generateIncomeDocumentHTML } = await import('@/lib/server-pdf')
+            const { generatePDFBlob } = await import('@/components/income/pdf-document')
             const JSZip = (await import('jszip')).default
             const { saveAs } = await import('file-saver')
 
-            // 1. Generate PDF on Server (Guarantees A4 & Unicode support)
-            const items = document.items?.length ? document.items :
-                (document.sections?.flatMap(s => s.items) || [])
-
-            const html = generateIncomeDocumentHTML(
-                {
-                    type: document.type,
-                    documentNumber: document.documentNumber,
-                    date: document.date,
-                    customerName: customer?.name,
-                    customerAddress: customer?.address,
-                    customerTaxId: customer?.taxId,
-                    projectName: project?.name,
-                    projectDescription: project?.description,
-                    items: items.map(i => ({
-                        name: i.name || i.description || 'Item',
-                        description: i.name && i.description ? i.description : undefined,
-                        quantity: i.quantity,
-                        unit: i.unit,
-                        unitPrice: i.unitPrice,
-                        total: i.total,
-                        image: i.image
-                    })),
-                    subtotal: document.subtotal || 0,
-                    discount: document.discount || 0,
-                    tax: document.tax || 0,
-                    grandTotal: document.grandTotal || document.total || 0,
-                    paymentDetails: documentSettings[document.type.toLowerCase()]?.terms || document.paymentDetails,
-                    note: document.note
-                },
-                {
-                    name: orgProfile?.name || 'Company Name',
-                    address: orgProfile?.address,
-                    taxId: orgProfile?.taxId,
-                    tel: orgProfile?.phone,
-                    email: orgProfile?.email,
-                    logo: orgProfile?.logo
-                },
+            // 1. Generate PDF Blob (Client-Side with Thai Fonts)
+            const pdfBlob = await generatePDFBlob({
+                document,
+                customer,
+                project,
                 themeColor,
-                LABELS[lang]
-            )
-
-            const pdfBlob = await generateServerPDFBlob(html)
+                lang,
+                manualPageBreaks: manualBreaks,
+                orgProfile: orgProfile,
+                columns: visibleColumns,
+                template: template
+            })
 
             // 2. Convert PDF to Images using pdfjs-dist
             const pdfjsLib = await import('pdfjs-dist')
@@ -351,6 +288,11 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
         } finally {
             setIsExporting(false)
         }
+    }
+
+    // Print to PDF via browser (supports Thai fonts perfectly)
+    const handlePrint = () => {
+        window.print()
     }
 
     return (
@@ -480,6 +422,15 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* Print Button (Thai Font Friendly) */}
+                        <button
+                            onClick={handlePrint}
+                            title="Print / Save as PDF"
+                            className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow active:scale-95"
+                        >
+                            <Printer className="w-5 h-5" />
+                        </button>
+
                         <button
                             onClick={handleExportImage}
                             disabled={isExporting}
@@ -492,7 +443,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                         <button
                             onClick={handleExport}
                             disabled={isExporting}
-                            title="Export PDF"
+                            title="Export PDF (May not support Thai)"
                             className="p-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-wait"
                         >
                             {isExporting ? (

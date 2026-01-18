@@ -1,14 +1,13 @@
 
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { format } from 'date-fns'
-
-// Using Helvetica to ensure PDF generation works
+import { registerThaiFonts } from '@/lib/pdf-fonts'
 
 const styles = StyleSheet.create({
     page: {
         padding: 40,
-        fontFamily: 'Helvetica',
-        fontSize: 10,
+        fontFamily: 'THSarabunNew',
+        fontSize: 12,
         color: '#333',
     },
     header: {

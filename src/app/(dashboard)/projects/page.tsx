@@ -2,18 +2,25 @@
 
 import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
-import { Search, Plus, Filter, Calendar, MapPin, MoreHorizontal } from "lucide-react"
+import { Search, Plus, Filter, Calendar, MapPin, MoreHorizontal, Archive, RefreshCcw } from "lucide-react"
 import { useState, useMemo } from "react"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { hasPermission } from "@/lib/permissions"
+import { cn } from "@/lib/utils"
 
 import { useProjects } from "@/context/project-context"
 
 export default function ProjectsPage() {
     const { t } = useTranslation()
-    const { projects, expenses, isLoading, currentUser } = useProjects()
+    const { projects, archivedProjects, expenses, isLoading, currentUser, archiveProject, unarchiveProject } = useProjects()
     const [searchQuery, setSearchQuery] = useState("")
+    const [showArchived, setShowArchived] = useState(false)
     const [showFilters, setShowFilters] = useState(false)
     const [statusFilter, setStatusFilter] = useState<string | null>(null)
+    const [archiveConfirm, setArchiveConfirm] = useState<{ isOpen: boolean; projectId: string | null }>({
+        isOpen: false,
+        projectId: null
+    })
 
     // Calculate total expenses per project from actual expense data
     const getProjectExpenses = useMemo(() => {
@@ -33,7 +40,8 @@ export default function ProjectsPage() {
     }, [expenses])
 
     // Filter logic
-    const filteredProjects = projects.filter(project => {
+    const sourceProjects = showArchived ? archivedProjects : projects
+    const filteredProjects = sourceProjects.filter(project => {
         const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             project.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
             project.location.toLowerCase().includes(searchQuery.toLowerCase())
@@ -49,8 +57,29 @@ export default function ProjectsPage() {
         { label: t.projects.status.on_hold, value: "On Hold" }
     ]
 
+    const handleArchiveConfirm = async () => {
+        if (archiveConfirm.projectId) {
+            await archiveProject(archiveConfirm.projectId)
+            setArchiveConfirm({ isOpen: false, projectId: null })
+        }
+    }
+
+    const handleRestore = async (id: string) => {
+        await unarchiveProject(id)
+    }
+
     return (
         <div className="space-y-6 pb-20">
+            <ConfirmDialog
+                isOpen={archiveConfirm.isOpen}
+                onClose={() => setArchiveConfirm({ isOpen: false, projectId: null })}
+                onConfirm={handleArchiveConfirm}
+                title="Archive โปรเจค"
+                message="คุณต้องการ Archive โปรเจคนี้หรือไม่?"
+                confirmText="Archive"
+                cancelText="ยกเลิก"
+                variant="warning"
+            />
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-primary font-sans">{t.common.projects}</h1>
@@ -83,6 +112,19 @@ export default function ProjectsPage() {
                         className={`px-3 py-2 border rounded-xl transition-all duration-300 ${showFilters || statusFilter ? 'bg-primary text-primary-foreground border-primary' : 'bg-background/50 border-white/10 hover:bg-muted/50 text-muted-foreground'}`}
                     >
                         <Filter className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={() => setShowArchived(!showArchived)}
+                        className={cn(
+                            "px-3 py-2 border rounded-xl transition-all duration-300 flex items-center gap-2",
+                            showArchived
+                                ? "bg-gray-500/20 text-gray-500 border-gray-500/50"
+                                : "bg-background/50 border-white/10 hover:bg-muted/50 text-muted-foreground"
+                        )}
+                        title={showArchived ? "Show Active Projects" : "Show Archived Projects"}
+                    >
+                        <Archive className="w-5 h-5" />
+                        {showArchived && <span className="text-xs font-semibold">Archived</span>}
                     </button>
                 </div>
 
@@ -139,7 +181,13 @@ export default function ProjectsPage() {
                     ))
                 ) : filteredProjects.length > 0 ? (
                     filteredProjects.map((project) => (
-                        <Link href={`/projects/detail?id=${project.id}`} key={project.id} className="group glass-card rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-white/5 block">
+                        <Link
+                            href={`/projects/detail?id=${project.id}`}
+                            key={project.id}
+                            className={cn(
+                                "group glass-card rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-white/5 block",
+                                project.isArchived && "opacity-60 grayscale bg-gray-500/5 hover:bg-gray-500/10 border-gray-500/20"
+                            )}>
                             {/* Project Image */}
                             <div className="h-48 w-full relative overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
@@ -214,8 +262,35 @@ export default function ProjectsPage() {
                                         <Calendar className="w-3 h-3" />
                                         <span>{t.projects.due}: {project.endDate}</span>
                                     </div>
-                                    <button className="p-2 hover:bg-muted/50 rounded-full transition-colors">
-                                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                                    <button
+                                        onClick={async (e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                            if (showArchived) {
+                                                await handleRestore(project.id)
+                                            } else {
+                                                setArchiveConfirm({ isOpen: true, projectId: project.id })
+                                            }
+                                        }}
+                                        className={cn(
+                                            "p-2 rounded-full transition-colors group/archive",
+                                            project.status === 'Completed' || showArchived
+                                                ? "hover:bg-amber-500/10"
+                                                : "opacity-30 cursor-not-allowed"
+                                        )}
+                                        title={showArchived ? "Restore Project" : (project.status === 'Completed' ? "Archive" : "Only Completed projects can be archived")}
+                                        disabled={!showArchived && project.status !== 'Completed'}
+                                    >
+                                        {showArchived ? (
+                                            <RefreshCcw className="w-4 h-4 text-green-500 group-hover/archive:text-green-600" />
+                                        ) : (
+                                            <Archive className={cn(
+                                                "w-4 h-4",
+                                                project.status === 'Completed'
+                                                    ? "text-muted-foreground group-hover/archive:text-amber-500"
+                                                    : "text-muted-foreground"
+                                            )} />
+                                        )}
                                     </button>
                                 </div>
                             </div>

@@ -1,18 +1,20 @@
 'use client'
 
-import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, pdf, Image } from '@react-pdf/renderer'
 import type { IncomeDocument, IncomeSection, IncomeItem, Customer, Project } from '@/context/project-context'
 import type { OrgProfile } from "@/context/settings-context"
 import { flattenDocumentItems, paginateItems } from '@/lib/pagination-utils'
 
-// Using Helvetica to ensure PDF generation works
-// Thai text will show as placeholders
+import { registerThaiFonts, THAI_FONT_FAMILY } from '@/lib/pdf-fonts'
+
+// Using Standard Thai Font
+const FONT_FAMILY = THAI_FONT_FAMILY
 
 const styles = StyleSheet.create({
     page: {
         padding: 40,
-        fontFamily: 'Helvetica',
-        fontSize: 10,
+        fontFamily: 'THSarabunNew',
+        fontSize: 14, // Increased from 10 because Sarabun is smaller
         backgroundColor: '#ffffff'
     },
     header: {
@@ -144,6 +146,7 @@ interface PDFDocumentProps {
     manualPageBreaks?: number[]
     columns?: { id: string, label: string, visible: boolean, order: number }[]
     orgProfile?: OrgProfile
+    template?: 'modern' | 'classic' | 'minimal'
 }
 
 // Helper to ensure color is valid hex
@@ -156,6 +159,7 @@ const safeColor = (color: string | undefined): string => {
 
 const LABELS = {
     th: {
+        original: 'ต้นฉบับ',
         quotation: 'ใบเสนอราคา',
         invoice: 'ใบวางบิล',
         receipt: 'ใบเสร็จรับเงิน',
@@ -176,6 +180,7 @@ const LABELS = {
         cont: 'ต่อ'
     },
     en: {
+        original: 'Origin',
         quotation: 'QUOTATION',
         invoice: 'INVOICE',
         receipt: 'RECEIPT',
@@ -205,7 +210,7 @@ const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3b82f6', lang = 'th', manualPageBreaks = [], columns, orgProfile }: PDFDocumentProps) => {
+export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3b82f6', lang = 'th', manualPageBreaks = [], columns, orgProfile, template = 'modern' }: PDFDocumentProps) => {
     const labels = LABELS[lang]
     // Map document type to label key safely
     const docTypeLower = doc.type.toLowerCase() as keyof typeof labels
@@ -218,20 +223,81 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
     // Use Shared Pagination Logic
     const flatItems = flattenDocumentItems(doc)
     const pages = paginateItems(flatItems, manualPageBreaks, {
-        itemsPerPage: 18, // Matches previous ITEMS_PER_PAGE in PDF
-        itemsFirstPage: 12 // Matches previous ITEMS_FIRST_PAGE in PDF
+        itemsPerPage: 18,
+        itemsFirstPage: 12
     })
 
     const finalThemeColor = safeColor(themeColor)
 
-    // Dynamically set theme color in header
-    const dynamicStyles = StyleSheet.create({
-        headerBorder: { borderBottomColor: finalThemeColor },
-        title: { color: finalThemeColor },
-        tableHeader: { backgroundColor: finalThemeColor },
-        grandTotalBorder: { borderTopColor: finalThemeColor },
-        grandTotalValue: { color: finalThemeColor }
-    })
+    // Template Flags
+    const isClassic = template === 'classic'
+    const isMinimal = template === 'minimal'
+    const isModern = template === 'modern' // default or explicit
+
+    // Helper for conditional styles
+    const getHeaderStyle = () => {
+        const base = {
+            flexDirection: 'row' as const,
+            justifyContent: 'space-between' as const,
+            marginBottom: 20,
+            paddingBottom: 10,
+        }
+        if (isClassic) {
+            return {
+                ...base,
+                flexDirection: 'row-reverse' as const,
+                borderBottomWidth: 2,
+                borderBottomColor: '#333333'
+            }
+        }
+        return base
+    }
+
+    const getTitleStyle = () => {
+        const base = styles.title
+        if (isClassic) {
+            return [base, { color: '#000000', textAlign: 'left' as const }]
+        }
+        return [base, { color: finalThemeColor, textAlign: 'right' as const }]
+    }
+
+    const getTableHeaderStyle = () => {
+        const base = {
+            flexDirection: 'row' as const,
+            padding: 8,
+            borderBottomWidth: 1,
+            borderBottomColor: isClassic ? '#000000' : '#e5e7eb',
+            backgroundColor: 'transparent',
+            color: '#000000'
+        }
+
+        if (isClassic) {
+            base.backgroundColor = '#f3f4f6'
+        } else if (isModern) {
+            base.color = finalThemeColor
+        }
+
+        return base
+    }
+
+    // Replace tStyles.infoBox logic logic
+    const getInfoBoxStyle = () => {
+        const base: any = { width: '48%' }
+
+        if (isClassic) {
+            base.padding = 10
+            base.borderWidth = 1
+            base.borderColor = '#000000'
+        } else if (isModern) {
+            base.padding = 12
+            base.borderWidth = 1
+            base.borderColor = '#f3f4f6'
+            base.backgroundColor = '#f9fafb'
+            base.borderRadius = 4
+        }
+        // Minimal has no padding/border added
+        return base
+    }
 
     // Default columns if not provided
     const visibleColumns = columns?.filter(c => c.visible).sort((a, b) => a.order - b.order) || [
@@ -251,50 +317,58 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
                         {/* Header - full on first page, minimal on others */}
                         {page.isFirst ? (
                             <>
-                                <View style={[styles.header, dynamicStyles.headerBorder]}>
-                                    <View>
-                                        <Text style={[styles.title, dynamicStyles.title]}>{docTitle}</Text>
-                                        {orgProfile && <Text style={{ fontSize: 12, fontWeight: 'bold' }}>{orgProfile.name}</Text>}
-                                        {orgProfile && <Text style={styles.subtitle}>{orgProfile.address}</Text>}
-
-                                        <Text style={[styles.subtitle, { marginTop: 4 }]}>{doc.documentNumber}</Text>
+                                <View style={getHeaderStyle()}>
+                                    {/* Left Side (Logo + Company) - Or Right if Classic */}
+                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                        {orgProfile?.logo && typeof orgProfile.logo === 'string' && (
+                                            /* Image handles generic URLs properly (base64, remote if configured) */
+                                            <Image
+                                                src={orgProfile.logo}
+                                                style={{ width: 50, height: 50, objectFit: 'contain', borderRadius: 4 }}
+                                            />
+                                        )}
+                                        <View>
+                                            {orgProfile && <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{orgProfile.name}</Text>}
+                                            {orgProfile && <Text style={[styles.subtitle, { maxWidth: 250 }]}>{orgProfile.address}</Text>}
+                                            {orgProfile && <Text style={styles.infoLabel}>Tax ID: {orgProfile.taxId}</Text>}
+                                        </View>
                                     </View>
-                                    <View style={{ alignItems: 'flex-end' }}>
-                                        {orgProfile?.logo && (
-                                            /* Note: Image rendering requires buffer/url, skipping for complex implementation now */
-                                            <Text></Text>
-                                        )}
-                                        <Text style={styles.infoLabel}>{labels.date}</Text>
-                                        <Text style={styles.infoValue}>{formatDate(doc.date)}</Text>
-                                        {doc.validUntil && (
-                                            <>
-                                                <Text style={styles.infoLabel}>{labels.dueDate}</Text>
-                                                <Text style={styles.infoValue}>{formatDate(doc.validUntil)}</Text>
-                                            </>
-                                        )}
-                                        {orgProfile && <Text style={styles.infoLabel}>Tax ID: {orgProfile.taxId}</Text>}
+
+                                    {/* Right Side (Doc Info) */}
+                                    <View style={{ alignItems: isClassic ? 'flex-start' : 'flex-end' }}>
+                                        <Text style={getTitleStyle()}>{docTitle}</Text>
+                                        <Text style={[styles.subtitle, { marginTop: 4 }]}>{labels.original}</Text>
+
+                                        <View style={{ marginTop: 8, alignItems: isClassic ? 'flex-start' : 'flex-end' }}>
+                                            <Text style={styles.infoValue}><Text style={styles.infoLabel}>{labels.docNo}: </Text>{doc.documentNumber}</Text>
+                                            <Text style={styles.infoValue}><Text style={styles.infoLabel}>{labels.date}: </Text>{formatDate(doc.date)}</Text>
+                                            {doc.validUntil && (
+                                                <Text style={styles.infoValue}><Text style={styles.infoLabel}>{labels.dueDate}: </Text>{formatDate(doc.validUntil)}</Text>
+                                            )}
+                                        </View>
                                     </View>
                                 </View>
 
                                 {/* Info Section */}
                                 <View style={styles.infoSection}>
-                                    <View style={styles.infoBox}>
-                                        <Text style={styles.infoLabel}>{labels.customer}</Text>
-                                        <Text style={styles.infoValue}>{customer?.name || '-'}</Text>
+                                    <View style={getInfoBoxStyle()}>
+                                        <Text style={[styles.infoLabel, { textTransform: 'uppercase' }]}>{labels.customer}</Text>
+                                        <Text style={[styles.infoValue, { fontWeight: 'bold' }]}>{customer?.name || '-'}</Text>
                                         {customer?.address && <Text style={styles.infoValue}>{customer.address}</Text>}
                                         {customer?.phone && <Text style={styles.infoValue}>{customer.phone}</Text>}
+                                        {customer?.taxId && <Text style={styles.infoLabel}>Tax ID: {customer.taxId}</Text>}
                                     </View>
-                                    <View style={styles.infoBox}>
-                                        <Text style={styles.infoLabel}>{labels.project}</Text>
-                                        <Text style={styles.infoValue}>{project?.name || '-'}</Text>
+                                    <View style={getInfoBoxStyle()}>
+                                        <Text style={[styles.infoLabel, { textTransform: 'uppercase' }]}>{labels.project}</Text>
+                                        <Text style={[styles.infoValue, { fontWeight: 'bold' }]}>{project?.name || '-'}</Text>
+                                        {project?.location && <Text style={styles.infoValue}>{project.location}</Text>}
                                     </View>
                                 </View>
                             </>
                         ) : (
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#eeeeee' }}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#eeeeee' }}>
+                                <View>
                                     <Text style={{ fontSize: 12, fontWeight: 'bold' }}>{docTitle} ({labels.cont})</Text>
-                                    <Text style={{ fontSize: 10, color: '#666666' }}>{doc.documentNumber}</Text>
                                 </View>
                                 <Text style={{ fontSize: 10, color: '#666666' }}>{doc.documentNumber}</Text>
                             </View>
@@ -302,7 +376,7 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
 
                         {/* Items Table */}
                         <View style={styles.table}>
-                            <View style={[styles.tableHeader, dynamicStyles.tableHeader]}>
+                            <View style={getTableHeaderStyle()}>
                                 {visibleColumns.map(col => {
                                     /* Map prop column style to PDF styles */
                                     let style = styles.colDesc
@@ -312,17 +386,22 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
                                     if (col.id === 'price') style = styles.colPrice
                                     if (col.id === 'total') style = styles.colTotal
 
-                                    return <Text key={col.id} style={style}>{col.label}</Text>
+                                    return <Text key={col.id} style={[style, { fontWeight: 'bold' }]}>{col.label}</Text>
                                 })}
                             </View>
                             {page.items.map((item: any, index) => (
-                                <View key={index} style={(item.originalIndex + 1) % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
+                                <View key={index} style={[
+                                    (item.originalIndex + 1) % 2 === 0 ? styles.tableRow : styles.tableRowAlt,
+                                    // Custom row overrides if needed
+                                    isClassic && (item.originalIndex + 1) % 2 !== 0 ? { backgroundColor: '#f9f9f9' } : {},
+                                    isModern && (item.originalIndex + 1) % 2 !== 0 ? { backgroundColor: '#ffffff' } : {}
+                                ]}>
                                     {visibleColumns.map(col => {
                                         if (col.id === 'item') return <Text key={col.id} style={styles.colNo}>{item.originalIndex + 1}</Text>
                                         if (col.id === 'description') return (
                                             <View key={col.id} style={styles.colDesc}>
                                                 <Text style={{ fontWeight: 'bold' }}>{item.name}</Text>
-                                                {item.description && <Text style={{ color: '#666666', fontSize: 8 }}>{item.description}</Text>}
+                                                {item.description && <Text style={{ color: '#666666', fontSize: 10 }}>{item.description}</Text>}
                                             </View>
                                         )
                                         if (col.id === 'qty') return <Text key={col.id} style={styles.colQty}>{item.quantity}</Text>
@@ -348,9 +427,26 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
                                         <Text style={styles.totalValue}>{formatCurrency(vat)}</Text>
                                     </View>
                                 )}
-                                <View style={[styles.grandTotal, dynamicStyles.grandTotalBorder]}>
+                                <View style={[
+                                    styles.grandTotal,
+                                    isClassic ? { borderTopWidth: 2, borderTopColor: '#000000' } : { borderTopColor: finalThemeColor }
+                                ]}>
                                     <Text style={styles.grandTotalLabel}>{labels.grandTotal}</Text>
-                                    <Text style={[styles.grandTotalValue, dynamicStyles.grandTotalValue]}>{formatCurrency(grandTotal)}</Text>
+                                    <Text style={[styles.grandTotalValue, isClassic ? { color: '#000000' } : { color: finalThemeColor }]}>{formatCurrency(grandTotal)}</Text>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Signature Section */}
+                        {page.isLast && (
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 40, paddingHorizontal: 20 }}>
+                                <View style={{ alignItems: 'center' }}>
+                                    <View style={{ borderBottomWidth: 1, borderBottomColor: '#ccc', width: 150, height: 30 }} />
+                                    <Text style={{ marginTop: 4, fontSize: 10, color: '#888' }}>{labels.customer || 'Customer Signature'}</Text>
+                                </View>
+                                <View style={{ alignItems: 'center' }}>
+                                    <View style={{ borderBottomWidth: 1, borderBottomColor: '#ccc', width: 150, height: 30 }} />
+                                    <Text style={{ marginTop: 4, fontSize: 10, color: '#888' }}>Authorized Signature</Text>
                                 </View>
                             </View>
                         )}
@@ -364,10 +460,24 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
     )
 }
 
+// Helper to get Blob directly (for Image Export)
+export async function generatePDFBlob(props: PDFDocumentProps): Promise<Blob> {
+    const fontLoaded = await registerThaiFonts()
+    if (!fontLoaded) console.warn('Thai fonts failed to load')
+    return await pdf(<PDFDocument {...props} />).toBlob()
+}
+
 // Export function to generate and download PDF
 export async function generatePDF(props: PDFDocumentProps): Promise<void> {
     try {
         console.log('generatePDF: Starting...')
+
+        // ensure fonts are registered
+        const fontLoaded = await registerThaiFonts()
+        if (!fontLoaded) {
+            console.warn('Thai fonts failed to load, falling back to default')
+        }
+
         const blob = await pdf(<PDFDocument {...props} />).toBlob()
         console.log('generatePDF: Blob created', blob.size)
 
@@ -414,7 +524,7 @@ export async function generatePDF(props: PDFDocumentProps): Promise<void> {
 
     } catch (error) {
         console.error('generatePDF: Critical error', error)
-        alert('PDF generation failed. Please try again.')
+        alert(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
         throw error
     }
 }
