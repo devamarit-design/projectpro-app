@@ -57,7 +57,13 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
 
         try {
             // Client-Side AI Call
-            const data = await analyzeReceipt(previewUrl!)
+            const result = await analyzeReceipt(previewUrl!)
+
+            if (!result.success) {
+                throw new Error(result.error)
+            }
+
+            const data = result.data
 
             // Map API response to internal state
             const extractedItems: ExpenseItem[] = Array.isArray(data.items)

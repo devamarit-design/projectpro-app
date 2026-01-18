@@ -16,9 +16,14 @@ export interface ExtractedExpenseData {
     }[];
 }
 
-export async function analyzeReceipt(base64Image: string): Promise<ExtractedExpenseData> {
+export type AnalyzeReceiptResult =
+    | { success: true; data: ExtractedExpenseData }
+    | { success: false; error: string };
+
+export async function analyzeReceipt(base64Image: string): Promise<AnalyzeReceiptResult> {
     if (!apiKey) {
-        throw new Error("Missing API Key. Please configure GEMINI_API_KEY in Vercel settings.");
+        console.error("Missing Gemini API Key");
+        return { success: false, error: "Missing API Key configuration. Please check Vercel settings." };
     }
 
     try {
@@ -74,10 +79,10 @@ export async function analyzeReceipt(base64Image: string): Promise<ExtractedExpe
         const data = JSON.parse(jsonStr) as ExtractedExpenseData;
         console.log("Server-Side AI Analysis Complete");
 
-        return data;
+        return { success: true, data };
 
     } catch (error: any) {
         console.error("Server-Side AI Service Error:", error);
-        throw new Error(error.message || "Failed to analyze receipt");
+        return { success: false, error: error.message || "Failed to analyze receipt" };
     }
 }
