@@ -20,7 +20,7 @@ function AdminDashboard() {
   const [showReportDialog, setShowReportDialog] = useState(false)
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20 pt-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight text-primary font-sans">{t.common.dashboard}</h1>
         <div className="flex gap-2">

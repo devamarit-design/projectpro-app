@@ -22,7 +22,7 @@ export function UserDashboard() {
     }
 
     return (
-        <div className="pb-20 space-y-6">
+        <div className="pb-20 space-y-6 pt-6">
             <header className="flex flex-col gap-1">
                 <h1 className="text-3xl font-bold tracking-tight text-primary font-sans">
                     {getGreeting()}, <span className="text-foreground">{currentUser?.name?.split(' ')[0] || "User"}</span>

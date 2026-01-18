@@ -15,6 +15,8 @@ interface ConfirmDialogProps {
     variant?: "danger" | "warning" | "info" | "success"
 }
 
+import { createPortal } from "react-dom"
+
 export function ConfirmDialog({
     isOpen,
     onClose,
@@ -25,7 +27,13 @@ export function ConfirmDialog({
     cancelText = "ยกเลิก",
     variant = "warning"
 }: ConfirmDialogProps) {
-    if (!isOpen) return null
+    const [mounted, setMounted] = React.useState(false)
+
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!isOpen || !mounted) return null
 
     const handleConfirm = () => {
         onConfirm()
@@ -51,8 +59,8 @@ export function ConfirmDialog({
         }
     }
 
-    return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in-0"
@@ -99,6 +107,7 @@ export function ConfirmDialog({
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }

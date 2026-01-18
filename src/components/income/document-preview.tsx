@@ -781,21 +781,60 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                 @media print {
                     @page { 
                         size: A4 portrait; 
-                        margin: 0; 
+                        margin: 0mm; 
                     }
-                    body { 
-                        background: white; 
+                    html, body {
+                        width: 210mm;
+                        height: 297mm;
+                        background: white;
+                        overflow: visible;
                     }
-                    /* Force reset of any screen transforms */
+                    
+                    /* Hide everything by default */
+                    body * {
+                        visibility: hidden;
+                    }
+
+                    /* Only show the preview content and its children */
+                    #preview-content, 
+                    #preview-content * {
+                        visibility: visible;
+                    }
+
+                    /* FORCE the container to be the page */
+                    #preview-content {
+                        position: fixed !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 210mm !important;
+                        height: auto !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: white !important;
+                        z-index: 9999 !important;
+                        display: block !important;
+                    }
+
+                    /* Page styling */
                     .break-after-page {
                         break-after: page;
                         width: 210mm !important;
                         height: 297mm !important;
-                        position: absolute !important; /* Often helpful to ensure strict placement */
-                        transform: none !important; /* Critical: reset zoom */
+                        position: relative !important;
+                        transform: none !important; /* Reset zoom */
                         margin: 0 !important;
+                        padding: 15mm !important; /* Restore padding here if needed, or rely on inner padding */
                         box-shadow: none !important;
                         border: none !important;
+                        overflow: hidden !important;
+                        page-break-after: always;
+                        left: 0 !important;
+                        top: 0 !important;
+                    }
+
+                    /* Hide unnecessary elements inside the preview if any */
+                    .no-print {
+                        display: none !important;
                     }
                 }
             `}</style>
