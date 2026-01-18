@@ -906,14 +906,24 @@ export default function ProjectDetailClient() {
 
                                             <h4 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors">{sp.name}</h4>
 
-                                            {/* Expense Bar */}
-                                            <div className="w-full h-1.5 bg-muted/30 rounded-full mb-4 overflow-hidden">
-                                                <div
-                                                    className="h-full bg-red-500 rounded-full"
-                                                    style={{
-                                                        width: `${Math.min(100, (expenses.filter(e => e.subProjectId === sp.id).reduce((sum, e) => sum + e.totalValue, 0) / (parseBudget(sp.budget) || 1)) * 100)}%`
-                                                    }}
-                                                />
+                                            {/* Task Progress Bar */}
+                                            <div className="space-y-1 mb-4">
+                                                <div className="flex justify-between text-[10px] uppercase font-bold text-muted-foreground">
+                                                    <span>Progress</span>
+                                                    <span>
+                                                        {(project.tasks || []).filter(t => t.subProjectId === sp.id && t.status === 'Done').length} / {(project.tasks || []).filter(t => t.subProjectId === sp.id).length} Tasks
+                                                    </span>
+                                                </div>
+                                                <div className="w-full h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-primary rounded-full"
+                                                        style={{
+                                                            width: `${(project.tasks || []).filter(t => t.subProjectId === sp.id).length > 0
+                                                                ? ((project.tasks || []).filter(t => t.subProjectId === sp.id && t.status === 'Done').length / (project.tasks || []).filter(t => t.subProjectId === sp.id).length) * 100
+                                                                : 0}%`
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
 
                                             <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
