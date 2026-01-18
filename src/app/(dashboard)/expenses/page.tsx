@@ -98,11 +98,20 @@ function ExpensesContent() {
     }, [sourceExpenses, searchQuery, categoryFilter, projectFilter, userFilter, monthFilter])
 
     // Step 2: Final Filter (Base + Status) - used for List View
+    const [sortOrder, setSortOrder] = React.useState<'newest' | 'oldest'>('newest')
+
     const filteredExpenses = React.useMemo(() => {
-        return baseFilteredExpenses.filter(expense => {
+        let result = baseFilteredExpenses.filter(expense => {
             return statusFilter === "All" || expense.status === statusFilter
         })
-    }, [baseFilteredExpenses, statusFilter])
+
+        // Sort by Date
+        return result.sort((a, b) => {
+            const dateA = new Date(a.date).getTime()
+            const dateB = new Date(b.date).getTime()
+            return sortOrder === 'newest' ? dateB - dateA : dateA - dateB
+        })
+    }, [baseFilteredExpenses, statusFilter, sortOrder])
 
     // Calculate Total
     const totalExpense = React.useMemo(() => {
@@ -345,6 +354,19 @@ function ExpensesContent() {
                                 ))}
                             </select>
                         </div>
+
+
+                        {/* Sort Order */}
+                        <div className="relative min-w-[140px]">
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
+                                className="w-full pl-3 pr-8 py-2 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
+                            >
+                                <option value="newest">Newest Date</option>
+                                <option value="oldest">Oldest Date</option>
+                            </select>
+                        </div>
                     </div>
 
                     {/* Search Bar */}
@@ -437,7 +459,7 @@ function ExpensesContent() {
                     </div>
                 ))}
             </div>
-        </div>
+        </div >
     )
 }
 
