@@ -904,32 +904,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const loginPromise = async () => {
             if (provider === 'google') {
                 try {
-                    // Detect iOS PWA (standalone) mode
-                    const isIOSPWA = typeof window !== 'undefined' &&
-                        (window.navigator as any).standalone === true
-
-                    if (isIOSPWA) {
-                        // Use popup for iOS PWA since redirect fails/loses context in standalone
-                        // alert("Debug: iOS PWA Mode - Trying Popup") // Uncomment for heavy debugging if needed
-
-                        // Note: For popup to work on iOS, it shouldn't allow async delays before it.
-                        // So we skip explicit persistence wait for PWA or assume default.
-                        await signInWithPopup(auth, googleProvider)
-                    } else {
-                        // Standard Web / Android PWA
-                        // Ensure persistence is set before redirecting
-                        try {
-                            await setPersistence(auth, browserLocalPersistence)
-                        } catch (e) {
-                            console.warn("Persistence set failed", e)
-                        }
-                        await signInWithRedirect(auth, googleProvider)
-                    }
+                    // Always use popup - redirect has issues in development and some browsers
+                    await setPersistence(auth, browserLocalPersistence)
+                    await signInWithPopup(auth, googleProvider)
+                    console.log("Google Sign-In Popup Success!")
                 } catch (error: any) {
                     console.error("Login failed", error)
-                    // Alert the user on mobile so they know why it failed
-                    if (typeof window !== 'undefined' && (window.navigator as any).standalone) {
-                        alert("Login Failed: " + (error.message || "Unknown error"))
+                    // Show error to user
+                    if (error.code === 'auth/popup-closed-by-user') {
+                        throw new Error("Login cancelled")
+                    } else if (error.code === 'auth/popup-blocked') {
+                        throw new Error("Popup blocked. Please allow popups for this site.")
+                    } else if (error.code === 'auth/unauthorized-domain') {
+                        throw new Error("Domain not authorized. Add this domain in Firebase Console.")
                     }
                     throw error
                 }
