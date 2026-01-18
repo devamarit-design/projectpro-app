@@ -2,30 +2,52 @@
 
 import { useState, useEffect } from "react"
 import { useProjects } from "@/context/project-context"
+import { useOrganization } from "@/context/organization-context"
 import { useRouter } from "next/navigation"
-import { LayoutDashboard, Loader2 } from "lucide-react"
+import { LayoutDashboard, Loader2, Bug, X } from "lucide-react"
 import Link from "next/link"
 
 export default function LoginPage() {
-    const { login, currentUser, isAuthLoading } = useProjects()
+    const { login, currentUser, isAuthLoading, isOrgLoading } = useProjects()
+    const { currentOrg, userOrgs } = useOrganization()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [debugLog, setDebugLog] = useState<string[]>([])
+    const [showDebug, setShowDebug] = useState(true)
+
+    // Debug logger
+    const log = (msg: string) => {
+        const time = new Date().toLocaleTimeString()
+        setDebugLog(prev => [...prev.slice(-20), `[${time}] ${msg}`])
+        console.log(`[DEBUG] ${msg}`)
+    }
 
     // Auto-redirect if already logged in
     useEffect(() => {
+        log(`Auth State Changed: isAuthLoading=${isAuthLoading}, currentUser=${currentUser?.email || 'null'}`)
         if (!isAuthLoading && currentUser) {
+            log(`User logged in: ${currentUser.email}. Redirecting to /`)
             router.push("/")
         }
     }, [currentUser, isAuthLoading, router])
 
+    // Log org state
+    useEffect(() => {
+        log(`Org State: isOrgLoading=${isOrgLoading}, currentOrg=${currentOrg?.name || 'null'}, orgsCount=${userOrgs.length}`)
+    }, [isOrgLoading, currentOrg, userOrgs])
+
     const handleGoogleLogin = async () => {
         setIsLoading(true)
+        setError(null)
+        log("Starting Google Login...")
         try {
             await login("google")
-            // Navigation handled by useEffect
-        } catch (error) {
-            console.error("Login failed", error)
+            log("Login function completed (redirect may have triggered)")
+        } catch (err: any) {
+            const errorMsg = err?.message || err?.code || String(err)
+            log(`Login FAILED: ${errorMsg}`)
+            setError(errorMsg)
             setIsLoading(false)
         }
     }
@@ -176,6 +198,73 @@ export default function LoginPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Debug Panel */}
+            {showDebug && (
+                <div className="fixed bottom-0 left-0 right-0 bg-black/90 text-white p-4 max-h-64 overflow-y-auto text-xs font-mono z-50">
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-2">
+                            <Bug className="w-4 h-4 text-yellow-400" />
+                            <span className="font-bold text-yellow-400">DEBUG PANEL</span>
+                        </div>
+                        <button onClick={() => setShowDebug(false)} className="text-gray-400 hover:text-white">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    {/* Quick Status */}
+                    <div className="grid grid-cols-2 gap-2 mb-3 p-2 bg-white/5 rounded">
+                        <div>
+                            <span className="text-gray-400">isAuthLoading:</span>{" "}
+                            <span className={isAuthLoading ? "text-yellow-400" : "text-green-400"}>
+                                {String(isAuthLoading)}
+                            </span>
+                        </div>
+                        <div>
+                            <span className="text-gray-400">isOrgLoading:</span>{" "}
+                            <span className={isOrgLoading ? "text-yellow-400" : "text-green-400"}>
+                                {String(isOrgLoading)}
+                            </span>
+                        </div>
+                        <div>
+                            <span className="text-gray-400">currentUser:</span>{" "}
+                            <span className={currentUser ? "text-green-400" : "text-red-400"}>
+                                {currentUser?.email || "null"}
+                            </span>
+                        </div>
+                        <div>
+                            <span className="text-gray-400">currentOrg:</span>{" "}
+                            <span className={currentOrg ? "text-green-400" : "text-red-400"}>
+                                {currentOrg?.name || "null"}
+                            </span>
+                        </div>
+                        <div className="col-span-2">
+                            <span className="text-gray-400">userOrgs:</span>{" "}
+                            <span className="text-blue-400">[{userOrgs.map(o => o.name).join(", ")}]</span>
+                        </div>
+                    </div>
+
+                    {/* Log Entries */}
+                    <div className="space-y-0.5">
+                        {debugLog.map((entry, i) => (
+                            <div key={i} className={`${entry.includes("FAILED") ? "text-red-400" : entry.includes("Redirecting") ? "text-green-400" : "text-gray-300"}`}>
+                                {entry}
+                            </div>
+                        ))}
+                        {debugLog.length === 0 && <div className="text-gray-500">No logs yet...</div>}
+                    </div>
+                </div>
+            )}
+
+            {/* Toggle Debug Button (when hidden) */}
+            {!showDebug && (
+                <button
+                    onClick={() => setShowDebug(true)}
+                    className="fixed bottom-4 right-4 bg-yellow-500 text-black p-2 rounded-full shadow-lg z-50"
+                >
+                    <Bug className="w-5 h-5" />
+                </button>
+            )}
         </div>
     )
 }
