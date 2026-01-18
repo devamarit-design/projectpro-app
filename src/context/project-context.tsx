@@ -2220,6 +2220,28 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             archivedIncomes: incomes.filter(i => i.isArchived === true),
         }}>
             {children}
+            {/* iOS PWA Debug Overlay */}
+            {typeof window !== 'undefined' && (window.navigator as any).standalone && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '0',
+                    left: '0',
+                    right: '0',
+                    background: 'rgba(0,0,0,0.85)',
+                    color: '#00ff00',
+                    fontSize: '11px',
+                    fontFamily: 'monospace',
+                    padding: '8px',
+                    zIndex: 99999,
+                    pointerEvents: 'none',
+                    borderTop: '1px solid #00ff00'
+                }}>
+                    <div style={{ fontWeight: 'bold', borderBottom: '1px solid #33ff33', marginBottom: '4px' }}>PWA DEBUG MODE</div>
+                    <div>STATUS: {isAuthLoading ? 'LOADING...' : currentUser ? 'LOGGED IN' : 'NOT LOGGED IN'}</div>
+                    <div>USER: {currentUser ? currentUser.email : 'null'}</div>
+                    <div style={{ color: '#ffff00' }}>WAITING FOR REDIRECT...</div>
+                </div>
+            )}
         </ProjectContext.Provider>
     )
 }
