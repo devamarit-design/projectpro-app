@@ -419,9 +419,17 @@ function ExpensesContent() {
                             </div>
                             <div className="flex-1 min-w-0 overflow-hidden">
                                 <h3 className="font-semibold text-foreground truncate">{expense.title}</h3>
-                                <p className="text-xs text-muted-foreground flex items-center gap-2 truncate">
-                                    {expense.payee} <span className="w-1 h-1 rounded-full bg-muted-foreground/30" /> {expense.date}
-                                </p>
+                                <div className="text-xs text-muted-foreground flex items-center gap-2 truncate">
+                                    {expense.status === 'Advanced' ? (
+                                        <span className="text-purple-500 font-bold flex items-center gap-1">
+                                            Advance to: {expense.payee}
+                                        </span>
+                                    ) : (
+                                        <span>{expense.payee}</span>
+                                    )}
+                                    <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                                    <span>{expense.date}</span>
+                                </div>
                             </div>
                         </div>
 

@@ -55,6 +55,13 @@ export default function ProjectDetailClient() {
 
     const projectFiles = files.filter(f => f.projectId === id)
 
+    // Helper to parse budget string "1,000,000" -> 1000000
+    const parseBudget = (val?: string | number) => {
+        if (!val) return 0
+        if (typeof val === 'number') return val
+        return parseFloat(val.replace(/,/g, '')) || 0
+    }
+
 
     // Expense State
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false)
@@ -885,17 +892,30 @@ export default function ProjectDetailClient() {
                                                 <div className="p-2.5 bg-primary/10 rounded-xl text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                                                     <Target className="w-5 h-5" />
                                                 </div>
-                                                <span className={cn(
-                                                    "px-2.5 py-1 rounded-lg text-xs font-bold uppercase border",
-                                                    sp.status === 'Done' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                                                        sp.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                                            'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                                                )}>
-                                                    {sp.status}
-                                                </span>
+                                                {/* Total Expense for Sub-project */}
+                                                <div className="text-right">
+                                                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Total Expense</p>
+                                                    <p className="font-bold text-red-500">
+                                                        ฿{expenses
+                                                            .filter(e => e.subProjectId === sp.id && e.status !== 'Advanced') // Exclude Advanced if needed, or include all? Usually expense = cost. Advanced is typically excluded until cleared. Let's include all for now or user specific? User said "Required Total Expense". Let's sum all.
+                                                            .reduce((sum, e) => sum + e.totalValue, 0)
+                                                            .toLocaleString()}
+                                                    </p>
+                                                </div>
                                             </div>
 
                                             <h4 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors">{sp.name}</h4>
+
+                                            {/* Expense Bar */}
+                                            <div className="w-full h-1.5 bg-muted/30 rounded-full mb-4 overflow-hidden">
+                                                <div
+                                                    className="h-full bg-red-500 rounded-full"
+                                                    style={{
+                                                        width: `${Math.min(100, (expenses.filter(e => e.subProjectId === sp.id).reduce((sum, e) => sum + e.totalValue, 0) / (parseBudget(sp.budget) || 1)) * 100)}%`
+                                                    }}
+                                                />
+                                            </div>
+
                                             <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
                                                 {sp.description || (locale === 'th' ? "ไม่มีรายละเอียด" : "No description provided")}
                                             </p>
@@ -1023,7 +1043,9 @@ export default function ProjectDetailClient() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Assigned To</p>
-                                            <p className="font-medium">{selectedTask.assignedTo || 'Unassigned'}</p>
+                                            <p className="font-medium text-lg">
+                                                {users.find(u => u.id === selectedTask.assignedTo)?.name || selectedTask.assignedTo || 'Unassigned'}
+                                            </p>
                                         </div>
                                         <div>
                                             <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Due Date</p>
