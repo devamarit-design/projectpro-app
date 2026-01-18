@@ -37,7 +37,7 @@ function AdminDashboard() {
       <DownloadReportDialog open={showReportDialog} onOpenChange={setShowReportDialog} />
 
       {/* Stats Cards - Horizontal Scroll on Mobile */}
-      <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto py-2 pb-4 sm:pb-0 scrollbar-hide">
+      <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto py-2 pb-6 scrollbar-hide">
         <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 min-w-[300px] sm:min-w-0">
           <StatsCards />
         </div>
