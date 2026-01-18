@@ -22,7 +22,7 @@ export async function analyzeReceipt(base64Image: string): Promise<ExtractedExpe
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         // Remove header if present (server-side clean up if passed full data URL)
         const base64Data = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
