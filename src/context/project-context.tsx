@@ -904,13 +904,41 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const loginPromise = async () => {
             if (provider === 'google') {
                 try {
-                    // Always use popup - redirect has issues in development and some browsers
+                    // Detect iOS PWA (standalone) mode - popup doesn't work there
+                    const isIOSPWA = typeof window !== 'undefined' &&
+                        (window.navigator as any).standalone === true
+
+                    // Detect iOS Safari (not PWA)
+                    const isIOS = typeof window !== 'undefined' &&
+                        /iPad|iPhone|iPod/.test(navigator.userAgent)
+
                     await setPersistence(auth, browserLocalPersistence)
-                    await signInWithPopup(auth, googleProvider)
-                    console.log("Google Sign-In Popup Success!")
+
+                    if (isIOSPWA) {
+                        // iOS PWA: Use redirect (popup blocked in standalone)
+                        console.log("iOS PWA detected - using redirect")
+                        await signInWithRedirect(auth, googleProvider)
+                        // Note: Page will redirect, code below won't execute
+                    } else if (isIOS) {
+                        // iOS Safari (not PWA): Try popup, fallback to redirect
+                        console.log("iOS Safari detected - trying popup")
+                        try {
+                            await signInWithPopup(auth, googleProvider)
+                        } catch (popupError: any) {
+                            if (popupError.code === 'auth/popup-blocked') {
+                                console.log("Popup blocked, falling back to redirect")
+                                await signInWithRedirect(auth, googleProvider)
+                            } else {
+                                throw popupError
+                            }
+                        }
+                    } else {
+                        // Desktop/Android: Use popup
+                        await signInWithPopup(auth, googleProvider)
+                    }
+                    console.log("Google Sign-In Success!")
                 } catch (error: any) {
                     console.error("Login failed", error)
-                    // Show error to user
                     if (error.code === 'auth/popup-closed-by-user') {
                         throw new Error("Login cancelled")
                     } else if (error.code === 'auth/popup-blocked') {
@@ -931,14 +959,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             }
         }
 
-        // Add 15s timeout to prevent infinite hanging
+        // Add 30s timeout for redirect mode (it takes longer)
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Login timed out. Check your connection.")), 15000)
+            setTimeout(() => reject(new Error("Login timed out. Check your connection.")), 30000)
         )
 
         try {
             await Promise.race([loginPromise(), timeoutPromise])
-            // Force reload if needed or state update handles it
         } catch (error) {
             throw error
         }
