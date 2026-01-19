@@ -1449,7 +1449,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                         priority: task.priority || "Medium"
                     }).filter(([_, v]) => v !== undefined)
                 ),
-                createdBy: currentUser.id,
+                createdBy: currentUser?.id || "unknown",
                 createdAt: new Date().toISOString()
             }
 
