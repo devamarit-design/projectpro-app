@@ -6,6 +6,7 @@ import { useSettings } from "./settings-context"
 import { differenceInDays, parseISO, isPast, addDays } from "date-fns"
 import { collection, query, where, onSnapshot, orderBy, limit } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import { toast } from "sonner"
 
 export type NotificationType = "info" | "success" | "warning" | "error" | "reminder"
 
@@ -153,32 +154,56 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const requestPushPermission = async () => {
         try {
             if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                const permission = await Notification.requestPermission()
+                const promise = Notification.requestPermission()
+
+                toast.promise(promise, {
+                    loading: 'Requesting permission...',
+                    success: (permission: NotificationPermission) => {
+                        if (permission === 'granted') return 'Notifications enabled!'
+                        return 'Permission denied'
+                    },
+                    error: 'Failed to request permission'
+                })
+
+                const permission = await promise
+
                 if (permission === 'granted') {
                     // Import messaging dynamically to avoid SSR issues
                     const { getMessaging, getToken, onMessage } = await import("firebase/messaging")
                     const { messaging } = await import("@/lib/firebase")
 
                     if (messaging) {
-                        const token = await getToken(messaging)
-                        console.log("FCM Token:", token)
-                        // TODO: Save this token to Firestore for the current user
+                        try {
+                            const token = await getToken(messaging)
+                            console.log("FCM Token:", token)
+                            toast.success("Ready to receive notifications")
+                            // TODO: Save this token to Firestore for the current user
 
-                        onMessage(messaging, (payload) => {
-                            console.log('Foreground Message:', payload)
-                            addNotification({
-                                title: payload.notification?.title || 'New Message',
-                                message: payload.notification?.body || '',
-                                type: 'info',
-                                date: new Date().toISOString(),
-                                role: 'all' // defaulting
-                            } as any)
-                        })
+                            onMessage(messaging, (payload) => {
+                                console.log('Foreground Message:', payload)
+                                addNotification({
+                                    title: payload.notification?.title || 'New Message',
+                                    message: payload.notification?.body || '',
+                                    type: 'info',
+                                    date: new Date().toISOString(),
+                                    role: 'all' // defaulting
+                                } as any)
+                                toast(payload.notification?.title || 'New Message', {
+                                    description: payload.notification?.body || ''
+                                })
+                            })
+                        } catch (err) {
+                            console.error("FCM Token Error:", err)
+                            toast.error("Failed to configure messaging")
+                        }
                     }
                 }
+            } else {
+                toast.error("Notifications not supported in this browser")
             }
         } catch (error) {
             console.error("Error requesting push permission:", error)
+            toast.error("Something went wrong")
         }
     }
 
