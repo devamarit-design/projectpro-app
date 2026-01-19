@@ -61,9 +61,10 @@ export default function TasksPage() {
         const sourceTasks = showArchived ? archivedTasks : tasks
         return sourceTasks.map(task => {
             const project = projects.find(p => p.id === task.projectId)
+            // ... (rest of mapping)
             return {
                 ...task,
-                projectId: task.projectId || "", // Ensure string
+                projectId: task.projectId || "",
                 projectName: project?.name || "Unknown Project"
             }
         })
@@ -230,6 +231,7 @@ export default function TasksPage() {
                             <Filter className="w-4 h-4" />
                             {showArchived && <span className="text-xs font-semibold">Archived</span>}
                         </button>
+
 
                         <button
                             onClick={() => setShowAddTask(true)}

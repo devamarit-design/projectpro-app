@@ -20,11 +20,16 @@ export interface ProjectTask {
     priority: Priority
     assignedTo?: string
     dueDate?: string
+    startDate?: string // New: Start of range
+    endDate?: string // New: End of range
+    createdBy?: string // New: Creator ID
     description?: string
     projectId: string // Link to project
     subProjectId?: string // Link to sub-project
     orgId: string    // Link to organization
     isArchived?: boolean // Archive flag
+    createdAt?: string // Timestamp
+    updatedAt?: string // Timestamp
 }
 
 // Sub-project (โปรเจคย่อย) - Different from Task
@@ -47,6 +52,7 @@ export interface CompanyProfile {
     paymentInfo?: string
     signatureName?: string
     description?: string // Added description
+    updatedAt?: string // Timestamp
 }
 
 export interface ProjectFile {
@@ -95,6 +101,8 @@ export interface Expense {
     subProjectId?: string
     orgId?: string
     isArchived?: boolean // Archive flag
+    createdAt?: string // Timestamp
+    updatedAt?: string // Timestamp
 }
 
 export interface Project {
@@ -115,6 +123,8 @@ export interface Project {
     subProjects?: SubProject[] // โปรเจคย่อย - separate from Tasks
     orgId?: string // Organization ID
     isArchived?: boolean // Archive flag
+    createdAt?: string // Timestamp
+    updatedAt?: string // Timestamp
 }
 
 export interface User {
@@ -135,6 +145,9 @@ export interface User {
     display?: string // Display Mode (Compact/Comfortable)
     theme?: string // Theme Preference (Light/Dark/System)
     organizations?: { orgId: string, role: string }[] // New SaaS Structure
+    hasOnboarded?: boolean // New flag for onboarding flow
+    createdAt?: string // Timestamp
+    updatedAt?: string // Timestamp
 }
 
 export interface Vendor {
@@ -148,6 +161,8 @@ export interface Vendor {
     products?: string[]
     status: "Active" | "Inactive"
     orgId?: string
+    createdAt?: string
+    updatedAt?: string
 }
 
 export interface Worker {
@@ -163,6 +178,8 @@ export interface Worker {
     status: "Active" | "Inactive"
     joinedDate?: string
     orgId?: string
+    createdAt?: string
+    updatedAt?: string
 }
 
 export interface Customer {
@@ -179,6 +196,8 @@ export interface Customer {
     totalValue?: number // Calculated
     status: "Active" | "Inactive"
     orgId?: string
+    createdAt?: string
+    updatedAt?: string
 }
 
 export interface IncomeItem {
@@ -234,6 +253,9 @@ export interface IncomeDocument {
     remarks?: string
     referenceDocumentId?: string // Link QT -> BN -> RE
     isArchived?: boolean // Archive flag
+    vatIncluded?: boolean // VAT included flag
+    createdAt?: string
+    updatedAt?: string
 }
 
 export interface ContractInstallment {
@@ -245,6 +267,8 @@ export interface ContractInstallment {
     paidAt?: string
     expenseId?: string // Link to created expense
     paymentDetails?: string
+    createdAt?: string
+    updatedAt?: string
 }
 
 export interface Contract {
@@ -259,6 +283,7 @@ export interface Contract {
     status: "Active" | "Completed" | "Terminated"
     installments: ContractInstallment[]
     createdAt: string
+    updatedAt?: string
 }
 
 
@@ -272,7 +297,7 @@ export interface Team extends CompanyProfile {
 
 interface ProjectContextType {
     projects: Project[]
-    addProject: (project: Omit<Project, "id">) => void
+    addProject: (project: Omit<Project, "id" | "createdAt">) => void
     updateProject: (id: string, updates: Partial<Project>) => void
     deleteProject: (id: string) => void
     getProject: (id: string) => Project | undefined
@@ -285,7 +310,7 @@ interface ProjectContextType {
 
     // Task Management
     tasks: ProjectTask[] // Exposed global tasks
-    addTask: (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "orgId">) => void
+    addTask: (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "orgId" | "createdAt">) => void
     updateTask: (projectId: string, taskId: string, updates: Partial<ProjectTask>) => void
     deleteTask: (projectId: string, taskId: string) => void
     toggleTask: (projectId: string, taskId: string) => void
@@ -295,7 +320,7 @@ interface ProjectContextType {
 
     // Expense Management
     expenses: Expense[]
-    addExpense: (expense: Omit<Expense, "id">) => void
+    addExpense: (expense: Omit<Expense, "id" | "createdAt">) => void
     updateExpense: (id: string, updates: Partial<Expense>) => void
     deleteExpense: (id: string) => void
 
@@ -303,7 +328,7 @@ interface ProjectContextType {
     users: User[]
     vendors: Vendor[]
     addUser: (user: Omit<User, "id" | "joinedDate" | "status" | "orgIds">) => void
-    updateUser: (id: string, updates: Partial<User>) => void
+    updateUser: (id: string, updates: Partial<User>) => Promise<void>
     deleteUser: (id: string) => void
 
     workers: Worker[]
@@ -1259,7 +1284,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         try {
             await addDoc(collection(db, "projects"), {
                 ...project,
-                orgId: currentTeam.id,
                 createdAt: new Date().toISOString()
             })
 
@@ -1285,7 +1309,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     const updateProject = async (id: string, updates: Partial<Project>) => {
         try {
-            await updateDoc(doc(db, "projects", id), updates)
+            await updateDoc(doc(db, "projects", id), { ...updates, updatedAt: new Date().toISOString() })
         } catch (e) {
             console.error("Error updating project", e)
         }
@@ -1415,15 +1439,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
         try {
             // Clean undefined values
-            const payload = Object.fromEntries(
-                Object.entries({
-                    ...task,
-                    projectId,
-                    orgId: currentTeam.id,
-                    status: task.status || "Todo",
-                    priority: task.priority || "Medium"
-                }).filter(([_, v]) => v !== undefined)
-            )
+            const payload = {
+                ...Object.fromEntries(
+                    Object.entries({
+                        ...task,
+                        projectId,
+                        orgId: currentTeam.id,
+                        status: task.status || "Todo",
+                        priority: task.priority || "Medium"
+                    }).filter(([_, v]) => v !== undefined)
+                ),
+                createdBy: currentUser.id,
+                createdAt: new Date().toISOString()
+            }
 
             const docRef = await addDoc(collection(db, "tasks"), payload)
 
@@ -1467,7 +1495,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     const updateTask = async (projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
         try {
-            await updateDoc(doc(db, "tasks", taskId), updates)
+            await updateDoc(doc(db, "tasks", taskId), { ...updates, updatedAt: new Date().toISOString() })
 
             if (currentTeam && currentUser) {
                 const t = tasks.find(t => t.id === taskId)
@@ -1594,7 +1622,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     const updateContract = async (id: string, updates: Partial<Contract>) => {
         try {
-            await updateDoc(doc(db, "contracts", id), updates)
+            await updateDoc(doc(db, "contracts", id), { ...updates, updatedAt: new Date().toISOString() })
         } catch (e) {
             console.error("Error updating contract", e)
         }
@@ -1691,7 +1719,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             await addDoc(collection(db, "vendors"), {
                 ...vendorData,
                 status: "Active",
-                orgId: currentTeam.id
+                orgId: currentTeam.id,
+                createdAt: new Date().toISOString()
             })
         } catch (e) {
             console.error("Error adding vendor", e)
@@ -1716,7 +1745,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     const updateVendor = async (id: string, updates: Partial<Vendor>) => {
         try {
-            await updateDoc(doc(db, "vendors", id), updates)
+            await updateDoc(doc(db, "vendors", id), { ...updates, updatedAt: new Date().toISOString() })
         } catch (e) {
             console.error("Error updating vendor", e)
         }
@@ -1738,7 +1767,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 ...workerData,
                 status: "Active",
                 joinedDate: new Date().toISOString().split('T')[0],
-                orgId: currentTeam.id
+                orgId: currentTeam.id,
+                createdAt: new Date().toISOString()
             })
         } catch (e) {
             console.error("Error adding worker", e)
@@ -1763,7 +1793,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     const updateWorker = async (id: string, updates: Partial<Worker>) => {
         try {
-            await updateDoc(doc(db, "workers", id), updates)
+            await updateDoc(doc(db, "workers", id), { ...updates, updatedAt: new Date().toISOString() })
         } catch (e) {
             console.error("Error updating worker", e)
         }
@@ -1785,12 +1815,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 ...customer,
                 orgId: currentTeam.id,
                 status: "Active",
-                totalValue: 0
+                totalValue: 0,
+                createdAt: new Date().toISOString()
             })
         } catch (e) { console.error(e) }
     }
     const updateCustomer = async (id: string, updates: Partial<Customer>) => {
-        try { await updateDoc(doc(db, "customers", id), updates) } catch (e) { console.error(e) }
+        try { await updateDoc(doc(db, "customers", id), { ...updates, updatedAt: new Date().toISOString() }) } catch (e) { console.error(e) }
     }
     const deleteCustomer = async (id: string) => {
         try { await deleteDoc(doc(db, "customers", id)) } catch (e) { console.error(e) }
@@ -1866,7 +1897,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const updateExpense = async (id: string, updates: Partial<Expense>) => {
         if (!currentTeam) return
         try {
-            await updateDoc(doc(db, "expenses", id), updates)
+            await updateDoc(doc(db, "expenses", id), { ...updates, updatedAt: new Date().toISOString() })
 
             // Notification: Status Change (Advanced/Credit -> Paid)
             // We only notify Admin/Owner on status changes to 'Paid'
@@ -1924,6 +1955,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     orgId: currentTeam.id,
                     items: income.items || [],
                     sections: income.sections || undefined,
+                    createdAt: new Date().toISOString()
                 }).filter(([_, v]) => v !== undefined)
             )
             await addDoc(collection(db, "incomes"), cleanedData)
@@ -1964,7 +1996,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     const updateIncome = async (id: string, updates: Partial<IncomeDocument>) => {
         try {
-            await updateDoc(doc(db, "incomes", id), updates)
+            await updateDoc(doc(db, "incomes", id), { ...updates, updatedAt: new Date().toISOString() })
         } catch (e) {
             console.error("Error updating income", e)
         }
@@ -1997,7 +2029,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             if (updates.email) orgUpdates['settings.email'] = updates.email
             if (updates.website) orgUpdates['settings.website'] = updates.website
 
-            await updateDoc(orgRef, orgUpdates)
+            await updateDoc(orgRef, { ...orgUpdates, updatedAt: new Date().toISOString() })
 
             // Local state update handled by OrgContext subscription potentially,
             // or we might need to manually trigger refresh if strictly needed immediately.

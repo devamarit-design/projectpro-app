@@ -119,13 +119,43 @@ function TaskCard({ task, projectUsers, t, onDelete, onToggle, onSelect, isOverl
                         {projectUsers.find(u => u.name === task.assignedTo || u.id === task.assignedTo)?.name || task.assignedTo || "Unassigned"}
                     </span>
                 </div>
-                {task.dueDate && (
+                {(task.startDate || task.dueDate) && (
                     <div className={cn(
                         "flex items-center gap-1 text-[10px] font-bold uppercase tracking-tight",
                         task.status === 'Done' ? 'text-green-500' : 'text-orange-500'
                     )}>
                         <Calendar className="w-3 h-3" />
-                        {task.dueDate}
+                        {(() => {
+                            const formatDate = (iso?: string) => {
+                                if (!iso) return null;
+                                const date = new Date(iso);
+                                if (isNaN(date.getTime())) return null;
+
+                                const day = date.getDate();
+                                const month = date.toLocaleString('en-GB', { month: 'short' });
+                                return `${day} ${month}`;
+                            };
+
+                            const start = formatDate(task.startDate || task.dueDate);
+                            const end = formatDate(task.endDate);
+
+                            if (start && end && start !== end) {
+                                // Simplify if same day? 
+                                // e.g. "19 Jan, 14:00 - 16:00"
+                                const startDateObj = new Date(task.startDate || task.dueDate || "");
+                                const endDateObj = new Date(task.endDate || "");
+
+                                if (startDateObj.toDateString() === endDateObj.toDateString()) {
+                                    // Same day
+                                    const startTime = startDateObj.toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+                                    const endTime = endDateObj.toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+                                    return `${startDateObj.getDate()} ${startDateObj.toLocaleString('en-GB', { month: 'short' })}, ${startTime} - ${endTime}`;
+                                }
+                                return `${start} - ${end}`;
+                            }
+
+                            return start || task.dueDate;
+                        })()}
                     </div>
                 )}
             </div>

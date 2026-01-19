@@ -16,7 +16,7 @@ export function DashboardTasks() {
         if (!currentUser) return []
 
         return tasks
-            .filter(task => task.assignedTo === currentUser.id || task.assignedTo === currentUser.name)
+            .filter(task => (task.assignedTo === currentUser.id || task.assignedTo === currentUser.name) && task.status !== 'Done')
             .map(task => ({
                 ...task,
                 projectName: projects.find(p => p.id === task.projectId)?.name || "Unknown Project"

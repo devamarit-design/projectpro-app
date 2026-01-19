@@ -5,6 +5,7 @@ import { useProjects, ProjectTask, Priority, TaskStatus, User as UserType } from
 import { cn } from "@/lib/utils"
 import { User, Clock } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
+import { format } from "date-fns"
 
 interface SortableTaskCardProps {
     task: ProjectTask & { projectName?: string }
@@ -22,6 +23,15 @@ export function SortableTaskCard({ task, status, onSelect }: SortableTaskCardPro
         const user = users.find((u: UserType) => u.id === task.assignedTo)
         return user ? user.name : task.assignedTo
     }, [task.assignedTo, users, t])
+
+    const formattedDate = React.useMemo(() => {
+        if (!task.dueDate) return t.tasks.no_date
+        try {
+            return format(new Date(task.dueDate), "d MMM")
+        } catch (error) {
+            return task.dueDate
+        }
+    }, [task.dueDate, t.tasks.no_date])
 
     const {
         attributes,
@@ -84,7 +94,7 @@ export function SortableTaskCard({ task, status, onSelect }: SortableTaskCardPro
                     status === 'Done' ? 'text-green-500' : 'text-orange-500'
                 )}>
                     <Clock className="w-3 h-3" />
-                    {task.dueDate || t.tasks.no_date}
+                    {formattedDate}
                 </div>
             </div>
         </div>

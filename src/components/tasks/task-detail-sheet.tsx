@@ -186,14 +186,28 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <Calendar className="w-4 h-4" />
-                                    <span className="text-xs font-bold uppercase tracking-wider">Due Date</span>
+                                    <span className="text-xs font-bold uppercase tracking-wider">Schedule</span>
                                 </div>
-                                <input
-                                    type="date"
-                                    value={task.dueDate || ""}
-                                    onChange={(e) => updateTask(projectId, task.id, { dueDate: e.target.value })}
-                                    className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm"
-                                />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] text-muted-foreground ml-1 uppercase font-bold text-green-500">Start</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={task.startDate ? new Date(task.startDate).toISOString().slice(0, 16) : (task.dueDate && task.dueDate.includes('T') ? new Date(task.dueDate).toISOString().slice(0, 16) : "")}
+                                            onChange={(e) => updateTask(projectId, task.id, { startDate: new Date(e.target.value).toISOString() })}
+                                            className="w-full bg-background/50 border border-white/10 rounded-xl px-2 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all font-medium text-xs"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] text-muted-foreground ml-1 uppercase font-bold text-red-500">End</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={task.endDate ? new Date(task.endDate).toISOString().slice(0, 16) : ""}
+                                            onChange={(e) => updateTask(projectId, task.id, { endDate: new Date(e.target.value).toISOString(), dueDate: new Date(e.target.value).toISOString() })}
+                                            className="w-full bg-background/50 border border-white/10 rounded-xl px-2 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all font-medium text-xs"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

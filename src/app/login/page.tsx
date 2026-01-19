@@ -15,7 +15,11 @@ export default function LoginPage() {
     // Auto-redirect if already logged in
     useEffect(() => {
         if (!isAuthLoading && currentUser) {
-            router.push("/")
+            if (currentUser.hasOnboarded) {
+                router.push("/welcome-back")
+            } else {
+                router.push("/onboarding")
+            }
         }
     }, [currentUser, isAuthLoading, router])
 

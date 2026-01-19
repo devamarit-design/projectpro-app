@@ -132,8 +132,9 @@ export function CalendarView() {
             calendarEvents.push({
                 id: `task-${task.id}`,
                 title: task.title,
-                start: task.dueDate,
-                allDay: true,
+                start: task.startDate || task.dueDate,
+                end: task.endDate,
+                allDay: !task.startDate?.includes('T') && !task.dueDate?.includes('T'),
                 backgroundColor: color,
                 borderColor: color,
                 textColor: "#ffffff",

@@ -24,7 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Main Content */}
             <div id="main-scroll-container" className="flex flex-col flex-1 min-w-0 overflow-y-auto transition-all duration-300 pb-16 lg:pb-0">
                 <Header />
-                <main className="flex-1 p-6 sm:p-8 lg:p-10 bg-muted/20">
+                <main className="flex-1 p-3 sm:p-8 lg:p-10 bg-muted/20">
                     {children}
                 </main>
             </div>

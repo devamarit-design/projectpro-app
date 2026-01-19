@@ -251,7 +251,7 @@
 }
 
 .fc-list-day-cushion {
-    background-color: transparent !important;
+    background-color: var(--card) !important;
     /* Fixed: removed invalid /30 */
     border-bottom: 1px solid var(--border) !important;
     color: var(--muted-foreground);

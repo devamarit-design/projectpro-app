@@ -30,8 +30,10 @@ import {
     Film,
     AlertCircle,
     ChevronRight,
+    ChevronDown,
     Check
 } from "lucide-react"
+import { IncomeDocument } from "@/context/project-context"
 import Link from "next/link"
 import { ProjectHeader } from "@/components/projects/project-header"
 import { cn } from "@/lib/utils"
@@ -44,6 +46,52 @@ import { TaskBoard } from "@/components/tasks/task-board"
 import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
 
 import { useSearchParams } from "next/navigation"
+
+// Helper to group incomes by transaction chain
+const groupIncomes = (docs: IncomeDocument[]) => {
+    const docMap = new Map(docs.map(d => [d.id, d]))
+    const groups: Map<string, IncomeDocument[]> = new Map()
+
+    // 1. Group by Root Ancestor
+    docs.forEach(doc => {
+        let current = doc
+        const visited = new Set<string>()
+
+        // Trace back to root
+        while (current.referenceDocumentId && docMap.has(current.referenceDocumentId)) {
+            if (visited.has(current.id)) break // Prevent circular
+            visited.add(current.id)
+            current = docMap.get(current.referenceDocumentId)!
+        }
+        const root = current
+
+        if (!groups.has(root.id)) {
+            groups.set(root.id, [])
+        }
+        groups.get(root.id)!.push(doc)
+    })
+
+    // 2. Format Groups
+    return Array.from(groups.values()).map(groupDocs => {
+        // Sort: QT -> INV -> REC
+        const typeRank: Record<string, number> = { Quotation: 1, Invoice: 2, Receipt: 3 }
+        groupDocs.sort((a, b) => (typeRank[a.type] || 99) - (typeRank[b.type] || 99))
+
+        const rootDoc = groupDocs[0]
+        // Use first item description or Zone name or generic fallback
+        const title = rootDoc.items?.[0]?.description || rootDoc.sections?.[0]?.name || "Income Transaction"
+
+        return {
+            id: rootDoc.id,
+            rootDoc,
+            title,
+            date: rootDoc.date,
+            totalAmount: rootDoc.grandTotal,
+            documents: groupDocs,
+            types: Array.from(new Set(groupDocs.map(d => d.type)))
+        }
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+}
 
 export default function ProjectDetailClient() {
     const searchParams = useSearchParams()
@@ -75,6 +123,12 @@ export default function ProjectDetailClient() {
     const [monthFilter, setMonthFilter] = useState<string>("all")
     const [activeFinancialTab, setActiveFinancialTab] = useState<'expenses' | 'incomes'>('expenses')
     const [isClient, setIsClient] = useState(false)
+
+    // Income Grouping State
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
+    const toggleGroup = (id: string) => {
+        setExpandedGroups(prev => ({ ...prev, [id]: !prev[id] }))
+    }
 
     useEffect(() => {
         setIsClient(true)
@@ -155,7 +209,7 @@ export default function ProjectDetailClient() {
     const allProjectExpenses = hasPermission(currentUser, "FINANCIAL_VIEW")
         ? rawProjectExpenses
         : rawProjectExpenses.filter(e => e.payee === currentUser?.name || e.paidBy === currentUser?.name)
-    const allProjectIncomes = allIncomesForProject.filter(i => i.status === 'Paid' || i.status === 'Accepted') // Only count realized income for financials
+    const allProjectIncomes = allIncomesForProject.filter(i => i.type === 'Receipt' && i.status === 'Paid') // Only count Receipts that are Paid for "Received" total
 
     // 2. Extract available months from both expenses and incomes
     const availableMonths = Array.from(new Set([
@@ -686,45 +740,86 @@ export default function ProjectDetailClient() {
                                     <div className="space-y-3">
                                         {/* Use allIncomesForProject to include backward compatible project matching */}
                                         {allIncomesForProject.length > 0 ? (
-                                            allIncomesForProject.map((doc) => (
-                                                <div
-                                                    key={doc.id}
-                                                    // Link to income page or open preview? For now, simple div or link
-                                                    className="glass-card p-4 rounded-xl border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer group"
-                                                >
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={cn(
-                                                            "w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shrink-0",
-                                                            doc.type === 'Quotation' ? "bg-blue-500/10 text-blue-500" :
-                                                                doc.type === 'Invoice' ? "bg-orange-500/10 text-orange-500" :
-                                                                    "bg-green-500/10 text-green-500"
-                                                        )}>
-                                                            {doc.type === 'Quotation' ? 'QT' : doc.type === 'Invoice' ? 'IV' : 'RC'}
+                                            groupIncomes(allIncomesForProject).map((group) => (
+                                                <div key={group.id} className="glass-card rounded-xl border border-white/5 overflow-hidden">
+                                                    {/* Group Header */}
+                                                    <div
+                                                        onClick={() => toggleGroup(group.id)}
+                                                        className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer"
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                                                <FileText className="w-5 h-5" />
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="font-bold text-base">{group.title}</h4>
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <span className="text-xs text-muted-foreground">{group.date}</span>
+                                                                    <div className="h-3 w-px bg-white/10" />
+                                                                    <div className="flex gap-1">
+                                                                        {group.types.includes('Quotation') && (
+                                                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20">QT</span>
+                                                                        )}
+                                                                        {group.types.includes('Invoice') && (
+                                                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-500 border border-orange-500/20">INV</span>
+                                                                        )}
+                                                                        {group.types.includes('Receipt') && (
+                                                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-500/10 text-green-500 border border-green-500/20">REC</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <p className="font-bold group-hover:text-primary transition-colors">{doc.documentNumber}</p>
-                                                                <span className="text-xs text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded uppercase tracking-wide">{doc.type}</span>
+
+                                                        <div className="text-right flex items-center gap-4">
+                                                            <div>
+                                                                <p className="font-bold text-base">฿{group.totalAmount.toLocaleString()}</p>
+                                                                <p className="text-xs text-muted-foreground">{group.documents.length} Document{group.documents.length > 1 ? 's' : ''}</p>
                                                             </div>
-                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                                <span>{doc.date}</span>
-                                                                <span>•</span>
-                                                                <span className="truncate max-w-[150px]">{customers.find(c => c.id === doc.customerId)?.name || project?.customer || "Unknown Customer"}</span>
-                                                            </div>
+                                                            {expandedGroups[group.id] ? <ChevronDown className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className="font-bold text-base">฿{doc.grandTotal?.toLocaleString()}</p>
-                                                        <span className={cn(
-                                                            "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
-                                                            doc.status === 'Paid' || doc.status === 'Accepted' ? "bg-green-500/10 text-green-500 border-green-500/20" :
-                                                                doc.status === 'Sent' || doc.status === 'Invoiced' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
-                                                                    doc.status === 'Draft' ? "bg-slate-500/10 text-slate-500 border-slate-500/20" :
-                                                                        "bg-red-500/10 text-red-500 border-red-500/20"
-                                                        )}>
-                                                            {doc.status}
-                                                        </span>
-                                                    </div>
+
+                                                    {/* Expanded Content */}
+                                                    {expandedGroups[group.id] && (
+                                                        <div className="border-t border-white/5 bg-black/20 p-2 space-y-1">
+                                                            {group.documents.map((doc) => (
+                                                                <div
+                                                                    key={doc.id}
+                                                                    // Link to income page or open preview? For now, we can link or use a dialog trigger if available
+                                                                    // Since specific handlers aren't passed down, we'll keep it as a visual list or simple link
+                                                                    className="p-3 rounded-lg hover:bg-white/5 flex items-center justify-between transition-colors ml-4 border-l-2 border-white/10"
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className={cn(
+                                                                            "text-[10px] font-bold px-2 py-0.5 rounded w-12 text-center",
+                                                                            doc.type === 'Quotation' ? "bg-blue-500/10 text-blue-500" :
+                                                                                doc.type === 'Invoice' ? "bg-orange-500/10 text-orange-500" :
+                                                                                    "bg-green-500/10 text-green-500"
+                                                                        )}>
+                                                                            {doc.type === 'Quotation' ? 'QT' : doc.type === 'Invoice' ? 'INV' : 'REC'}
+                                                                        </span>
+                                                                        <div>
+                                                                            <p className="text-sm font-medium">{doc.documentNumber}</p>
+                                                                            <p className="text-[10px] text-muted-foreground">{doc.date}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className={cn(
+                                                                            "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                                                                            doc.status === 'Paid' || doc.status === 'Accepted' ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                                                                                doc.status === 'Sent' || doc.status === 'Invoiced' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
+                                                                                    doc.status === 'Draft' ? "bg-slate-500/10 text-slate-500 border-slate-500/20" :
+                                                                                        "bg-red-500/10 text-red-500 border-red-500/20"
+                                                                        )}>
+                                                                            {doc.status}
+                                                                        </span>
+                                                                        <span className="text-sm font-medium w-24 text-right">฿{doc.grandTotal?.toLocaleString()}</span>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))
                                         ) : (

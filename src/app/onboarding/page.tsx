@@ -8,17 +8,11 @@ import { Building2, Users, ArrowRight, Plus, Loader2 } from "lucide-react"
 import FeatureCarousel from "@/components/onboarding/feature-carousel"
 
 export default function OnboardingPage() {
-    const { currentUser, teams, addTeam } = useProjects()
+    const { currentUser, teams, addTeam, updateUser } = useProjects()
     const { joinOrganizationByCode } = useOrganization()
     const router = useRouter()
 
-    // Auto-redirect if already has teams
-    // React.useEffect(() => {
-    //     if (currentUser && teams.length > 0) {
-    //         router.push(`/projects/detail?id=${teams[0].id}`) // Or dashboard
-    //     }
-    // }, [currentUser, teams, router])
-
+    // ... (lines 15-27 same)
     const [step, setStep] = React.useState<"showcase" | "welcome" | "create" | "join">("showcase")
     const [teamName, setTeamName] = React.useState("")
     const [inviteCode, setInviteCode] = React.useState("")
@@ -32,6 +26,9 @@ export default function OnboardingPage() {
         setIsLoading(true)
         try {
             const newTeamId = await addTeam(teamName)
+            if (currentUser) {
+                await updateUser(currentUser.id, { hasOnboarded: true })
+            }
             router.push(`/projects/detail?id=${newTeamId}`)
         } catch (error) {
             console.error("Failed to create team", error)
@@ -47,6 +44,9 @@ export default function OnboardingPage() {
         setError(null)
         try {
             const teamName = await joinOrganizationByCode(inviteCode)
+            if (currentUser) {
+                await updateUser(currentUser.id, { hasOnboarded: true })
+            }
             // Force reload to ensure context updates or just replace URL
             window.location.href = "/"
         } catch (error: any) {

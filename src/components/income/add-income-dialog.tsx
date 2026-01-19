@@ -26,6 +26,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
     const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0])
     const [docNumber, setDocNumber] = useState(initialData?.documentNumber || "")
     const [mode, setMode] = useState<"Simple" | "Zone">(initialData?.mode || "Simple")
+    const [includeVat, setIncludeVat] = useState(initialData?.vatIncluded ?? true)
 
     // Dialog States
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -75,6 +76,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                 setDate(today)
                 setDocNumber(generateNextDocumentNumber(defaultType, incomes, today))
                 setMode("Simple")
+                setIncludeVat(true)
             }
         }
     }, [open, initialData, defaultType, incomes])
@@ -110,7 +112,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
     }
 
     const subtotal = mode === "Simple" ? calculateSimpleTotal() : calculateZoneTotal()
-    const tax = subtotal * 0.07
+    const tax = includeVat ? subtotal * 0.07 : 0
     const grandTotal = subtotal + tax
 
     const handleSave = async () => {
@@ -158,7 +160,8 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                 tax,
                 total: grandTotal,
                 grandTotal,
-                status: status
+                status: status,
+                vatIncluded: includeVat
             }
 
             if (initialData) {
@@ -182,6 +185,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
         setSections([{ id: "1", name: "Zone 1", items: [{ id: "1-1", description: "", quantity: 1, unit: "unit", unitPrice: 0, total: 0, image: "" }] }])
         setSelectedProject("")
         setSelectedCustomer("")
+        setIncludeVat(true)
     }
 
     // Helper functions for updating items...
@@ -701,9 +705,20 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                             <span className="text-muted-foreground">{t.income.dialog.summary.subtotal}</span>
                             <span>฿{subtotal.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
+                        <div className="flex justify-between text-sm items-center">
                             <span className="text-muted-foreground">{t.income.dialog.summary.tax} (7%)</span>
-                            <span>฿{tax.toLocaleString()}</span>
+                            <div className="flex items-center gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={includeVat}
+                                        onChange={(e) => setIncludeVat(e.target.checked)}
+                                        className="w-4 h-4 rounded border-white/20 bg-muted/30 text-primary focus:ring-primary/50"
+                                    />
+                                    <span className="text-xs text-muted-foreground">Include VAT</span>
+                                </label>
+                                <span>฿{tax.toLocaleString()}</span>
+                            </div>
                         </div>
                         <div className="flex justify-between text-lg font-bold text-primary border-t border-white/10 pt-2">
                             <span>{t.income.dialog.summary.grand_total}</span>

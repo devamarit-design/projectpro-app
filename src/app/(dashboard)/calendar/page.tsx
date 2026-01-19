@@ -23,7 +23,7 @@ export default function CalendarPage() {
             </div>
 
             {/* Calendar Content */}
-            <div className="flex-1 px-4 lg:px-6 pb-4 overflow-hidden">
+            <div className="flex-1 px-0 lg:px-6 pb-4 overflow-hidden">
                 <CalendarView />
             </div>
         </div>

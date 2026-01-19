@@ -24,6 +24,8 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
     const [status, setStatus] = React.useState<TaskStatus>("Todo")
     const [assignedTo, setAssignedTo] = React.useState("")
     const [dueDate, setDueDate] = React.useState(defaultDate || "")
+    const [startDate, setStartDate] = React.useState(defaultDate || "")
+    const [endDate, setEndDate] = React.useState("")
     const [description, setDescription] = React.useState("")
 
     // AI Suggestion State
@@ -74,7 +76,10 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                 setPriority(taskToEdit.priority)
                 setStatus(taskToEdit.status)
                 setAssignedTo(taskToEdit.assignedTo || "")
+                setAssignedTo(taskToEdit.assignedTo || "")
                 setDueDate(taskToEdit.dueDate || "")
+                setStartDate(taskToEdit.startDate || taskToEdit.dueDate || "")
+                setEndDate(taskToEdit.endDate || "")
                 setDescription(taskToEdit.description || "")
             } else {
                 // Create Mode: Reset or use defaults
@@ -84,7 +89,10 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                 setPriority("Medium")
                 setStatus("Todo")
                 setAssignedTo("")
+                setAssignedTo("")
                 setDueDate(defaultDate || "")
+                setStartDate(defaultDate || "")
+                setEndDate("")
                 setDescription("")
             }
         }
@@ -219,7 +227,9 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                 status,
                 priority,
                 assignedTo,
-                dueDate: dueDate,
+                dueDate: endDate || startDate, // Fallback for legacy support
+                startDate,
+                endDate,
                 description,
                 ...(selectedSubProjectId ? { subProjectId: selectedSubProjectId } : {})
             }
@@ -241,6 +251,8 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
         setTitle("")
         setAssignedTo("")
         setDueDate("")
+        setStartDate("")
+        setEndDate("")
         setDescription("")
         setNewProjectName("")
         setIsQuickAddProject(false)
@@ -283,6 +295,17 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                                 onChange={(e) => setTitle(e.target.value)}
                                 className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-base placeholder:text-muted-foreground/50"
                                 required
+                            />
+                        </div>
+
+                        {/* Description */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{(t.common as any)?.description || "Description"}</label>
+                            <textarea
+                                placeholder={(t.tasks as any)?.dialog?.desc_placeholder || "Add details..."}
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm min-h-[100px] resize-none placeholder:text-muted-foreground/50"
                             />
                         </div>
 
@@ -369,17 +392,33 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                                 </div>
                             </div>
 
-                            {/* Due Date */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t.tasks.dialog.due_date}</label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
-                                    <input
-                                        type="date"
-                                        value={dueDate}
-                                        onChange={(e) => setDueDate(e.target.value)}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
-                                    />
+                            {/* Schedule - Start & End */}
+                            <div className="space-y-2 col-span-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{(t.common as any)?.schedule || "Schedule"}</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* Start Date */}
+                                    <div className="relative">
+                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                                        <input
+                                            type="datetime-local"
+                                            value={startDate ? new Date(startDate).toISOString().slice(0, 16) : ""}
+                                            onChange={(e) => setStartDate(new Date(e.target.value).toISOString())}
+                                            className="w-full bg-background/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all font-medium text-xs sm:text-sm"
+                                            placeholder="Start"
+                                        />
+                                    </div>
+                                    {/* End Date */}
+                                    <div className="relative">
+                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
+                                        <input
+                                            type="datetime-local"
+                                            value={endDate ? new Date(endDate).toISOString().slice(0, 16) : ""}
+                                            onChange={(e) => setEndDate(new Date(e.target.value).toISOString())}
+                                            min={startDate ? new Date(startDate).toISOString().slice(0, 16) : undefined}
+                                            className="w-full bg-background/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all font-medium text-xs sm:text-sm"
+                                            placeholder="End"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
