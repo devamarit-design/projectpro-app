@@ -15,8 +15,9 @@ export default function LoginPage() {
     // Auto-redirect if already logged in
     useEffect(() => {
         if (!isAuthLoading && currentUser) {
-            if (currentUser.hasOnboarded) {
-                router.push("/welcome-back")
+            // If they have completed onboarding OR belong to any organization, go to dashboard
+            if (currentUser.hasOnboarded || (currentUser.orgIds && currentUser.orgIds.length > 0)) {
+                router.push("/")
             } else {
                 router.push("/onboarding")
             }
@@ -35,8 +36,9 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
-            <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-800">
+
+        <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
+            <div className="w-full max-w-md bg-black rounded-2xl shadow-2xl p-8 border border-zinc-900">
                 <div className="flex flex-col items-center text-center mb-8">
                     <div className="relative w-48 h-auto mb-4">
                         <img
@@ -46,10 +48,10 @@ export default function LoginPage() {
                         />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                        <h1 className="text-2xl font-bold tracking-tight text-white">
                             Welcome Back
                         </h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        <p className="text-sm text-zinc-400 mt-2">
                             Sign in to access your ProjectPro dashboard
                         </p>
                     </div>
@@ -72,26 +74,26 @@ export default function LoginPage() {
                         }
                     }} className="space-y-4">
                         {error && (
-                            <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-lg">
+                            <div className="p-3 text-sm text-red-500 bg-red-950/20 border border-red-900/50 rounded-lg">
                                 {error}
                             </div>
                         )}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                            <label className="text-sm font-medium text-zinc-300">Email</label>
                             <input
                                 name="email"
                                 type="email"
                                 placeholder="name@company.com"
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                className="w-full px-4 py-2 rounded-xl border border-zinc-800 bg-zinc-900/50 text-white focus:ring-2 focus:ring-white/20 focus:border-white/20 outline-none transition-all placeholder:text-zinc-600"
                                 required
                             />
                         </div>
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                                <label className="text-sm font-medium text-zinc-300">Password</label>
                                 <Link
                                     href="/forgot-password"
-                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                                    className="text-xs text-blue-400 hover:text-blue-300 font-medium hover:underline"
                                 >
                                     Forgot password?
                                 </Link>
@@ -100,25 +102,25 @@ export default function LoginPage() {
                                 name="password"
                                 type="password"
                                 placeholder="••••••••"
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                className="w-full px-4 py-2 rounded-xl border border-zinc-800 bg-zinc-900/50 text-white focus:ring-2 focus:ring-white/20 focus:border-white/20 outline-none transition-all placeholder:text-zinc-600"
                                 required
                             />
                         </div>
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-blue-600 text-white font-medium py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 disabled:opacity-70"
+                            className="w-full bg-white text-black font-bold py-2.5 rounded-xl hover:bg-zinc-200 transition-colors shadow-lg shadow-white/5 disabled:opacity-70"
                         >
-                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Sign in"}
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto text-black" /> : "Sign in"}
                         </button>
                     </form>
 
                     <div className="relative py-2">
                         <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-gray-200 dark:border-gray-800" />
+                            <span className="w-full border-t border-zinc-900" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">
+                            <span className="bg-black px-2 text-zinc-500">
                                 Or continue with
                             </span>
                         </div>
@@ -158,10 +160,10 @@ export default function LoginPage() {
 
                     <div className="relative pt-4">
                         <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-gray-200 dark:border-gray-800" />
+                            <span className="w-full border-t border-zinc-900" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white dark:bg-gray-900 px-2 text-muted-foreground">
+                            <span className="bg-black px-2 text-zinc-500">
                                 Secured by ProjectPro
                             </span>
                         </div>
@@ -176,7 +178,7 @@ export default function LoginPage() {
                     <div className="text-center pt-2">
                         <p className="text-sm text-gray-500">
                             Don&apos;t have an account?{" "}
-                            <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium hover:underline">
+                            <Link href="/register" className="text-white hover:text-zinc-300 font-medium hover:underline">
                                 Sign up
                             </Link>
                         </p>

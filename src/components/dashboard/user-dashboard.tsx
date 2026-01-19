@@ -58,7 +58,10 @@ export function UserDashboard() {
                 {/* Main Content: Tasks & Activity (2/3 width on large screens) */}
                 <div className="lg:col-span-2 space-y-6">
                     <DashboardTasks />
-                    <DashboardActivity />
+                    {/* Activity Feed */}
+                    <div className="col-span-1 lg:col-span-2 h-[500px]">
+                        <DashboardActivity limit={12} showViewAll={true} />
+                    </div>
                 </div>
 
                 {/* Sidebar: Files (1/3 width) */}

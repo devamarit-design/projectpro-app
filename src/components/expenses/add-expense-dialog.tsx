@@ -1,9 +1,12 @@
 "use client"
 
 import * as React from "react"
+import { db } from "@/lib/firebase"
+import { collection, addDoc } from "firebase/firestore"
 import { X, Receipt, ScanLine, Plus, Trash2, Layers, User, Building, Camera, Upload, CheckCircle2 } from "lucide-react"
 import { useProjects, ExpenseCategory, ExpenseItem } from "@/context/project-context"
 import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { uploadWithThumbnail } from "@/lib/upload"
 
@@ -287,7 +290,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 if (finalReceiptUrl) expenseData.receiptImage = finalReceiptUrl
                 if (finalThumbnailUrl) expenseData.thumbnailUrl = finalThumbnailUrl
 
-                addExpense(expenseData)
+                await addExpense(expenseData)
             } else {
                 // SPLIT MODE: Group items by projectId and create separate expenses
                 const itemsByProject: Record<string, typeof items> = {}
@@ -301,7 +304,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 })
 
                 // Create one expense per project
-                Object.entries(itemsByProject).forEach(([projectId, projectItems]) => {
+                await Promise.all(Object.entries(itemsByProject).map(async ([projectId, projectItems]) => {
                     const projectTotal = projectItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
                     const projectName = projects.find(p => p.id === projectId)?.name || "Unassigned"
 
@@ -323,14 +326,15 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     if (finalReceiptUrl) expenseData.receiptImage = finalReceiptUrl
                     if (finalThumbnailUrl) expenseData.thumbnailUrl = finalThumbnailUrl
 
-                    addExpense(expenseData)
-                })
+                    await addExpense(expenseData)
+                }))
             }
 
+            toast.success("Expense added successfully")
             onClose()
         } catch (error) {
             console.error("Error adding expense:", error)
-            alert("Failed to upload image or save expense")
+            toast.error("Failed to add expense. You might not have permission.")
         } finally {
             setIsUploading(false)
         }
@@ -784,19 +788,64 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                         <Plus className="w-4 h-4" /> {t.expenses.dialog.add_line_item}
                                     </button>
                                 </div>
-                            </div>
 
-                            {/* Totals */}
-                            <div className="flex justify-end gap-8 text-sm">
-                                {vatIncluded && (
-                                    <div className="text-muted-foreground text-right">
-                                        <p>{t.expenses.dialog.subtotal}: ฿{(subtotal - vatAmount).toLocaleString()}</p>
-                                        <p>{t.expenses.dialog.vat}: ฿{vatAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                                {/* Receipt Upload - Compact */}
+                                <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => !receiptFile && document.getElementById('receipt-upload')?.click()}
+                                        className="w-full flex items-center justify-between gap-3 group"
+                                    >
+                                        <div className="flex items-center gap-3 text-zinc-400 group-hover:text-white transition-colors">
+                                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
+                                                <Camera className="w-4 h-4" />
+                                            </div>
+                                            <div className="text-left">
+                                                <span className="text-sm font-medium block">Receipt / Slip</span>
+                                                {!receiptFile && <span className="text-[10px] text-zinc-500">Tap to upload image</span>}
+                                            </div>
+                                        </div>
+
+                                        {receiptFile ? (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-green-500 font-medium truncate max-w-[100px]">{receiptFile.name}</span>
+                                                <X
+                                                    className="w-4 h-4 text-zinc-500 hover:text-red-500 transition-colors"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setReceiptFile(null)
+                                                        setReceiptImage(null)
+                                                    }}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="text-zinc-600">
+                                                <Upload className="w-4 h-4" />
+                                            </div>
+                                        )}
+                                    </button>
+
+                                    <input
+                                        id="receipt-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleImageUpload}
+                                    />
+                                </div>
+
+                                {/* Totals */}
+                                <div className="flex justify-end gap-8 text-sm">
+                                    {vatIncluded && (
+                                        <div className="text-muted-foreground text-right">
+                                            <p>{t.expenses.dialog.subtotal}: ฿{(subtotal - vatAmount).toLocaleString()}</p>
+                                            <p>{t.expenses.dialog.vat}: ฿{vatAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                                        </div>
+                                    )}
+                                    <div className="text-right">
+                                        <p className="text-muted-foreground font-bold tracking-wider">{t.expenses.dialog.grand_total}</p>
+                                        <p className="text-2xl font-black text-primary">฿{subtotal.toLocaleString()}</p>
                                     </div>
-                                )}
-                                <div className="text-right">
-                                    <p className="text-muted-foreground font-bold tracking-wider">{t.expenses.dialog.grand_total}</p>
-                                    <p className="text-2xl font-black text-primary">฿{subtotal.toLocaleString()}</p>
                                 </div>
                             </div>
 

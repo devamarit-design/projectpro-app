@@ -103,6 +103,7 @@ export interface Expense {
     isArchived?: boolean // Archive flag
     createdAt?: string // Timestamp
     updatedAt?: string // Timestamp
+    createdBy?: string // User ID of creator
 }
 
 export interface Project {
@@ -938,7 +939,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 // Specialized handling for PWA/Mobile environments
                 const ua = navigator.userAgent || navigator.vendor || (window as any).opera
                 const isIOS = /iPhone|iPad|iPod/i.test(ua)
-                
+
                 // iOS PWA: Popups are blocked or time out -> Force Redirect
                 if (isIOS) {
                     await setPersistence(auth, browserLocalPersistence)
@@ -954,13 +955,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     await signInWithPopup(auth, googleProvider)
                 } catch (error: any) {
                     console.error("Popup login failed, trying redirect fallback", error)
-                     // If popup failed specifically, fallback to redirect
+                    // If popup failed specifically, fallback to redirect
                     if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-                         // Only fallback if not closed by user
-                         if (error.code !== 'auth/popup-closed-by-user') {
+                        // Only fallback if not closed by user
+                        if (error.code !== 'auth/popup-closed-by-user') {
                             await signInWithRedirect(auth, googleProvider)
                             return
-                         }
+                        }
                     }
                     throw error
                 }
@@ -1899,7 +1900,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             // Ensure teamId is attached
             const docRef = await addDoc(collection(db, "expenses"), {
                 ...expense,
-                orgId: currentTeam.id
+                orgId: currentTeam.id,
+                createdAt: new Date().toISOString(),
+                createdBy: currentUser?.id
             })
 
             // Notification: Everyone gets notified for every payment
@@ -1915,8 +1918,33 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 orgId: currentTeam.id,
                 creatorId: currentUser?.id
             })
+
+            // Log Activity
+            if (currentTeam && currentUser) {
+                // Ensure logActivity is imported or defined. Assumed available since used in updateExpense.
+                // If logActivity is not imported, we might need to add it, but context usually has it.
+                // Checking updateExpense usage in same file suggests it's available.
+                await logActivity(db, currentTeam.id, {
+                    action: "CREATE",
+                    entityType: "EXPENSE",
+                    entityId: docRef.id,
+                    entityTitle: expense.title,
+                    details: `Expense created by ${currentUser.name}`,
+                    performedBy: {
+                        uid: currentUser.id,
+                        name: currentUser.name,
+                        role: currentUser.role
+                    },
+                    relatedUserIds: [currentUser.id],
+                    metadata: {
+                        amount: expense.totalValue,
+                        status: expense.status
+                    }
+                })
+            }
         } catch (e) {
             console.error("Error adding expense", e)
+            throw e
         }
     }
 

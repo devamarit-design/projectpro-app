@@ -18,9 +18,10 @@ import CreateTeamDialog from "./create-team-dialog"
 
 
 export default function TeamPage() {
-    const { users, deleteUser, currentUser, teams, currentTeam, switchTeam, addTeam } = useProjects()
+    const { users, deleteUser, currentUser, teams, currentTeam, switchTeam, addTeam, updateUser } = useProjects()
     const { t } = useTranslation()
     const [searchQuery, setSearchQuery] = React.useState("")
+    const [showRoleGuide, setShowRoleGuide] = React.useState(false)
 
 
     const [isAddOpen, setIsAddOpen] = React.useState(false)
@@ -153,6 +154,49 @@ export default function TeamPage() {
             </div>
 
 
+
+            {/* Role Guide */}
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <button
+                    onClick={() => setShowRoleGuide(!showRoleGuide)}
+                    className="w-full flex items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
+                    <div className="flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-primary" />
+                        <span className="font-bold text-sm">Role & Permissions Guide</span>
+                    </div>
+                    {showRoleGuide ? <Check className="w-4 h-4 rotate-180 transition-transform" /> : <div className="text-xs text-muted-foreground">Show Details</div>}
+                </button>
+                {showRoleGuide && (
+                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-card text-sm animate-in slide-in-from-top-2">
+                        <div className="p-3 rounded-lg bg-orange-500/5 border border-orange-500/10 space-y-1">
+                            <div className="font-bold text-orange-600 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-orange-500" /> Owner
+                            </div>
+                            <p className="text-muted-foreground text-xs leading-relaxed">Full access. Can manage billing, delete team, and assign roles.</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/10 space-y-1">
+                            <div className="font-bold text-purple-600 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-purple-500" /> Admin
+                            </div>
+                            <p className="text-muted-foreground text-xs leading-relaxed">Can manage members, projects, and settings. Cannot delete Owner.</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 space-y-1">
+                            <div className="font-bold text-blue-600 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-blue-500" /> Manager
+                            </div>
+                            <p className="text-muted-foreground text-xs leading-relaxed">Can add projects, manage expenses, and view reports.</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/10 space-y-1">
+                            <div className="font-bold text-green-600 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-green-500" /> Staff / Accountant
+                            </div>
+                            <p className="text-muted-foreground text-xs leading-relaxed">Can view projects and add expenses. Accountants see financial data.</p>
+                        </div>
+                    </div>
+                )}
+            </div>
+
             {/* Search */}
             <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl p-2 -mx-2 rounded-xl flex gap-3 border border-border/50 shadow-sm">
                 <div className="relative flex-1">
@@ -184,14 +228,38 @@ export default function TeamPage() {
                                     <div>
                                         <h3 className="font-bold text-base group-hover:text-primary transition-colors">{user.name}</h3>
                                         <div className="flex items-center gap-2 mt-0.5">
-                                            <span className={cn(
-                                                "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border",
-                                                user.role === 'Admin' || user.role === 'Owner'
-                                                    ? "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-900"
-                                                    : "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-900"
-                                            )}>
-                                                {user.role}
-                                            </span>
+                                            {/* Role Selector for Owner, Static for others */}
+                                            {currentUser?.role === 'Owner' && user.role !== 'Owner' ? (
+                                                <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="relative group/select">
+                                                    <select
+                                                        value={user.role}
+                                                        onChange={(e) => {
+                                                            const newRole = e.target.value;
+                                                            // @ts-ignore
+                                                            if (updateUser) updateUser(user.id, { role: newRole });
+                                                        }}
+                                                        className="appearance-none bg-transparent pl-2 pr-6 py-0.5 text-[10px] font-bold uppercase tracking-wider border rounded-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 hover:bg-muted/50 transition-colors border-dashed border-primary/50 text-primary"
+                                                    >
+                                                        <option value="Admin">Admin</option>
+                                                        <option value="Manager">Manager</option>
+                                                        <option value="Accountant">Accountant</option>
+                                                        <option value="Staff">Staff</option>
+                                                    </select>
+                                                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-primary/50">
+                                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <span className={cn(
+                                                    "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border",
+                                                    user.role === 'Admin' || user.role === 'Owner'
+                                                        ? "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-900"
+                                                        : "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-900"
+                                                )}>
+                                                    {user.role}
+                                                </span>
+                                            )}
+
                                             <span className={cn(
                                                 "w-2 h-2 rounded-full",
                                                 user.status === 'Active' ? "bg-green-500" :

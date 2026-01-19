@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Calendar, User, Trash2, Save, Building, Tag, DollarSign, Receipt, Info, Check, CheckCircle2, ShoppingBag, Camera, Upload, Layout, Archive } from "lucide-react"
+import { X, Calendar, User, Trash2, Save, Building, Tag, DollarSign, Receipt, Info, Check, CheckCircle2, ShoppingBag, Camera, Upload, Layout, Archive, Clock } from "lucide-react"
 import { useProjects, Expense, ExpenseCategory, ExpenseItem } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { uploadWithThumbnail } from "@/lib/upload"
@@ -140,7 +140,25 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                             </div>
                             <div>
                                 <h2 className="text-xl font-bold tracking-tight">Expense Details</h2>
-                                <p className="text-xs text-muted-foreground uppercase tracking-wide">ID: {expense.id.toUpperCase()}</p>
+                                <div className="text-xs text-muted-foreground space-y-0.5">
+                                    <p className="uppercase tracking-wide opacity-70">ID: {expense.id.slice(0, 8).toUpperCase()}...</p>
+                                    {(expense.createdAt || expense.createdBy) && (
+                                        <div className="flex flex-col">
+                                            {expense.createdAt && (
+                                                <span className="flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" />
+                                                    {new Date(expense.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} {new Date(expense.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            )}
+                                            {expense.createdBy && (
+                                                <span className="flex items-center gap-1 text-primary/80">
+                                                    <User className="w-3 h-3" />
+                                                    {users.find(u => u.id === expense.createdBy)?.name || "Unknown"}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -416,6 +434,8 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                 </div>
                             </div>
                         </div>
+
+
 
                         {/* Receipt Image */}
                         <div className="space-y-2">

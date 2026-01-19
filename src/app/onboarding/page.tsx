@@ -8,16 +8,26 @@ import { Building2, Users, ArrowRight, Plus, Loader2 } from "lucide-react"
 import FeatureCarousel from "@/components/onboarding/feature-carousel"
 
 export default function OnboardingPage() {
-    const { currentUser, teams, addTeam, updateUser } = useProjects()
+    const { currentUser, teams, addTeam, updateUser, isAuthLoading } = useProjects()
     const { joinOrganizationByCode } = useOrganization()
     const router = useRouter()
 
-    // ... (lines 15-27 same)
     const [step, setStep] = React.useState<"showcase" | "welcome" | "create" | "join">("showcase")
     const [teamName, setTeamName] = React.useState("")
     const [inviteCode, setInviteCode] = React.useState("")
     const [isLoading, setIsLoading] = React.useState(false)
     const [error, setError] = React.useState<string | null>(null)
+
+    React.useEffect(() => {
+        if (!isAuthLoading && currentUser) {
+            const hasTeams = currentUser.orgIds && currentUser.orgIds.length > 0
+            if (currentUser.hasOnboarded || hasTeams) {
+                router.replace("/")
+            }
+        } else if (!isAuthLoading && !currentUser) {
+            router.replace("/login")
+        }
+    }, [currentUser, isAuthLoading, router])
 
     const handleCreateTeam = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -29,7 +39,7 @@ export default function OnboardingPage() {
             if (currentUser) {
                 await updateUser(currentUser.id, { hasOnboarded: true })
             }
-            router.push(`/projects/detail?id=${newTeamId}`)
+            router.push("/")
         } catch (error) {
             console.error("Failed to create team", error)
             setIsLoading(false)
@@ -47,7 +57,6 @@ export default function OnboardingPage() {
             if (currentUser) {
                 await updateUser(currentUser.id, { hasOnboarded: true })
             }
-            // Force reload to ensure context updates or just replace URL
             window.location.href = "/"
         } catch (error: any) {
             console.error("Failed to join team", error)
@@ -56,17 +65,38 @@ export default function OnboardingPage() {
         }
     }
 
-    if (!currentUser) {
+    // Strict Loading State:
+    // 1. Auth is loading
+    // 2. User is not yet loaded (but auth matches)
+    // 3. User SHOULD redirect (prevent flash)
+    const shouldRedirect = currentUser && ((currentUser.orgIds && currentUser.orgIds.length > 0) || currentUser.hasOnboarded)
+
+    if (isAuthLoading || !currentUser || shouldRedirect) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-black text-white">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="min-h-screen flex items-center justify-center bg-black text-white relative overflow-hidden">
+                {/* Background Image */}
+                <div
+                    className="absolute inset-0 z-0 opacity-50"
+                    style={{
+                        backgroundImage: "url('/loading-bg.jpg')",
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        filter: 'blur(20px) brightness(0.5)' // Optional: blur it a bit to make text pop, or remove if they want it clear
+                    }}
+                />
+
+                {/* Content */}
+                <div className="relative z-10 flex flex-col items-center">
+                    <Loader2 className="w-12 h-12 animate-spin text-white mb-4" />
+                    <p className="text-white/80 animate-pulse tracking-widest text-sm uppercase">Loading...</p>
+                </div>
             </div>
         )
     }
 
     // New Step 1: Feature Showcase
     if (step === "showcase") {
-        if (teams.length > 0) return <FeatureCarousel onComplete={() => router.push(`/projects/detail?id=${teams[0].id}`)} />
+        if (teams.length > 0) return <FeatureCarousel onComplete={() => router.push("/")} />
         return <FeatureCarousel onComplete={() => setStep("welcome")} />
     }
 
@@ -93,7 +123,7 @@ export default function OnboardingPage() {
                         <div className="grid gap-4">
                             {teams.length > 0 && (
                                 <button
-                                    onClick={() => router.push(`/projects/detail?id=${teams[0].id}`)}
+                                    onClick={() => router.push("/")}
                                     className="group relative overflow-hidden bg-primary/10 border border-primary/50 p-6 rounded-2xl hover:bg-primary/20 transition-all text-left"
                                 >
                                     <div className="relative flex items-center gap-4">

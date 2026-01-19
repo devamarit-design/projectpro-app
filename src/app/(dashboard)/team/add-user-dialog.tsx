@@ -133,12 +133,8 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                                 >
                                     <option value="Admin">Admin</option>
                                     <option value="Manager">Manager</option>
-                                    <option value="Foreman">Foreman</option>
                                     <option value="Accountant">Accountant</option>
-                                    <option value="Contractor">Contractor (ช่างเหมา)</option>
-                                    <option value="Foreman">Foreman (หัวหน้างาน)</option>
-                                    <option value="Accountant">Accountant (บัญชี)</option>
-                                    <option value="Staff">Staff (พนักงาน)</option>
+                                    <option value="Staff">Staff</option>
                                     <option value="Owner">Owner</option>
                                 </select>
                             </div>
