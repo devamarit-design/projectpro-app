@@ -910,46 +910,72 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         return () => unsubscribe()
     }, [])
 
+    // Handle Redirect Result (for Mobile/PWA)
+    useEffect(() => {
+        const handleRedirect = async () => {
+            try {
+                await getRedirectResult(auth)
+                // We don't need to do anything specific here as onAuthStateChanged will trigger
+                // But we can log success or handle specific post-redirect logic if needed
+            } catch (error: any) {
+                console.error("Redirect login failed", error)
+                // Optional: Set a global error state if you have one, or just log
+            }
+        }
+        handleRedirect()
+    }, [])
+
+
+
 
 
 
     const login = async (provider: string, credentials?: { email?: string, password?: string }) => {
-        const loginPromise = async () => {
+        setIsAuthLoading(true) // Ensure loading state is on
+
+        try {
             if (provider === 'google') {
+                // Specialized handling for PWA/Mobile environments
+                const ua = navigator.userAgent || navigator.vendor || (window as any).opera
+                const isIOS = /iPhone|iPad|iPod/i.test(ua)
+                
+                // iOS PWA: Popups are blocked or time out -> Force Redirect
+                if (isIOS) {
+                    await setPersistence(auth, browserLocalPersistence)
+                    await signInWithRedirect(auth, googleProvider)
+                    return // Flow ends here
+                }
+
+                // Android & Desktop: Try Popup first
+                // On Android PWA, Popup opens a Chrome Custom Tab (Allowed UA)
+                // whereas Redirect navigates the WebView (Disallowed UA -> 403)
                 try {
                     await setPersistence(auth, browserLocalPersistence)
                     await signInWithPopup(auth, googleProvider)
-                    console.log("Google Sign-In Success!")
                 } catch (error: any) {
-                    console.error("Login failed", error)
-                    if (error.code === 'auth/popup-closed-by-user') {
-                        throw new Error("Login cancelled")
-                    } else if (error.code === 'auth/popup-blocked') {
-                        throw new Error("Popup blocked. Please allow popups for this site.")
-                    } else if (error.code === 'auth/unauthorized-domain') {
-                        throw new Error("Domain not authorized. Add this domain in Firebase Console.")
+                    console.error("Popup login failed, trying redirect fallback", error)
+                     // If popup failed specifically, fallback to redirect
+                    if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+                         // Only fallback if not closed by user
+                         if (error.code !== 'auth/popup-closed-by-user') {
+                            await signInWithRedirect(auth, googleProvider)
+                            return
+                         }
                     }
                     throw error
                 }
             } else if ((provider === 'email' || provider === 'credentials') && credentials?.email && credentials?.password) {
-                try {
-                    await setPersistence(auth, browserLocalPersistence)
-                    await signInWithEmailAndPassword(auth, credentials.email, credentials.password)
-                } catch (error: any) {
-                    console.error("Login failed", error)
-                    throw error
-                }
+                await setPersistence(auth, browserLocalPersistence)
+                await signInWithEmailAndPassword(auth, credentials.email, credentials.password)
             }
-        }
-
-        // Add 30s timeout for redirect mode (it takes longer)
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Login timed out. Check your connection.")), 30000)
-        )
-
-        try {
-            await Promise.race([loginPromise(), timeoutPromise])
-        } catch (error) {
+        } catch (error: any) {
+            console.error("Login failed", error)
+            setIsAuthLoading(false) // Turn off loading if we errored out (and didn't redirect)
+            if (error.code === 'auth/popup-closed-by-user') {
+                throw new Error("Login cancelled")
+            } else if (error.code === 'auth/unauthorized-domain') {
+                throw new Error("Domain not authorized. Add to Firebase Console.")
+            }
             throw error
         }
     }
