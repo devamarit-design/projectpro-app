@@ -1,12 +1,14 @@
 "use client"
 
 import { useSettings } from "@/context/settings-context"
-import { Bell, Calendar, Clock, AlertTriangle } from "lucide-react"
+import { useNotifications } from "@/context/notification-context"
+import { Bell, Calendar, Clock, AlertTriangle, Smartphone } from "lucide-react"
 
 import { useTranslation } from "@/lib/i18n-context"
 export function NotificationSettings() {
     const { t } = useTranslation()
     const { notificationSettings, updateNotificationSettings } = useSettings()
+    const { requestPushPermission } = useNotifications()
 
     return (
         <div className="space-y-8">
@@ -35,6 +37,25 @@ export function NotificationSettings() {
                                 {notificationSettings.warnDaysBeforeDue}
                             </div>
                         </div>
+                    </div>
+
+                    <div className="h-px bg-border my-4" />
+
+                    {/* Push Notifications */}
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <label className="text-sm font-medium flex items-center gap-2">
+                                <Smartphone className="w-4 h-4 text-purple-500" />
+                                {t.settings.notifications?.push_title || "Push Notifications"}
+                            </label>
+                            <p className="text-xs text-muted-foreground">{t.settings.notifications?.push_desc || "Receive notifications on this device"}</p>
+                        </div>
+                        <button
+                            onClick={requestPushPermission}
+                            className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors font-medium"
+                        >
+                            {t.settings.notifications?.enable_push || "Enable Push"}
+                        </button>
                     </div>
 
                     <div className="h-px bg-border my-4" />

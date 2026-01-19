@@ -30,6 +30,7 @@ interface NotificationContextType {
     markAllAsRead: () => void
     clearAll: () => void
     addNotification: (notification: Omit<Notification, "id" | "read">) => void
+    requestPushPermission: () => Promise<void>
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
@@ -147,6 +148,44 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         return () => unsubscribe()
     }, [currentTeam])
+
+    // Push Notifications Logic
+    const requestPushPermission = async () => {
+        try {
+            if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                const permission = await Notification.requestPermission()
+                if (permission === 'granted') {
+                    // Import messaging dynamically to avoid SSR issues
+                    const { getMessaging, getToken, onMessage } = await import("firebase/messaging")
+                    const { messaging } = await import("@/lib/firebase")
+
+                    if (messaging) {
+                        const token = await getToken(messaging, {
+                            vapidKey: "BM2q-w_z1b6m8d6V4e5P3q9s7o0r1t0u2v4w6x8z0A_B_C_D_E_F_G_H_I_J_K" // Replace with your actual VAPID key if you have one, or remove if using default
+                        })
+                        console.log("FCM Token:", token)
+                        // TODO: Save this token to Firestore for the current user
+
+                        onMessage(messaging, (payload) => {
+                            console.log('Foreground Message:', payload)
+                            addNotification({
+                                title: payload.notification?.title || 'New Message',
+                                message: payload.notification?.body || '',
+                                type: 'info',
+                                date: new Date().toISOString(),
+                                role: 'all' // defaulting
+                            } as any)
+                        })
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error requesting push permission:", error)
+        }
+    }
+
+    // Expose requestPushPermission to context if needed, or call it from settings
+
 
     // Generate System Notifications
     useEffect(() => {
@@ -351,7 +390,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             markAsRead,
             markAllAsRead,
             clearAll,
-            addNotification
+            addNotification,
+            requestPushPermission
         }}>
             {children}
         </NotificationContext.Provider>

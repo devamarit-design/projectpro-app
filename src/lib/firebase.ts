@@ -24,6 +24,14 @@ googleProvider.setCustomParameters({ prompt: 'select_account' });
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
+// Messaging (Client Side Only)
+export let messaging: any;
+if (typeof window !== "undefined") {
+    import("firebase/messaging").then(({ getMessaging }) => {
+        messaging = getMessaging(app);
+    });
+}
+
 // Analytics (Client Side Only)
 // let analytics;
 // if (typeof window !== "undefined") {

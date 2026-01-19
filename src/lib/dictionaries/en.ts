@@ -636,7 +636,10 @@ export const en = {
             overdue: "Overdue Alerts",
             overdue_desc: "Get notified immediately when items are overdue.",
             assignments: "Task Assignments",
-            assignments_desc: "Get notified when you are assigned to a new task."
+            assignments_desc: "Get notified when you are assigned to a new task.",
+            push_title: "Push Notifications",
+            push_desc: "Receive notifications on this device",
+            enable_push: "Enable Push"
         },
         documents: {
             setup_title: "AI Template Setup",
