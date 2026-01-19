@@ -8,7 +8,7 @@ import { useTranslation } from "@/lib/i18n-context"
 export function NotificationSettings() {
     const { t } = useTranslation()
     const { notificationSettings, updateNotificationSettings } = useSettings()
-    const { requestPushPermission } = useNotifications()
+    const { requestPushPermission, permissionStatus, isPushEnabled } = useNotifications()
 
     return (
         <div className="space-y-8">
@@ -50,12 +50,21 @@ export function NotificationSettings() {
                             </label>
                             <p className="text-xs text-muted-foreground">{t.settings.notifications?.push_desc || "Receive notifications on this device"}</p>
                         </div>
-                        <button
-                            onClick={requestPushPermission}
-                            className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors font-medium"
-                        >
-                            {t.settings.notifications?.enable_push || "Enable Push"}
-                        </button>
+                        {permissionStatus === 'denied' ? (
+                            <div className="px-3 py-1.5 bg-red-500/10 text-red-500 text-xs font-medium rounded-lg border border-red-500/20">
+                                Blocked
+                            </div>
+                        ) : (
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={isPushEnabled}
+                                    onChange={requestPushPermission}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                        )}
                     </div>
 
                     <div className="h-px bg-border my-4" />

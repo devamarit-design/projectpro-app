@@ -32,6 +32,8 @@ interface NotificationContextType {
     clearAll: () => void
     addNotification: (notification: Omit<Notification, "id" | "read">) => void
     requestPushPermission: () => Promise<void>
+    permissionStatus: NotificationPermission
+    isPushEnabled: boolean
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
@@ -107,11 +109,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     // Load read status from local storage
     const [readStatus, setReadStatus] = useState<Record<string, boolean>>({})
+    const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>('default')
 
     useEffect(() => {
         const storedReadStatus = localStorage.getItem("pp_notifications_read")
         if (storedReadStatus) {
             setTimeout(() => setReadStatus(JSON.parse(storedReadStatus)), 0)
+        }
+
+        // Check permission status on mount
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            setPermissionStatus(Notification.permission)
         }
     }, [])
 
@@ -150,8 +158,42 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         return () => unsubscribe()
     }, [currentTeam])
 
+    const [isPushEnabled, setIsPushEnabled] = useState(false)
+
+    // Check if we already have a token
+    useEffect(() => {
+        if (permissionStatus === 'granted') {
+            // We could check if we have a token saved or try to get it silently
+            // For now, let's assume if granted we might be enabled, or default false until confirmed
+        }
+    }, [permissionStatus])
+
+    const unregisterPush = async () => {
+        try {
+            if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                const { getMessaging, deleteToken } = await import("firebase/messaging")
+                const { messaging } = await import("@/lib/firebase")
+
+                if (messaging) {
+                    await deleteToken(messaging)
+                    setIsPushEnabled(false)
+                    toast.success("Push notifications disabled")
+                }
+            }
+        } catch (error) {
+            console.error("Error disabling push:", error)
+            toast.error("Failed to disable push")
+        }
+    }
+
     // Push Notifications Logic
     const requestPushPermission = async () => {
+        // If already enabled, this acts as a toggle to disable
+        if (isPushEnabled) {
+            await unregisterPush()
+            return
+        }
+
         try {
             if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
                 const promise = Notification.requestPermission()
@@ -159,6 +201,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 toast.promise(promise, {
                     loading: 'Requesting permission...',
                     success: (permission: NotificationPermission) => {
+                        setPermissionStatus(permission)
                         if (permission === 'granted') return 'Notifications enabled!'
                         return 'Permission denied'
                     },
@@ -176,6 +219,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                         try {
                             const token = await getToken(messaging)
                             console.log("FCM Token:", token)
+                            setIsPushEnabled(true)
                             toast.success("Ready to receive notifications")
                             // TODO: Save this token to Firestore for the current user
 
@@ -414,7 +458,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             markAllAsRead,
             clearAll,
             addNotification,
-            requestPushPermission
+            requestPushPermission,
+            permissionStatus,
+            isPushEnabled
         }}>
             {children}
         </NotificationContext.Provider>
