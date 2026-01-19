@@ -37,9 +37,13 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
             <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-800">
-                <div className="flex flex-col items-center text-center space-y-4 mb-8">
-                    <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20">
-                        <LayoutDashboard className="w-8 h-8 text-white" />
+                <div className="flex flex-col items-center text-center mb-8">
+                    <div className="relative w-48 h-auto mb-4">
+                        <img
+                            src="/logo.png"
+                            alt="ProjectPro Logo"
+                            className="w-full h-auto object-contain"
+                        />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
