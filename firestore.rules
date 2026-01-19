@@ -51,5 +51,14 @@ service cloud.firestore {
     match /tasks/{docId} { allow read, write: if isAuthenticated(); }
     match /vendors/{docId} { allow read, write: if isAuthenticated(); }
     match /wages/{docId} { allow read, write: if isAuthenticated(); }
+    // Invitations
+    match /invites/{inviteId} { allow read, write: if isAuthenticated(); }
+
+    // Workers & Contracts
+    match /workers/{workerId} { allow read, write: if isAuthenticated(); }
+    match /contracts/{contractId} { allow read, write: if isAuthenticated(); }
+    
+    // Notifications
+    match /notifications/{notificationId} { allow read, write: if isAuthenticated(); }
   }
 }
