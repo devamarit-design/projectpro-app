@@ -160,9 +160,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                     const { messaging } = await import("@/lib/firebase")
 
                     if (messaging) {
-                        const token = await getToken(messaging, {
-                            vapidKey: "BM2q-w_z1b6m8d6V4e5P3q9s7o0r1t0u2v4w6x8z0A_B_C_D_E_F_G_H_I_J_K" // Replace with your actual VAPID key if you have one, or remove if using default
-                        })
+                        const token = await getToken(messaging)
                         console.log("FCM Token:", token)
                         // TODO: Save this token to Firestore for the current user
 
