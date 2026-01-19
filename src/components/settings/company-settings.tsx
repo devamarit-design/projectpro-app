@@ -30,14 +30,21 @@ export function CompanySettings() {
 
     return (
         <div className="space-y-6">
-            <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
-                <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                <div>
-                    <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">Company Information is Read-Only</h4>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                        To edit company details, please visit the <Link href="/team" className="underline font-semibold hover:text-blue-800">Team Page</Link>.
-                    </p>
+            <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                    <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                    <div>
+                        <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">Company Information is Read-Only</h4>
+                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                            To edit company details, please visit the Team Page.
+                        </p>
+                    </div>
                 </div>
+                <Link href="/team">
+                    <button className="whitespace-nowrap inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                        Go to Edit in Team Page
+                    </button>
+                </Link>
             </div>
 
             <div className="flex items-center gap-4 border-b pb-4">
