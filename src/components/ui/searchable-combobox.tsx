@@ -154,7 +154,7 @@ export default function SearchableCombobox({
                     </div>
 
                     {/* Options List */}
-                    <div className="max-h-60 overflow-y-auto px-1">
+                    <div className="max-h-60 overflow-y-auto px-1 overscroll-contain touch-pan-y">
                         {filteredOptions.length === 0 ? (
                             <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                                 {emptyMessage}
