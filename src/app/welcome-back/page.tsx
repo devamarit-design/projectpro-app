@@ -4,10 +4,12 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useProjects } from "@/context/project-context"
+import { useTranslation } from "@/lib/i18n-context"
 
 export default function WelcomeBackPage() {
     const router = useRouter()
     const { currentUser } = useProjects()
+    const { t } = useTranslation()
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -30,11 +32,11 @@ export default function WelcomeBackPage() {
                 </div>
 
                 <h1 className="text-3xl font-bold tracking-tight">
-                    Welcome back, <span className="text-primary">{currentUser?.name || "Friend"}</span>!
+                    {t.welcome_back.greeting} <span className="text-primary">{currentUser?.name || t.welcome_back.fallback_name}</span>!
                 </h1>
 
                 <p className="text-muted-foreground max-w-md mx-auto">
-                    We're getting everything ready for you...
+                    {t.welcome_back.loading}
                 </p>
 
                 <div className="flex justify-center pt-8">

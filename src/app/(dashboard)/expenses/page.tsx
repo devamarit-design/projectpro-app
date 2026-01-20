@@ -362,40 +362,39 @@ function ExpensesContent() {
                             </select>
                         </div>
 
-
-                        {/* Sort Order */}
-                        <div className="relative min-w-[140px]">
-                            <select
-                                value={sortOrder}
-                                onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
-                                className="w-full pl-3 pr-8 py-2 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
-                            >
-                                <option value="newest">Newest Date</option>
-                                <option value="oldest">Oldest Date</option>
-                            </select>
-                        </div>
                     </div>
 
-                    {/* Search Bar */}
-                    <div className="relative w-full sm:w-72 group">
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-xl blur-lg opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-                        <div className="relative bg-muted/30 border border-white/5 rounded-xl flex items-center overflow-hidden transition-colors group-focus-within:bg-background/50 group-focus-within:border-primary/30">
-                            <Search className="w-4 h-4 text-muted-foreground ml-3 group-focus-within:text-primary transition-colors" />
-                            <input
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={t.expenses.filters.search_placeholder}
-                                className="w-full px-3 py-2.5 bg-transparent border-none text-sm focus:outline-none placeholder:text-muted-foreground/50"
-                            />
-                            {searchQuery && (
-                                <button
-                                    onClick={() => setSearchQuery('')}
-                                    className="p-1 mr-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                >
-                                    <div className="w-4 h-4 flex items-center justify-center">×</div>
-                                </button>
-                            )}
+                    {/* Search Bar with Sort Icon */}
+                    <div className="flex gap-2 items-center w-full sm:w-auto">
+                        <div className="relative flex-1 sm:w-60 group">
+                            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-xl blur-lg opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+                            <div className="relative bg-muted/30 border border-white/5 rounded-xl flex items-center overflow-hidden transition-colors group-focus-within:bg-background/50 group-focus-within:border-primary/30">
+                                <Search className="w-4 h-4 text-muted-foreground ml-3 group-focus-within:text-primary transition-colors" />
+                                <input
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder={t.expenses.filters.search_placeholder}
+                                    className="w-full px-3 py-2.5 bg-transparent border-none text-sm focus:outline-none placeholder:text-muted-foreground/50"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery('')}
+                                        className="p-1 mr-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                        <div className="w-4 h-4 flex items-center justify-center">×</div>
+                                    </button>
+                                )}
+                            </div>
                         </div>
+
+                        {/* Sort Icon Button */}
+                        <button
+                            onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+                            className="p-2.5 bg-muted/30 border border-white/5 rounded-xl hover:bg-muted/50 transition-colors flex items-center justify-center"
+                            title={sortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
+                        >
+                            <RefreshCcw className={cn("w-4 h-4 text-muted-foreground", sortOrder === 'oldest' && "rotate-180")} />
+                        </button>
                     </div>
                 </div>
             </div>

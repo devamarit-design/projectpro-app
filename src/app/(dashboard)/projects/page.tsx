@@ -22,7 +22,7 @@ export default function ProjectsPage() {
     const statusFilter = searchParams.get("status") || null
     const showArchived = searchParams.get("archived") === "true"
     const [showFilters, setShowFilters] = useState(false) // UI toggle can remain local
-    const [columns, setColumns] = useState<1 | 2 | 3 | 'auto'>('auto')
+    const [columns, setColumns] = useState<1 | 2 | 3 | 'auto'>(1)
 
 
     const [archiveConfirm, setArchiveConfirm] = useState<{ isOpen: boolean; projectId: string | null }>({

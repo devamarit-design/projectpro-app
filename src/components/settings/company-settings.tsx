@@ -30,30 +30,39 @@ export function CompanySettings() {
 
     return (
         <div className="space-y-6">
-            <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-3">
-                    <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                    <div>
-                        <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">Company Information is Read-Only</h4>
-                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                            To edit company details, please visit the Team Page.
-                        </p>
-                    </div>
-                </div>
-                <Link href="/team">
-                    <button className="whitespace-nowrap inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
-                        Go to Edit in Team Page
-                    </button>
-                </Link>
-            </div>
 
             <div className="flex items-center gap-4 border-b pb-4">
-                <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/20">
-                    {orgProfile.logo ? (
-                        <img src={orgProfile.logo} alt="Logo" className="h-full w-full object-contain rounded-xl" />
-                    ) : (
-                        <Building2 className="w-8 h-8 text-primary" />
-                    )}
+                <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative group cursor-pointer"
+                >
+                    <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/20 overflow-hidden group-hover:border-primary/50 transition-all">
+                        {orgProfile.logo ? (
+                            <img src={orgProfile.logo} alt="Logo" className="h-full w-full object-contain" />
+                        ) : (
+                            <Building2 className="w-8 h-8 text-primary" />
+                        )}
+                        {isUploading && (
+                            <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            </div>
+                        )}
+                    </div>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleLogoUpload}
+                        accept="image/*"
+                        className="hidden"
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="absolute -right-2 -bottom-2 p-1.5 rounded-full bg-primary text-primary-foreground shadow-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                        title={t.settings.company.change_logo}
+                    >
+                        <Building2 className="w-3.5 h-3.5" />
+                    </button>
                 </div>
                 <div>
                     <h3 className="text-lg font-semibold">{t.settings.company.title}</h3>
@@ -70,9 +79,8 @@ export function CompanySettings() {
                     <input
                         type="text"
                         value={orgProfile.name}
-                        readOnly
-                        disabled
-                        className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                        onChange={(e) => updateOrgProfile({ name: e.target.value })}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder={t.settings.company.placeholders.name}
                     />
                 </div>
@@ -85,9 +93,8 @@ export function CompanySettings() {
                     <input
                         type="text"
                         value={orgProfile.taxId}
-                        readOnly
-                        disabled
-                        className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                        onChange={(e) => updateOrgProfile({ taxId: e.target.value })}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder={t.settings.company.placeholders.tax_id}
                     />
                 </div>
@@ -99,9 +106,8 @@ export function CompanySettings() {
                     </label>
                     <textarea
                         value={orgProfile.address}
-                        readOnly
-                        disabled
-                        className="flex min-h-[80px] w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                        onChange={(e) => updateOrgProfile({ address: e.target.value })}
+                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder={t.settings.company.placeholders.address}
                     />
                 </div>
@@ -114,9 +120,8 @@ export function CompanySettings() {
                     <input
                         type="tel"
                         value={orgProfile.phone}
-                        readOnly
-                        disabled
-                        className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                        onChange={(e) => updateOrgProfile({ phone: e.target.value })}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder={t.settings.company.placeholders.phone}
                     />
                 </div>
@@ -129,9 +134,8 @@ export function CompanySettings() {
                     <input
                         type="email"
                         value={orgProfile.email}
-                        readOnly
-                        disabled
-                        className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                        onChange={(e) => updateOrgProfile({ email: e.target.value })}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder={t.settings.company.placeholders.email}
                     />
                 </div>
@@ -144,9 +148,8 @@ export function CompanySettings() {
                     <input
                         type="url"
                         value={orgProfile.website}
-                        readOnly
-                        disabled
-                        className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                        onChange={(e) => updateOrgProfile({ website: e.target.value })}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder={t.settings.company.placeholders.website}
                     />
                 </div>

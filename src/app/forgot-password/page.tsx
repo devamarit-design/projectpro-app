@@ -4,9 +4,11 @@ import { useState } from "react"
 import { ArrowLeft, KeyRound, CheckCircle2, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useTranslation } from "@/lib/i18n-context"
 
 export default function ForgotPasswordPage() {
     const router = useRouter()
+    const { t } = useTranslation()
     const [isLoading, setIsLoading] = useState(false)
     const [isSent, setIsSent] = useState(false)
     const [email, setEmail] = useState("")
@@ -39,7 +41,7 @@ export default function ForgotPasswordPage() {
                 <div className="mb-6">
                     <Link href="/login" className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
                         <ArrowLeft className="w-4 h-4" />
-                        Back to Login
+                        {t.forgot_password.back_to_login}
                     </Link>
                 </div>
 
@@ -48,20 +50,20 @@ export default function ForgotPasswordPage() {
                         <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
                             <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
                         </div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Check your email</h1>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t.forgot_password.check_email}</h1>
                         <p className="text-gray-500 dark:text-gray-400 text-sm">
-                            We have sent a password reset link to <strong>{email}</strong>.
+                            {t.forgot_password.sent_to} <strong>{email}</strong>.
                         </p>
                         <div className="pt-4">
                             <button
                                 onClick={() => router.push("/login")}
                                 className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium py-2.5 rounded-xl hover:opacity-90 transition-opacity"
                             >
-                                Return to Login
+                                {t.forgot_password.return_to_login}
                             </button>
                         </div>
                         <p className="text-xs text-gray-400 pt-2">
-                            Didn't receive the email? <button onClick={() => setIsSent(false)} className="text-blue-600 hover:underline">Click to resend</button>
+                            {t.forgot_password.didnt_receive} <button onClick={() => setIsSent(false)} className="text-blue-600 hover:underline">{t.forgot_password.resend}</button>
                         </p>
                     </div>
                 ) : (
@@ -71,22 +73,22 @@ export default function ForgotPasswordPage() {
                                 <KeyRound className="w-6 h-6 text-gray-600 dark:text-gray-400" />
                             </div>
                             <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                                Forgot password?
+                                {t.forgot_password.title}
                             </h1>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                No worries, we'll send you reset instructions.
+                                {t.forgot_password.subtitle}
                             </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.forgot_password.email}</label>
                                 <input
                                     type="email"
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Enter your email"
+                                    placeholder={t.forgot_password.placeholder}
                                     className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                 />
                             </div>
@@ -98,10 +100,10 @@ export default function ForgotPasswordPage() {
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Sending...</span>
+                                        <span>{t.forgot_password.sending}</span>
                                     </>
                                 ) : (
-                                    "Reset Password"
+                                    t.forgot_password.reset
                                 )}
                             </button>
                         </form>

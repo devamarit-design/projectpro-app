@@ -5,9 +5,11 @@ import { useProjects } from "@/context/project-context"
 import { useRouter } from "next/navigation"
 import { LayoutDashboard, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { useTranslation } from "@/lib/i18n-context"
 
 export default function LoginPage() {
     const { login, currentUser, isAuthLoading } = useProjects()
+    const { t } = useTranslation()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -30,7 +32,7 @@ export default function LoginPage() {
         try {
             await login("google")
         } catch (err: any) {
-            setError(err?.message || "Login failed")
+            setError(err?.message || t.login.error_login_failed)
             setIsLoading(false)
         }
     }
@@ -49,10 +51,10 @@ export default function LoginPage() {
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-white">
-                            Welcome Back
+                            {t.login.title}
                         </h1>
                         <p className="text-sm text-zinc-400 mt-2">
-                            Sign in to access your ProjectPro dashboard
+                            {t.login.subtitle}
                         </p>
                     </div>
                 </div>
@@ -69,7 +71,7 @@ export default function LoginPage() {
                         try {
                             await login("credentials", { email, password })
                         } catch (err: any) {
-                            setError(err?.message || "Invalid email or password.")
+                            setError(err?.message || t.login.error_invalid)
                             setIsLoading(false)
                         }
                     }} className="space-y-4">
@@ -79,7 +81,7 @@ export default function LoginPage() {
                             </div>
                         )}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-300">Email</label>
+                            <label className="text-sm font-medium text-zinc-300">{t.login.email}</label>
                             <input
                                 name="email"
                                 type="email"
@@ -90,12 +92,12 @@ export default function LoginPage() {
                         </div>
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <label className="text-sm font-medium text-zinc-300">Password</label>
+                                <label className="text-sm font-medium text-zinc-300">{t.login.password}</label>
                                 <Link
                                     href="/forgot-password"
                                     className="text-xs text-blue-400 hover:text-blue-300 font-medium hover:underline"
                                 >
-                                    Forgot password?
+                                    {t.login.forgot_password}
                                 </Link>
                             </div>
                             <input
@@ -111,7 +113,7 @@ export default function LoginPage() {
                             disabled={isLoading}
                             className="w-full bg-white text-black font-bold py-2.5 rounded-xl hover:bg-zinc-200 transition-colors shadow-lg shadow-white/5 disabled:opacity-70"
                         >
-                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto text-black" /> : "Sign in"}
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto text-black" /> : t.login.sign_in}
                         </button>
                     </form>
 
@@ -121,7 +123,7 @@ export default function LoginPage() {
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
                             <span className="bg-black px-2 text-zinc-500">
-                                Or continue with
+                                {t.login.or_continue}
                             </span>
                         </div>
                     </div>
@@ -153,7 +155,7 @@ export default function LoginPage() {
                                         fill="#EA4335"
                                     />
                                 </svg>
-                                <span>Sign in with Google</span>
+                                <span>{t.login.sign_in_google}</span>
                             </>
                         )}
                     </button>
@@ -164,22 +166,22 @@ export default function LoginPage() {
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
                             <span className="bg-black px-2 text-zinc-500">
-                                Secured by ProjectPro
+                                {t.login.secured_by}
                             </span>
                         </div>
                     </div>
 
                     <div className="text-center pt-4">
                         <Link href="/privacy" className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                            Privacy Policy
+                            {t.login.privacy_policy}
                         </Link>
                     </div>
 
                     <div className="text-center pt-2">
                         <p className="text-sm text-gray-500">
-                            Don&apos;t have an account?{" "}
+                            {t.login.no_account}{" "}
                             <Link href="/register" className="text-white hover:text-zinc-300 font-medium hover:underline">
-                                Sign up
+                                {t.login.sign_up}
                             </Link>
                         </p>
                     </div>

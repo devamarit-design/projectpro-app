@@ -3,19 +3,21 @@
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { useTranslation } from "@/lib/i18n-context"
-import { Building2, FileText, Palette, Users, Database, Shield, Bell } from "lucide-react"
+import { useProjects } from "@/context/project-context"
+import { Building2, FileText, Palette, Users, Shield, Bell } from "lucide-react"
 import { CompanySettings } from "@/components/settings/company-settings"
 import { DocumentSettings } from "@/components/settings/document-settings"
 import { ThemeSettings } from "@/components/settings/theme-settings"
 import { TeamSettings } from "@/components/settings/team-settings"
-import { DataSettings } from "@/components/settings/data-settings"
 import { SecuritySettings } from "@/components/settings/security-settings"
 import { NotificationSettings } from "@/components/settings/notifications-settings"
 
 export default function SettingsPage() {
     const { t } = useTranslation()
+    const { currentUser } = useProjects()
     const searchParams = useSearchParams()
     const [activeSection, setActiveSection] = useState("company")
+    const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Owner'
 
     useEffect(() => {
         const tab = searchParams.get("tab")
@@ -30,7 +32,6 @@ export default function SettingsPage() {
         { id: "notifications", label: t.settings.menu.notifications, icon: Bell },
         { id: "team", label: t.settings.menu.team, icon: Users },
         { id: "security", label: t.settings.menu.security, icon: Shield },
-        { id: "data", label: t.settings.menu.data, icon: Database },
         { id: "theme", label: t.settings.menu.theme, icon: Palette },
     ]
 
@@ -73,7 +74,6 @@ export default function SettingsPage() {
                         {activeSection === "theme" && <ThemeSettings />}
                         {activeSection === "team" && <TeamSettings />}
                         {activeSection === "security" && <SecuritySettings />}
-                        {activeSection === "data" && <DataSettings />}
                     </div>
                 </main>
             </div>

@@ -1,17 +1,19 @@
 "use client"
 
-import { AppShell } from "@/components/layout/app-shell"
 import { ArrowLeft, Shield, Lock, Eye, Server } from "lucide-react"
 import Link from "next/link"
+import { useTranslation } from "@/lib/i18n-context"
 
 export default function PrivacyPolicyPage() {
+    const { t } = useTranslation()
+
     return (
         <div className="min-h-screen bg-white dark:bg-gray-950">
             <header className="sticky top-0 z-50 w-full border-b bg-white/95 dark:bg-gray-950/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
                 <div className="container flex h-14 items-center">
                     <Link href="/login" className="flex items-center gap-2 text-sm font-medium hover:text-blue-600 transition-colors">
                         <ArrowLeft className="h-4 w-4" />
-                        Back to Login
+                        {t.privacy.back_to_login}
                     </Link>
                 </div>
             </header>
@@ -21,11 +23,11 @@ export default function PrivacyPolicyPage() {
                     <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Privacy Policy</h1>
+                    <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">{t.privacy.title}</h1>
                     <p className="text-gray-500 dark:text-gray-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                         We value your privacy. Here is how ProjectPro handles your data.
                     </p>
-                    <p className="text-xs text-gray-400">Last updated: January 15, 2026</p>
+                    <p className="text-xs text-gray-400">{t.privacy.last_updated}: January 15, 2026</p>
                 </div>
 
                 <div className="prose dark:prose-invert max-w-none space-y-8">

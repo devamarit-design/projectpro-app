@@ -7,9 +7,11 @@ import { Building2, XCircle, Loader2 } from "lucide-react"
 import { doc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Suspense } from "react"
+import { useTranslation } from "@/lib/i18n-context"
 
 function InviteContent() {
     const { currentUser } = useProjects()
+    const { t } = useTranslation()
     const router = useRouter()
     const searchParams = useSearchParams()
     const code = searchParams.get("code")
@@ -80,9 +82,9 @@ function InviteContent() {
     if (!currentUser) {
         return (
             <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
-                <p>Please log in to join this team.</p>
+                <p>{t.invite.login_required}</p>
                 <button onClick={() => router.push("/")} className="mt-4 bg-primary px-4 py-2 rounded-xl text-black font-bold">
-                    Go to Login
+                    {t.invite.go_to_login}
                 </button>
             </div>
         )
@@ -94,7 +96,7 @@ function InviteContent() {
                 {status === "loading" && (
                     <div className="flex flex-col items-center gap-4">
                         <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                        <p className="text-muted-foreground">Verifying invite...</p>
+                        <p className="text-muted-foreground">{t.invite.verifying}</p>
                     </div>
                 )}
 
@@ -104,11 +106,11 @@ function InviteContent() {
                             <XCircle className="w-8 h-8" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-red-500">Invalid Invite</h2>
-                            <p className="text-muted-foreground mt-2">This invite link is invalid or has expired.</p>
+                            <h2 className="text-2xl font-bold text-red-500">{t.invite.invalid}</h2>
+                            <p className="text-muted-foreground mt-2">{t.invite.invalid_desc}</p>
                         </div>
                         <button onClick={() => router.push("/")} className="mt-4 text-sm underline opacity-70">
-                            Back to Home
+                            {t.invite.back_home}
                         </button>
                     </div>
                 )}
@@ -120,7 +122,7 @@ function InviteContent() {
                         </div>
 
                         <div className="space-y-2">
-                            <p className="text-muted-foreground uppercase tracking-wider text-xs font-bold">You've been invited to join</p>
+                            <p className="text-muted-foreground uppercase tracking-wider text-xs font-bold">{t.invite.invited_to}</p>
                             <h1 className="text-3xl font-bold">{teamName}</h1>
                         </div>
 
@@ -131,13 +133,13 @@ function InviteContent() {
                                 onClick={handleJoin}
                                 className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                             >
-                                Join Workspace
+                                {t.invite.join_workspace}
                             </button>
                             <button
                                 onClick={() => router.push("/")}
                                 className="text-sm text-muted-foreground hover:text-white transition-colors"
                             >
-                                Cancel
+                                {t.invite.cancel}
                             </button>
                         </div>
                     </div>

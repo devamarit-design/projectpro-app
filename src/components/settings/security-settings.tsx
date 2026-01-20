@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useSecurity } from "@/context/security-context"
 import { Shield, Lock, Unlock, KeyRound, AlertTriangle, CheckCircle } from "lucide-react"
+import { DataSettings } from "./data-settings"
 
 import { useTranslation } from "@/lib/i18n-context"
 export function SecuritySettings() {
@@ -230,6 +231,9 @@ export function SecuritySettings() {
                     </div>
                 )}
             </div>
+
+            <div className="h-px bg-border my-8" />
+            <DataSettings />
         </div>
     )
 }

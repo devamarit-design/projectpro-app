@@ -4,6 +4,7 @@ import * as React from "react"
 import { X, Building2, Upload } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
 import { useProjects, Team } from "@/context/project-context"
+import { uploadImage } from "@/lib/upload"
 import { cn } from "@/lib/utils"
 
 interface EditTeamDialogProps {
@@ -21,6 +22,24 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
     // So we can update name.
 
     const [formData, setFormData] = React.useState<Partial<Team>>({})
+    const [isUploading, setIsUploading] = React.useState(false)
+    const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setIsUploading(true)
+        try {
+            const url = await uploadImage(file, "team/logo")
+            setFormData(prev => ({ ...prev, logo: url }))
+        } catch (error) {
+            console.error("Logo upload failed:", error)
+        } finally {
+            setIsUploading(true) // Keep uploading state for a split second to show success? No, set to false.
+            setIsUploading(false)
+        }
+    }
 
     React.useEffect(() => {
         if (isOpen && team) {
@@ -66,10 +85,12 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
 
                         {/* Logo / Icon */}
                         <div className="flex flex-col items-center gap-4 mb-6">
-                            <div className="w-24 h-24 rounded-2xl bg-muted flex items-center justify-center text-4xl border-2 border-dashed border-muted-foreground/25 relative overflow-hidden group">
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className="w-24 h-24 rounded-2xl bg-muted flex items-center justify-center text-4xl border-2 border-dashed border-muted-foreground/25 relative overflow-hidden group cursor-pointer hover:border-primary/50 transition-all"
+                            >
                                 {formData.logo ? (
                                     <div className="flex items-center justify-center w-full h-full text-4xl">
-                                        {/* If it's an emoji (short), show text. If URL, showImg. Simple heuristic: length > 4 */}
                                         {formData.logo.length > 4 ? (
                                             <img src={formData.logo} alt="Logo" className="w-full h-full object-cover" />
                                         ) : (
@@ -80,22 +101,27 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
                                     <Building2 className="w-10 h-10 text-muted-foreground/50" />
                                 )}
 
-                                {/* Overlay for upload hint (Mock) */}
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                {isUploading && (
+                                    <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
+                                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                    </div>
+                                )}
+
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Upload className="w-6 h-6 text-white" />
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="text"
-                                    name="logo"
-                                    placeholder="Emoji or Image URL"
-                                    value={formData.logo || ""}
-                                    onChange={handleChange}
-                                    className="text-center px-3 py-1.5 rounded-lg border bg-background text-sm w-48"
-                                />
-                            </div>
-                            <p className="text-xs text-muted-foreground">Enter an emoji (e.g. 🏢) or an image URL.</p>
+
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleLogoUpload}
+                                accept="image/*"
+                                className="hidden"
+                            />
+                            <p className="text-xs text-muted-foreground text-center">
+                                {isUploading ? "Uploading..." : "Click to upload company logo"}
+                            </p>
                         </div>
 
                         {/* Name */}

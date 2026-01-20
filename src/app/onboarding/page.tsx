@@ -6,10 +6,12 @@ import { useOrganization } from "@/context/organization-context"
 import { useRouter } from "next/navigation"
 import { Building2, Users, ArrowRight, Plus, Loader2 } from "lucide-react"
 import FeatureCarousel from "@/components/onboarding/feature-carousel"
+import { useTranslation } from "@/lib/i18n-context"
 
 export default function OnboardingPage() {
     const { currentUser, teams, addTeam, updateUser, isAuthLoading } = useProjects()
     const { joinOrganizationByCode } = useOrganization()
+    const { t } = useTranslation()
     const router = useRouter()
 
     const [step, setStep] = React.useState<"showcase" | "welcome" | "create" | "join">("showcase")
@@ -88,7 +90,7 @@ export default function OnboardingPage() {
                 {/* Content */}
                 <div className="relative z-10 flex flex-col items-center">
                     <Loader2 className="w-12 h-12 animate-spin text-white mb-4" />
-                    <p className="text-white/80 animate-pulse tracking-widest text-sm uppercase">Loading...</p>
+                    <p className="text-white/80 animate-pulse tracking-widest text-sm uppercase">{t.onboarding.loading}</p>
                 </div>
             </div>
         )
@@ -113,10 +115,10 @@ export default function OnboardingPage() {
                     <div className="space-y-8 animate-in fade-in zoom-in duration-300">
                         <div className="text-center space-y-4">
                             <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                                Welcome, {currentUser.name}!
+                                {t.onboarding.welcome} {currentUser.name}!
                             </h1>
                             <p className="text-muted-foreground text-lg">
-                                Let's get you started. How would you like to proceed?
+                                {t.onboarding.get_started}
                             </p>
                         </div>
 
@@ -131,8 +133,8 @@ export default function OnboardingPage() {
                                             <ArrowRight className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-bold">Continue to {teams[0].name}</h3>
-                                            <p className="text-muted-foreground text-sm">Enter your existing workspace</p>
+                                            <h3 className="text-lg font-bold">{t.onboarding.continue_to} {teams[0].name}</h3>
+                                            <p className="text-muted-foreground text-sm">{t.onboarding.enter_workspace}</p>
                                         </div>
                                     </div>
                                 </button>
@@ -148,8 +150,8 @@ export default function OnboardingPage() {
                                         <Plus className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold">Create a New Team</h3>
-                                        <p className="text-muted-foreground text-sm">Set up your workspace from scratch</p>
+                                        <h3 className="text-lg font-bold">{t.onboarding.create_team}</h3>
+                                        <p className="text-muted-foreground text-sm">{t.onboarding.create_desc}</p>
                                     </div>
                                     <ArrowRight className="w-5 h-5 ml-auto text-muted-foreground group-hover:text-primary transition-colors" />
                                 </div>
@@ -165,8 +167,8 @@ export default function OnboardingPage() {
                                         <Users className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold">Join an Existing Team</h3>
-                                        <p className="text-muted-foreground text-sm">Enter an invite code or link</p>
+                                        <h3 className="text-lg font-bold">{t.onboarding.join_team}</h3>
+                                        <p className="text-muted-foreground text-sm">{t.onboarding.join_desc}</p>
                                     </div>
                                     <ArrowRight className="w-5 h-5 ml-auto text-muted-foreground group-hover:text-blue-500 transition-colors" />
                                 </div>
@@ -182,15 +184,15 @@ export default function OnboardingPage() {
                                 onClick={() => setStep("welcome")}
                                 className="text-sm text-muted-foreground hover:text-white transition-colors"
                             >
-                                ← Back
+                                ← {t.onboarding.back}
                             </button>
-                            <h2 className="text-2xl font-bold">Name your Team</h2>
-                            <p className="text-muted-foreground">What's the name of your company or organization?</p>
+                            <h2 className="text-2xl font-bold">{t.onboarding.name_team}</h2>
+                            <p className="text-muted-foreground">{t.onboarding.company_question}</p>
                         </div>
 
                         <form onSubmit={handleCreateTeam} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Team Name</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t.onboarding.team_name}</label>
                                 <div className="relative">
                                     <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                                     <input
@@ -213,10 +215,10 @@ export default function OnboardingPage() {
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="w-5 h-5 animate-spin" />
-                                        Creating...
+                                        {t.onboarding.creating}
                                     </>
                                 ) : (
-                                    "Create Workspace"
+                                    t.onboarding.create_workspace
                                 )}
                             </button>
                         </form>
@@ -230,10 +232,10 @@ export default function OnboardingPage() {
                                 onClick={() => setStep("welcome")}
                                 className="text-sm text-muted-foreground hover:text-white transition-colors"
                             >
-                                ← Back
+                                ← {t.onboarding.back}
                             </button>
-                            <h2 className="text-2xl font-bold">Join a Team</h2>
-                            <p className="text-muted-foreground">Ask your team admin for an invite link or code.</p>
+                            <h2 className="text-2xl font-bold">{t.onboarding.join_title}</h2>
+                            <p className="text-muted-foreground">{t.onboarding.ask_admin}</p>
                         </div>
 
                         <div className="p-6 bg-muted/20 rounded-xl border border-dashed border-white/20 text-center space-y-4">
@@ -241,22 +243,22 @@ export default function OnboardingPage() {
                                 <Users className="w-8 h-8 text-muted-foreground" />
                             </div>
                             <div>
-                                <h3 className="font-medium">Have an invite link?</h3>
+                                <h3 className="font-medium">{t.onboarding.have_link}</h3>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    Clicking the link will automatically add you to the team.
+                                    {t.onboarding.link_hint}
                                 </p>
                             </div>
                         </div>
 
                         <form onSubmit={handleJoinByCode} className="space-y-4 pt-4 border-t border-white/10">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Or enter a code manualy</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t.onboarding.enter_code}</label>
                                 <div className="space-y-4">
                                     <input
                                         type="text"
                                         value={inviteCode}
                                         onChange={(e) => setInviteCode(e.target.value)}
-                                        placeholder="Enter Invite Code"
+                                        placeholder={t.onboarding.enter_invite}
                                         className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono text-center tracking-widest uppercase"
                                     />
                                     {error && (
@@ -267,7 +269,7 @@ export default function OnboardingPage() {
                                         disabled={isLoading || !inviteCode.trim()}
                                         className="w-full bg-white text-black py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     >
-                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Join Team"}
+                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.onboarding.join}
                                     </button>
                                 </div>
                             </div>

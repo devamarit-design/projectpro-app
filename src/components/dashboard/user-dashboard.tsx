@@ -7,6 +7,7 @@ import { DashboardTasks } from "./dashboard-tasks"
 import { DashboardActivity } from "./dashboard-activity"
 import { DashboardFiles } from "./dashboard-files"
 import { WeatherCard } from "./weather-card"
+import { DashboardHeader } from "./dashboard-header"
 import { useTranslation } from "@/lib/i18n-context"
 
 interface UserDashboardProps {
@@ -18,24 +19,12 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
 
     const { t } = useTranslation()
 
-    // Greeting based on time
-    const getGreeting = () => {
-        const hour = new Date().getHours()
-        if (hour < 12) return t.dashboard.greeting_morning
-        if (hour < 18) return t.dashboard.greeting_afternoon
-        return t.dashboard.greeting_evening
-    }
-
     return (
         <div className="pb-20 space-y-6 pt-6">
             {!hideHeader && (
                 <>
-                    <header className="flex flex-col gap-1">
-                        <h1 className="text-3xl font-bold tracking-tight text-primary font-sans">
-                            {getGreeting()}, <span className="text-foreground">{currentUser?.name?.split(' ')[0] || "User"}</span>
-                        </h1>
-                        <p className="text-muted-foreground">{t.dashboard.personal_overview}</p>
-                    </header>
+                    {/* Mood-based Header Card */}
+                    <DashboardHeader />
 
                     {/* Weather Card */}
                     <WeatherCard />

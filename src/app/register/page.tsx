@@ -5,9 +5,11 @@ import { useProjects } from "@/context/project-context"
 import { useRouter } from "next/navigation"
 import { LayoutDashboard, Loader2, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { useTranslation } from "@/lib/i18n-context"
 
 export default function RegisterPage() {
     const { register, login } = useProjects()
+    const { t } = useTranslation()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -18,7 +20,7 @@ export default function RegisterPage() {
                 <div className="mb-6">
                     <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-1 transition-colors">
                         <ArrowLeft className="w-4 h-4" />
-                        Back to Login
+                        {t.register.back_to_login}
                     </Link>
                 </div>
 
@@ -28,10 +30,10 @@ export default function RegisterPage() {
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                            Create Account
+                            {t.register.title}
                         </h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                            Join ProjectPro and manage your projects efficiently
+                            {t.register.subtitle}
                         </p>
                     </div>
                 </div>
@@ -48,13 +50,13 @@ export default function RegisterPage() {
                         const confirmPassword = formData.get("confirmPassword") as string
 
                         if (password !== confirmPassword) {
-                            setError("Passwords do not match")
+                            setError(t.register.error_mismatch)
                             setIsLoading(false)
                             return
                         }
 
                         if (password.length < 6) {
-                            setError("Password must be at least 6 characters")
+                            setError(t.register.error_length)
                             setIsLoading(false)
                             return
                         }
@@ -65,9 +67,9 @@ export default function RegisterPage() {
                         } catch (err: any) {
                             console.error(err)
                             if (err.code === 'auth/email-already-in-use') {
-                                setError("Email is already in use")
+                                setError(t.register.error_email_in_use)
                             } else {
-                                setError("Registration failed. Please try again.")
+                                setError(t.register.error_failed)
                             }
                             setIsLoading(false)
                         }
@@ -78,7 +80,7 @@ export default function RegisterPage() {
                             </div>
                         )}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.register.full_name}</label>
                             <input
                                 name="name"
                                 type="text"
@@ -88,7 +90,7 @@ export default function RegisterPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.register.email}</label>
                             <input
                                 name="email"
                                 type="email"
@@ -98,7 +100,7 @@ export default function RegisterPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.register.password}</label>
                             <input
                                 name="password"
                                 type="password"
@@ -108,7 +110,7 @@ export default function RegisterPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Confirm Password</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.register.confirm_password}</label>
                             <input
                                 name="confirmPassword"
                                 type="password"
@@ -122,7 +124,7 @@ export default function RegisterPage() {
                             disabled={isLoading}
                             className="w-full bg-blue-600 text-white font-medium py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 disabled:opacity-70 mt-2"
                         >
-                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Create Account"}
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t.register.create_account}
                         </button>
                     </form>
 
@@ -132,7 +134,7 @@ export default function RegisterPage() {
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
                             <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">
-                                Or continue with
+                                {t.register.or_continue}
                             </span>
                         </div>
                     </div>
@@ -175,16 +177,16 @@ export default function RegisterPage() {
                                         fill="#EA4335"
                                     />
                                 </svg>
-                                <span>Sign up with Google</span>
+                                <span>{t.register.sign_up_google}</span>
                             </>
                         )}
                     </button>
 
                     <div className="text-center pt-4">
                         <p className="text-sm text-gray-500">
-                            Already have an account?{" "}
+                            {t.register.already_have}{" "}
                             <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium hover:underline">
-                                Sign in
+                                {t.register.sign_in}
                             </Link>
                         </p>
                     </div>
