@@ -80,7 +80,7 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
 
                 <div className="relative w-full max-w-xl bg-card/90 backdrop-blur-3xl border-l border-white/10 shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col h-full">
                     {/* Header Actions */}
-                    <div className="p-6 pt-[calc(1.5rem+env(safe-area-inset-top))] flex items-center justify-between border-b border-white/5 shrink-0 bg-muted/20">
+                    <div className="p-6 pt-[calc(1.5rem+env(safe-area-inset-top))] flex items-center justify-between border-b border-white/5 shrink-0 bg-muted/20 relative z-50">
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={onClose}

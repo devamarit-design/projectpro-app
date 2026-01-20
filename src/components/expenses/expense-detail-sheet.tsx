@@ -132,7 +132,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
 
                 <div className="relative w-full max-w-md h-full bg-card/95 backdrop-blur-3xl border-l border-white/10 shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 pt-[calc(1.5rem+env(safe-area-inset-top))] border-b border-white/10 shrink-0">
+                    <div className="flex items-center justify-between p-6 pt-[calc(1.5rem+env(safe-area-inset-top))] border-b border-white/10 shrink-0 relative z-50">
                         <div className="flex items-center gap-3">
                             <div className="p-3 rounded-xl bg-primary/10 text-primary border border-primary/20">
                                 <DollarSign className="w-6 h-6" />
