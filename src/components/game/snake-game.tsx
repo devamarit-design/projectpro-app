@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react"
 import { useProjects } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
-import { Trophy, Play, RotateCcw, Gamepad2 } from "lucide-react"
+import { Trophy, Play, RotateCcw, Gamepad2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { db } from "@/lib/firebase"
@@ -280,6 +280,40 @@ export function SnakeGame({ showTitle = true }: { showTitle?: boolean }) {
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* Mobile Controls (D-Pad) */}
+            <div className="flex flex-col items-center gap-2 pb-4 select-none touch-manipulation">
+                <button
+                    className="p-5 bg-muted/30 hover:bg-muted/50 active:bg-primary active:text-primary-foreground rounded-2xl transition-all shadow-sm border border-white/5"
+                    onClick={() => { if (direction.y === 0) setDirection({ x: 0, y: -1 }) }}
+                    aria-label="Up"
+                >
+                    <ChevronUp className="w-8 h-8" />
+                </button>
+                <div className="flex items-center gap-4">
+                    <button
+                        className="p-5 bg-muted/30 hover:bg-muted/50 active:bg-primary active:text-primary-foreground rounded-2xl transition-all shadow-sm border border-white/5"
+                        onClick={() => { if (direction.x === 0) setDirection({ x: -1, y: 0 }) }}
+                        aria-label="Left"
+                    >
+                        <ChevronLeft className="w-8 h-8" />
+                    </button>
+                    <button
+                        className="p-5 bg-muted/30 hover:bg-muted/50 active:bg-primary active:text-primary-foreground rounded-2xl transition-all shadow-sm border border-white/5"
+                        onClick={() => { if (direction.y === 0) setDirection({ x: 0, y: 1 }) }}
+                        aria-label="Down"
+                    >
+                        <ChevronDown className="w-8 h-8" />
+                    </button>
+                    <button
+                        className="p-5 bg-muted/30 hover:bg-muted/50 active:bg-primary active:text-primary-foreground rounded-2xl transition-all shadow-sm border border-white/5"
+                        onClick={() => { if (direction.x === 0) setDirection({ x: 1, y: 0 }) }}
+                        aria-label="Right"
+                    >
+                        <ChevronRight className="w-8 h-8" />
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
