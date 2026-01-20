@@ -56,26 +56,18 @@ export function CalendarView() {
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false)
     const [isSelectionOpen, setIsSelectionOpen] = useState(false)
     const [clickedDate, setClickedDate] = useState<string>("")
+    const [showCompleted, setShowCompleted] = useState(false) // New state for toggling completed items
 
     // Check for mobile on mount and resize
     useEffect(() => {
         const checkMobile = () => {
             const mobile = window.innerWidth < 768
             setIsMobile(mobile)
-            // On mobile, default filters to closed
+            // Mobile check only for UI state, not view switching
             if (mobile) {
                 setIsFiltersOpen(false)
             } else {
                 setIsFiltersOpen(true)
-            }
-            // Auto switch view
-            if (calendarRef.current) {
-                const api = calendarRef.current.getApi()
-                if (mobile && api.view.type !== 'listMonth') {
-                    api.changeView('listMonth')
-                } else if (!mobile && api.view.type === 'listMonth') {
-                    api.changeView('dayGridMonth')
-                }
             }
         }
 
@@ -126,6 +118,9 @@ export function CalendarView() {
             if (!task.dueDate || !matchesProject(task.projectId)) return
             if (typeFilter !== "all" && typeFilter !== "task") return
 
+            // Hide completed if toggle is off
+            if (!showCompleted && task.status === "Done") return
+
             const project = projects.find(p => p.id === task.projectId)
             const color = getEventColor(task, 'task')
 
@@ -154,9 +149,13 @@ export function CalendarView() {
         contracts.forEach((contract) => {
             if (!matchesProject(contract.projectId)) return
             if (typeFilter !== "all" && typeFilter !== "installment") return
+
+            // Hide paid/completed if toggle is off
+            // Assuming Installment.status has "Paid"
             const project = projects.find(p => p.id === contract.projectId)
             contract.installments.forEach((installment) => {
                 if (!installment.dueDate) return
+                if (!showCompleted && installment.status === "Paid") return
                 const item = { ...installment, projectId: contract.projectId, workerId: contract.workerId }
                 const color = getEventColor(item, 'installment')
                 calendarEvents.push({
@@ -230,7 +229,7 @@ export function CalendarView() {
     }
 
     return (
-        <div className="flex flex-col lg:flex-row h-[calc(100vh-140px)] gap-6 p-1 relative">
+        <div className="flex flex-col lg:flex-row h-auto min-h-[85vh] lg:h-[calc(100vh-140px)] gap-6 p-1 relative">
             {/* ... (keep Selection Dialog) */}
             {isSelectionOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setIsSelectionOpen(false)}>
@@ -266,13 +265,12 @@ export function CalendarView() {
                 </div>
             )}
 
-            {/* ... (sidebar) ... */}
+            {/* Sidebar */}
             <div className={`
                 flex-shrink-0 
                 ${isMobile ? "w-full" : "w-64"} 
                 transition-all duration-300 ease-in-out
             `}>
-                {/* ... (sidebar content - keep as is) ... */}
                 <div className="glass-card p-5 rounded-2xl flex flex-col gap-4">
                     <div
                         className="flex items-center justify-between cursor-pointer lg:cursor-default"
@@ -346,6 +344,28 @@ export function CalendarView() {
                             </div>
                         </div>
 
+                        {/* Toggle Show Completed */}
+                        <div className="flex items-center gap-2 pt-2">
+                            <button
+                                onClick={() => setShowCompleted(!showCompleted)}
+                                className={`
+                                    relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2  focus-visible:ring-white/75
+                                    ${showCompleted ? 'bg-primary' : 'bg-muted'}
+                                `}
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className={`
+                                        pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out
+                                        ${showCompleted ? 'translate-x-4' : 'translate-x-0'}
+                                    `}
+                                />
+                            </button>
+                            <span className="text-xs font-medium cursor-pointer" onClick={() => setShowCompleted(!showCompleted)}>
+                                Show Completed/Paid
+                            </span>
+                        </div>
+
                         <div className="h-px bg-border/50" />
 
                         <div>
@@ -377,44 +397,46 @@ export function CalendarView() {
             <div className="flex-1 min-w-0 h-full overflow-hidden flex flex-col gap-4">
 
                 {/* Overdue Tasks Section */}
-                {(() => {
-                    const today = new Date().toISOString().split('T')[0]
-                    const overdueTasks = events.filter(e =>
-                        e.extendedProps.type === 'task' &&
-                        e.extendedProps.status !== 'Done' &&
-                        e.start < today
-                    ).sort((a, b) => a.start.localeCompare(b.start))
+                {
+                    (() => {
+                        const today = new Date().toISOString().split('T')[0]
+                        const overdueTasks = events.filter(e =>
+                            e.extendedProps.type === 'task' &&
+                            e.extendedProps.status !== 'Done' &&
+                            e.start < today
+                        ).sort((a, b) => a.start.localeCompare(b.start))
 
-                    if (overdueTasks.length === 0) return null
+                        if (overdueTasks.length === 0) return null
 
-                    return (
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex-shrink-0 animate-in slide-in-from-top duration-300">
-                            <h3 className="text-red-500 font-bold mb-3 flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                {(t.common as any)?.overdue || "Overdue Tasks"} ({overdueTasks.length})
-                            </h3>
-                            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                                {overdueTasks.map(task => (
-                                    <div
-                                        key={task.id}
-                                        onClick={() => setSelectedEvent(task)}
-                                        className="flex-shrink-0 bg-background/60 hover:bg-background border border-red-500/20 rounded-xl p-3 min-w-[200px] max-w-[250px] cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-red-500/10"
-                                    >
-                                        <div className="flex justify-between items-start mb-1">
-                                            <span className="text-[10px] font-bold uppercase text-red-500 tracking-wider bg-red-500/10 px-1.5 py-0.5 rounded">
-                                                {format(new Date(task.start), "d MMM", { locale: locale === "th" ? th : undefined })}
-                                            </span>
+                        return (
+                            <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex-shrink-0 animate-in slide-in-from-top duration-300">
+                                <h3 className="text-red-500 font-bold mb-3 flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                    {(t.common as any)?.overdue || "Overdue Tasks"} ({overdueTasks.length})
+                                </h3>
+                                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                                    {overdueTasks.map(task => (
+                                        <div
+                                            key={task.id}
+                                            onClick={() => setSelectedEvent(task)}
+                                            className="flex-shrink-0 bg-background/60 hover:bg-background border border-red-500/20 rounded-xl p-3 min-w-[200px] max-w-[250px] cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-red-500/10"
+                                        >
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className="text-[10px] font-bold uppercase text-red-500 tracking-wider bg-red-500/10 px-1.5 py-0.5 rounded">
+                                                    {format(new Date(task.start), "d MMM", { locale: locale === "th" ? th : undefined })}
+                                                </span>
+                                            </div>
+                                            <h4 className="font-semibold text-sm truncate">{task.title}</h4>
+                                            <p className="text-xs text-muted-foreground truncate">{task.extendedProps.projectName}</p>
                                         </div>
-                                        <h4 className="font-semibold text-sm truncate">{task.title}</h4>
-                                        <p className="text-xs text-muted-foreground truncate">{task.extendedProps.projectName}</p>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )
-                })()}
+                        )
+                    })()
+                }
 
-                <div className="glass-card rounded-2xl p-1 h-full shadow-sm flex flex-col flex-1 overflow-hidden">
+                <div className="glass-card rounded-2xl p-1 min-h-[60vh] lg:min-h-0 h-full shadow-sm flex flex-col flex-1 overflow-hidden">
                     <FullCalendar
                         ref={calendarRef}
                         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
@@ -429,7 +451,7 @@ export function CalendarView() {
                         eventClick={handleEventClick}
                         dateClick={handleDateClick}
                         dayCellContent={renderDayCell}
-                        height="100%"
+                        height="auto"
                         dayMaxEvents={3}
                         eventDisplay="block"
                         navLinks={true}
@@ -448,10 +470,6 @@ export function CalendarView() {
                         windowResize={(arg) => {
                             const mobile = window.innerWidth < 768
                             setIsMobile(mobile)
-                            const viewType = mobile ? 'listMonth' : 'dayGridMonth'
-                            if (arg.view.type !== viewType) {
-                                arg.view.calendar.changeView(viewType)
-                            }
                         }}
                     />
                 </div>

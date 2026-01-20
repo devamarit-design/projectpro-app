@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect } from "react"
-import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, CloudFog, Wind, Droplets, Thermometer } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, CloudFog, Wind, Droplets, Thermometer, RefreshCw, MapPin, ChevronDown } from "lucide-react"
 
 interface WeatherData {
     temp: number
@@ -12,6 +12,21 @@ interface WeatherData {
     location: string
     icon: string
 }
+
+// Popular Thai cities for selection
+const THAI_CITIES = [
+    { name: "ตำแหน่งปัจจุบัน", value: "current" },
+    { name: "กรุงเทพ", value: "Bangkok" },
+    { name: "เชียงใหม่", value: "Chiang Mai" },
+    { name: "ภูเก็ต", value: "Phuket" },
+    { name: "พัทยา", value: "Pattaya" },
+    { name: "ขอนแก่น", value: "Khon Kaen" },
+    { name: "หาดใหญ่", value: "Hat Yai" },
+    { name: "ระยอง", value: "Rayong" },
+    { name: "แกลง", value: "Klaeng" },
+    { name: "อุดรธานี", value: "Udon Thani" },
+    { name: "นครราชสีมา", value: "Nakhon Ratchasima" },
+]
 
 // Animated weather icons using CSS animations
 const WeatherIcon = ({ condition, className = "" }: { condition: string, className?: string }) => {
@@ -78,73 +93,91 @@ const WeatherIcon = ({ condition, className = "" }: { condition: string, classNa
 export function WeatherCard() {
     const [weather, setWeather] = useState<WeatherData | null>(null)
     const [loading, setLoading] = useState(true)
+    const [refreshing, setRefreshing] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [selectedCity, setSelectedCity] = useState<string>("current")
+    const [showCityPicker, setShowCityPicker] = useState(false)
 
+    // Load saved city from localStorage
     useEffect(() => {
+        const saved = localStorage.getItem("weather-city")
+        if (saved) setSelectedCity(saved)
+    }, [])
+
+    const fetchWeather = useCallback(async (city: string, isRefresh: boolean = false) => {
+        if (isRefresh) setRefreshing(true)
+        else setLoading(true)
+
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 8000) // 8s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 8000)
 
-        const fetchWeather = async () => {
-            try {
-                // Get user's location or default to Bangkok
-                let location = "Bangkok"
+        try {
+            let location = city
 
-                // Try to get user's location
-                if (navigator.geolocation) {
-                    try {
-                        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 })
-                        })
-                        location = `${position.coords.latitude},${position.coords.longitude}`
-                    } catch {
-                        // Use default location if geolocation fails
-                    }
+            // If "current", try to get user's location
+            if (city === "current" && navigator.geolocation) {
+                try {
+                    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 })
+                    })
+                    location = `${position.coords.latitude},${position.coords.longitude}`
+                } catch {
+                    location = "Bangkok" // Fallback
                 }
-
-                // Use wttr.in API (free, no API key needed)
-                const response = await fetch(`https://wttr.in/${location}?format=j1`, { signal: controller.signal })
-
-                if (!response.ok) throw new Error("Weather fetch failed")
-
-                const data = await response.json()
-                const current = data.current_condition[0]
-                const area = data.nearest_area?.[0]
-
-                setWeather({
-                    temp: parseInt(current.temp_C),
-                    condition: current.weatherDesc[0].value,
-                    humidity: parseInt(current.humidity),
-                    windSpeed: parseInt(current.windspeedKmph),
-                    location: area?.areaName?.[0]?.value || location,
-                    icon: current.weatherCode
-                })
-            } catch (err) {
-                console.warn("Weather API unavailable, using fallback:", err)
-                // Fallback to generic Bangkok weather to keep UI beautiful
-                setWeather({
-                    temp: 32,
-                    condition: "Sunny",
-                    humidity: 60,
-                    windSpeed: 10,
-                    location: "Bangkok",
-                    icon: "113"
-                })
-            } finally {
-                setLoading(false)
-                clearTimeout(timeoutId)
             }
-        }
 
-        fetchWeather()
+            const response = await fetch(`https://wttr.in/${encodeURIComponent(location)}?format=j1`, { signal: controller.signal })
 
-        // Refresh every 30 minutes
-        const interval = setInterval(fetchWeather, 30 * 60 * 1000)
-        return () => {
-            clearInterval(interval)
-            controller.abort()
+            if (!response.ok) throw new Error("Weather fetch failed")
+
+            const data = await response.json()
+            const current = data.current_condition[0]
+            const area = data.nearest_area?.[0]
+
+            setWeather({
+                temp: parseInt(current.temp_C),
+                condition: current.weatherDesc[0].value,
+                humidity: parseInt(current.humidity),
+                windSpeed: parseInt(current.windspeedKmph),
+                location: area?.areaName?.[0]?.value || location,
+                icon: current.weatherCode
+            })
+            setError(null)
+        } catch (err) {
+            console.warn("Weather API unavailable, using fallback:", err)
+            setWeather({
+                temp: 32,
+                condition: "Sunny",
+                humidity: 60,
+                windSpeed: 10,
+                location: "Bangkok",
+                icon: "113"
+            })
+        } finally {
+            setLoading(false)
+            setRefreshing(false)
             clearTimeout(timeoutId)
         }
     }, [])
+
+    // Initial fetch and auto-refresh
+    useEffect(() => {
+        fetchWeather(selectedCity)
+
+        const interval = setInterval(() => fetchWeather(selectedCity, true), 30 * 60 * 1000)
+        return () => clearInterval(interval)
+    }, [selectedCity, fetchWeather])
+
+    const handleCityChange = (city: string) => {
+        setSelectedCity(city)
+        localStorage.setItem("weather-city", city)
+        setShowCityPicker(false)
+        fetchWeather(city, true)
+    }
+
+    const handleRefresh = () => {
+        fetchWeather(selectedCity, true)
+    }
 
     if (loading) {
         return (
@@ -161,10 +194,9 @@ export function WeatherCard() {
     }
 
     if (error || !weather) {
-        return null // Hide if error
+        return null
     }
 
-    // Determine background gradient based on condition
     const getGradient = () => {
         const condition = weather.condition.toLowerCase()
         if (condition.includes('rain')) return 'from-blue-500/20 to-slate-500/20'
@@ -175,9 +207,11 @@ export function WeatherCard() {
         return 'from-blue-400/20 to-purple-400/20'
     }
 
+    const selectedCityName = THAI_CITIES.find(c => c.value === selectedCity)?.name || selectedCity
+
     return (
         <div className={`glass-card rounded-2xl p-6 border border-white/5 bg-gradient-to-br ${getGradient()} overflow-hidden relative`}>
-            {/* Animated background particles for rain */}
+            {/* Rain particles */}
             {weather.condition.toLowerCase().includes('rain') && (
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
                     {[...Array(30)].map((_, i) => (
@@ -212,7 +246,35 @@ export function WeatherCard() {
                     </div>
 
                     <div className="text-right space-y-2">
-                        <p className="text-sm font-medium">{weather.location}</p>
+                        {/* City Picker */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowCityPicker(!showCityPicker)}
+                                className="flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors"
+                            >
+                                <MapPin className="w-3.5 h-3.5" />
+                                {weather.location}
+                                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showCityPicker ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {showCityPicker && (
+                                <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setShowCityPicker(false)} />
+                                    <div className="absolute right-0 top-full mt-2 w-48 bg-card/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto animate-in fade-in zoom-in-95">
+                                        {THAI_CITIES.map(city => (
+                                            <button
+                                                key={city.value}
+                                                onClick={() => handleCityChange(city.value)}
+                                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl ${selectedCity === city.value ? 'bg-primary/10 text-primary font-medium' : ''}`}
+                                            >
+                                                {city.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
                         <div className="flex items-center gap-2 text-sm text-muted-foreground justify-end">
                             <Droplets className="w-4 h-4" />
                             <span>ความชื้น {weather.humidity}%</span>
@@ -224,21 +286,29 @@ export function WeatherCard() {
                     </div>
                 </div>
 
-                {/* Divider */}
                 <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-3" />
 
-                {/* Current Time & Day */}
+                {/* Footer with date and refresh */}
                 <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
                         {new Date().toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'short' })}
                     </span>
-                    <span className="text-muted-foreground">
-                        อัพเดทเมื่อ {new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <div className="flex items-center gap-3">
+                        <span className="text-muted-foreground">
+                            อัพเดทเมื่อ {new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <button
+                            onClick={handleRefresh}
+                            disabled={refreshing}
+                            className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                            title="รีเฟรช"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* CSS for animations */}
             <style jsx>{`
                 @keyframes rain-fall {
                     0% { transform: translateY(-10px); opacity: 0; }
@@ -258,3 +328,4 @@ export function WeatherCard() {
         </div>
     )
 }
+

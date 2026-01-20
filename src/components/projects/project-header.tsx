@@ -1,39 +1,28 @@
 "use client"
 
-import { MapPin, Calendar, MoreHorizontal, ArrowLeft, Edit, Trash2, Check, ChevronDown, Archive } from "lucide-react"
+import { MapPin, Calendar, MoreHorizontal, ArrowLeft, Edit, Trash2, Check, ChevronDown, Archive, Download } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
-import { useProjects, ProjectStatus } from "@/context/project-context"
+import { useProjects, ProjectStatus, Project } from "@/context/project-context"
 import { hasPermission } from "@/lib/permissions"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n-context"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { exportProjectToExcel } from "@/lib/export-project"
 
 interface ProjectHeaderProps {
-    project: {
-        id: string
-        name: string
-        customer: string
-        location: string
-        status: string
-        image: string
-        progress: number
-        startDate: string
-        endDate: string
-        budget: string
-        expenses?: string
-    }
+    project: Project
     totalExpenses?: number
 }
 
 export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
-    const { deleteProject, updateProject, archiveProject, currentUser } = useProjects()
+    const { deleteProject, updateProject, archiveProject, currentUser, tasks, expenses, incomes, customers, users } = useProjects()
     const router = useRouter()
     const [showMenu, setShowMenu] = useState(false)
     const [showStatusPicker, setShowStatusPicker] = useState(false)
     const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
-    const { t } = useTranslation() // Hook
+    const { t, locale } = useTranslation() // Hook
 
     const handleDelete = () => {
         if (confirm(t.projects.detail.header.confirm_delete)) {
@@ -68,6 +57,24 @@ export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
     const handleArchiveConfirm = () => {
         archiveProject(project.id)
         router.push("/projects")
+    }
+
+    const handleExportExcel = () => {
+        setShowMenu(false)
+        const projectTasks = tasks.filter(t => t.projectId === project.id)
+        const projectExpenses = expenses.filter(e => e.projectId === project.id)
+        const projectIncome = incomes.filter((d: { projectId: string }) => d.projectId === project.id)
+        const subProjects = project.subProjects || []
+
+        exportProjectToExcel({
+            project,
+            subProjects,
+            tasks: projectTasks,
+            expenses: projectExpenses,
+            incomeDocuments: projectIncome,
+            customers,
+            users,
+        }, locale)
     }
 
     return (
@@ -112,6 +119,13 @@ export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
                                             <Edit className="w-4.5 h-4.5 text-primary" />
                                             {t.projects.detail.header.edit_project}
                                         </Link>
+                                        <button
+                                            onClick={handleExportExcel}
+                                            className="w-full flex items-center gap-3 px-5 py-4 hover:bg-muted/50 transition-colors text-sm font-semibold text-left border-t border-white/5"
+                                        >
+                                            <Download className="w-4.5 h-4.5 text-green-500" />
+                                            Export Excel
+                                        </button>
                                         {project.status === 'Completed' && (
                                             <button
                                                 onClick={() => {
