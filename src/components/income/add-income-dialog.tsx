@@ -152,6 +152,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                 ...(mode === "Zone" ? {
                     sections: sections.map(s => ({
                         name: s.name,
+                        coverImage: s.coverImage,
                         items: s.items.map(sanitizeItem)
                     }))
                 } : {}),
@@ -322,26 +323,6 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">{t.income.dialog.fields.customer}</label>
-                                <select
-                                    className="w-full bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/50"
-                                    value={selectedCustomer}
-                                    onChange={(e) => {
-                                        if (e.target.value === "NEW_CUSTOMER") {
-                                            setShowAddCustomer(true)
-                                        } else {
-                                            setSelectedCustomer(e.target.value)
-                                        }
-                                    }}
-                                >
-                                    <option value="">{t.income.dialog.select_customer}</option>
-                                    <option value="NEW_CUSTOMER" className="bg-primary/10 text-primary font-bold">
-                                        {t.income.dialog.create_customer}
-                                    </option>
-                                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-2">
                                 <label className="text-sm font-medium text-muted-foreground">{t.income.dialog.fields.project}</label>
                                 <select
                                     className="w-full bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/50"
@@ -370,6 +351,26 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                         {t.income.dialog.create_project}
                                     </option>
                                     {filteredProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-muted-foreground">{t.income.dialog.fields.customer}</label>
+                                <select
+                                    className="w-full bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/50"
+                                    value={selectedCustomer}
+                                    onChange={(e) => {
+                                        if (e.target.value === "NEW_CUSTOMER") {
+                                            setShowAddCustomer(true)
+                                        } else {
+                                            setSelectedCustomer(e.target.value)
+                                        }
+                                    }}
+                                >
+                                    <option value="">{t.income.dialog.select_customer}</option>
+                                    <option value="NEW_CUSTOMER" className="bg-primary/10 text-primary font-bold">
+                                        {t.income.dialog.create_customer}
+                                    </option>
+                                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                         </div>

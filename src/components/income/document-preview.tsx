@@ -220,52 +220,40 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
     const handleExportImage = async () => {
         setIsExporting(true)
         try {
-            // Import Dependencies
-            const { generatePDFBlob } = await import('@/components/income/pdf-document')
+            const { toPng } = await import('html-to-image')
             const JSZip = (await import('jszip')).default
             const { saveAs } = await import('file-saver')
 
-            // 1. Generate PDF Blob (Client-Side with Thai Fonts)
-            const pdfBlob = await generatePDFBlob({
-                document,
-                customer,
-                project,
-                themeColor,
-                lang,
-                manualPageBreaks: manualBreaks,
-                orgProfile: orgProfile,
-                columns: visibleColumns,
-                template: template
-            })
-
-            // 2. Convert PDF to Images using pdfjs-dist
-            const pdfjsLib = await import('pdfjs-dist')
-            pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
-
-            const arrayBuffer = await pdfBlob.arrayBuffer()
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-
             const images: { name: string, data: string }[] = []
 
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i)
-                const viewport = page.getViewport({ scale: 2.0 }) // 2.0 scale for high quality
+            // Export each page
+            for (let i = 0; i < pages.length; i++) {
+                const pageElement = window.document.getElementById(`preview-page-${i}`)
+                if (pageElement) {
+                    // Clone element to avoid zoom issues
+                    const clone = pageElement.cloneNode(true) as HTMLElement
+                    clone.style.transform = 'none'
+                    clone.style.position = 'absolute'
+                    clone.style.left = '-9999px'
+                    window.document.body.appendChild(clone)
 
-                const canvas = window.document.createElement('canvas')
-                const context = canvas.getContext('2d')
-                canvas.height = viewport.height
-                canvas.width = viewport.width
-
-                if (context) {
-                    await page.render({ canvasContext: context, viewport: viewport } as any).promise
-                    images.push({
-                        name: `${document.type}_${document.documentNumber}_Page_${i}.png`,
-                        data: canvas.toDataURL('image/png')
-                    })
+                    try {
+                        const dataUrl = await toPng(clone, {
+                            quality: 1.0,
+                            pixelRatio: 2,
+                            backgroundColor: '#ffffff'
+                        })
+                        images.push({
+                            name: `${document.documentNumber}_Page_${i + 1}.png`,
+                            data: dataUrl
+                        })
+                    } finally {
+                        window.document.body.removeChild(clone)
+                    }
                 }
             }
 
-            if (images.length === 0) throw new Error("Failed to render items")
+            if (images.length === 0) throw new Error("Failed to render pages")
 
             if (images.length === 1) {
                 const link = window.document.createElement('a')
@@ -279,7 +267,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                     zip.file(img.name, base64Data, { base64: true })
                 })
                 const content = await zip.generateAsync({ type: "blob" })
-                saveAs(content, `${document.type}_${document.documentNumber}.zip`)
+                saveAs(content, `${document.documentNumber}.zip`)
             }
 
         } catch (error) {
@@ -437,19 +425,10 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                             title="Export Image"
                             className="p-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-all shadow active:scale-95 disabled:opacity-50 disabled:cursor-wait"
                         >
-                            <ImageIcon className="w-5 h-5" />
-                        </button>
-
-                        <button
-                            onClick={handleExport}
-                            disabled={isExporting}
-                            title="Export PDF (May not support Thai)"
-                            className="p-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-wait"
-                        >
                             {isExporting ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <div className="w-5 h-5 border-2 border-gray-400 border-t-gray-700 rounded-full animate-spin" />
                             ) : (
-                                <Download className="w-5 h-5" />
+                                <ImageIcon className="w-5 h-5" />
                             )}
                         </button>
                     </div>
@@ -784,10 +763,10 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                         margin: 0mm; 
                     }
                     html, body {
-                        width: 210mm;
-                        height: 297mm;
+                        width: 100%;
+                        height: auto !important;
+                        overflow: visible !important;
                         background: white;
-                        overflow: visible;
                     }
                     
                     /* Hide everything by default */
@@ -803,11 +782,10 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
 
                     /* FORCE the container to be the page */
                     #preview-content {
-                        position: fixed !important;
+                        position: absolute !important;
                         left: 0 !important;
                         top: 0 !important;
-                        width: 210mm !important;
-                        height: auto !important;
+                        width: 100% !important;
                         margin: 0 !important;
                         padding: 0 !important;
                         background: white !important;
@@ -828,8 +806,6 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                         border: none !important;
                         overflow: hidden !important;
                         page-break-after: always;
-                        left: 0 !important;
-                        top: 0 !important;
                     }
 
                     /* Hide unnecessary elements inside the preview if any */

@@ -467,6 +467,53 @@ export function CalendarView() {
                                 titleFormat: { year: 'numeric', month: 'long' }
                             },
                         }}
+                        eventContent={(arg) => {
+                            const { event, view } = arg
+                            const isTimeGrid = view.type.startsWith('timeGrid')
+                            const isList = view.type.startsWith('list')
+
+                            if (isList) {
+                                const assigneeName = event.extendedProps.assignedTo
+                                    ? (users.find(u => u.id === event.extendedProps.assignedTo)?.name || event.extendedProps.assignedTo)
+                                    : null
+
+                                return (
+                                    <div className="flex flex-col py-0.5">
+                                        <div className="font-semibold">{event.title}</div>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <span>{event.extendedProps.projectName}</span>
+                                            {assigneeName && (
+                                                <>
+                                                    <span className="w-1 h-1 rounded-full bg-current opacity-50" />
+                                                    <span className="text-primary/80">
+                                                        👤 {assigneeName}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
+                            }
+
+                            if (isTimeGrid && !event.allDay) {
+                                return (
+                                    <div className="w-full h-full p-1 overflow-hidden items-center justify-center flex">
+                                        <div style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }} className="rotate-180 flex items-center justify-center gap-1 font-semibold text-xs tracking-wide h-full max-h-full">
+                                            <span className="whitespace-nowrap">{event.title}</span>
+                                        </div>
+                                    </div>
+                                )
+                            }
+
+                            // Default Month View
+                            return (
+                                <div className="flex flex-col h-full w-full overflow-hidden p-1">
+                                    <div className="flex items-center gap-1 font-semibold text-xs truncate">
+                                        <span className="truncate">{event.title}</span>
+                                    </div>
+                                </div>
+                            )
+                        }}
                         windowResize={(arg) => {
                             const mobile = window.innerWidth < 768
                             setIsMobile(mobile)

@@ -1,10 +1,10 @@
 "use client"
 
-import { Plus, Search, FileText, CheckCircle, Clock } from "lucide-react"
+import { Plus, Search, FileText, CheckCircle, Clock, ArrowDownAZ } from "lucide-react"
 import Link from "next/link"
 import { useProjects, Customer, Project, IncomeDocument } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { hasPermission } from "@/lib/permissions"
 import { AddIncomeDialog } from "@/components/income/add-income-dialog"
@@ -90,6 +90,13 @@ export default function IncomePage() {
         }
 
         return matchesType && matchesSearch && matchesProject && matchesMonth && matchesCustomer && matchesTechnician
+    }).sort((a, b) => {
+        // Sort by Created At (descending) if available
+        if (a.createdAt && b.createdAt) {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        }
+        // Fallback to Date (descending)
+        return new Date(b.date).getTime() - new Date(a.date).getTime()
     })
 
 
@@ -200,6 +207,13 @@ export default function IncomePage() {
                             className="w-full pl-9 pr-4 py-2 bg-muted/20 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                         />
                     </div>
+                    <button
+                        className="flex items-center gap-2 px-3 py-2 bg-muted/20 border border-white/10 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                        title="Sorted by newest first"
+                    >
+                        <ArrowDownAZ className="w-4 h-4" />
+                        <span className="hidden sm:inline">ล่าสุด</span>
+                    </button>
                 </div>
                 <div className="overflow-x-auto">
                     {incomesLoading ? (
@@ -227,49 +241,68 @@ export default function IncomePage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredIncomes.map((doc) => (
-                                    <tr
-                                        key={doc.id}
-                                        onClick={() => setSelectedIncomeId(doc.id)}
-                                        className="border-b border-white/5 hover:bg-muted/30 transition-colors cursor-pointer"
-                                    >
-                                        <td className="px-6 py-4 font-medium">{doc.documentNumber}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${doc.type === 'Quotation' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                                doc.type === 'Invoice' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
-                                                    'bg-green-500/10 text-green-500 border-green-500/20'
-                                                }`}>
-                                                {doc.type}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-foreground">{getCustomerName(doc.customerId)}</div>
-                                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-primary/50"></div>
-                                                {getProjectName(doc.projectId)}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-muted-foreground">{doc.date}</td>
-                                        <td className="px-6 py-4 text-right font-bold text-primary">฿{doc.grandTotal.toLocaleString()}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${doc.status === 'Paid' || doc.status === 'Accepted' ? 'text-green-500 bg-green-500/10' :
-                                                doc.status === 'Sent' || doc.status === 'Invoiced' ? 'text-blue-500 bg-blue-500/10' :
-                                                    'text-muted-foreground bg-muted'
-                                                }`}>
-                                                {doc.status === 'Paid' ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                                                {doc.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button
+                                {filteredIncomes.map((doc, index) => {
+                                    // Check if we need a date divider
+                                    const currentDate = doc.date
+                                    const prevDoc = index > 0 ? filteredIncomes[index - 1] : null
+                                    const showDateDivider = !prevDoc || prevDoc.date !== currentDate
+
+                                    return (
+                                        <React.Fragment key={doc.id}>
+                                            {showDateDivider && (
+                                                <tr key={`divider-${currentDate}`}>
+                                                    <td colSpan={7} className="px-6 py-2 bg-muted/30 border-b border-white/5">
+                                                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                                                            <div className="w-2 h-2 rounded-full bg-primary/60" />
+                                                            {new Date(currentDate).toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            <tr
+                                                key={doc.id}
                                                 onClick={() => setSelectedIncomeId(doc.id)}
-                                                className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                                                className="border-b border-white/5 hover:bg-muted/30 transition-colors cursor-pointer"
                                             >
-                                                <FileText className="w-4 h-4" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                                <td className="px-6 py-4 font-medium">{doc.documentNumber}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${doc.type === 'Quotation' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                                        doc.type === 'Invoice' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                                                            'bg-green-500/10 text-green-500 border-green-500/20'
+                                                        }`}>
+                                                        {doc.type}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-foreground">{getCustomerName(doc.customerId)}</div>
+                                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary/50"></div>
+                                                        {getProjectName(doc.projectId)}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-muted-foreground">{doc.date}</td>
+                                                <td className="px-6 py-4 text-right font-bold text-primary">฿{doc.grandTotal.toLocaleString()}</td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${doc.status === 'Paid' || doc.status === 'Accepted' ? 'text-green-500 bg-green-500/10' :
+                                                        doc.status === 'Sent' || doc.status === 'Invoiced' ? 'text-blue-500 bg-blue-500/10' :
+                                                            'text-muted-foreground bg-muted'
+                                                        }`}>
+                                                        {doc.status === 'Paid' ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                                                        {doc.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <button
+                                                        onClick={() => setSelectedIncomeId(doc.id)}
+                                                        className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                                                    >
+                                                        <FileText className="w-4 h-4" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </React.Fragment>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     )}
