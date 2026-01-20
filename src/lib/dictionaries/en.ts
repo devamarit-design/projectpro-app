@@ -151,6 +151,9 @@ export const en = {
         home: "Home",
         finance: "Finance",
         more: "More",
+        about: "About App",
+        policy: "Policy",
+        bored: "Bored?",
         quick_add: "Quick Add",
         more_utils: "More Utils",
         project: "Project",
@@ -316,7 +319,7 @@ export const en = {
         add_expense: "Add Expense",
         manual_entry: "Manual Entry",
         smart_scan: "Smart Scan AI",
-        unpaid: "Unpaid",
+        unpaid: "Cancel",
         advanced: "Advanced",
         credit: "Credit",
         categories: {
@@ -332,6 +335,12 @@ export const en = {
             all_projects: "All Projects",
             all_users: "All Users",
             search_placeholder: "Search expenses..."
+        },
+        sort: {
+            label: "Sort by",
+            created: "Created Date",
+            date: "Bill Date",
+            alphabetical: "Alphabetical (A-Z)"
         },
         empty: "No expenses found",
         empty_hint: "Try adjusting your filters or add a new expense.",
@@ -427,6 +436,12 @@ export const en = {
             all_customers: "All Customers",
             all_techs: "All Techs",
             search_placeholder: "Search by No. or Customer..."
+        },
+        sort: {
+            label: "Sort by",
+            created: "Created Date",
+            date: "Document Date",
+            alphabetical: "Alphabetical (A-Z)"
         },
         table: {
             no: "No.",
@@ -709,7 +724,7 @@ export const en = {
             }
         },
         onboarding: {
-            welcome: "Welcome to ProjectPro",
+            welcome: "Welcome to HipslothProject",
             subtitle: "To get started, please create your first team or workspace.",
             team_name: "Team Name",
             team_placeholder: "e.g. My Construction Co.",
@@ -863,14 +878,14 @@ export const en = {
     },
     login: {
         title: "Welcome Back",
-        subtitle: "Sign in to access your ProjectPro dashboard",
+        subtitle: "Sign in to access your HipslothProject dashboard",
         email: "Email",
         password: "Password",
         forgot_password: "Forgot password?",
         sign_in: "Sign in",
         or_continue: "Or continue with",
         sign_in_google: "Sign in with Google",
-        secured_by: "Secured by ProjectPro",
+        secured_by: "Secured by HipslothProject",
         privacy_policy: "Privacy Policy",
         no_account: "Don't have an account?",
         sign_up: "Sign up",
@@ -880,7 +895,7 @@ export const en = {
     register: {
         back_to_login: "Back to Login",
         title: "Create Account",
-        subtitle: "Join ProjectPro and manage your projects efficiently",
+        subtitle: "Join HipslothProject and manage your projects efficiently",
         full_name: "Full Name",
         email: "Email",
         password: "Password",
@@ -954,5 +969,55 @@ export const en = {
         back_to_login: "Back to Login",
         title: "Privacy Policy",
         last_updated: "Last updated"
+    },
+
+    bored: {
+        subtitle: "Collect your team members to grow!",
+        best: "Best: {score}",
+        score: "Score: {score}",
+        leaderboard: "Leaderboard",
+        no_scores: "No scores yet. Be the first!",
+        instructions_title: "Instructions",
+        instructions_desc: "Use arrow keys to navigate. Collect team members to grow your snake chain. Don't hit the walls (or yourself!)",
+        staff_power_title: "Staff Power",
+        staff_power_desc: "Each team member collected adds +10 to your team productivity score. Can you reach the top of the leaderboard?",
+        game_over: "Game Over",
+        final_score: "Final Score",
+        try_again: "Try Again",
+        start_game: "Start Game",
+        move_instruction: "Use Arrow Keys to Move",
+    },
+
+    policy: {
+        last_updated: "Last updated: January 20, 2026",
+        data_privacy: {
+            title: "Data Privacy",
+            content: "At HipslothProject, we prioritize your data privacy. Since the application operates primarily as a Progressive Web App (PWA) with local-first capabilities, your operational data (expenses, tasks, documents) is stored securely on your device and via our encrypted cloud sync."
+        },
+        usage_policy: {
+            title: "Usage Policy",
+            content: "Users are responsible for the accuracy of the financial data and documents generated within the app. HipslothProject is a tool for management and does not constitute official accounting or legal advice."
+        },
+        security: {
+            title: "Security Commitments",
+            points: [
+                "Encrypted data transmission between client and server.",
+                "Regular automated backups for all organization data.",
+                "Robust role-based access control (RBAC) to restrict sensitive data.",
+                "PIN-code protection for mobile devices."
+            ]
+        },
+        footer: "For complete Terms of Service or specific legal inquiries, please contact our legal team at legal@hipslothproject.app."
+    },
+
+    about: {
+        tagline: "HipslothProject - The ultimate companion for modern construction teams.",
+        version: "Version",
+        mission_title: "Our Mission",
+        mission_desc: "To simplify project management for construction and renovation teams by providing powerful tools for tracking financials, managing tasks, and collaborating with clients, all in one intuitive interface.",
+        support_title: "Support & Contact",
+        email_support: "Email Support",
+        official_website: "Official Website",
+        rights_reserved: "© 2026 HipslothProject. All rights reserved."
     }
 }

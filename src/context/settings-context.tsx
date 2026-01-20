@@ -115,7 +115,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     // Load from LocalStorage on mount
     useEffect(() => {
         const load = <T,>(key: string, setter: (value: T) => void) => {
-            const saved = localStorage.getItem(`projectpro_settings_${key}`)
+            const saved = localStorage.getItem(`hipslothproject_settings_${key}`)
             if (saved) {
                 try {
                     setter(JSON.parse(saved))
@@ -136,12 +136,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     // Save to LocalStorage whenever state changes
     useEffect(() => {
         if (!isLoaded) return
-        localStorage.setItem('projectpro_settings_documentSettings', JSON.stringify(documentSettings))
+        localStorage.setItem('hipslothproject_settings_documentSettings', JSON.stringify(documentSettings))
     }, [documentSettings, isLoaded])
 
     useEffect(() => {
         if (!isLoaded) return
-        localStorage.setItem('projectpro_settings_appTheme', JSON.stringify(appTheme))
+        localStorage.setItem('hipslothproject_settings_appTheme', JSON.stringify(appTheme))
 
         // Apply theme to DOM
         const colorMap: Record<string, string> = {
@@ -208,12 +208,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (!isLoaded) return
-        localStorage.setItem('projectpro_settings_teamSettings', JSON.stringify(teamSettings))
+        localStorage.setItem('hipslothproject_settings_teamSettings', JSON.stringify(teamSettings))
     }, [teamSettings, isLoaded])
 
     useEffect(() => {
         if (!isLoaded) return
-        localStorage.setItem('projectpro_settings_notificationSettings', JSON.stringify(notificationSettings))
+        localStorage.setItem('hipslothproject_settings_notificationSettings', JSON.stringify(notificationSettings))
     }, [notificationSettings, isLoaded])
 
 

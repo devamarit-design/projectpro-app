@@ -238,10 +238,10 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                     className="w-full bg-background border-none rounded-lg px-4 py-3 text-sm font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-primary/50"
                                 >
                                     <option value="Paid">Paid</option>
-                                    <option value="Pending">Pending</option>
-                                    <option value="Unpaid">Unpaid</option>
+                                    <option value="Pending">Pending (รอชำระ)</option>
                                     <option value="Advanced">Advanced (สำรองจ่าย)</option>
-                                    <option value="Credit">Credit (ติดไว้ก่อน)</option>
+                                    <option value="Credit">Credit (เจ้าหนี้/เครดิต)</option>
+                                    <option value="Unpaid">Cancel (ยกเลิก)</option>
                                 </select>
                             ) : (
                                 <div className={cn("px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all",
@@ -251,7 +251,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                                 'bg-red-500/10 text-red-500'
                                 )}>
                                     {expense.status === 'Paid' && <CheckCircle2 className="w-4 h-4" />}
-                                    {expense.status}
+                                    {expense.status === 'Unpaid' ? 'Cancel' : expense.status}
                                 </div>
                             )}
                         </div>

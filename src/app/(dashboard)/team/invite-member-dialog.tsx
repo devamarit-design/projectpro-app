@@ -34,8 +34,8 @@ export default function InviteMemberDialog({ isOpen, onClose }: InviteMemberDial
 
         // Simulation of sending email
         // In a real app, this would call an API point like /api/invite/email
-        const subject = encodeURIComponent(`Join ${currentOrg?.name || 'our organization'} on ProjectPro`)
-        const body = encodeURIComponent(`Hello,\n\nYou have been invited to join ${currentOrg?.name} on ProjectPro.\n\nUse this Invite Code: ${currentOrg?.id}\n\nOr click here to join:\n${inviteLink}\n\nBest,\nProjectPro Team`)
+        const subject = encodeURIComponent(`Join ${currentOrg?.name || 'our organization'} on HipslothProject`)
+        const body = encodeURIComponent(`Hello,\n\nYou have been invited to join ${currentOrg?.name} on HipslothProject.\n\nUse this Invite Code: ${currentOrg?.id}\n\nOr click here to join:\n${inviteLink}\n\nBest,\nHipslothProject Team`)
 
         window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank')
 

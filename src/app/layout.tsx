@@ -11,6 +11,7 @@ import { LockScreen } from "@/components/auth/lock-screen";
 import { OrganizationProvider } from "@/context/organization-context"; // New Import
 import { ThemeSync } from "@/components/theme-sync";
 import { Toaster } from "sonner";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const kanit = Kanit({
   subsets: ["latin", "thai"],
@@ -20,25 +21,25 @@ const kanit = Kanit({
 
 export const metadata: Metadata = {
   title: {
-    default: "PROJECTPRO App",
-    template: "%s | PROJECTPRO",
+    default: "HipslothProject App",
+    template: "%s | HipslothProject",
   },
   description: "Modern Construction & Project Management for Teams. Track projects, expenses, and site work in one place.",
   keywords: ["Construction", "Project Management", "Thai Construction", "SME", "Site Management"],
-  authors: [{ name: "ProjectPro Team" }],
-  creator: "ProjectPro Team",
-  metadataBase: new URL("https://projectpro.app"),
+  authors: [{ name: "HipslothProject Team" }],
+  creator: "HipslothProject Team",
+  metadataBase: new URL("https://hipslothproject.app"),
   openGraph: {
-    title: "PROJECTPRO - Modern Construction Management",
+    title: "HipslothProject - Modern Construction Management",
     description: "Manage your construction projects, expenses, and team efficiently.",
-    url: "https://projectpro.app",
-    siteName: "PROJECTPRO",
+    url: "https://hipslothproject.app",
+    siteName: "HipslothProject",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "PROJECTPRO Dashboard",
+        alt: "HipslothProject Dashboard",
       },
     ],
     locale: "th_TH",
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "PROJECTPRO App",
+    title: "HipslothProject App",
     description: "Modern Construction & Project Management for Teams",
     images: ["/og-image.png"],
   },
@@ -89,6 +90,7 @@ export default function RootLayout({
                       <ThemeSync />
                       <Toaster />
                       {children}
+                      <SpeedInsights />
                     </SecurityProvider>
                   </NotificationProvider>
                 </SettingsProvider>

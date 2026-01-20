@@ -689,8 +689,8 @@ const MOCK_TEAMS: Team[] = [
         address: "123 Construction Road, Bangkok",
         taxId: "0105551234567",
         phone: "02-123-4567",
-        email: "hq@projectpro.com",
-        website: "www.projectpro.com",
+        email: "hq@hipslothproject.com",
+        website: "www.hipslothproject.com",
         logo: "🏢",
         role: "Owner",
         primaryColor: "#0f172a",
@@ -702,7 +702,7 @@ const MOCK_TEAMS: Team[] = [
         address: "88 Industrial Estate, Rayong",
         taxId: "0105559876543",
         phone: "038-111-222",
-        email: "site@projectpro.com",
+        email: "site@hipslothproject.com",
         logo: "🏗️",
         role: "Owner",
         primaryColor: "#ea580c",
@@ -714,8 +714,8 @@ const MOCK_TEAMS: Team[] = [
         address: "456 Creative Hub, Chiang Mai",
         taxId: "0505554443332",
         phone: "053-999-888",
-        email: "design@projectpro.com",
-        website: "design.projectpro.com",
+        email: "design@hipslothproject.com",
+        website: "design.hipslothproject.com",
         logo: "🎨",
         role: "Owner",
         primaryColor: "#7c3aed",
@@ -741,13 +741,13 @@ export const INITIAL_COMPANY_PROFILE: CompanyProfile = {
     address: "123 Construction Road, Building A, Bangkok 10110",
     taxId: "0105551234567",
     phone: "02-123-4567",
-    email: "contact@projectpro.com",
-    website: "www.projectpro.com",
+    email: "contact@hipslothproject.com",
+    website: "www.hipslothproject.com",
     logo: "",
     primaryColor: "#000000",
     secondaryColor: "#ffffff",
     paymentInfo: "Bank: KBANK\nAcc: 123-4-56789-0",
-    description: "Welcome to ProjectPro"
+    description: "Welcome to HipslothProject"
 }
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {

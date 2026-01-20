@@ -66,8 +66,12 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                 setDate(initialData.date)
                 setDocNumber(initialData.documentNumber)
                 setMode(initialData.mode || "Simple")
-                setSimpleItems(initialData.items || [{ id: "1", description: "", quantity: 1, unit: "unit", unitPrice: 0, total: 0, image: "" }])
-                setSections(initialData.sections || [{ id: "1", name: "Zone 1", items: [{ id: "1-1", description: "", quantity: 1, unit: "unit", unitPrice: 0, total: 0, image: "" }] }])
+                setSimpleItems(initialData.items?.map((i: any) => ({ ...i, id: i.id || Math.random().toString() })) || [{ id: "1", description: "", quantity: 1, unit: "unit", unitPrice: 0, total: 0, image: "" }])
+                setSections(initialData.sections?.map((s: any) => ({
+                    ...s,
+                    id: s.id || Math.random().toString(),
+                    items: s.items?.map((i: any) => ({ ...i, id: i.id || Math.random().toString() })) || []
+                })) || [{ id: "1", name: "Zone 1", items: [{ id: "1-1", description: "", quantity: 1, unit: "unit", unitPrice: 0, total: 0, image: "" }] }])
             } else {
                 // Add New Mode
                 resetForm()

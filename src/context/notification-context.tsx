@@ -322,7 +322,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         // 2. Expense Alerts (Unpaid/Credit)
         expenses.forEach(expense => {
-            if (expense.status === 'Unpaid' || expense.status === 'Credit') {
+            if (expense.status === 'Pending' || expense.status === 'Credit') {
                 // Assuming expenses have a 'date' which acts as due date or invoice date?
                 // If it's unpaid, let's warn if it's older than X days? Or if it has a specific due date?
                 // The current Expense interface uses 'date' as transaction date. 

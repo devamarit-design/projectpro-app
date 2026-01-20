@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Search, Filter, Camera, ScanLine, Tag, Wallet, TrendingDown, LayoutGrid, Hammer, Users, FileText, CreditCard, Archive, RefreshCcw } from "lucide-react"
+import { Plus, Search, Filter, Camera, ScanLine, Tag, Wallet, TrendingDown, LayoutGrid, Hammer, Users, FileText, CreditCard, Archive, RefreshCcw, ArrowDownAZ } from "lucide-react"
 import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
 import { useProjects, ExpenseCategory } from "@/context/project-context"
 import { cn } from "@/lib/utils"
@@ -14,8 +14,16 @@ import { useTranslation } from "@/lib/i18n-context"
 import { CheckCircle2 } from "lucide-react"
 import { Suspense } from "react"
 
+const FINANCIAL_TARGETS_KEY = "financial-targets"
+interface FinancialTargets {
+    incomeMin: number
+    incomeMax: number
+    expenseWarning: number
+    expenseLimit: number
+}
+
 function ExpensesContent() {
-    const { expenses, archivedExpenses, projects, users, currentUser } = useProjects()
+    const { expenses, archivedExpenses, projects, users, currentUser, updateExpense } = useProjects()
     const { t } = useTranslation()
     const searchParams = useSearchParams()
     const router = useRouter()
@@ -98,25 +106,26 @@ function ExpensesContent() {
     }, [sourceExpenses, searchQuery, categoryFilter, projectFilter, userFilter, monthFilter])
 
     // Step 2: Final Filter (Base + Status) - used for List View
-    const [sortOrder, setSortOrder] = React.useState<'newest' | 'oldest'>('newest')
+    const [sortOrder, setSortOrder] = React.useState<'created' | 'date' | 'alphabetical'>('created')
 
     const filteredExpenses = React.useMemo(() => {
         let result = baseFilteredExpenses.filter(expense => {
             return statusFilter === "All" || expense.status === statusFilter
         })
 
-        // Sort by createdAt first, then by date as fallback
         return result.sort((a, b) => {
-            // Primary sort: createdAt (if available)
-            if (a.createdAt && b.createdAt) {
-                const createdA = new Date(a.createdAt).getTime()
-                const createdB = new Date(b.createdAt).getTime()
-                return sortOrder === 'newest' ? createdB - createdA : createdA - createdB
+            if (sortOrder === 'created') {
+                const timeA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime()
+                const timeB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime()
+                return timeB - timeA
+            } else if (sortOrder === 'date') {
+                const dateA = new Date(a.date).getTime()
+                const dateB = new Date(b.date).getTime()
+                return dateB - dateA
+            } else if (sortOrder === 'alphabetical') {
+                return (a.title || "").localeCompare(b.title || "")
             }
-            // Fallback: date field
-            const dateA = new Date(a.date).getTime()
-            const dateB = new Date(b.date).getTime()
-            return sortOrder === 'newest' ? dateB - dateA : dateA - dateB
+            return 0
         })
     }, [baseFilteredExpenses, statusFilter, sortOrder])
 
@@ -126,6 +135,46 @@ function ExpensesContent() {
             return acc + curr.totalValue
         }, 0)
     }, [filteredExpenses])
+
+    // Mood Card Logic
+    const [finTargets, setFinTargets] = React.useState<FinancialTargets>({
+        incomeMin: 50000,
+        incomeMax: 150000,
+        expenseWarning: 30000,
+        expenseLimit: 50000
+    })
+
+    React.useEffect(() => {
+        const stored = localStorage.getItem(FINANCIAL_TARGETS_KEY)
+        if (stored) {
+            try {
+                setFinTargets(JSON.parse(stored))
+            } catch { } // use defaults
+        }
+    }, [])
+
+    // Calculate Monthly Expense for Mood
+    const currentMonthPrefix = new Date().toISOString().substring(0, 7) // YYYY-MM
+
+    const monthlyTotalExpense = expenses
+        .filter(e => e.date.startsWith(currentMonthPrefix) && e.status !== 'Unpaid') // Exclude cancelled
+        .reduce((sum, e) => sum + e.totalValue, 0)
+
+    const expensePercent = Math.min(100, Math.round((monthlyTotalExpense / finTargets.expenseLimit) * 100))
+
+    // Determine Mood
+    // Logic: 
+    // < 80% : Bag is full (กระเป๋าตุง) - Green
+    // 80-100% : Bag is okay (กระเป๋าพอดี) - Orange
+    // > 100% : Bag is empty (กระเป๋าขาด) - Red
+
+    let mood = { emoji: "🤑", label: "Rich (กระเป๋าตุง)", color: "text-emerald-500", bg: "bg-emerald-500/10", icon: Wallet }
+
+    if (monthlyTotalExpense > finTargets.expenseLimit) {
+        mood = { emoji: "💸", label: "Broke (กระเป๋าขาด)", color: "text-red-500", bg: "bg-red-500/10", icon: TrendingDown }
+    } else if (monthlyTotalExpense > finTargets.expenseWarning) {
+        mood = { emoji: "😬", label: "Tight (กระเป๋าพอดี)", color: "text-orange-500", bg: "bg-orange-500/10", icon: Wallet }
+    }
 
     return (
         <div className="space-y-6 pb-20">
@@ -200,61 +249,102 @@ function ExpensesContent() {
                 </div>
             </div>
 
-            {/* Expense Summary Cards */}
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-                <button
-                    onClick={() => setStatusFilter("Pending")}
-                    className={cn(
-                        "glass-card p-4 rounded-xl border border-white/5 transition-all text-left group",
-                        statusFilter === 'Pending' ? "bg-red-500/10 border-red-500/50" : "bg-red-500/5 hover:border-red-500/30"
-                    )}
-                >
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 rounded-lg bg-red-500/20 text-red-500 group-hover:scale-110 transition-transform">
-                            <Wallet className="w-4 h-4" />
-                        </div>
-                        <p className="text-sm font-bold text-red-400 uppercase tracking-wider">{t.expenses.unpaid}</p>
-                    </div>
-                    <p className="text-2xl font-black text-red-500">
-                        ฿{baseFilteredExpenses.filter(e => e.status !== 'Paid' && e.status !== 'Advanced' && e.status !== 'Credit').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
-                    </p>
-                </button>
+            {/* Mood Card - Expenses (Enhanced) */}
+            <div className={`p-6 sm:p-8 rounded-3xl border border-white/10 ${mood.bg} flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden animate-in zoom-in duration-500 slide-in-from-bottom-4`}>
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <mood.icon className="w-32 h-32" />
+                </div>
 
-                <button
-                    onClick={() => setStatusFilter("Advanced")}
-                    className={cn(
-                        "glass-card p-4 rounded-xl border border-white/5 transition-all text-left group",
-                        statusFilter === 'Advanced' ? "bg-purple-500/10 border-purple-500/50" : "bg-purple-500/5 hover:border-purple-500/30"
-                    )}
-                >
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 rounded-lg bg-purple-500/20 text-purple-500 group-hover:scale-110 transition-transform">
-                            <Wallet className="w-4 h-4" />
+                <div className="flex items-center gap-6 relative z-10 w-full sm:w-auto">
+                    <div className="text-6xl sm:text-7xl filter drop-shadow-lg animate-bounce duration-[2000ms]">{mood.emoji}</div>
+                    <div className="flex-1">
+                        <div className={`font-black text-2xl sm:text-3xl ${mood.color} tracking-tight mb-1`}>{mood.label}</div>
+                        <div className="text-sm font-semibold text-muted-foreground uppercase opacity-80 mb-2 tracking-wide">
+                            {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                         </div>
-                        <p className="text-sm font-bold text-purple-400 uppercase tracking-wider">{t.expenses.advanced}</p>
+                        <div className="text-base sm:text-lg text-muted-foreground font-medium">
+                            Limit: <span className="text-foreground">฿{finTargets.expenseLimit.toLocaleString()}</span>
+                        </div>
+                        <div className="text-base sm:text-lg text-muted-foreground font-medium">
+                            Spent: <span className={`font-bold ${monthlyTotalExpense > finTargets.expenseLimit ? 'text-red-500' : 'text-foreground'}`}>฿{monthlyTotalExpense.toLocaleString()}</span>
+                            <span className="text-sm ml-2 opacity-80">({expensePercent}%)</span>
+                        </div>
                     </div>
-                    <p className="text-2xl font-black text-purple-500">
-                        ฿{baseFilteredExpenses.filter(e => e.status === 'Advanced').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
-                    </p>
-                </button>
+                </div>
 
-                <button
-                    onClick={() => setStatusFilter("Credit")}
-                    className={cn(
-                        "glass-card p-4 rounded-xl border border-white/5 transition-all text-left group",
-                        statusFilter === 'Credit' ? "bg-blue-500/10 border-blue-500/50" : "bg-blue-500/5 hover:border-blue-500/30"
-                    )}
-                >
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 rounded-lg bg-blue-500/20 text-blue-500 group-hover:scale-110 transition-transform">
-                            <CreditCard className="w-4 h-4" />
-                        </div>
-                        <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">{t.expenses.credit}</p>
+                {/* Progress Bar & Status */}
+                <div className="w-full sm:w-[40%] relative z-10">
+                    <div className="h-4 w-full bg-black/10 rounded-full overflow-hidden backdrop-blur-sm border border-black/5">
+                        <div
+                            className={`h-full rounded-full transition-all duration-1000 ease-out shadow-sm ${monthlyTotalExpense > finTargets.expenseLimit ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-emerald-500 to-emerald-400'}`}
+                            style={{ width: `${Math.min(100, expensePercent)}%` }}
+                        />
                     </div>
-                    <p className="text-2xl font-black text-blue-500">
-                        ฿{baseFilteredExpenses.filter(e => e.status === 'Credit').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
-                    </p>
-                </button>
+                    <div className="flex justify-between mt-2 text-xs font-semibold uppercase tracking-wider opacity-60">
+                        <span>0%</span>
+                        <span>50%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Expense Summary Cards (Scrollable) */}
+            <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+                <div className="flex gap-4 min-w-max md:min-w-0 md:grid md:grid-cols-3">
+                    <button
+                        onClick={() => setStatusFilter("Pending")}
+                        className={cn(
+                            "glass-card p-4 rounded-xl border border-white/5 transition-all text-left group",
+                            statusFilter === 'Pending' ? "bg-amber-500/10 border-amber-500/50" : "bg-amber-500/5 hover:border-amber-500/30"
+                        )}
+                    >
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 rounded-lg bg-amber-500/20 text-amber-500 group-hover:scale-110 transition-transform">
+                                <Wallet className="w-4 h-4" />
+                            </div>
+                            <p className="text-sm font-bold text-amber-400 uppercase tracking-wider">รอชำระ / Pending</p>
+                        </div>
+                        <p className="text-2xl font-black text-amber-500">
+                            ฿{baseFilteredExpenses.filter(e => e.status === 'Pending').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
+                        </p>
+                    </button>
+
+                    <button
+                        onClick={() => setStatusFilter("Advanced")}
+                        className={cn(
+                            "glass-card p-4 rounded-xl border border-white/5 transition-all text-left group",
+                            statusFilter === 'Advanced' ? "bg-purple-500/10 border-purple-500/50" : "bg-purple-500/5 hover:border-purple-500/30"
+                        )}
+                    >
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 rounded-lg bg-purple-500/20 text-purple-500 group-hover:scale-110 transition-transform">
+                                <Wallet className="w-4 h-4" />
+                            </div>
+                            <p className="text-sm font-bold text-purple-400 uppercase tracking-wider">{t.expenses.advanced}</p>
+                        </div>
+                        <p className="text-2xl font-black text-purple-500">
+                            ฿{baseFilteredExpenses.filter(e => e.status === 'Advanced').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
+                        </p>
+                    </button>
+
+                    <button
+                        onClick={() => setStatusFilter("Credit")}
+                        className={cn(
+                            "glass-card p-4 rounded-xl border border-white/5 transition-all text-left group",
+                            statusFilter === 'Credit' ? "bg-blue-500/10 border-blue-500/50" : "bg-blue-500/5 hover:border-blue-500/30"
+                        )}
+                    >
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 rounded-lg bg-blue-500/20 text-blue-500 group-hover:scale-110 transition-transform">
+                                <CreditCard className="w-4 h-4" />
+                            </div>
+                            <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">{t.expenses.credit}</p>
+                        </div>
+                        <p className="text-2xl font-black text-blue-500">
+                            ฿{baseFilteredExpenses.filter(e => e.status === 'Credit').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
+                        </p>
+                    </button>
+                </div>
             </div>
 
             {/* Filters & Search - Glass Component */}
@@ -328,9 +418,10 @@ function ExpensesContent() {
                             >
                                 <option value="All">All Status</option>
                                 <option value="Paid">Paid</option>
-                                <option value="Pending">Unpaid</option>
+                                <option value="Pending">Pending (รอจ่าย)</option>
                                 <option value="Advanced">Advanced (สำรอง)</option>
                                 <option value="Credit">Credit</option>
+                                <option value="Unpaid">Cancel (ยกเลิก)</option>
                             </select>
                         </div>
 
@@ -387,14 +478,19 @@ function ExpensesContent() {
                             </div>
                         </div>
 
-                        {/* Sort Icon Button */}
-                        <button
-                            onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
-                            className="p-2.5 bg-muted/30 border border-white/5 rounded-xl hover:bg-muted/50 transition-colors flex items-center justify-center"
-                            title={sortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
-                        >
-                            <RefreshCcw className={cn("w-4 h-4 text-muted-foreground", sortOrder === 'oldest' && "rotate-180")} />
-                        </button>
+                        {/* Sort Dropdown */}
+                        <div className="flex items-center gap-2">
+                            <ArrowDownAZ className="w-4 h-4 text-muted-foreground" />
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value as any)}
+                                className="bg-transparent border-none text-sm text-muted-foreground focus:outline-none cursor-pointer hover:text-foreground transition-colors"
+                            >
+                                <option value="created">{t.expenses.sort.created}</option>
+                                <option value="date">{t.expenses.sort.date}</option>
+                                <option value="alphabetical">{t.expenses.sort.alphabetical}</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -458,26 +554,40 @@ function ExpensesContent() {
                                     <div className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
                                         expense.status === 'Paid' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
                                             expense.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
-                                                'bg-red-500/10 text-red-500 border-red-500/20'
+                                                expense.status === 'Advanced' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                                                    'bg-red-500/10 text-red-500 border-red-500/20'
                                     )}>
-                                        {expense.status}
+                                        {expense.status === 'Unpaid' ? 'Cancel' : expense.status}
                                     </div>
                                 </div>
 
                                 {/* Admin Actions for Status Change */}
                                 {(currentUser?.role === 'Admin' || currentUser?.role === 'Owner') &&
-                                    (expense.status === 'Unpaid' || expense.status === 'Credit' || expense.status === 'Advanced' || expense.status === 'Pending') && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                setSelectedExpenseId(expense.id)
-                                            }}
-                                            className="p-2 hover:bg-green-500/10 text-muted-foreground hover:text-green-500 rounded-full transition-colors"
-                                            title="Manage Payment"
-                                        >
-                                            <CheckCircle2 className="w-5 h-5" />
-                                        </button>
+                                    (expense.status === 'Pending' || expense.status === 'Credit' || expense.status === 'Advanced') && (
+                                        <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    if (confirm(`Approve payment for "${expense.title}"?`)) {
+                                                        updateExpense(expense.id, { status: 'Paid' })
+                                                    }
+                                                }}
+                                                className="flex items-center gap-2 pl-3 pr-4 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 rounded-full transition-all group/btn"
+                                            >
+                                                <CheckCircle2 className="w-4 h-4" />
+                                                <span className="text-xs font-bold uppercase tracking-tight">จ่ายแล้ว</span>
+                                                <span className="text-[10px] opacity-70 border-l border-green-500/20 pl-2">
+                                                    {expense.status === 'Advanced' ? (expense.paidBy || expense.payee) : expense.payee}
+                                                </span>
+                                            </button>
+                                        </div>
                                     )}
+
+                                {expense.status === 'Unpaid' && (
+                                    <div className="px-3 py-1 bg-gray-500/10 text-gray-500 border border-gray-500/20 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                        CANCEL
+                                    </div>
+                                )}
                             </div>
                         </React.Fragment>
                     )

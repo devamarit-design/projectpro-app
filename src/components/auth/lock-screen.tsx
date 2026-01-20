@@ -70,7 +70,7 @@ export function LockScreen() {
                         {success ? <Unlock className="w-10 h-10" /> : <Lock className="w-10 h-10" />}
                     </div>
                     <div className="text-center">
-                        <h1 className="text-2xl font-bold text-white tracking-tight">ProjectPro Locked</h1>
+                        <h1 className="text-2xl font-bold text-white tracking-tight">HipslothProject Locked</h1>
                         <p className="text-muted-foreground mt-2">Enter your PIN code to access</p>
                     </div>
                 </div>
@@ -81,8 +81,8 @@ export function LockScreen() {
                         <div
                             key={i}
                             className={`w-4 h-4 rounded-full transition-all duration-300 ${i < pin.length
-                                    ? success ? 'bg-emerald-500 scale-110' : 'bg-white scale-110'
-                                    : 'bg-white/10 scale-100'
+                                ? success ? 'bg-emerald-500 scale-110' : 'bg-white scale-110'
+                                : 'bg-white/10 scale-100'
                                 }`}
                         />
                     ))}

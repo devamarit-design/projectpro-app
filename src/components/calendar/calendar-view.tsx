@@ -451,7 +451,7 @@ export function CalendarView() {
                         eventClick={handleEventClick}
                         dateClick={handleDateClick}
                         dayCellContent={renderDayCell}
-                        height="auto"
+                        height={isMobile ? "auto" : "100%"}
                         dayMaxEvents={3}
                         eventDisplay="block"
                         navLinks={true}

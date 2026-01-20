@@ -863,10 +863,10 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             className="w-full bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
                                         >
                                             <option value="Paid">Paid</option>
-                                            <option value="Unpaid">Unpaid</option>
-                                            <option value="Pending">Pending (Processing)</option>
+                                            <option value="Pending">Pending (รอชำระ)</option>
                                             <option value="Advanced">Advanced (สำรองจ่าย)</option>
                                             <option value="Credit">Credit (ติดไว้ก่อน)</option>
+                                            <option value="Unpaid">Cancel (ยกเลิก)</option>
                                         </select>
                                     </div>
                                 </div>

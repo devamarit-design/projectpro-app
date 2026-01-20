@@ -24,7 +24,10 @@ import {
     Globe,
     LogOut,
     CalendarDays,
-    Archive
+    Archive,
+    Info,
+    ShieldCheck,
+    Gamepad2
 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -70,21 +73,44 @@ export function MobileNav() {
         { href: "/expenses", label: t.finance.expense, icon: TrendingDown, color: "text-red-500 from-red-500/20 to-red-500/5" },
     ]
 
-    const moreItems = [
-        { href: "/calendar", label: "ปฏิทิน", icon: CalendarDays, color: "text-teal-500 from-teal-500/20 to-teal-500/5" },
-        { href: "/tasks", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 from-blue-500/20 to-blue-500/5" },
-        { href: "/customers", label: t.common.customers, icon: Users, color: "text-orange-500 from-orange-500/20 to-orange-500/5" },
-        { href: "/partners", label: t.common.partners, icon: Handshake, color: "text-cyan-500 from-cyan-500/20 to-cyan-500/5" },
-        { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
-        { href: "/storage", label: t.common.storage, icon: HardDrive, color: "text-indigo-500 from-indigo-500/20 to-indigo-500/5" },
-        ...(hasPermission(currentUser, "TEAM_VIEW") ? [{
-            href: "/team",
-            label: t.common.team,
-            icon: Briefcase,
-            color: "text-purple-500 from-purple-500/20 to-purple-500/5"
-        }] : []),
-        { href: "/profile", label: t.common.profile, icon: User, color: "text-rose-500 from-rose-500/20 to-rose-500/5" },
-        { href: "/settings", label: t.common.settings, icon: Settings, color: "text-gray-500 from-gray-500/20 to-gray-500/5" },
+    const moreGroups = [
+        {
+            title: "งาน", // Work
+            items: [
+                { href: "/calendar", label: t.calendar?.title || "ปฏิทิน", icon: CalendarDays, color: "text-teal-500 from-teal-500/20 to-teal-500/5" },
+                { href: "/tasks", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 from-blue-500/20 to-blue-500/5" },
+                { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
+                { href: "/storage", label: t.common.storage, icon: HardDrive, color: "text-indigo-500 from-indigo-500/20 to-indigo-500/5" },
+            ]
+        },
+        {
+            title: "ข้อมูล", // Data
+            items: [
+                { href: "/customers", label: t.common.customers, icon: Users, color: "text-orange-500 from-orange-500/20 to-orange-500/5" },
+                { href: "/partners", label: t.common.partners, icon: Handshake, color: "text-cyan-500 from-cyan-500/20 to-cyan-500/5" },
+            ]
+        },
+        {
+            title: "ทีม", // Team
+            items: [
+                { href: "/profile", label: t.common.profile, icon: User, color: "text-rose-500 from-rose-500/20 to-rose-500/5" },
+                ...(hasPermission(currentUser, "TEAM_VIEW") ? [{
+                    href: "/team",
+                    label: t.common.team,
+                    icon: Briefcase,
+                    color: "text-purple-500 from-purple-500/20 to-purple-500/5"
+                }] : []),
+            ]
+        },
+        {
+            title: "อื่นๆ", // Other
+            items: [
+                { href: "/settings", label: t.common.settings, icon: Settings, color: "text-gray-500 from-gray-500/20 to-gray-500/5" },
+                { href: "/about", label: t.navbar.about, icon: Info, color: "text-blue-500 from-blue-500/20 to-blue-500/5" },
+                { href: "/policy", label: t.navbar.policy, icon: ShieldCheck, color: "text-emerald-500 from-emerald-500/20 to-emerald-500/5" },
+                { href: "/bored", label: t.navbar.bored, icon: Gamepad2, color: "text-indigo-500 from-indigo-500/20 to-indigo-500/5" },
+            ]
+        }
     ]
 
     const addItems = [
@@ -185,33 +211,42 @@ export function MobileNav() {
                         variant="danger"
                     />
                     <div
-                        className="w-full max-w-sm bg-background/95 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 animate-in slide-in-from-bottom-10 zoom-in-95 shadow-2xl space-y-4"
+                        className="w-full max-w-sm bg-background/95 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 animate-in slide-in-from-bottom-10 zoom-in-95 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto hide-scrollbar"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-bold">{t.navbar.more_utils}</h3>
+                        <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur-xl z-20 pb-2 border-b border-white/5">
+                            <h3 className="text-lg font-black">{t.navbar.more_utils}</h3>
                             <button onClick={() => setShowMoreMenu(false)} className="p-1 rounded-full hover:bg-muted/50 transition-colors">
                                 <X className="w-5 h-5 text-muted-foreground" />
                             </button>
                         </div>
-                        <div className="grid grid-cols-4 gap-4">
-                            {moreItems.map((item, index) => (
-                                <Link
-                                    key={index}
-                                    href={item.href}
-                                    onClick={() => setShowMoreMenu(false)}
-                                    className="flex flex-col items-center gap-3 group"
-                                >
-                                    <div className={cn(
-                                        "w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br shadow-inner transition-transform group-hover:scale-105 group-active:scale-95",
-                                        item.color
-                                    )}>
-                                        <item.icon className="w-6 h-6" />
-                                    </div>
-                                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors text-center leading-tight">{item.label}</span>
-                                </Link>
-                            ))}
-                        </div>
+
+                        {moreGroups.map((group, groupIndex) => (
+                            <div key={groupIndex} className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap opacity-70">{group.title}</h4>
+                                    <div className="h-px w-full bg-white/10" />
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {group.items.map((item, index) => (
+                                        <Link
+                                            key={index}
+                                            href={item.href}
+                                            onClick={() => setShowMoreMenu(false)}
+                                            className="flex flex-col items-center gap-1.5 group p-1"
+                                        >
+                                            <div className={cn(
+                                                "w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br shadow-sm transition-transform group-hover:scale-105 group-active:scale-95",
+                                                item.color
+                                            )}>
+                                                <item.icon className="w-5 h-5" />
+                                            </div>
+                                            <span className="text-[9px] font-normal text-muted-foreground group-hover:text-foreground transition-colors text-center leading-tight line-clamp-1 w-full overflow-hidden text-ellipsis px-0.5">{item.label}</span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
 
                         {/* App Settings Section (Mobile Only) */}
                         <div className="pt-4 mt-4 border-t border-white/10">

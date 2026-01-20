@@ -45,7 +45,7 @@ export default function LoginPage() {
                     <div className="relative w-48 h-auto mb-4">
                         <img
                             src="/logo.png"
-                            alt="ProjectPro Logo"
+                            alt="HipslothProject Logo"
                             className="w-full h-auto object-contain"
                         />
                     </div>

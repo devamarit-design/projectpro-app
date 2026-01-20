@@ -37,7 +37,7 @@ export default function CreateOrganizationPage() {
                     <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit mb-2">
                         <Building2 className="w-8 h-8 text-primary" />
                     </div>
-                    <CardTitle className="text-2xl font-bold">Welcome to ProjectPro</CardTitle>
+                    <CardTitle className="text-2xl font-bold">Welcome to HipslothProject</CardTitle>
                     <CardDescription>
                         To get started, please create your first organization.
                     </CardDescription>

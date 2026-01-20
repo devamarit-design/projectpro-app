@@ -1,6 +1,6 @@
 #!/bin/bash
 # Deploy to Google Cloud Run
-echo "Deploying ProjectPro App to Google Cloud Run..."
+echo "Deploying HipslothProject App to Google Cloud Run..."
 echo "Project: projectpro-app-76535"
 echo "Region: asia-southeast1"
 

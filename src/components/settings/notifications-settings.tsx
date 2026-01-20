@@ -4,6 +4,7 @@ import { useSettings } from "@/context/settings-context"
 import { useNotifications } from "@/context/notification-context"
 import { Bell, Calendar, Clock, AlertTriangle, Smartphone } from "lucide-react"
 import { MoodSettings } from "./mood-settings"
+import { FinancialTargetSettings } from "./financial-target-settings"
 
 import { useTranslation } from "@/lib/i18n-context"
 export function NotificationSettings() {
@@ -114,7 +115,9 @@ export function NotificationSettings() {
             </div>
 
             <div className="h-px bg-border my-8" />
+            <div className="h-px bg-border my-8" />
             <MoodSettings />
+            <FinancialTargetSettings />
         </div>
     )
 }

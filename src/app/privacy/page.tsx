@@ -25,7 +25,7 @@ export default function PrivacyPolicyPage() {
                     </div>
                     <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">{t.privacy.title}</h1>
                     <p className="text-gray-500 dark:text-gray-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                        We value your privacy. Here is how ProjectPro handles your data.
+                        We value your privacy. Here is how HipslothProject handles your data.
                     </p>
                     <p className="text-xs text-gray-400">{t.privacy.last_updated}: January 15, 2026</p>
                 </div>
@@ -37,7 +37,7 @@ export default function PrivacyPolicyPage() {
                             <h2 className="text-xl font-bold m-0">1. Data Storage (Local First)</h2>
                         </div>
                         <p className="text-gray-600 dark:text-gray-300">
-                            ProjectPro is designed as a <strong>Local-First Application</strong>. This means that the majority of your data (projects, expenses, clients) is stored directly on your device using IndexedDB technology. We do not automatically upload your sensitive business data to a central cloud server without your explicit action (e.g., performing a backup).
+                            HipslothProject is designed as a <strong>Local-First Application</strong>. This means that the majority of your data (projects, expenses, clients) is stored directly on your device using IndexedDB technology. We do not automatically upload your sensitive business data to a central cloud server without your explicit action (e.g., performing a backup).
                         </p>
                     </section>
 
@@ -66,7 +66,7 @@ export default function PrivacyPolicyPage() {
                         </p>
                         <ul className="list-disc pl-6 space-y-1 text-gray-600 dark:text-gray-300">
                             <li>Using a device passcode or biometric lock.</li>
-                            <li>Enabling the <strong>PIN Lock</strong> feature within ProjectPro settings.</li>
+                            <li>Enabling the <strong>PIN Lock</strong> feature within HipslothProject settings.</li>
                             <li>Regularly backing up your data using the "Backup / Restore" feature in Settings.</li>
                         </ul>
                     </section>
@@ -87,14 +87,14 @@ export default function PrivacyPolicyPage() {
                         <p className="text-gray-600 dark:text-gray-300">
                             If you have any questions about this Privacy Policy, please contact us at:
                             <br />
-                            <a href="mailto:support@projectpro.com" className="text-blue-600 hover:underline">support@projectpro.com</a>
+                            <a href="mailto:support@hipslothproject.com" className="text-blue-600 hover:underline">support@hipslothproject.com</a>
                         </p>
                     </section>
                 </div>
 
                 <div className="mt-12 pt-8 border-t text-center">
                     <p className="text-sm text-gray-500">
-                        &copy; 2026 ProjectPro Construction App. All rights reserved.
+                        &copy; 2026 HipslothProject Construction App. All rights reserved.
                     </p>
                 </div>
             </main>
