@@ -105,8 +105,15 @@ function ExpensesContent() {
             return statusFilter === "All" || expense.status === statusFilter
         })
 
-        // Sort by Date
+        // Sort by createdAt first, then by date as fallback
         return result.sort((a, b) => {
+            // Primary sort: createdAt (if available)
+            if (a.createdAt && b.createdAt) {
+                const createdA = new Date(a.createdAt).getTime()
+                const createdB = new Date(b.createdAt).getTime()
+                return sortOrder === 'newest' ? createdB - createdA : createdA - createdB
+            }
+            // Fallback: date field
             const dateA = new Date(a.date).getTime()
             const dateB = new Date(b.date).getTime()
             return sortOrder === 'newest' ? dateB - dateA : dateA - dateB
@@ -400,72 +407,82 @@ function ExpensesContent() {
                         <h3 className="text-lg font-medium">{t.expenses.empty}</h3>
                         <p className="text-sm text-muted-foreground">{t.expenses.empty_hint}</p>
                     </div>
-                ) : filteredExpenses.map((expense) => (
-                    <div
-                        key={expense.id}
-                        onClick={() => setSelectedExpenseId(expense.id)}
-                        className={cn(
-                            "glass-card p-4 rounded-xl border border-white/5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group overflow-hidden",
-                            expense.isArchived && "opacity-60 grayscale bg-gray-500/5 hover:bg-gray-500/10 border-gray-500/20"
-                        )}
-                    >
-                        <div className="flex gap-4 items-center w-full sm:w-auto min-w-0">
-                            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors group-hover:scale-110 duration-200",
-                                expense.category === 'Material' ? 'bg-orange-500/10 text-orange-500' :
-                                    expense.category === 'Labor' ? 'bg-blue-500/10 text-blue-500' :
-                                        'bg-purple-500/10 text-purple-500'
-                            )}>
-                                <span className="text-[10px] font-bold uppercase">{expense.category.substring(0, 3)}</span>
-                            </div>
-                            <div className="flex-1 min-w-0 overflow-hidden">
-                                <h3 className="font-semibold text-foreground truncate">{expense.title}</h3>
-                                <div className="text-xs text-muted-foreground flex items-center gap-2 truncate">
-                                    {expense.status === 'Advanced' ? (
-                                        <span className="text-purple-500 font-bold flex items-center gap-1">
-                                            Advance to: {expense.payee}
-                                        </span>
-                                    ) : (
-                                        <span>{expense.payee}</span>
-                                    )}
-                                    <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                                    <span>{expense.date}</span>
+                ) : filteredExpenses.map((expense, index) => {
+                    // Check if we need a date divider
+                    const currentDate = expense.date
+                    const prevExpense = index > 0 ? filteredExpenses[index - 1] : null
+                    const showDateDivider = !prevExpense || prevExpense.date !== currentDate
+
+                    return (
+                        <React.Fragment key={expense.id}>
+                            {showDateDivider && (
+                                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground py-2 px-1">
+                                    <div className="w-2 h-2 rounded-full bg-primary/60" />
+                                    {new Date(currentDate).toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                                 </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end pl-[64px] sm:pl-0">
-                            <div className="text-right">
-                                <p className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{expense.amount}</p>
-                            </div>
-                            <div className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                                expense.status === 'Paid' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                                    expense.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
-                                        'bg-red-500/10 text-red-500 border-red-500/20'
-                            )}>
-                                {expense.status}
-                            </div>
-                        </div>
-
-                        {/* Admin Actions for Status Change */}
-                        {(currentUser?.role === 'Admin' || currentUser?.role === 'Owner') &&
-                            (expense.status === 'Unpaid' || expense.status === 'Credit' || expense.status === 'Advanced' || expense.status === 'Pending') && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        // We need updateExpense from context but it's not exposed in the destructured vars above
-                                        // Let's assume we can pass intent to the detail sheet OR just open detail sheet.
-                                        // Actually the user wants to "change status". 
-                                        // Best UX: Open detail sheet which should have the action.
-                                        setSelectedExpenseId(expense.id)
-                                    }}
-                                    className="p-2 hover:bg-green-500/10 text-muted-foreground hover:text-green-500 rounded-full transition-colors"
-                                    title="Manage Payment"
-                                >
-                                    <CheckCircle2 className="w-5 h-5" />
-                                </button>
                             )}
-                    </div>
-                ))}
+                            <div
+                                onClick={() => setSelectedExpenseId(expense.id)}
+                                className={cn(
+                                    "glass-card p-4 rounded-xl border border-white/5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group overflow-hidden",
+                                    expense.isArchived && "opacity-60 grayscale bg-gray-500/5 hover:bg-gray-500/10 border-gray-500/20"
+                                )}
+                            >
+                                <div className="flex gap-4 items-center w-full sm:w-auto min-w-0">
+                                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors group-hover:scale-110 duration-200",
+                                        expense.category === 'Material' ? 'bg-orange-500/10 text-orange-500' :
+                                            expense.category === 'Labor' ? 'bg-blue-500/10 text-blue-500' :
+                                                'bg-purple-500/10 text-purple-500'
+                                    )}>
+                                        <span className="text-[10px] font-bold uppercase">{expense.category.substring(0, 3)}</span>
+                                    </div>
+                                    <div className="flex-1 min-w-0 overflow-hidden">
+                                        <h3 className="font-semibold text-foreground truncate">{expense.title}</h3>
+                                        <div className="text-xs text-muted-foreground flex items-center gap-2 truncate">
+                                            {expense.status === 'Advanced' ? (
+                                                <span className="text-purple-500 font-bold flex items-center gap-1">
+                                                    Advance to: {expense.payee}
+                                                </span>
+                                            ) : (
+                                                <span>{expense.payee}</span>
+                                            )}
+                                            <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                                            <span>{expense.date}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end pl-[64px] sm:pl-0">
+                                    <div className="text-right">
+                                        <p className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{expense.amount}</p>
+                                    </div>
+                                    <div className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                                        expense.status === 'Paid' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                            expense.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                                'bg-red-500/10 text-red-500 border-red-500/20'
+                                    )}>
+                                        {expense.status}
+                                    </div>
+                                </div>
+
+                                {/* Admin Actions for Status Change */}
+                                {(currentUser?.role === 'Admin' || currentUser?.role === 'Owner') &&
+                                    (expense.status === 'Unpaid' || expense.status === 'Credit' || expense.status === 'Advanced' || expense.status === 'Pending') && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                setSelectedExpenseId(expense.id)
+                                            }}
+                                            className="p-2 hover:bg-green-500/10 text-muted-foreground hover:text-green-500 rounded-full transition-colors"
+                                            title="Manage Payment"
+                                        >
+                                            <CheckCircle2 className="w-5 h-5" />
+                                        </button>
+                                    )}
+                            </div>
+                        </React.Fragment>
+                    )
+                })}
             </div>
         </div >
     )

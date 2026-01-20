@@ -106,10 +106,9 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
     const displaySubtotal = `฿${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     const displayVat = `฿${vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-    // Mock Image for verification if none exists
-    // Mock Image for verification if none exists
-    const fullImage = (isEditing ? editForm.receiptImage : expense.receiptImage) || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&q=80"
-    const displayImage = (isEditing ? editForm.receiptImage : expense.thumbnailUrl) || fullImage
+    // Only show image if one actually exists
+    const fullImage = isEditing ? editForm.receiptImage : expense.receiptImage
+    const displayImage = isEditing ? editForm.receiptImage : (expense.thumbnailUrl || expense.receiptImage)
 
     const isArchived = expense.isArchived
 
