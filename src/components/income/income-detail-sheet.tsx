@@ -135,7 +135,7 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
                 <SheetContent className="w-full sm:max-w-xl overflow-y-auto bg-background p-0 border-l border-white/10">
                     <div className="flex flex-col h-full">
                         {/* Header */}
-                        <div className="p-6 border-b border-white/10 bg-muted/10">
+                        <div className="p-6 pt-[calc(1.5rem+env(safe-area-inset-top))] border-b border-white/10 bg-muted/10">
                             <div className="flex items-start justify-between">
                                 <div>
                                     <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{document.type}</div>

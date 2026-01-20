@@ -96,7 +96,7 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
 
                     {/* Header Image/Banner */}
                     <div className="h-32 bg-gradient-to-br from-primary/20 via-background to-background relative">
-                        <div className="absolute top-4 right-4 flex gap-2">
+                        <div className="absolute top-[calc(1rem+env(safe-area-inset-top))] right-4 flex gap-2">
                             <button
                                 onClick={onClose}
                                 className="p-2 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-black/40 transition-colors"
