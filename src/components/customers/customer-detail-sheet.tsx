@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Phone, MapPin, User, Building, Mail, Edit, Trash2, ArrowRight } from "lucide-react"
+import { X, Phone, MapPin, User, Building, Mail, Edit, Trash2, ArrowRight, Archive } from "lucide-react"
 import { useProjects, Customer } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -13,7 +13,7 @@ interface CustomerDetailSheetProps {
 }
 
 export default function CustomerDetailSheet({ customerId, onClose }: CustomerDetailSheetProps) {
-    const { customers, projects, deleteCustomer } = useProjects()
+    const { customers, projects, deleteCustomer, updateCustomer } = useProjects()
     const [isEditOpen, setIsEditOpen] = React.useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
 
@@ -32,6 +32,14 @@ export default function CustomerDetailSheet({ customerId, onClose }: CustomerDet
         if (customerId) {
             deleteCustomer(customerId)
             onClose()
+        }
+    }
+
+    const handleArchive = () => {
+        if (customerId && customer) {
+            updateCustomer(customerId, {
+                status: customer.status === 'Inactive' ? 'Active' : 'Inactive'
+            })
         }
     }
 
@@ -75,6 +83,11 @@ export default function CustomerDetailSheet({ customerId, onClose }: CustomerDet
                             <div>
                                 <h2 className="text-2xl font-bold">{customer.name}</h2>
                                 <p className="text-muted-foreground">{customer.type}</p>
+                                {customer.status === 'Inactive' && (
+                                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400">
+                                        Archived
+                                    </span>
+                                )}
                             </div>
 
                             {/* Action Buttons */}
@@ -84,6 +97,19 @@ export default function CustomerDetailSheet({ customerId, onClose }: CustomerDet
                                     className="px-4 py-2 bg-muted/50 hover:bg-muted rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
                                 >
                                     <Edit className="w-4 h-4" /> Edit Profile
+                                </button>
+                                <button
+                                    onClick={handleArchive}
+                                    className={cn(
+                                        "px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors",
+                                        customer.status === 'Inactive'
+                                            ? "bg-green-500/10 text-green-500 hover:bg-green-500/20"
+                                            : "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20"
+                                    )}
+                                    title={customer.status === 'Inactive' ? "Unarchive Customer" : "Archive Customer"}
+                                >
+                                    <Archive className="w-4 h-4" />
+                                    {customer.status === 'Inactive' ? 'Unarchive' : 'Archive'}
                                 </button>
                                 <button
                                     onClick={() => setShowDeleteConfirm(true)}

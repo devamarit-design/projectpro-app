@@ -6,6 +6,7 @@ import { X, Calendar, Plus, Trash2, ChevronDown, ChevronUp, Image as ImageIcon, 
 import { cn, generateNextDocumentNumber } from "@/lib/utils"
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 import AddProjectDialog from "@/components/projects/add-project-dialog"
+import SearchableCombobox from "@/components/ui/searchable-combobox"
 
 interface AddIncomeDialogProps {
     open: boolean
@@ -328,11 +329,15 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-muted-foreground">{t.income.dialog.fields.project}</label>
-                                <select
-                                    className="w-full bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/50"
+                                <SearchableCombobox
+                                    options={[
+                                        { value: "NEW_PROJECT", label: `➕ ${t.income.dialog.create_project}`, description: "สร้างโปรเจคใหม่" },
+                                        ...filteredProjects
+                                            .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+                                            .map(p => ({ value: p.id, label: p.name, description: p.customer }))
+                                    ]}
                                     value={selectedProject}
-                                    onChange={(e) => {
-                                        const pid = e.target.value
+                                    onChange={(pid) => {
                                         if (pid === "NEW_PROJECT") {
                                             setShowAddProject(true)
                                         } else {
@@ -349,33 +354,33 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                             }
                                         }
                                     }}
-                                >
-                                    <option value="">{t.income.dialog.select_project}</option>
-                                    <option value="NEW_PROJECT" className="bg-primary/10 text-primary font-bold">
-                                        {t.income.dialog.create_project}
-                                    </option>
-                                    {filteredProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                </select>
+                                    placeholder={t.income.dialog.select_project}
+                                    searchPlaceholder="ค้นหาโปรเจค..."
+                                    emptyMessage="ไม่พบโปรเจค"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-muted-foreground">{t.income.dialog.fields.customer}</label>
-                                <select
-                                    className="w-full bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/50"
+                                <SearchableCombobox
+                                    options={[
+                                        { value: "NEW_CUSTOMER", label: `➕ ${t.income.dialog.create_customer}`, description: "สร้างลูกค้าใหม่" },
+                                        ...customers
+                                            .filter(c => c.status !== 'Inactive')
+                                            .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+                                            .map(c => ({ value: c.id, label: c.name, description: c.type }))
+                                    ]}
                                     value={selectedCustomer}
-                                    onChange={(e) => {
-                                        if (e.target.value === "NEW_CUSTOMER") {
+                                    onChange={(cid) => {
+                                        if (cid === "NEW_CUSTOMER") {
                                             setShowAddCustomer(true)
                                         } else {
-                                            setSelectedCustomer(e.target.value)
+                                            setSelectedCustomer(cid)
                                         }
                                     }}
-                                >
-                                    <option value="">{t.income.dialog.select_customer}</option>
-                                    <option value="NEW_CUSTOMER" className="bg-primary/10 text-primary font-bold">
-                                        {t.income.dialog.create_customer}
-                                    </option>
-                                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
+                                    placeholder={t.income.dialog.select_customer}
+                                    searchPlaceholder="ค้นหาลูกค้า..."
+                                    emptyMessage="ไม่พบลูกค้า"
+                                />
                             </div>
                         </div>
                         <div className="space-y-4">
@@ -530,7 +535,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                         ) : (
                             <div className="space-y-6">
                                 {sections.map((section, sIndex) => (
-                                    <div key={section.id} className="border border-white/10 rounded-xl overflow-hidden bg-card/30">
+                                    <div key={section.id || `section-${sIndex}`} className="border border-white/10 rounded-xl overflow-hidden bg-card/30">
                                         <div className="bg-muted/30 p-4 flex items-center justify-between border-b border-white/5">
                                             <div className="flex items-center gap-3 flex-1">
                                                 <div className="relative shrink-0">

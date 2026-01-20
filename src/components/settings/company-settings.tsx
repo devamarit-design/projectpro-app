@@ -1,159 +1,139 @@
 "use client"
 
 import { useSettings } from "@/context/settings-context"
-import { Building2, Mail, Phone, Globe, MapPin, FileText } from "lucide-react"
-
+import { Building2, Mail, Phone, Globe, MapPin, FileText, Edit } from "lucide-react"
+import { useProjects } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
-import { useState, useRef } from "react"
-import { uploadImage } from "@/lib/upload"
-import Link from "next/link"
+import { useState } from "react"
+import EditTeamDialog from "../../app/(dashboard)/team/edit-team-dialog"
+import { hasPermission } from "@/lib/permissions"
+
 export function CompanySettings() {
     const { t } = useTranslation()
-    const { orgProfile, updateOrgProfile } = useSettings()
-    const [isUploading, setIsUploading] = useState(false)
-    const fileInputRef = useRef<HTMLInputElement>(null)
+    const { orgProfile } = useSettings()
+    const { currentTeam, currentUser } = useProjects()
+    const [isEditTeamOpen, setIsEditTeamOpen] = useState(false)
 
-    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
-
-        setIsUploading(true)
-        try {
-            const url = await uploadImage(file, "company/logo")
-            updateOrgProfile({ logo: url })
-        } catch (error) {
-            console.error("Logo upload failed:", error)
-        } finally {
-            setIsUploading(false)
-        }
-    }
+    // Use currentTeam if available for more specific data (like logo), falling back to orgProfile
+    const displayProfile = currentTeam || orgProfile
 
     return (
         <div className="space-y-6">
 
-            <div className="flex items-center gap-4 border-b pb-4">
-                <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="relative group cursor-pointer"
-                >
-                    <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/20 overflow-hidden group-hover:border-primary/50 transition-all">
-                        {orgProfile.logo ? (
-                            <img src={orgProfile.logo} alt="Logo" className="h-full w-full object-contain" />
+            <div className="flex items-center justify-between border-b pb-4">
+                <div className="flex items-center gap-4">
+                    <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/20 overflow-hidden">
+                        {displayProfile.logo ? (
+                            <img src={displayProfile.logo} alt="Logo" className="h-full w-full object-contain" />
                         ) : (
                             <Building2 className="w-8 h-8 text-primary" />
                         )}
-                        {isUploading && (
-                            <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                            </div>
-                        )}
                     </div>
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleLogoUpload}
-                        accept="image/*"
-                        className="hidden"
-                    />
+                    <div>
+                        <h3 className="text-lg font-semibold">{t.settings.company.title}</h3>
+                        <p className="text-sm text-muted-foreground">{t.settings.company.subtitle}</p>
+                    </div>
+                </div>
+
+                {/* Edit Button */}
+                {currentTeam && hasPermission(currentUser, "COMPANY_UPDATE") && (
                     <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                        className="absolute -right-2 -bottom-2 p-1.5 rounded-full bg-primary text-primary-foreground shadow-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
-                        title={t.settings.company.change_logo}
+                        onClick={() => setIsEditTeamOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
                     >
-                        <Building2 className="w-3.5 h-3.5" />
+                        <Edit className="w-4 h-4" />
+                        <span>{t.common.edit}</span>
                     </button>
-                </div>
-                <div>
-                    <h3 className="text-lg font-semibold">{t.settings.company.title}</h3>
-                    <p className="text-sm text-muted-foreground">{t.settings.company.subtitle}</p>
-                </div>
+                )}
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
+                {/* Company Name */}
                 <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-muted-foreground" />
+                    <label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                        <Building2 className="w-4 h-4" />
                         {t.settings.company.fields.name}
                     </label>
-                    <input
-                        type="text"
-                        value={orgProfile.name}
-                        onChange={(e) => updateOrgProfile({ name: e.target.value })}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder={t.settings.company.placeholders.name}
-                    />
+                    <div className="p-3 bg-muted/30 rounded-lg border border-border/50 font-medium">
+                        {displayProfile.name || "-"}
+                    </div>
                 </div>
 
+                {/* Tax ID */}
                 <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-muted-foreground" />
+                    <label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                        <FileText className="w-4 h-4" />
                         {t.settings.company.fields.tax_id}
                     </label>
-                    <input
-                        type="text"
-                        value={orgProfile.taxId}
-                        onChange={(e) => updateOrgProfile({ taxId: e.target.value })}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder={t.settings.company.placeholders.tax_id}
-                    />
+                    <div className="p-3 bg-muted/30 rounded-lg border border-border/50 font-mono text-sm">
+                        {displayProfile.taxId || "-"}
+                    </div>
                 </div>
 
+                {/* Address */}
                 <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-muted-foreground" />
+                    <label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="w-4 h-4" />
                         {t.settings.company.fields.address}
                     </label>
-                    <textarea
-                        value={orgProfile.address}
-                        onChange={(e) => updateOrgProfile({ address: e.target.value })}
-                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder={t.settings.company.placeholders.address}
-                    />
+                    <div className="p-3 bg-muted/30 rounded-lg border border-border/50 min-h-[60px] whitespace-pre-wrap">
+                        {displayProfile.address || "-"}
+                    </div>
                 </div>
 
+                {/* Phone */}
                 <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-muted-foreground" />
+                    <label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                        <Phone className="w-4 h-4" />
                         {t.settings.company.fields.phone}
                     </label>
-                    <input
-                        type="tel"
-                        value={orgProfile.phone}
-                        onChange={(e) => updateOrgProfile({ phone: e.target.value })}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder={t.settings.company.placeholders.phone}
-                    />
+                    <div className="p-3 bg-muted/30 rounded-lg border border-border/50 font-mono text-sm">
+                        {displayProfile.phone || "-"}
+                    </div>
                 </div>
 
+                {/* Email (Note: CompanyProfile might not have email field in some versions, check interface) */}
+                {/* Actually orgProfile usually has generic fields, but let's check what we have. 
+                    CompanyProfile interface: name, address, taxId, phone, logo, paymentInfo, signatureName, description.
+                    It does NOT strictly have email/website in the base type unless it was added.
+                    However, let's keep it if it's there or render fallback.
+                */}
                 <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-muted-foreground" />
+                    <label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                        <Mail className="w-4 h-4" />
                         {t.settings.company.fields.email}
                     </label>
-                    <input
-                        type="email"
-                        value={orgProfile.email}
-                        onChange={(e) => updateOrgProfile({ email: e.target.value })}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder={t.settings.company.placeholders.email}
-                    />
+                    <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
+                        {/* @ts-ignore - Assuming properties might exist or we just don't show if missing */}
+                        {displayProfile.email || "-"}
+                    </div>
                 </div>
 
+                {/* Website */}
                 <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-muted-foreground" />
+                    <label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                        <Globe className="w-4 h-4" />
                         {t.settings.company.fields.website}
                     </label>
-                    <input
-                        type="url"
-                        value={orgProfile.website}
-                        onChange={(e) => updateOrgProfile({ website: e.target.value })}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder={t.settings.company.placeholders.website}
-                    />
+                    <div className="p-3 bg-muted/30 rounded-lg border border-border/50 text-blue-500">
+                        {/* @ts-ignore */}
+                        {displayProfile.website ? (
+                            <a href={displayProfile.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                {displayProfile.website}
+                            </a>
+                        ) : "-"}
+                    </div>
                 </div>
             </div>
+
+            {/* Edit Team Dialog */}
+            {currentTeam && (
+                <EditTeamDialog
+                    isOpen={isEditTeamOpen}
+                    onClose={() => setIsEditTeamOpen(false)}
+                    team={currentTeam}
+                />
+            )}
         </div>
     )
 }

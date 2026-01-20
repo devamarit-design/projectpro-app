@@ -18,11 +18,11 @@ export function NotificationSettings() {
                 <h3 className="text-lg font-semibold">{t.settings.notifications.title}</h3>
                 <div className="bg-muted/30 p-4 rounded-xl border border-white/5 space-y-4">
 
-                    {/* Warning Days */}
+                    {/* Warning Days - Tasks */}
                     <div className="space-y-3">
                         <label className="text-sm font-medium flex items-center gap-2">
                             <Clock className="w-4 h-4 text-primary" />
-                            {t.settings.notifications.warning_days}
+                            {t.notifications?.warning_days_task || "Task Advance Warning (Days)"}
                         </label>
                         <p className="text-xs text-muted-foreground">{t.settings.notifications.warning_desc}</p>
                         <div className="flex items-center gap-4">
@@ -31,12 +31,35 @@ export function NotificationSettings() {
                                 min="1"
                                 max="14"
                                 step="1"
-                                value={notificationSettings.warnDaysBeforeDue}
-                                onChange={(e) => updateNotificationSettings({ warnDaysBeforeDue: parseInt(e.target.value) })}
+                                value={notificationSettings.warnDaysTasks || 3}
+                                onChange={(e) => updateNotificationSettings({ warnDaysTasks: parseInt(e.target.value) })}
                                 className="flex-1 accent-primary h-2 bg-muted rounded-lg appearance-none cursor-pointer"
                             />
                             <div className="w-12 h-10 rounded-lg bg-background border border-white/10 flex items-center justify-center font-bold font-mono">
-                                {notificationSettings.warnDaysBeforeDue}
+                                {notificationSettings.warnDaysTasks || 3}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Warning Days - Expenses */}
+                    <div className="space-y-3 pt-2">
+                        <label className="text-sm font-medium flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-rose-500" />
+                            {t.notifications?.warning_days_expense || "Expense Advance Warning (Days)"}
+                        </label>
+                        <p className="text-xs text-muted-foreground">{t.settings.notifications.warning_desc}</p>
+                        <div className="flex items-center gap-4">
+                            <input
+                                type="range"
+                                min="1"
+                                max="30"
+                                step="1"
+                                value={notificationSettings.warnDaysExpenses || 7}
+                                onChange={(e) => updateNotificationSettings({ warnDaysExpenses: parseInt(e.target.value) })}
+                                className="flex-1 accent-rose-500 h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="w-12 h-10 rounded-lg bg-background border border-white/10 flex items-center justify-center font-bold font-mono">
+                                {notificationSettings.warnDaysExpenses || 7}
                             </div>
                         </div>
                     </div>

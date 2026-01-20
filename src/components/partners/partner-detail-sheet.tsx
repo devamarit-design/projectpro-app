@@ -1,5 +1,5 @@
 import * as React from "react"
-import { X, Phone, MapPin, Star, User, Building, History, CheckSquare, MessageCircle, MoreHorizontal, Mail, Calendar, DollarSign, Wallet, Check, Edit, Trash2 } from "lucide-react"
+import { X, Phone, MapPin, Star, User, Building, History, CheckSquare, MessageCircle, MoreHorizontal, Mail, Calendar, DollarSign, Wallet, Check, Edit, Trash2, Archive } from "lucide-react"
 import { useProjects, User as UserType, Vendor as VendorType, Worker as WorkerType, Expense } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 // Reuse AddPartnerDialog for editing
@@ -12,7 +12,7 @@ interface PartnerDetailSheetProps {
 }
 
 export default function PartnerDetailSheet({ partnerId, type, onClose }: PartnerDetailSheetProps) {
-    const { workers, vendors, expenses, projects, deleteWorker, deleteVendor } = useProjects()
+    const { workers, vendors, expenses, projects, deleteWorker, deleteVendor, updateWorker, updateVendor } = useProjects()
     const [activeTab, setActiveTab] = React.useState<"history" | "tasks">("history")
 
     // Edit State
@@ -67,6 +67,19 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
         onClose()
     }
 
+    // Archive Logic
+    const handleArchive = () => {
+        if (!partnerId || !type || !partner) return
+
+        const newStatus = partner.status === 'Inactive' ? 'Active' : 'Inactive'
+
+        if (type === "Worker") {
+            updateWorker(partnerId, { status: newStatus })
+        } else {
+            updateVendor(partnerId, { status: newStatus })
+        }
+    }
+
     if (!partner) return null
 
     return (
@@ -109,6 +122,11 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                                 <p className="text-muted-foreground">
                                     {type === "Worker" ? (partner as WorkerType).role : (partner as VendorType).category}
                                 </p>
+                                {partner.status === 'Inactive' && (
+                                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400">
+                                        Archived
+                                    </span>
+                                )}
                             </div>
 
                             {/* Action Buttons */}
@@ -118,6 +136,19 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                                     className="px-4 py-2 bg-muted/50 hover:bg-muted rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
                                 >
                                     <Edit className="w-4 h-4" /> Edit Profile
+                                </button>
+                                <button
+                                    onClick={handleArchive}
+                                    className={cn(
+                                        "px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors",
+                                        partner.status === 'Inactive'
+                                            ? "bg-green-500/10 text-green-500 hover:bg-green-500/20"
+                                            : "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20"
+                                    )}
+                                    title={partner.status === 'Inactive' ? "Unarchive Partner" : "Archive Partner"}
+                                >
+                                    <Archive className="w-4 h-4" />
+                                    {partner.status === 'Inactive' ? 'Unarchive' : 'Archive'}
                                 </button>
                                 <button
                                     onClick={() => setShowDeleteConfirm(true)}
@@ -190,7 +221,7 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                                     onClick={() => setActiveTab("history")}
                                     className={cn(
                                         "flex-1 pb-3 text-sm font-bold uppercase tracking-wider border-b-2 transition-colors",
-                                        activeTab === "history" ? "border-primary text-primary" : "border-transparent text-muted-foreground"
+                                        activeTab === "history" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"
                                     )}
                                 >
                                     History
@@ -200,7 +231,7 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                                         onClick={() => setActiveTab("tasks")}
                                         className={cn(
                                             "flex-1 pb-3 text-sm font-bold uppercase tracking-wider border-b-2 transition-colors",
-                                            activeTab === "tasks" ? "border-primary text-primary" : "border-transparent text-muted-foreground"
+                                            activeTab === "tasks" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"
                                         )}
                                     >
                                         Active Tasks

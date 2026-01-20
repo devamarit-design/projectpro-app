@@ -535,50 +535,50 @@ export default function ProjectDetailClient() {
                         {/* EXPENSES TAB CONTENT */}
                         {activeFinancialTab === 'expenses' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                {/* Detailed Expense Breakdown */}
-                                <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-                                    <div className="glass-card p-4 rounded-xl border border-white/5 bg-orange-500/5">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <div className="p-2 rounded-lg bg-orange-500/20 text-orange-500">
-                                                <TrendingDown className="w-4 h-4" />
+                                {/* Detailed Expense Breakdown - Horizontal Scrollable */}
+                                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                                    <div className="glass-card p-4 rounded-xl border border-white/5 bg-orange-500/5 min-w-[140px] flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="p-1.5 rounded-lg bg-orange-500/20 text-orange-500">
+                                                <TrendingDown className="w-3.5 h-3.5" />
                                             </div>
-                                            <p className="text-sm font-bold text-orange-400 uppercase tracking-wider">{t.projects.detail.financials.material}</p>
+                                            <p className="text-xs font-bold text-orange-400 uppercase tracking-wider">{t.projects.detail.financials.material}</p>
                                         </div>
-                                        <p className="text-2xl font-black text-orange-500">
+                                        <p className="text-lg font-black text-orange-500">
                                             ฿{projectExpenses.filter(e => e.category === 'Material').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
                                         </p>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {projectExpenses.filter(e => e.category === 'Material').length} {t.projects.detail.financials.transactions_count}
+                                        <p className="text-[10px] text-muted-foreground mt-1">
+                                            {projectExpenses.filter(e => e.category === 'Material').length} txn
                                         </p>
                                     </div>
 
-                                    <div className="glass-card p-4 rounded-xl border border-white/5 bg-blue-500/5">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <div className="p-2 rounded-lg bg-blue-500/20 text-blue-500">
-                                                <User className="w-4 h-4" />
+                                    <div className="glass-card p-4 rounded-xl border border-white/5 bg-blue-500/5 min-w-[140px] flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-500">
+                                                <User className="w-3.5 h-3.5" />
                                             </div>
-                                            <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">{t.projects.detail.financials.labor}</p>
+                                            <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">{t.projects.detail.financials.labor}</p>
                                         </div>
-                                        <p className="text-2xl font-black text-blue-500">
+                                        <p className="text-lg font-black text-blue-500">
                                             ฿{projectExpenses.filter(e => e.category === 'Labor').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
                                         </p>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {projectExpenses.filter(e => e.category === 'Labor').length} {t.projects.detail.financials.transactions_count}
+                                        <p className="text-[10px] text-muted-foreground mt-1">
+                                            {projectExpenses.filter(e => e.category === 'Labor').length} txn
                                         </p>
                                     </div>
 
-                                    <div className="glass-card p-4 rounded-xl border border-white/5 bg-purple-500/5">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <div className="p-2 rounded-lg bg-purple-500/20 text-purple-500">
-                                                <TrendingDown className="w-4 h-4" />
+                                    <div className="glass-card p-4 rounded-xl border border-white/5 bg-purple-500/5 min-w-[140px] flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-500">
+                                                <TrendingDown className="w-3.5 h-3.5" />
                                             </div>
-                                            <p className="text-sm font-bold text-purple-400 uppercase tracking-wider">{t.projects.detail.financials.subcontract}</p>
+                                            <p className="text-xs font-bold text-purple-400 uppercase tracking-wider">{t.projects.detail.financials.subcontract}</p>
                                         </div>
-                                        <p className="text-2xl font-black text-purple-500">
+                                        <p className="text-lg font-black text-purple-500">
                                             ฿{projectExpenses.filter(e => e.category === 'Sub-contract').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
                                         </p>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {projectExpenses.filter(e => e.category === 'Sub-contract').length} {t.projects.detail.financials.transactions_count}
+                                        <p className="text-[10px] text-muted-foreground mt-1">
+                                            {projectExpenses.filter(e => e.category === 'Sub-contract').length} txn
                                         </p>
                                     </div>
                                 </div>

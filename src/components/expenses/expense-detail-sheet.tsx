@@ -163,7 +163,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                         <div className="flex items-center gap-2">
                             {!isEditing && (
                                 <>
-                                    {(expense.status === 'Paid' || isArchived) && (
+                                    {(expense.status === 'Paid' || expense.status === 'Unpaid' || isArchived) && (
                                         <button
                                             onClick={() => setShowArchiveConfirm(true)}
                                             className={cn("p-2 rounded-full transition-colors", isArchived ? "text-green-500 hover:bg-green-500/10" : "text-amber-500 hover:bg-amber-500/10")}

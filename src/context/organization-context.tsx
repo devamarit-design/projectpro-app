@@ -22,6 +22,8 @@ export interface Organization {
         taxId?: string
         address?: string
         phone?: string
+        email?: string
+        website?: string
     }
     members?: OrgMember[]
 }
@@ -69,68 +71,68 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         return () => unsubscribe()
     }, [])
 
-    useEffect(() => {
-        async function fetchUserOrgs() {
-            if (!firebaseUser) return
+    const fetchUserOrgs = async () => {
+        if (!firebaseUser) return
 
-            try {
-                // 1. Get User Profile to see 'organizations' map/array
-                // For this migration, we might not have it yet.
-                // So we query organizations where 'members' array contains userId (if we structure it that way)
-                // OR we query a subcollection of the user.
+        setIsLoading(true)
+        try {
+            const userRef = doc(db, "users", firebaseUser.uid)
+            const userSnap = await getDoc(userRef)
 
-                // DATA MODEL DECISION:
-                // Let's store `organizations` map in the `users` collection for fast lookups.
-                const userRef = doc(db, "users", firebaseUser.uid)
-                const userSnap = await getDoc(userRef)
+            if (userSnap.exists()) {
+                const userData = userSnap.data()
+                const orgList: Organization[] = []
 
-                if (userSnap.exists()) {
-                    const userData = userSnap.data()
-                    const orgList: Organization[] = []
+                if (userData.organizations && Array.isArray(userData.organizations)) {
+                    const orgPromises = userData.organizations.map(async (orgMeta: any) => {
+                        const orgRef = doc(db, "organizations", orgMeta.orgId)
+                        const orgSnap = await getDoc(orgRef)
+                        if (orgSnap.exists()) {
+                            return { id: orgSnap.id, ...orgSnap.data() } as Organization
+                        }
+                        return null
+                    })
 
-                    // If user has orgs defined
-                    if (userData.organizations && Array.isArray(userData.organizations)) {
-                        const orgPromises = userData.organizations.map(async (orgMeta: any) => {
-                            const orgRef = doc(db, "organizations", orgMeta.orgId)
-                            const orgSnap = await getDoc(orgRef)
-                            if (orgSnap.exists()) {
-                                return { id: orgSnap.id, ...orgSnap.data() } as Organization
-                            }
-                            return null
-                        })
+                    const results = await Promise.all(orgPromises)
+                    results.forEach(org => {
+                        if (org) orgList.push(org)
+                    })
+                }
 
-                        const results = await Promise.all(orgPromises)
-                        // Filter out nulls (deleted orgs)
-                        results.forEach(org => {
-                            if (org) orgList.push(org)
-                        })
+                setUserOrgs(orgList)
 
+                // Update currentOrg if it exists in the new list (refresh content)
+                // or set default if none selected
+                if (orgList.length > 0) {
+                    const savedOrgId = localStorage.getItem("lastOrgId")
+
+                    // If we have a currentOrg, try to find it in the new list to update its data
+                    if (currentOrg) {
+                        const updatedCurrent = orgList.find(o => o.id === currentOrg.id)
+                        if (updatedCurrent) {
+                            setCurrentOrgState(updatedCurrent)
+                        } else {
+                            // Current org was removed? Fallback.
+                            const found = orgList.find(o => o.id === savedOrgId)
+                            setCurrentOrgState(found || orgList[0])
+                        }
                     } else {
-                        // MIGRATION / FALLBACK
-                        // If no orgs found in user profile (Legacy User), 
-                        // maybe we check if they created any legacy team?
-                        // For now, empty. User needs to Create or Join.
-                    }
-
-                    setUserOrgs(orgList)
-
-                    // Set default Org
-                    if (orgList.length > 0) {
-                        // Restore from localStorage or pick first
-                        const savedOrgId = localStorage.getItem("lastOrgId")
+                        // Initial Load logic
                         const found = orgList.find(o => o.id === savedOrgId)
                         setCurrentOrgState(found || orgList[0])
-                    } else {
-                        setCurrentOrgState(null)
                     }
+                } else {
+                    setCurrentOrgState(null)
                 }
-            } catch (error) {
-                console.error("Error fetching orgs:", error)
-            } finally {
-                setIsLoading(false)
             }
+        } catch (error) {
+            console.error("Error fetching orgs:", error)
+        } finally {
+            setIsLoading(false)
         }
+    }
 
+    useEffect(() => {
         if (firebaseUser) {
             fetchUserOrgs()
         }
@@ -302,9 +304,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     }
 
     const refreshOrgs = async () => {
-        // Re-fetch logic similar to useEffect
-        if (!firebaseUser) return
-        // ... (impl simplified for brevity, same as above)
+        await fetchUserOrgs()
     }
 
     return (

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, Plus, Store, Wrench, Truck, Phone, MapPin, Star, MoreHorizontal, User, Filter, Building } from "lucide-react"
+import { Search, Plus, Store, Wrench, Truck, Phone, MapPin, Star, MoreHorizontal, User, Filter, Building, Archive } from "lucide-react"
 import { useProjects } from "@/context/project-context"
 
 import { cn } from "@/lib/utils"
@@ -17,6 +17,7 @@ export default function PartnersPage() {
     const { t } = useTranslation()
     const [activeTab, setActiveTab] = React.useState<FilterType>("All")
     const [searchQuery, setSearchQuery] = React.useState("")
+    const [showArchived, setShowArchived] = React.useState(false)
 
     // Dialog States
     const [isAddOpen, setIsAddOpen] = React.useState(false)
@@ -50,9 +51,14 @@ export default function PartnersPage() {
             const nameSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
             const locationSearch = item.location?.toLowerCase().includes(searchQuery.toLowerCase())
 
-            return nameSearch || locationSearch
+            if (!nameSearch && !locationSearch) return false
+
+            // Archive Filter - hide Inactive unless showArchived is true
+            if (!showArchived && item.status === 'Inactive') return false
+
+            return true
         })
-    }, [workers, vendors, activeTab, searchQuery])
+    }, [workers, vendors, activeTab, searchQuery, showArchived])
 
     const handleOpenAdd = () => {
         // Default type based on tab
@@ -108,14 +114,29 @@ export default function PartnersPage() {
                         )
                     })}
                 </div>
-                <div className="relative w-full sm:w-72">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                        placeholder={t.partners.search_placeholder}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
-                    />
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                            placeholder={t.partners.search_placeholder}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                        />
+                    </div>
+                    <button
+                        onClick={() => setShowArchived(!showArchived)}
+                        className={cn(
+                            "flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap border",
+                            showArchived
+                                ? "bg-gray-500/20 border-gray-500/50 text-gray-400"
+                                : "bg-background/50 border-white/10 text-muted-foreground hover:border-white/20"
+                        )}
+                        title={showArchived ? "Hide Archived" : "Show Archived"}
+                    >
+                        <Archive className="w-4 h-4" />
+                        <span className="hidden sm:inline">{showArchived ? "Archived" : "Archived"}</span>
+                    </button>
                 </div>
             </div>
 

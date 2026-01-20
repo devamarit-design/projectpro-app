@@ -4,6 +4,7 @@ import * as React from "react"
 import { X, Calendar, User, Tag, ChevronDown, CheckCircle2, Layout } from "lucide-react"
 import { useProjects, Priority, TaskStatus } from "@/context/project-context"
 import { cn } from "@/lib/utils"
+import SearchableCombobox from "@/components/ui/searchable-combobox"
 
 interface AddTaskDialogProps {
     isOpen: boolean
@@ -315,20 +316,28 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
 
                             {!isQuickAddProject ? (
                                 <div className="relative">
-                                    <Layout className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
-                                    <select
-                                        value={selectedProjectId}
-                                        onChange={handleProjectChange}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium appearance-none"
-                                        required={!isQuickAddProject}
-                                    >
-                                        <option value="" disabled>{t.tasks.dialog.select_project}</option>
-                                        {projects.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                        <option value="NEW_PROJECT" className="text-primary font-bold bg-primary/10">+ {t.projects.new_project || "Create New Project"}</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                    <Layout className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary z-10" />
+                                    <div className="pl-11">
+                                        <SearchableCombobox
+                                            options={[
+                                                { value: "NEW_PROJECT", label: `+ ${t.projects.new_project || "Create New Project"}`, description: "สร้างโปรเจคใหม่" },
+                                                ...projects
+                                                    .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+                                                    .map(p => ({ value: p.id, label: p.name, description: p.customer }))
+                                            ]}
+                                            value={selectedProjectId}
+                                            onChange={(val) => {
+                                                if (val === "NEW_PROJECT") {
+                                                    setIsQuickAddProject(true)
+                                                } else {
+                                                    handleProjectChange({ target: { value: val } } as any)
+                                                }
+                                            }}
+                                            placeholder={t.tasks.dialog.select_project}
+                                            searchPlaceholder="ค้นหาโปรเจค..."
+                                            className="border-none p-0"
+                                        />
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="relative animate-in fade-in zoom-in duration-200">
@@ -358,18 +367,20 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                             <div className="space-y-2">
                                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Sub-project (Optional)</label>
                                 <div className="relative">
-                                    <Layout className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
-                                    <select
-                                        value={selectedSubProjectId}
-                                        onChange={(e) => setSelectedSubProjectId(e.target.value)}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium appearance-none"
-                                    >
-                                        <option value="">General Task</option>
-                                        {projects.find(p => p.id === selectedProjectId)?.subProjects?.map(sp => (
-                                            <option key={sp.id} value={sp.id}>{sp.name}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                    <Layout className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary z-10" />
+                                    <div className="pl-11">
+                                        <SearchableCombobox
+                                            options={[
+                                                { value: "", label: "General Task", description: "งานทั่วไป" },
+                                                ...(projects.find(p => p.id === selectedProjectId)?.subProjects?.map(sp => ({ value: sp.id, label: sp.name })) || [])
+                                            ]}
+                                            value={selectedSubProjectId}
+                                            onChange={(val) => setSelectedSubProjectId(val)}
+                                            placeholder="General Task"
+                                            searchPlaceholder="Search Sub-projects..."
+                                            className="border-none p-0"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -427,23 +438,24 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t.tasks.dialog.assignee}</label>
                             <div className="relative">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
-                                <select
-                                    value={assignedTo}
-                                    onChange={(e) => setAssignedTo(e.target.value)}
-                                    className="w-full bg-background/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium appearance-none"
-                                >
-                                    <option value="">{t.tasks.dialog.unassigned}</option>
-                                    {[
-                                        ...(currentUser ? [currentUser] : []),
-                                        ...users.filter(u => u.id !== currentUser?.id)
-                                    ].map(user => (
-                                        <option key={user.id} value={user.id}>
-                                            {user.id === currentUser?.id ? `Assign to Me (${user.name})` : user.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary z-10" />
+                                <div className="pl-11">
+                                    <SearchableCombobox
+                                        options={[
+                                            ...(currentUser ? [{ value: currentUser.id, label: `Assign to Me (${currentUser.name})`, description: "มอบหมายให้ฉัน" }] : []),
+                                            ...users
+                                                .filter(u => u.id !== currentUser?.id)
+                                                .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+                                                .map(u => ({ value: u.id, label: u.name, description: u.role }))
+                                        ]}
+                                        value={assignedTo}
+                                        onChange={(val) => setAssignedTo(val)}
+                                        placeholder={t.tasks.dialog.unassigned}
+                                        searchPlaceholder="Search User..."
+                                        className="border-none p-0"
+                                        dropdownPosition="top"
+                                    />
+                                </div>
                             </div>
 
                             {/* AI Suggest Button */}

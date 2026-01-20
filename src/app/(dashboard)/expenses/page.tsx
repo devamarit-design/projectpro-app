@@ -132,6 +132,7 @@ function ExpensesContent() {
     // Calculate Total
     const totalExpense = React.useMemo(() => {
         return filteredExpenses.reduce((acc, curr) => {
+            if (curr.status === 'Unpaid') return acc // Don't count cancelled
             return acc + curr.totalValue
         }, 0)
     }, [filteredExpenses])
@@ -196,7 +197,7 @@ function ExpensesContent() {
                     </h1>
                     <p className="text-muted-foreground mt-1">{t.expenses.subtitle}</p>
                 </div>
-                <div className="relative z-10 flex items-center gap-3">
+                <div className="relative z-20 flex items-center gap-3">
                     <button
                         onClick={() => setIsContractOpen(true)}
                         className="flex items-center gap-2 px-5 py-2.5 bg-muted/50 border border-border text-foreground rounded-xl font-medium shadow-sm hover:bg-muted transition-all"
@@ -228,7 +229,7 @@ function ExpensesContent() {
                         </button>
 
                         {/* Dropdown Menu */}
-                        <div id="add-expense-dropdown" className="hidden absolute right-0 top-full mt-2 w-48 bg-background border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 origin-top-right">
+                        <div id="add-expense-dropdown" className="hidden absolute right-0 top-full mt-2 w-48 bg-background border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 origin-top-right z-50">
                             <button
                                 onClick={handleOpenAdd}
                                 className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"

@@ -389,29 +389,44 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
                                     return <Text key={col.id} style={[style, { fontWeight: 'bold' }]}>{col.label}</Text>
                                 })}
                             </View>
-                            {page.items.map((item: any, index) => (
-                                <View key={index} style={[
-                                    (item.originalIndex + 1) % 2 === 0 ? styles.tableRow : styles.tableRowAlt,
-                                    // Custom row overrides if needed
-                                    isClassic && (item.originalIndex + 1) % 2 !== 0 ? { backgroundColor: '#f9f9f9' } : {},
-                                    isModern && (item.originalIndex + 1) % 2 !== 0 ? { backgroundColor: '#ffffff' } : {}
-                                ]}>
-                                    {visibleColumns.map(col => {
-                                        if (col.id === 'item') return <Text key={col.id} style={styles.colNo}>{item.originalIndex + 1}</Text>
-                                        if (col.id === 'description') return (
-                                            <View key={col.id} style={styles.colDesc}>
-                                                <Text style={{ fontWeight: 'bold' }}>{item.name}</Text>
-                                                {item.description && <Text style={{ color: '#666666', fontSize: 10 }}>{item.description}</Text>}
-                                            </View>
-                                        )
-                                        if (col.id === 'qty') return <Text key={col.id} style={styles.colQty}>{item.quantity}</Text>
-                                        if (col.id === 'unit') return <Text key={col.id} style={styles.colUnit}>{item.unit}</Text>
-                                        if (col.id === 'price') return <Text key={col.id} style={styles.colPrice}>{item.unitPrice ? formatCurrency(item.unitPrice) : '-'}</Text>
-                                        if (col.id === 'total') return <Text key={col.id} style={styles.colTotal}>{item.total ? formatCurrency(item.total) : '-'}</Text>
-                                        return null
-                                    })}
-                                </View>
-                            ))}
+                            {page.items.map((item: any, index) => {
+                                // Zone Section Header
+                                if (item.type === 'header') {
+                                    // Try multiple ways to get the zone name (same as preview)
+                                    const zoneName = item.data?.name || item.name || item.description || 'Zone'
+
+                                    return (
+                                        <View key={`header-${index}`} style={{ backgroundColor: '#f3f4f6', padding: 8, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
+                                            <Text style={{ fontWeight: 'bold', fontSize: 12, color: finalThemeColor }}>{zoneName}</Text>
+                                        </View>
+                                    )
+                                }
+
+                                // Regular Item Row
+                                const itemData = item.data || item
+                                return (
+                                    <View key={index} style={[
+                                        (item.originalIndex + 1) % 2 === 0 ? styles.tableRow : styles.tableRowAlt,
+                                        isClassic && (item.originalIndex + 1) % 2 !== 0 ? { backgroundColor: '#f9f9f9' } : {},
+                                        isModern && (item.originalIndex + 1) % 2 !== 0 ? { backgroundColor: '#ffffff' } : {}
+                                    ]}>
+                                        {visibleColumns.map(col => {
+                                            if (col.id === 'item') return <Text key={col.id} style={styles.colNo}>{item.originalIndex + 1}</Text>
+                                            if (col.id === 'description') return (
+                                                <View key={col.id} style={styles.colDesc}>
+                                                    <Text style={{ fontWeight: 'bold' }}>{itemData.name}</Text>
+                                                    {itemData.description && <Text style={{ color: '#666666', fontSize: 10 }}>{itemData.description}</Text>}
+                                                </View>
+                                            )
+                                            if (col.id === 'qty') return <Text key={col.id} style={styles.colQty}>{itemData.quantity}</Text>
+                                            if (col.id === 'unit') return <Text key={col.id} style={styles.colUnit}>{itemData.unit}</Text>
+                                            if (col.id === 'price') return <Text key={col.id} style={styles.colPrice}>{itemData.unitPrice ? formatCurrency(itemData.unitPrice) : '-'}</Text>
+                                            if (col.id === 'total') return <Text key={col.id} style={styles.colTotal}>{itemData.total ? formatCurrency(itemData.total) : '-'}</Text>
+                                            return null
+                                        })}
+                                    </View>
+                                )
+                            })}
                         </View>
 
                         {/* Totals - only on last page */}
@@ -481,10 +496,9 @@ export async function generatePDF(props: PDFDocumentProps): Promise<void> {
         const blob = await pdf(<PDFDocument {...props} />).toBlob()
         console.log('generatePDF: Blob created', blob.size)
 
-        // Generate a clean filename
-        const docType = props.document.type || 'Document'
+        // Generate a clean filename - use just the document number as requested
         const docNum = props.document.documentNumber || 'Unknown'
-        const filename = `${docType}_${docNum}.pdf`
+        const filename = `${docNum}.pdf`
         console.log('generatePDF: Filename:', filename)
 
         // Create object URL

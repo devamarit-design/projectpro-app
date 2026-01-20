@@ -186,37 +186,40 @@
   }
 }
 
-/* Rainbow Theme Styles */
-:root[data-theme-rainbow] .bg-primary {
+/* Gradient/Rainbow Theme Styles */
+:root[data-theme-gradient] .bg-primary {
   background: var(--primary-gradient) !important;
 }
 
-:root[data-theme-rainbow] .text-primary {
+:root[data-theme-gradient] .text-primary {
   background: var(--primary-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-:root[data-theme-rainbow] .border-primary {
-  border-color: #1dd1a1 !important;
-  /* Mint Green fallback for rounded borders */
+:root[data-theme-gradient] .border-primary {
+  border-color: transparent !important;
+  /* Often better for gradients */
+  position: relative;
+  background: linear-gradient(var(--background), var(--background)) padding-box, var(--primary-gradient) border-box !important;
+  border: 2px solid transparent !important;
 }
 
 
 
-:root[data-theme-rainbow] button.bg-primary,
-:root[data-theme-rainbow] a.bg-primary,
-:root[data-theme-rainbow] [class*="bg-primary"] {
+:root[data-theme-gradient] button.bg-primary,
+:root[data-theme-gradient] a.bg-primary {
   background: var(--primary-gradient) !important;
   color: white !important;
 }
 
-:root[data-theme-rainbow] .ring-primary {
-  --tw-ring-color: #ff9ff3;
+:root[data-theme-gradient] .ring-primary {
+  /* No direct gradient support for ring, fallback to a tint */
+  --tw-ring-color: hsl(var(--primary) / 0.5);
 }
 
-/* Rainbow gradient animation for special elements */
+/* Rainbow animation specific */
 :root[data-theme-rainbow] .animate-rainbow {
   background: linear-gradient(90deg, #ff6b6b, #feca57, #1dd1a1, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b);
   background-size: 200% 100%;

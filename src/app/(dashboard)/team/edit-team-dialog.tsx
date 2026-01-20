@@ -49,6 +49,8 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
                 address: team.address || "",
                 taxId: team.taxId || "",
                 phone: team.phone || "",
+                email: team.email || "",
+                website: team.website || "",
                 logo: team.logo || ""
             })
         }
@@ -183,6 +185,32 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
                                     value={formData.phone || ""}
                                     onChange={handleChange}
                                     className="w-full px-3 py-2.5 rounded-xl border bg-muted/30 focus:bg-background transition-colors outline-none focus:ring-2 focus:ring-primary/50"
+                                />
+                            </div>
+
+                            {/* Email */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium ml-1">{t.settings.company.fields.email}</label>
+                                <input
+                                    name="email"
+                                    type="email"
+                                    value={formData.email || ""}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2.5 rounded-xl border bg-muted/30 focus:bg-background transition-colors outline-none focus:ring-2 focus:ring-primary/50"
+                                    placeholder="contact@company.com"
+                                />
+                            </div>
+
+                            {/* Website */}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium ml-1">{t.settings.company.fields.website}</label>
+                                <input
+                                    name="website"
+                                    type="url"
+                                    value={formData.website || ""}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2.5 rounded-xl border bg-muted/30 focus:bg-background transition-colors outline-none focus:ring-2 focus:ring-primary/50"
+                                    placeholder="https://company.com"
                                 />
                             </div>
                         </div>

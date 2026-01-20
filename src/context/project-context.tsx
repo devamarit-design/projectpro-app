@@ -52,6 +52,8 @@ export interface CompanyProfile {
     paymentInfo?: string
     signatureName?: string
     description?: string // Added description
+    email?: string
+    website?: string
     updatedAt?: string // Timestamp
 }
 
@@ -146,6 +148,9 @@ export interface User {
     display?: string // Display Mode (Compact/Comfortable)
     theme?: string // Theme Preference (Light/Dark/System)
     organizations?: { orgId: string, role: string }[] // New SaaS Structure
+    settings?: {
+        theme?: any // Avoid circular dependency, typed as AppTheme in usage
+    }
     hasOnboarded?: boolean // New flag for onboarding flow
     createdAt?: string // Timestamp
     updatedAt?: string // Timestamp
@@ -785,7 +790,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true) // Added for data loading state
 
     // SaaS Adapter
-    const { currentOrg, userOrgs, setCurrentOrg, isLoading: isOrgLoading, createOrganization } = useOrganization()
+    const { currentOrg, userOrgs, setCurrentOrg, isLoading: isOrgLoading, createOrganization, refreshOrgs } = useOrganization()
 
     const currentTeam: Team | null = React.useMemo(() => {
         if (!currentOrg || !currentUser) return null
@@ -800,6 +805,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             address: currentOrg.settings.address || "",
             taxId: currentOrg.settings.taxId || "",
             phone: currentOrg.settings.phone || "",
+            email: currentOrg.settings.email || "",
+            website: currentOrg.settings.website || "",
             logo: currentOrg.settings.logoUrl,
             description: "",
             paymentInfo: "",
@@ -2085,9 +2092,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
             await updateDoc(orgRef, { ...orgUpdates, updatedAt: new Date().toISOString() })
 
-            // Local state update handled by OrgContext subscription potentially,
-            // or we might need to manually trigger refresh if strictly needed immediately.
-            // For now, rely on Firestore listener if it exists in OrgContext.
+            // Refresh organization data to update local state (currentTeam)
+            await refreshOrgs()
 
         } catch (e) {
             console.error("Error updating company profile", e)

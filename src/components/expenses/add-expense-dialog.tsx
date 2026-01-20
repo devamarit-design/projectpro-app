@@ -9,6 +9,7 @@ import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { uploadWithThumbnail } from "@/lib/upload"
+import SearchableCombobox from "@/components/ui/searchable-combobox"
 
 interface AddExpenseDialogProps {
     isOpen: boolean
@@ -187,7 +188,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         setPayee(data.merchant)
         setDate(data.date)
         setItems(data.items.map(i => ({ ...i, projectId: globalProjectId || defaultProjectId })))
-        setTitle(`Bill from ${data.merchant}`)
+        setTitle(`Bill from ${data.merchant} `)
         // Set receipt image from scan
         if (data.receiptImage) {
             setReceiptImage(data.receiptImage)
@@ -246,7 +247,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             if (receiptFile) {
                 // Determine path based on organization or project
                 // For now, simpler path structure
-                const path = `expenses/${new Date().getFullYear()}`
+                const path = `expenses / ${new Date().getFullYear()} `
                 const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(receiptFile, path)
                 finalReceiptUrl = originalUrl
                 finalThumbnailUrl = thumbnailUrl
@@ -272,7 +273,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                 const expenseData: Parameters<typeof addExpense>[0] = {
                     title: title || payee || "New Expense",
-                    amount: `฿${subtotal.toLocaleString()}`,
+                    amount: `฿${subtotal.toLocaleString()} `,
                     totalValue: subtotal,
                     date,
                     category: items[0]?.category || "Other",
@@ -310,7 +311,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                     const expenseData: Parameters<typeof addExpense>[0] = {
                         title: `${title || payee || "Split Bill"} (${projectName})`,
-                        amount: `฿${projectTotal.toLocaleString()}`,
+                        amount: `฿${projectTotal.toLocaleString()} `,
                         totalValue: projectTotal,
                         date,
                         category: projectItems[0]?.category || "Other",
@@ -519,58 +520,48 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                         {(items[0]?.category === 'Labor') ? t.expenses.dialog.payee_labor : t.expenses.dialog.payee}
                                     </label>
                                     <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                        <select
-                                            value={payee}
-                                            onChange={(e) => {
-                                                const val = e.target.value
-                                                const currentCat = items[0]?.category || "Material"
-
-                                                if (val === 'NEW') {
-                                                    // Determine the type of Quick Add based on Category
-                                                    if (currentCat === 'Labor') {
-                                                        handleSelectChange('NEW', setPayee, 'worker')
-                                                    } else {
-
-                                                        handleSelectChange('NEW', setPayee, 'vendor')
-                                                        // Pre-set the category for the new vendor logic if possible
-                                                        setNewItemSecondary(currentCat)
-                                                    }
-                                                } else {
-                                                    setPayee(val)
-                                                }
-                                            }}
-                                            className="w-full bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
-                                        >
-                                            <option value="">{items[0]?.category === 'Labor' ? t.expenses.dialog.select_person : t.expenses.dialog.select_vendor}</option>
-
-                                            {/* Logic for Options */}
-                                            {items[0]?.category === 'Labor' ? (
-                                                <>
-                                                    {workers.map(w => (
-                                                        <option key={w.id} value={w.name}>{w.name} ({w.role})</option>
-                                                    ))}
-                                                    <option value="NEW" className="font-bold text-primary">{t.expenses.dialog.add_new_person}</option>
-                                                </>
-
-                                            ) : (
-                                                <>
-                                                    {vendors
+                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                                        <div className="pl-9">
+                                            <SearchableCombobox
+                                                options={items[0]?.category === 'Labor' ? [
+                                                    ...workers
+                                                        .filter(w => w.status !== 'Inactive')
+                                                        .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+                                                        .map(w => ({ value: w.name, label: w.name, description: w.role })),
+                                                    { value: "NEW", label: `➕ ${t.expenses.dialog.add_new_person} `, description: "เพิ่มคนงานใหม่" }
+                                                ] : [
+                                                    ...vendors
                                                         .filter(v => {
+                                                            if (v.status === 'Inactive') return false
                                                             const cat = items[0]?.category || "Material"
-                                                            // Filter vendors by matching category if possible, strictly for Sub-contract
                                                             if (cat === 'Sub-contract') return v.category === 'Sub-contract'
                                                             if (cat === 'Material') return v.category === 'Material'
-                                                            return true // Show all for Other
+                                                            return true
                                                         })
-                                                        .map(v => (
-                                                            <option key={v.id} value={v.name}>{v.name} ({v.category})</option>
-                                                        ))
+                                                        .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+                                                        .map(v => ({ value: v.name, label: v.name, description: v.category })),
+                                                    { value: "NEW", label: `➕ ${t.expenses.dialog.add_new_vendor} `, description: "เพิ่มร้านค้า/ผู้รับเหมาใหม่" }
+                                                ]}
+                                                value={payee}
+                                                onChange={(val) => {
+                                                    const currentCat = items[0]?.category || "Material"
+
+                                                    if (val === 'NEW') {
+                                                        if (currentCat === 'Labor') {
+                                                            handleSelectChange('NEW', setPayee, 'worker')
+                                                        } else {
+                                                            handleSelectChange('NEW', setPayee, 'vendor')
+                                                            setNewItemSecondary(currentCat)
+                                                        }
+                                                    } else {
+                                                        setPayee(val)
                                                     }
-                                                    <option value="NEW" className="font-bold text-primary">{t.expenses.dialog.add_new_vendor}</option>
-                                                </>
-                                            )}
-                                        </select>
+                                                }}
+                                                placeholder={items[0]?.category === 'Labor' ? t.expenses.dialog.select_person : t.expenses.dialog.select_vendor}
+                                                searchPlaceholder="ค้นหา..."
+                                                className="border-none p-0"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -602,42 +593,35 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                                 {billType === 'combine' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+
                                         <div className="space-y-1">
                                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.project}</label>
-                                            <div className="relative">
-                                                <select
-                                                    required
-                                                    value={globalProjectId}
-                                                    onChange={(e) => handleSelectChange(e.target.value, setGlobalProjectId, 'project')}
-                                                    className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
-                                                >
-                                                    <option value="">Select Project...</option>
-                                                    {projects.map(p => (
-                                                        <option key={p.id} value={p.id}>{p.name}</option>
-                                                    ))}
-                                                    <option value="NEW" className="font-bold text-primary">+ Add New Project...</option>
-                                                </select>
-                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                                    <Plus className="w-4 h-4 text-muted-foreground" />
-                                                </div>
-                                            </div>
+                                            <SearchableCombobox
+                                                options={[
+                                                    { value: "NEW", label: "+ Add New Project...", description: "สร้างโปรเจคใหม่" },
+                                                    ...projects
+                                                        .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+                                                        .map(p => ({ value: p.id, label: p.name, description: p.customer }))
+                                                ]}
+                                                value={globalProjectId}
+                                                onChange={(val) => handleSelectChange(val, setGlobalProjectId, 'project')}
+                                                placeholder="Select Project..."
+                                                searchPlaceholder="ค้นหาโปรเจค..."
+                                            />
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.task} / Sub-project</label>
-                                            <div className="relative">
-                                                <select
-                                                    value={globalSubProjectId}
-                                                    onChange={(e) => handleSelectChange(e.target.value, setGlobalSubProjectId, 'sub-project', globalProjectId)}
-                                                    disabled={!globalProjectId}
-                                                    className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 appearance-none"
-                                                >
-                                                    <option value="">General Project Expense</option>
-                                                    {projects.find(p => p.id === globalProjectId)?.subProjects?.map(sp => (
-                                                        <option key={sp.id} value={sp.id}>{sp.name}</option>
-                                                    ))}
-                                                    <option value="NEW" className="font-bold text-primary">{t.expenses.dialog.add_new_sub_project}</option>
-                                                </select>
-                                            </div>
+                                            <SearchableCombobox
+                                                options={[
+                                                    { value: "NEW", label: t.expenses.dialog.add_new_sub_project, description: "สร้างงานย่อยใหม่" },
+                                                    ...(projects.find(p => p.id === globalProjectId)?.subProjects?.map(sp => ({ value: sp.id, label: sp.name })) || [])
+                                                ]}
+                                                value={globalSubProjectId}
+                                                onChange={(val) => handleSelectChange(val, setGlobalSubProjectId, 'sub-project', globalProjectId)}
+                                                disabled={!globalProjectId}
+                                                placeholder="General Project Expense"
+                                                searchPlaceholder="ค้นหางานย่อย..."
+                                            />
                                         </div>
                                     </div>
                                 )}
@@ -942,7 +926,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                         <span className="text-[10px] opacity-50 normal-case font-normal">(Optional but recommended)</span>
                                     )}
                                 </span>
-                                <span className={`transition-transform duration-300 ${receiptExpanded ? 'rotate-180 text-primary' : 'opacity-50'}`}>▼</span>
+                                <span className={`transition - transform duration - 300 ${receiptExpanded ? 'rotate-180 text-primary' : 'opacity-50'} `}>▼</span>
                             </button>
 
                             {receiptExpanded && (

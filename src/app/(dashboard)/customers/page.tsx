@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, Plus, User, Building, Phone, MapPin } from "lucide-react"
+import { Search, Plus, User, Building, Phone, MapPin, Archive } from "lucide-react"
 import { useProjects } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
@@ -15,14 +15,22 @@ export default function CustomersPage() {
     const [searchQuery, setSearchQuery] = React.useState("")
     const [isAddOpen, setIsAddOpen] = React.useState(false)
     const [selectedCustomerId, setSelectedCustomerId] = React.useState<string | null>(null)
+    const [showArchived, setShowArchived] = React.useState(false)
 
     // Filter Logic
     const filteredCustomers = React.useMemo(() => {
-        return customers.filter(c =>
-            c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (c.phone && c.phone.includes(searchQuery))
-        )
-    }, [customers, searchQuery])
+        return customers.filter(c => {
+            // Search filter
+            const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (c.phone && c.phone.includes(searchQuery))
+            if (!matchesSearch) return false
+
+            // Archive filter - hide Inactive unless showArchived is true
+            if (!showArchived && c.status === 'Inactive') return false
+
+            return true
+        })
+    }, [customers, searchQuery, showArchived])
 
     // Helper to count projects for a customer
     const getProjectCount = (customerName: string) => {
@@ -50,17 +58,32 @@ export default function CustomersPage() {
                     </button>
                 </div>
 
-                {/* Search */}
-                <div className="relative group">
-                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                        <Search className="w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                {/* Search + Archive Toggle */}
+                <div className="flex items-center gap-2">
+                    <div className="relative group flex-1">
+                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                            <Search className="w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                        </div>
+                        <input
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder={t.customers.search_placeholder}
+                            className="w-full h-11 pl-10 pr-4 rounded-xl bg-muted/30 border border-white/5 focus:border-primary/30 focus:bg-muted/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                        />
                     </div>
-                    <input
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder={t.customers.search_placeholder}
-                        className="w-full h-11 pl-10 pr-4 rounded-xl bg-muted/30 border border-white/5 focus:border-primary/30 focus:bg-muted/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                    />
+                    <button
+                        onClick={() => setShowArchived(!showArchived)}
+                        className={cn(
+                            "flex items-center gap-2 px-3 h-11 rounded-xl text-sm font-medium transition-all whitespace-nowrap border",
+                            showArchived
+                                ? "bg-gray-500/20 border-gray-500/50 text-gray-400"
+                                : "bg-background/50 border-white/10 text-muted-foreground hover:border-white/20"
+                        )}
+                        title={showArchived ? "Hide Archived" : "Show Archived"}
+                    >
+                        <Archive className="w-4 h-4" />
+                        <span className="hidden sm:inline">Archived</span>
+                    </button>
                 </div>
             </div>
 

@@ -10,10 +10,11 @@ import { hasPermission } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 
 import { useProjects } from "@/context/project-context"
+import { ProjectCard } from "@/components/projects/project-card"
 
 export default function ProjectsPage() {
     const { t } = useTranslation()
-    const { projects, archivedProjects, expenses, isLoading, currentUser, archiveProject, unarchiveProject } = useProjects()
+    const { projects, archivedProjects, expenses, tasks, isLoading, currentUser, archiveProject, unarchiveProject } = useProjects()
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -57,6 +58,17 @@ export default function ProjectsPage() {
         })
         return expensesByProject
     }, [expenses])
+
+    // Calculate task count per project
+    const getProjectTaskCount = useMemo(() => {
+        const tasksByProject: Record<string, number> = {}
+        tasks.forEach(task => {
+            if (task.projectId) {
+                tasksByProject[task.projectId] = (tasksByProject[task.projectId] || 0) + 1
+            }
+        })
+        return tasksByProject
+    }, [tasks])
 
     const [sortBy, setSortBy] = useState<'recent' | 'name' | 'start_date' | 'end_date'>('recent')
 
@@ -277,151 +289,34 @@ export default function ProjectsPage() {
                         </div>
                     ))
                 ) : filteredProjects.length > 0 ? (
-                    filteredProjects.map((project, idx) => (
-                        <Link
-                            href={`/projects/detail?id=${project.id}`}
-                            key={project.id}
-                            className={cn(
-                                "group glass-card rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-white/5 block",
-                                project.isArchived && "opacity-60 grayscale bg-gray-500/5 hover:bg-gray-500/10 border-gray-500/20"
+                    filteredProjects.map((project, idx) => {
+                        const budgetValue = parseInt(String(project.budget || "0").replace(/[^0-9]/g, '')) || 0
+                        const projectExpenses = getProjectExpenses[project.id] || 0
+                        const taskCount = getProjectTaskCount[project.id] || 0
+
+                        return (
+                            <div key={project.id} className={cn(
+                                "h-full",
+                                columns === 1 && "h-80",
+                                columns === 2 && "h-72",
+                                columns === 3 && "h-48"
                             )}>
-                            {/* Project Image */}
-                            <div className={cn(
-                                "w-full relative overflow-hidden",
-                                columns === 1 ? "h-40" : "h-24"
-                            )}>
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
-                                <img
-                                    src={project.image || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80"}
-                                    alt={project.name}
-                                    loading={idx < 6 ? "eager" : "lazy"}
-                                    decoding="async"
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                <ProjectCard
+                                    project={{
+                                        id: project.id,
+                                        name: project.name,
+                                        client: project.customer,
+                                        taskCount: taskCount,
+                                        budget: budgetValue,
+                                        expenses: projectExpenses,
+                                        imageUrl: project.image || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80",
+                                        status: project.status === 'In Progress' ? 'active' : project.status === 'Completed' ? 'completed' : 'pending'
+                                    }}
+                                    columns={columns as 1 | 2 | 3}
                                 />
-                                <div className="absolute top-2 right-2 z-20">
-                                    <span className={cn(
-                                        "px-2 py-0.5 rounded-full font-medium border",
-                                        columns === 1 ? "text-xs px-3 py-1" : "text-[10px]",
-                                        project.status === 'Completed' ? 'bg-green-500/20 text-green-500 border-green-500/20' :
-                                            project.status === 'In Progress' ? 'bg-blue-500/20 text-blue-500 border-blue-500/20' :
-                                                'bg-yellow-500/20 text-yellow-500 border-yellow-500/20'
-                                    )}>
-                                        {project.status === 'In Progress' ? t.projects.status.in_progress :
-                                            project.status === 'Completed' ? t.projects.status.completed :
-                                                t.projects.status.on_hold}
-                                    </span>
-                                </div>
-                                <div className={cn(
-                                    "absolute bottom-2 left-2 z-20 text-white",
-                                    columns === 1 ? "bottom-4 left-4" : ""
-                                )}>
-                                    <h3 className={cn(
-                                        "font-bold",
-                                        columns === 1 ? "text-lg" : "text-sm line-clamp-1"
-                                    )}>{project.name}</h3>
-                                    {columns === 1 && (
-                                        <p className="text-white/80 text-sm flex items-center gap-1 mt-1">
-                                            <MapPin className="w-3 h-3" /> {project.location}
-                                        </p>
-                                    )}
-                                </div>
                             </div>
-
-                            {/* Content - Compact for multiple columns */}
-                            <div className={cn(
-                                "space-y-2",
-                                columns === 1 ? "p-4 space-y-4" : "p-2"
-                            )}>
-                                {columns === 1 && (
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-muted-foreground">{t.projects.customer}</span>
-                                        <span className="font-medium">{project.customer}</span>
-                                    </div>
-                                )}
-                                {hasPermission(currentUser, "FINANCIAL_VIEW") && (
-                                    <>
-                                        <div className={cn(
-                                            "flex justify-between items-center",
-                                            columns === 1 ? "text-sm" : "text-xs"
-                                        )}>
-                                            <span className="text-muted-foreground">{t.projects.budget}</span>
-                                            <span className="font-medium">{project.budget}</span>
-                                        </div>
-
-                                        {/* Progress Bar - Only show in single column or show compact version */}
-                                        <div className="space-y-1">
-                                            {(() => {
-                                                const projectExpenses = getProjectExpenses[project.id] || 0
-                                                const budgetValue = parseInt(String(project.budget || "0").replace(/[^0-9]/g, '')) || 1
-                                                const costPercent = Math.min(Math.round((projectExpenses / budgetValue) * 100), 100)
-                                                return (
-                                                    <>
-                                                        {columns === 1 && (
-                                                            <div className="flex justify-between text-xs">
-                                                                <span className="text-muted-foreground">{t.projects.cost_value}</span>
-                                                                <span className="font-medium text-primary">
-                                                                    {costPercent}%
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        <div className={cn(
-                                                            "w-full bg-muted rounded-full overflow-hidden",
-                                                            columns === 1 ? "h-2" : "h-1"
-                                                        )}>
-                                                            <div
-                                                                className="h-full bg-primary rounded-full transition-all duration-500"
-                                                                style={{ width: `${costPercent}%` }}
-                                                            />
-                                                        </div>
-                                                    </>
-                                                )
-                                            })()}
-                                        </div>
-                                    </>
-                                )}
-
-                                {/* Footer - Only show in single column view */}
-                                {columns === 1 && (
-                                    <div className="pt-2 flex justify-between items-center border-t border-border/50">
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <Calendar className="w-3 h-3" />
-                                            <span>{t.projects.due}: {project.endDate}</span>
-                                        </div>
-                                        <button
-                                            onClick={async (e) => {
-                                                e.preventDefault()
-                                                e.stopPropagation()
-                                                if (showArchived) {
-                                                    await handleRestore(project.id)
-                                                } else {
-                                                    setArchiveConfirm({ isOpen: true, projectId: project.id })
-                                                }
-                                            }}
-                                            className={cn(
-                                                "p-2 rounded-full transition-colors group/archive",
-                                                project.status === 'Completed' || showArchived
-                                                    ? "hover:bg-amber-500/10"
-                                                    : "opacity-30 cursor-not-allowed"
-                                            )}
-                                            title={showArchived ? "Restore Project" : (project.status === 'Completed' ? "Archive" : "Only Completed projects can be archived")}
-                                            disabled={!showArchived && project.status !== 'Completed'}
-                                        >
-                                            {showArchived ? (
-                                                <RefreshCcw className="w-4 h-4 text-green-500 group-hover/archive:text-green-600" />
-                                            ) : (
-                                                <Archive className={cn(
-                                                    "w-4 h-4",
-                                                    project.status === 'Completed'
-                                                        ? "text-muted-foreground group-hover/archive:text-amber-500"
-                                                        : "text-muted-foreground"
-                                                )} />
-                                            )}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </Link>
-                    ))
+                        )
+                    })
                 ) : (
                     <div className="col-span-full py-12 text-center text-muted-foreground">
                         <Filter className="w-12 h-12 mx-auto mb-4 opacity-20" />

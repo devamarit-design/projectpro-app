@@ -8,6 +8,7 @@ import { useProjects } from "@/context/project-context"
 import { uploadImage } from "@/lib/upload" // Added import
 import { useRouter } from "next/navigation"
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
+import SearchableCombobox from "@/components/ui/searchable-combobox"
 
 export default function NewProjectPage() {
     const { t } = useTranslation()
@@ -117,28 +118,24 @@ export default function NewProjectPage() {
                         <div className="space-y-2">
                             <label className="text-sm font-medium">{t.projects.customer} <span className="text-red-500">*</span></label>
                             <div className="relative">
-                                <select
-                                    required
-                                    className="w-full h-11 px-4 rounded-xl bg-background/50 border border-input focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none"
-                                    value={formData.customer}
-                                    onChange={(e) => {
-                                        if (e.target.value === "NEW_CUSTOMER") {
-                                            setShowAddCustomer(true)
-                                        } else {
-                                            setFormData({ ...formData, customer: e.target.value })
-                                        }
-                                    }}
-                                >
-                                    <option value="">{t.projects.edit.placeholders.select_customer}</option>
-                                    <option value="NEW_CUSTOMER" className="text-primary font-bold bg-primary/10">
-                                        + {t.income.dialog?.create_customer || "Create New Customer"}
-                                    </option>
-                                    {customers.map((c) => (
-                                        <option key={c.id} value={c.name}>
-                                            {c.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <SearchableCombobox
+                                        options={[
+                                            { value: "NEW_CUSTOMER", label: `+ ${t.income.dialog?.create_customer || "Create New Customer"}`, description: "สร้างลูกค้าใหม่" },
+                                            ...customers.map(c => ({ value: c.name, label: c.name, description: c.type || "Customer" }))
+                                        ]}
+                                        value={formData.customer}
+                                        onChange={(val) => {
+                                            if (val === "NEW_CUSTOMER") {
+                                                setShowAddCustomer(true)
+                                            } else {
+                                                setFormData({ ...formData, customer: val })
+                                            }
+                                        }}
+                                        placeholder={t.projects.edit.placeholders.select_customer}
+                                        searchPlaceholder="ค้นหาลูกค้า..."
+                                    />
+                                </div>
                             </div>
                         </div>
                         <div className="space-y-2">

@@ -5,6 +5,7 @@ import { Plus, CheckCircle, Clock, MoreHorizontal, User, Search, Filter, Hash, E
 import { useProjects, TaskStatus, ProjectTask, Priority } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { useSearchParams, useRouter } from "next/navigation"
 
 // Detailed interface for the UI including project info
 interface DetailedTask extends ProjectTask {
@@ -37,12 +38,23 @@ import { TasksColumn } from "@/components/tasks/tasks-column"
 export default function TasksPage() {
     const { projects, tasks, archivedTasks, updateTask, deleteTask, toggleTask, currentUser, users } = useProjects()
     const { t } = useTranslation()
+    const searchParams = useSearchParams()
+    const router = useRouter()
     const [searchQuery, setSearchQuery] = React.useState("")
     const [projectFilter, setProjectFilter] = React.useState<string>("all")
     const [userFilter, setUserFilter] = React.useState<string>("all")
     const [showArchived, setShowArchived] = React.useState(false)
     const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
     const [showAddTask, setShowAddTask] = React.useState(false)
+
+    // Handle action=new from Quick Add menu
+    React.useEffect(() => {
+        const action = searchParams.get('action')
+        if (action === 'new') {
+            setShowAddTask(true)
+            router.replace('/tasks')
+        }
+    }, [searchParams, router])
 
     // DnD State
     const [activeId, setActiveId] = React.useState<string | null>(null)

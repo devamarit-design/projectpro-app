@@ -217,66 +217,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
         }
     }
 
-    const handleExportImage = async () => {
-        setIsExporting(true)
-        try {
-            const { toPng } = await import('html-to-image')
-            const JSZip = (await import('jszip')).default
-            const { saveAs } = await import('file-saver')
 
-            const images: { name: string, data: string }[] = []
-
-            // Export each page
-            for (let i = 0; i < pages.length; i++) {
-                const pageElement = window.document.getElementById(`preview-page-${i}`)
-                if (pageElement) {
-                    // Clone element to avoid zoom issues
-                    const clone = pageElement.cloneNode(true) as HTMLElement
-                    clone.style.transform = 'none'
-                    clone.style.position = 'absolute'
-                    clone.style.left = '-9999px'
-                    window.document.body.appendChild(clone)
-
-                    try {
-                        const dataUrl = await toPng(clone, {
-                            quality: 1.0,
-                            pixelRatio: 2,
-                            backgroundColor: '#ffffff'
-                        })
-                        images.push({
-                            name: `${document.documentNumber}_Page_${i + 1}.png`,
-                            data: dataUrl
-                        })
-                    } finally {
-                        window.document.body.removeChild(clone)
-                    }
-                }
-            }
-
-            if (images.length === 0) throw new Error("Failed to render pages")
-
-            if (images.length === 1) {
-                const link = window.document.createElement('a')
-                link.href = images[0].data
-                link.download = images[0].name
-                link.click()
-            } else {
-                const zip = new JSZip()
-                images.forEach(img => {
-                    const base64Data = img.data.split(',')[1]
-                    zip.file(img.name, base64Data, { base64: true })
-                })
-                const content = await zip.generateAsync({ type: "blob" })
-                saveAs(content, `${document.documentNumber}.zip`)
-            }
-
-        } catch (error) {
-            console.error('Image Export Error:', error)
-            alert(`Failed to export image: ${error instanceof Error ? error.message : 'Unknown error'}`)
-        } finally {
-            setIsExporting(false)
-        }
-    }
 
     // Print to PDF via browser (supports Thai fonts perfectly)
     const handlePrint = () => {
@@ -419,18 +360,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                             <Printer className="w-5 h-5" />
                         </button>
 
-                        <button
-                            onClick={handleExportImage}
-                            disabled={isExporting}
-                            title="Export Image"
-                            className="p-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-all shadow active:scale-95 disabled:opacity-50 disabled:cursor-wait"
-                        >
-                            {isExporting ? (
-                                <div className="w-5 h-5 border-2 border-gray-400 border-t-gray-700 rounded-full animate-spin" />
-                            ) : (
-                                <ImageIcon className="w-5 h-5" />
-                            )}
-                        </button>
+
                     </div>
                 </div>
             </div>
@@ -553,7 +483,8 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                                 className={cn("py-3 px-2 font-bold",
                                                     col.id === 'item' && "w-12 text-center",
                                                     col.id === 'qty' && "w-20 text-center",
-                                                    (col.id === 'unitPrice' || col.id === 'total' || col.id === 'price') && "w-24 text-right"
+                                                    col.id === 'unit' && "w-16 text-center",
+                                                    (col.id === 'unitPrice' || col.id === 'total' || col.id === 'price') && "w-32 text-right"
                                                 )}
                                                 style={{ color: template !== 'classic' ? themeColor : 'inherit' }}
                                             >
@@ -567,99 +498,110 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                         const realIndex = item.originalIndex
                                         const isBreak = manualBreaks.includes(realIndex)
 
-                                        return (
-                                            <tr
-                                                key={`idx-${i}`}
-                                                className={cn(
-                                                    "relative group/row transition-colors",
-                                                    currentStyle.tableRow,
-                                                    isCutMode && "cursor-pointer hover:bg-orange-50"
-                                                )}
-                                            >
-                                                <td colSpan={5} className="p-0">
-                                                    <div className="w-full flex">
-                                                        {/* Scissor Line Overlay */}
-                                                        {isCutMode && (
-                                                            <div
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation()
-                                                                    togglePageBreak(realIndex)
-                                                                }}
-                                                                className={cn(
-                                                                    "absolute bottom-0 left-0 right-0 h-4 z-50 flex items-center justify-center -mb-2 opacity-0 group-hover/row:opacity-100 transition-opacity cursor-pointer",
-                                                                    isBreak && "opacity-100"
-                                                                )}
-                                                            >
-                                                                <div className="w-full h-0.5 border-t-2 border-dashed border-orange-400 relative flex items-center justify-center">
-                                                                    <div className="bg-orange-100 text-orange-600 rounded-full p-1 border border-orange-400">
-                                                                        <Scissors className="w-3 h-3" />
-                                                                    </div>
-                                                                    {isBreak && <span className="bg-orange-600 text-white text-[10px] px-2 py-0.5 rounded-full ml-2">Page Break</span>}
+                                        // Zone Section Header
+                                        if (item.type === 'header') {
+                                            // Try multiple ways to get the zone name
+                                            const zoneName = item.data?.name || item.name || item.description || 'Zone'
+                                            const coverImage = item.data?.coverImage || item.coverImage
+
+                                            return (
+                                                <tr key={`header-${i}`} className="bg-gray-50/50 print:bg-gray-100">
+                                                    <td colSpan={visibleColumns.length} className="p-0">
+                                                        {coverImage ? (
+                                                            <div className="w-full h-48 overflow-hidden relative print:h-32">
+                                                                <img
+                                                                    src={coverImage}
+                                                                    className="w-full h-full object-cover print:object-cover"
+                                                                    alt={zoneName}
+                                                                />
+                                                                {/* Overlay with name - ensure print visibility */}
+                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-end p-4 z-10 print:bg-gradient-to-t print:from-black/70 print:via-transparent print:to-transparent">
+                                                                    <h3 className="text-xl font-bold text-white drop-shadow-lg print:text-white print:drop-shadow-none">{zoneName}</h3>
                                                                 </div>
                                                             </div>
+                                                        ) : (
+                                                            <div className="py-3 px-4 font-bold text-gray-700 bg-gray-100 border-b border-gray-200 print:bg-gray-200 print:text-black">{zoneName}</div>
                                                         )}
+                                                    </td>
+                                                </tr>
+                                            )
+                                        }
 
-                                                        {/* Content Rendering */}
-                                                        <table className="w-full">
-                                                            <tbody>
-                                                                {(() => {
-                                                                    if (item.type === 'header') {
-                                                                        return (
-                                                                            <tr className="bg-gray-50/50">
-                                                                                <td colSpan={5} className="p-0">
-                                                                                    {item.data.coverImage && (
-                                                                                        <div className="w-full h-48 overflow-hidden relative">
-                                                                                            <img
-                                                                                                src={item.data.coverImage}
-                                                                                                className="w-full h-full object-cover"
-                                                                                                alt={item.data.name}
-                                                                                            />
-                                                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
-                                                                                                <h3 className="text-xl font-bold text-white drop-shadow-md">{item.data.name}</h3>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    )}
-                                                                                    {!item.data.coverImage && (
-                                                                                        <div className="py-2 px-2 font-bold text-gray-700 bg-gray-100">{item.data.name}</div>
-                                                                                    )}
-                                                                                </td>
-                                                                            </tr>
-                                                                        )
-                                                                    } else if (item.type === 'item') {
-                                                                        const data = item.data
-                                                                        return (
-                                                                            <tr>
-                                                                                {visibleColumns.map(col => {
-                                                                                    if (col.id === 'item') return <td key={col.id} className="py-3 px-2 text-center text-gray-400 w-12">{item.originalIndex + 1}</td>
-                                                                                    if (col.id === 'description') return (
-                                                                                        <td key={col.id} className="py-3 px-2 font-medium text-gray-700">
-                                                                                            <div className="flex items-center gap-3">
-                                                                                                {data.image && (
-                                                                                                    <img src={data.image} className="w-10 h-10 object-cover rounded-md border border-gray-200" alt="Product" />
-                                                                                                )}
-                                                                                                <div className="flex flex-col">
-                                                                                                    <span className="font-bold text-gray-800">{data.name}</span>
-                                                                                                    {data.description && <span className="text-gray-500 text-xs font-normal whitespace-pre-wrap">{data.description}</span>}
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </td>
-                                                                                    )
-                                                                                    if (col.id === 'qty') return <td key={col.id} className="py-3 px-2 text-center text-gray-600 w-20">{data.quantity}</td>
-                                                                                    if (col.id === 'unit') return <td key={col.id} className="py-3 px-2 text-center text-gray-600">{data.unit}</td>
-                                                                                    if (col.id === 'price') return <td key={col.id} className="py-3 px-2 text-right text-gray-600 w-24">{data.unitPrice?.toLocaleString()}</td>
-                                                                                    if (col.id === 'total') return <td key={col.id} className="py-3 px-2 text-right font-medium text-gray-800 w-24">{data.total?.toLocaleString()}</td>
-                                                                                    return null
-                                                                                })}
-                                                                            </tr>
-                                                                        )
-                                                                    }
-                                                                })()}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )
+                                        // Regular Item Row
+                                        if (item.type === 'item') {
+                                            const data = item.data
+                                            return (
+                                                <tr
+                                                    key={`item-${i}`}
+                                                    className={cn(
+                                                        "relative group/row transition-colors",
+                                                        currentStyle.tableRow,
+                                                        isCutMode && "cursor-pointer hover:bg-orange-50"
+                                                    )}
+                                                >
+                                                    {visibleColumns.map((col, colIndex) => {
+                                                        const isLastCol = colIndex === visibleColumns.length - 1
+                                                        if (col.id === 'item') {
+                                                            return <td key={col.id} className="py-3 px-2 text-center text-gray-400 w-12">{item.originalIndex + 1}</td>
+                                                        }
+                                                        if (col.id === 'description') {
+                                                            return (
+                                                                <td key={col.id} className="py-3 px-2 font-medium text-gray-700">
+                                                                    <div className="flex items-center gap-3">
+                                                                        {data.image && (
+                                                                            <img src={data.image} className="w-10 h-10 object-cover rounded-md border border-gray-200" alt="Product" />
+                                                                        )}
+                                                                        <div className="flex flex-col">
+                                                                            <span className="font-bold text-gray-800">{data.name}</span>
+                                                                            {data.description && <span className="text-gray-500 text-xs font-normal whitespace-pre-wrap">{data.description}</span>}
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                            )
+                                                        }
+                                                        if (col.id === 'qty') {
+                                                            return <td key={col.id} className="py-3 px-2 text-center text-gray-600 w-20">{data.quantity}</td>
+                                                        }
+                                                        if (col.id === 'unit') {
+                                                            return <td key={col.id} className="py-3 px-2 text-center text-gray-600 w-16">{data.unit}</td>
+                                                        }
+                                                        if (col.id === 'price') {
+                                                            return <td key={col.id} className="py-3 px-2 text-right text-gray-600 w-32">{data.unitPrice?.toLocaleString()}</td>
+                                                        }
+                                                        if (col.id === 'total') {
+                                                            return (
+                                                                <td key={col.id} className="py-3 px-2 text-right font-medium text-gray-800 w-32 relative">
+                                                                    {data.total?.toLocaleString()}
+                                                                    {/* Scissor Line Overlay - placed in last column */}
+                                                                    {isCutMode && isLastCol && (
+                                                                        <div
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation()
+                                                                                togglePageBreak(realIndex)
+                                                                            }}
+                                                                            className={cn(
+                                                                                "absolute bottom-0 left-[-100vw] right-0 w-[200vw] h-4 z-50 flex items-center justify-center -mb-2 opacity-0 group-hover/row:opacity-100 transition-opacity cursor-pointer",
+                                                                                isBreak && "opacity-100"
+                                                                            )}
+                                                                        >
+                                                                            <div className="w-full h-0.5 border-t-2 border-dashed border-orange-400 relative flex items-center justify-center">
+                                                                                <div className="bg-orange-100 text-orange-600 rounded-full p-1 border border-orange-400">
+                                                                                    <Scissors className="w-3 h-3" />
+                                                                                </div>
+                                                                                {isBreak && <span className="bg-orange-600 text-white text-[10px] px-2 py-0.5 rounded-full ml-2">Page Break</span>}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </td>
+                                                            )
+                                                        }
+                                                        return null
+                                                    })}
+                                                </tr>
+                                            )
+                                        }
+
+                                        return null
                                     })}
                                 </tbody>
                             </table>

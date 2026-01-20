@@ -646,7 +646,8 @@ export const en = {
         },
         notifications: {
             title: "Alert Preferences",
-            warning_days: "Advance Warning (Days)",
+            warning_days_task: "Task Advance Warning (Days)",
+            warning_days_expense: "Expense Advance Warning (Days)",
             warning_desc: "How many days in advance should we alert you about due dates?",
             overdue: "Overdue Alerts",
             overdue_desc: "Get notified immediately when items are overdue.",

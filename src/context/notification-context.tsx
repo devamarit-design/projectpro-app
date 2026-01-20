@@ -254,12 +254,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     // Expose requestPushPermission to context if needed, or call it from settings
 
 
+
     // Generate System Notifications
     useEffect(() => {
         if (!projects || !expenses) return
 
         const newNotifications: Notification[] = []
-        const warnDays = notificationSettings?.warnDaysBeforeDue || 3
+        const warnDaysTasks = notificationSettings?.warnDaysTasks ?? 3
+        const warnDaysExpenses = notificationSettings?.warnDaysExpenses ?? 7
 
         // 1. Task Alerts (Due soon or Assigned)
         // Role-based visibility:
@@ -302,7 +304,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                         })
                     }
                     // Due Soon
-                    else if (daysLeft <= warnDays && canSeeDeadline) {
+                    else if (daysLeft <= warnDaysTasks && canSeeDeadline) {
                         newNotifications.push({
                             id: generateAlertId('due', task.id),
                             title: `${t.notifications.alerts.task_due_soon}: ${task.title}`,
@@ -323,33 +325,52 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         // 2. Expense Alerts (Unpaid/Credit)
         expenses.forEach(expense => {
             if (expense.status === 'Pending' || expense.status === 'Credit') {
-                // Assuming expenses have a 'date' which acts as due date or invoice date?
-                // If it's unpaid, let's warn if it's older than X days? Or if it has a specific due date?
-                // The current Expense interface uses 'date' as transaction date. 
-                // Let's assume due date is +30 days from transaction date for this logic, or just warn if it's distinct.
-
-                // Simple logic: Warn if Unpaid expenses are older than 30 days (Overdue) 
-                // OR just simply list them as "Pending Payment"
-
                 const expenseDate = parseISO(expense.date)
-                const age = differenceInDays(new Date(), expenseDate)
 
-                if (age > 30) {
+                // If the expense date is in the future (e.g. Schedule Payment), warn if it's coming up
+                // If the expense date is in the past (e.g. Unpaid Bill), warn if it's "too old" (Overdue) or "pending for a while"
+
+                const daysSince = differenceInDays(new Date(), expenseDate) // Positive if past, Negative if future
+                const daysUntil = -daysSince
+
+                // Future Payment Warning
+                if (daysUntil > 0 && daysUntil <= warnDaysExpenses) {
+                    newNotifications.push({
+                        id: generateAlertId('exp-due', expense.id),
+                        title: `${t.notifications.alerts.unpaid_expense}: ${expense.title}`,
+                        message: format(t.notifications.alerts.expense_pending_msg, { days: Math.abs(daysUntil) }), // Adjust msg slightly? Or reuse pending. 
+                        // Actually 'expense_pending_msg' says "pending for {days} days". 
+                        // Let's use generic "Due in X days" if we had one. 
+                        // For now, let's treat it as pending warning.
+                        type: 'warning',
+                        date: new Date().toISOString(),
+                        read: !!readStatus[generateAlertId('exp-due', expense.id)],
+                        link: `/expenses`,
+                        relatedId: expense.id
+                    })
+                }
+
+                // Past Unpaid Warning (Nagging)
+                // Warn if unpaid for more than 'warnDaysExpenses' days (using it as a grace period / attention threshold)
+                // OR Keep existing 30/15 logic but use warnDaysExpenses as the "Warning" threshold
+
+                else if (daysSince > 30) {
                     newNotifications.push({
                         id: generateAlertId('exp-overdue', expense.id),
                         title: `${t.notifications.alerts.payment_overdue}: ${expense.title}`,
-                        message: format(t.notifications.alerts.expense_overdue_msg, { days: age }),
+                        message: format(t.notifications.alerts.expense_overdue_msg, { days: daysSince }),
                         type: 'error',
                         date: new Date().toISOString(),
                         read: !!readStatus[generateAlertId('exp-overdue', expense.id)],
                         link: `/expenses`,
                         relatedId: expense.id
                     })
-                } else if (age > 15) {
+                }
+                else if (daysSince > warnDaysExpenses) { // User defined threshold for "Hey this is still unpaid"
                     newNotifications.push({
                         id: generateAlertId('exp-warning', expense.id),
                         title: `${t.notifications.alerts.unpaid_expense}: ${expense.title}`,
-                        message: format(t.notifications.alerts.expense_pending_msg, { days: age }),
+                        message: format(t.notifications.alerts.expense_pending_msg, { days: daysSince }),
                         type: 'warning',
                         date: new Date().toISOString(),
                         read: !!readStatus[generateAlertId('exp-warning', expense.id)],
@@ -378,7 +399,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                             link: `/contracts`,
                             relatedId: contract.id
                         })
-                    } else if (daysLeft <= warnDays) {
+                    } else if (daysLeft <= warnDaysTasks) { // Using Task Warning for Contracts (Work Items)
                         newNotifications.push({
                             id: generateAlertId('contract-due', installment.id),
                             title: t.notifications.alerts.installment_due_soon,

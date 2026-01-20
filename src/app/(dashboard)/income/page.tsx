@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useProjects, Customer, Project, IncomeDocument } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import React, { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { hasPermission } from "@/lib/permissions"
 import { AddIncomeDialog } from "@/components/income/add-income-dialog"
 import { IncomeDetailSheet } from "@/components/income/income-detail-sheet"
@@ -34,6 +34,7 @@ export default function IncomePage() {
     const { incomes, customers, projects, workers, users, incomesLoading, currentUser } = useProjects()
     const { t } = useTranslation()
     const router = useRouter() // Import useRouter
+    const searchParams = useSearchParams()
     const [filter, setFilter] = useState("All")
 
     // Access Control
@@ -57,6 +58,15 @@ export default function IncomePage() {
     const [monthFilter, setMonthFilter] = useState("all")
     const [customerFilter, setCustomerFilter] = useState("all")
     const [technicianFilter, setTechnicianFilter] = useState("all")
+
+    // Handle action=new from Quick Add menu
+    useEffect(() => {
+        const action = searchParams.get('action')
+        if (action === 'new') {
+            setShowAddDialog(true)
+            router.replace('/income')
+        }
+    }, [searchParams, router])
 
     // Helper to get names
     const getCustomerName = (id: string) => customers.find((c: Customer) => c.id === id)?.name || "Unknown"

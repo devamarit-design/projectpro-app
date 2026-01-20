@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useProjects, Contract, ContractInstallment } from "@/context/project-context"
 import { Plus, Trash2, FileText, Layout, User, List, AlignLeft, MessageSquare, Save } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
+import SearchableCombobox from "@/components/ui/searchable-combobox"
 
 interface ScopeItem {
     id: string
@@ -178,27 +179,33 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                         <div className="space-y-1">
                             <label className="text-xs text-muted-foreground font-bold uppercase">{t.contracts.dialog.project}</label>
                             <div className="relative">
-                                <Layout className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                                <select
+                                <SearchableCombobox
+                                    options={projects.map(p => ({
+                                        value: p.id,
+                                        label: p.name,
+                                        description: p.customer
+                                    }))}
                                     value={projectId}
-                                    onChange={e => setProjectId(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-muted/50 border border-border rounded-lg"
-                                >
-                                    {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                </select>
+                                    onChange={setProjectId}
+                                    placeholder={t.contracts.dialog.project}
+                                    searchPlaceholder="ค้นหาโปรเจค..."
+                                />
                             </div>
                         </div>
                         <div className="space-y-1">
                             <label className="text-xs text-muted-foreground font-bold uppercase">{t.contracts.dialog.worker}</label>
                             <div className="relative">
-                                <User className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                                <select
+                                <SearchableCombobox
+                                    options={workers.map(w => ({
+                                        value: w.id,
+                                        label: w.name,
+                                        description: w.role
+                                    }))}
                                     value={workerId}
-                                    onChange={e => setWorkerId(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-muted/50 border border-border rounded-lg"
-                                >
-                                    {workers.map(w => <option key={w.id} value={w.id}>{w.name} ({w.role})</option>)}
-                                </select>
+                                    onChange={setWorkerId}
+                                    placeholder={t.contracts.dialog.worker}
+                                    searchPlaceholder="ค้นหาช่าง..."
+                                />
                             </div>
                         </div>
                     </div>
@@ -289,26 +296,32 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                             {installments.map((inst, idx) => (
                                 <div key={idx} className="p-3 bg-muted/20 rounded-lg border border-border/50 space-y-2">
                                     <div className="flex gap-2 items-center">
-                                        <input
-                                            value={inst.description}
-                                            onChange={e => handleInstallmentChange(idx, 'description', e.target.value)}
-                                            placeholder={t.contracts.dialog.installment_desc}
-                                            className="flex-1 px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm"
-                                        />
-                                        <input
-                                            type="number"
-                                            value={inst.amount}
-                                            onChange={e => handleInstallmentChange(idx, 'amount', parseFloat(e.target.value) || 0)}
-                                            placeholder={t.contracts.dialog.installment_amount}
-                                            className="w-28 px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm text-right"
-                                        />
-                                        <input
-                                            type="date"
-                                            value={inst.dueDate}
-                                            onChange={e => handleInstallmentChange(idx, 'dueDate', e.target.value)}
-                                            className="w-36 px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm"
-                                        />
-                                        <button onClick={() => handleRemoveInstallment(idx)} className="p-2 text-muted-foreground hover:text-red-500 transition-colors">
+                                        <div className="flex-[2] min-w-0">
+                                            <input
+                                                value={inst.description}
+                                                onChange={e => handleInstallmentChange(idx, 'description', e.target.value)}
+                                                placeholder={t.contracts.dialog.installment_desc}
+                                                className="w-full px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm"
+                                            />
+                                        </div>
+                                        <div className="flex-1 min-w-[80px]">
+                                            <input
+                                                type="number"
+                                                value={inst.amount}
+                                                onChange={e => handleInstallmentChange(idx, 'amount', parseFloat(e.target.value) || 0)}
+                                                placeholder={t.contracts.dialog.installment_amount}
+                                                className="w-full px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm text-right"
+                                            />
+                                        </div>
+                                        <div className="flex-1 min-w-[130px]">
+                                            <input
+                                                type="date"
+                                                value={inst.dueDate}
+                                                onChange={e => handleInstallmentChange(idx, 'dueDate', e.target.value)}
+                                                className="w-full px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm"
+                                            />
+                                        </div>
+                                        <button onClick={() => handleRemoveInstallment(idx)} className="p-2 text-muted-foreground hover:text-red-500 transition-colors shrink-0">
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
