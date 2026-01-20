@@ -446,8 +446,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             updateTeamSettings,
             notificationSettings,
             updateNotificationSettings,
-            notificationSettings,
-            updateNotificationSettings,
+
             financialTargets,
             updateFinancialTargets,
             moodThresholds,
