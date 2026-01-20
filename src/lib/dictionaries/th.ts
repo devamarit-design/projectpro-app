@@ -332,6 +332,7 @@ export const th = {
             all_months: "ทุกเดือน",
             all_status: "ทุกสถานะ",
             all_projects: "ทุกโครงการ",
+            all_users: "ทุกคน",
             search_placeholder: "ค้นหารายจ่าย..."
         },
         sort: {

@@ -22,7 +22,7 @@ export function NotificationSettings() {
                     <div className="space-y-3">
                         <label className="text-sm font-medium flex items-center gap-2">
                             <Clock className="w-4 h-4 text-primary" />
-                            {t.notifications?.warning_days_task || "Task Advance Warning (Days)"}
+                            {t.settings.notifications?.warning_days_task || "Task Advance Warning (Days)"}
                         </label>
                         <p className="text-xs text-muted-foreground">{t.settings.notifications.warning_desc}</p>
                         <div className="flex items-center gap-4">
@@ -45,7 +45,7 @@ export function NotificationSettings() {
                     <div className="space-y-3 pt-2">
                         <label className="text-sm font-medium flex items-center gap-2">
                             <Clock className="w-4 h-4 text-rose-500" />
-                            {t.notifications?.warning_days_expense || "Expense Advance Warning (Days)"}
+                            {t.settings.notifications?.warning_days_expense || "Expense Advance Warning (Days)"}
                         </label>
                         <p className="text-xs text-muted-foreground">{t.settings.notifications.warning_desc}</p>
                         <div className="flex items-center gap-4">
