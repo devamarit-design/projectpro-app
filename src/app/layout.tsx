@@ -55,7 +55,12 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
-  }
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "HipslothProject",
+  },
 };
 
 export const viewport: Viewport = {
@@ -64,6 +69,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
