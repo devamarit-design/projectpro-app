@@ -5,49 +5,37 @@ import { useProjects } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { Smile, Coffee, Flame, Zap, PartyPopper, Save, RotateCcw } from "lucide-react"
 
-interface MoodThreshold {
-    relaxed: number    // 0 tasks (default)
-    chill: number      // up to X tasks
-    pumped: number     // up to X tasks
-    // Above pumped = intense
-}
-
-const DEFAULT_THRESHOLDS: MoodThreshold = {
-    relaxed: 0,
-    chill: 1,
-    pumped: 2
-}
-
-const STORAGE_KEY = "mood-thresholds"
+import { useSettings, MoodThresholds } from "@/context/settings-context"
 
 export function MoodSettings() {
     const { currentUser } = useProjects()
     const { t } = useTranslation()
-    const [thresholds, setThresholds] = useState<MoodThreshold>(DEFAULT_THRESHOLDS)
+    const { moodThresholds, updateMoodThresholds } = useSettings()
+
+    const [thresholds, setThresholds] = useState<MoodThresholds>(moodThresholds)
     const [saved, setSaved] = useState(false)
+
+    // Sync with context
+    useEffect(() => {
+        setThresholds(moodThresholds)
+    }, [moodThresholds])
 
     const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Owner'
 
-    useEffect(() => {
-        const stored = localStorage.getItem(STORAGE_KEY)
-        if (stored) {
-            try {
-                setThresholds(JSON.parse(stored))
-            } catch {
-                setThresholds(DEFAULT_THRESHOLDS)
-            }
-        }
-    }, [])
-
-    const handleSave = () => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(thresholds))
+    const handleSave = async () => {
+        await updateMoodThresholds(thresholds)
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
     }
 
-    const handleReset = () => {
-        setThresholds(DEFAULT_THRESHOLDS)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_THRESHOLDS))
+    const handleReset = async () => {
+        const defaults = {
+            relaxed: 0,
+            chill: 1,
+            pumped: 2
+        }
+        setThresholds(defaults)
+        await updateMoodThresholds(defaults)
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
     }
@@ -58,7 +46,7 @@ export function MoodSettings() {
 
     const moods = [
         {
-            key: "relaxed" as keyof MoodThreshold,
+            key: "relaxed" as keyof MoodThresholds,
             emoji: "😎",
             label: "Relaxed (สบายใจ)",
             description: "No tasks at all",
@@ -68,7 +56,7 @@ export function MoodSettings() {
             editable: false
         },
         {
-            key: "chill" as keyof MoodThreshold,
+            key: "chill" as keyof MoodThresholds,
             emoji: "☕",
             label: "Chill (ชิวๆ)",
             description: "Up to X task(s)",
@@ -78,7 +66,7 @@ export function MoodSettings() {
             editable: true
         },
         {
-            key: "pumped" as keyof MoodThreshold,
+            key: "pumped" as keyof MoodThresholds,
             emoji: "💪",
             label: "Pumped (ฮึกเหิม)",
             description: "Up to X task(s)",
@@ -129,7 +117,7 @@ export function MoodSettings() {
                                     type="number"
                                     min={index === 1 ? 1 : thresholds.chill + 1}
                                     max={10}
-                                    value={thresholds[mood.key as keyof MoodThreshold]}
+                                    value={thresholds[mood.key as keyof MoodThresholds]}
                                     onChange={(e) => {
                                         const value = parseInt(e.target.value) || 1
                                         setThresholds(prev => ({

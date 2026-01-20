@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { useProjects, CompanyProfile } from "@/context/project-context"
-import { doc, setDoc } from "firebase/firestore"
+import { useOrganization } from "@/context/organization-context" // Add this
+import { doc, setDoc, onSnapshot } from "firebase/firestore" // update import
 import { db } from "@/lib/firebase"
 
 export type DocumentTemplate = {
@@ -43,6 +44,19 @@ export type NotificationSettings = {
     notifyOnOverdue: boolean
 }
 
+export type FinancialTargets = {
+    incomeMin: number
+    incomeMax: number
+    expenseWarning: number
+    expenseLimit: number
+}
+
+export type MoodThresholds = {
+    relaxed: number
+    chill: number
+    pumped: number
+}
+
 type SettingsContextType = {
     // Mapped from ProjectContext
     orgProfile: OrgProfile
@@ -59,6 +73,13 @@ type SettingsContextType = {
 
     notificationSettings: NotificationSettings
     updateNotificationSettings: (data: Partial<NotificationSettings>) => void
+
+    // New persistent settings
+    financialTargets: FinancialTargets
+    updateFinancialTargets: (data: Partial<FinancialTargets>) => Promise<void>
+
+    moodThresholds: MoodThresholds
+    updateMoodThresholds: (data: Partial<MoodThresholds>) => Promise<void>
 
     resetSettings: () => void
     setPreviewTheme: (theme: AppTheme | null) => void
@@ -101,11 +122,25 @@ const defaultNotificationSettings: NotificationSettings = {
     notifyOnOverdue: true
 }
 
+const defaultFinancialTargets: FinancialTargets = {
+    incomeMin: 50000,
+    incomeMax: 150000,
+    expenseWarning: 30000,
+    expenseLimit: 50000
+}
+
+const defaultMoodThresholds: MoodThresholds = {
+    relaxed: 0,
+    chill: 1,
+    pumped: 2
+}
+
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
     // Integration with ProjectContext
     const { companyProfile, updateCompanyProfile, currentUser } = useProjects()
+    const { currentOrg } = useOrganization() // Get current org
 
     const [documentSettings, setDocumentSettings] = useState<Record<string, DocumentTemplate>>({
         quotation: { ...defaultDocumentTemplate, terms: "1. Quotation valid for 30 days.\n2. 50% deposit required to start." },
@@ -116,6 +151,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const [previewTheme, setPreviewTheme] = useState<AppTheme | null>(null)
     const [teamSettings, setTeamSettings] = useState<TeamSettings>(defaultTeamSettings)
     const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(defaultNotificationSettings)
+
+    // Cloud Settings State
+    const [financialTargets, setFinancialTargets] = useState<FinancialTargets>(defaultFinancialTargets)
+    const [moodThresholds, setMoodThresholds] = useState<MoodThresholds>(defaultMoodThresholds)
+
     const [isLoaded, setIsLoaded] = useState(false)
 
     // Load from LocalStorage on mount
@@ -131,13 +171,35 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             }
         }
 
-        // Removed orgProfile load
         load('documentSettings', setDocumentSettings)
         load('appTheme', setAppTheme)
         load('teamSettings', setTeamSettings)
         load('notificationSettings', setNotificationSettings)
+
+        // NO load for financial/mood from local storage anymore
+
         setTimeout(() => setIsLoaded(true), 0)
     }, [])
+
+    // Real-time Sync with Firestore Organization Settings
+    useEffect(() => {
+        if (!currentOrg?.id) return
+
+        const orgRef = doc(db, "organizations", currentOrg.id)
+        const unsubscribe = onSnapshot(orgRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data()
+                if (data.settings?.financialTargets) {
+                    setFinancialTargets(data.settings.financialTargets)
+                }
+                if (data.settings?.moodThresholds) {
+                    setMoodThresholds(data.settings.moodThresholds)
+                }
+            }
+        })
+
+        return () => unsubscribe()
+    }, [currentOrg?.id])
 
     // Save to LocalStorage whenever state changes
     useEffect(() => {
@@ -323,6 +385,43 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setNotificationSettings(prev => ({ ...prev, ...data }))
     }
 
+    const updateFinancialTargets = async (data: Partial<FinancialTargets>) => {
+        if (!currentOrg?.id) return
+        const newTargets = { ...financialTargets, ...data }
+        setFinancialTargets(newTargets) // Optimistic update
+
+        try {
+            const orgRef = doc(db, "organizations", currentOrg.id)
+            await setDoc(orgRef, {
+                settings: {
+                    ...currentOrg.settings, // Preserve other settings
+                    financialTargets: newTargets
+                }
+            }, { merge: true })
+        } catch (error) {
+            console.error("Failed to update financial targets:", error)
+            // Revert? (Optional, kept simple for now)
+        }
+    }
+
+    const updateMoodThresholds = async (data: Partial<MoodThresholds>) => {
+        if (!currentOrg?.id) return
+        const newThresholds = { ...moodThresholds, ...data }
+        setMoodThresholds(newThresholds) // Optimistic update
+
+        try {
+            const orgRef = doc(db, "organizations", currentOrg.id)
+            await setDoc(orgRef, {
+                settings: {
+                    ...currentOrg.settings,
+                    moodThresholds: newThresholds
+                }
+            }, { merge: true })
+        } catch (error) {
+            console.error("Failed to update mood thresholds:", error)
+        }
+    }
+
     const resetSettings = () => {
         // Only reset local settings, not company profile (which is synced)
         setDocumentSettings({
@@ -347,6 +446,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             updateTeamSettings,
             notificationSettings,
             updateNotificationSettings,
+            notificationSettings,
+            updateNotificationSettings,
+            financialTargets,
+            updateFinancialTargets,
+            moodThresholds,
+            updateMoodThresholds,
             resetSettings,
             setPreviewTheme
         }}>

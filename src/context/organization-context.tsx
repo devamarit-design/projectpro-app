@@ -24,6 +24,17 @@ export interface Organization {
         phone?: string
         email?: string
         website?: string
+        financialTargets?: {
+            incomeMin: number
+            incomeMax: number
+            expenseWarning: number
+            expenseLimit: number
+        }
+        moodThresholds?: {
+            relaxed: number
+            chill: number
+            pumped: number
+        }
     }
     members?: OrgMember[]
 }

@@ -5,50 +5,43 @@ import { useProjects } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { Target, TrendingUp, TrendingDown, Save, RotateCcw } from "lucide-react"
 
-interface FinancialTargets {
-    incomeMin: number // Below this is Fighting
-    incomeMax: number // Above this is Wealthy
-    expenseWarning: number // Above this is Tight
-    expenseLimit: number // Above this is Broke
-}
-
-const DEFAULT_TARGETS: FinancialTargets = {
-    incomeMin: 50000,
-    incomeMax: 150000,
-    expenseWarning: 30000,
-    expenseLimit: 50000
-}
-
-const STORAGE_KEY = "financial-targets"
+import { useSettings, FinancialTargets } from "@/context/settings-context"
 
 export function FinancialTargetSettings() {
     const { currentUser } = useProjects()
     const { t } = useTranslation()
-    const [targets, setTargets] = useState<FinancialTargets>(DEFAULT_TARGETS)
+    const { financialTargets, updateFinancialTargets } = useSettings()
+
+    // Local state for immediate input feedback before blur/save if needed, 
+    // but direct context update is also fine if de-bounced. 
+    // For simplicity and to match previous UX, we'll keep local state and sync on mount,
+    // then write back on Save.
+
+    const [targets, setTargets] = useState<FinancialTargets>(financialTargets)
     const [saved, setSaved] = useState(false)
+
+    // Sync from context when it changes (external updates)
+    useEffect(() => {
+        setTargets(financialTargets)
+    }, [financialTargets])
 
     const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Owner'
 
-    useEffect(() => {
-        const stored = localStorage.getItem(STORAGE_KEY)
-        if (stored) {
-            try {
-                setTargets(JSON.parse(stored))
-            } catch {
-                setTargets(DEFAULT_TARGETS)
-            }
-        }
-    }, [])
-
-    const handleSave = () => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(targets))
+    const handleSave = async () => {
+        await updateFinancialTargets(targets)
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
     }
 
-    const handleReset = () => {
-        setTargets(DEFAULT_TARGETS)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_TARGETS))
+    const handleReset = async () => {
+        const defaults = {
+            incomeMin: 50000,
+            incomeMax: 150000,
+            expenseWarning: 30000,
+            expenseLimit: 50000
+        }
+        setTargets(defaults)
+        await updateFinancialTargets(defaults)
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
     }
