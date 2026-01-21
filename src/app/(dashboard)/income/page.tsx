@@ -111,51 +111,54 @@ export default function IncomePage() {
     // Helper: Get available months
     const availableMonths = Array.from(new Set(incomes.map(i => i.date.substring(0, 7)))).sort().reverse()
 
-    const filteredIncomes = incomes.filter((doc: IncomeDocument) => {
-        // 1. Basic Filters
-        const matchesType = filter === "All" || doc.type === filter
-        const matchesSearch = search === "" ||
-            (doc.documentNumber?.toLowerCase() || "").includes(search.toLowerCase()) ||
-            (getCustomerName(doc.customerId) || "").toLowerCase().includes(search.toLowerCase())
+    // Memoize Filtered Incomes
+    const filteredIncomes = React.useMemo(() => {
+        return incomes.filter((doc: IncomeDocument) => {
+            // 1. Basic Filters
+            const matchesType = filter === "All" || doc.type === filter
+            const matchesSearch = search === "" ||
+                (doc.documentNumber?.toLowerCase() || "").includes(search.toLowerCase()) ||
+                (getCustomerName(doc.customerId) || "").toLowerCase().includes(search.toLowerCase())
 
-        // 2. Advanced Filters
-        const matchesProject = projectFilter === "all" || doc.projectId === projectFilter
-        const matchesMonth = monthFilter === "all" || doc.date?.startsWith(monthFilter)
-        const matchesCustomer = customerFilter === "all" || doc.customerId === customerFilter
+            // 2. Advanced Filters
+            const matchesProject = projectFilter === "all" || doc.projectId === projectFilter
+            const matchesMonth = monthFilter === "all" || doc.date?.startsWith(monthFilter)
+            const matchesCustomer = customerFilter === "all" || doc.customerId === customerFilter
 
-        // 3. User Filter (Was Technician, now User)
-        let matchesTechnician = true
-        if (technicianFilter !== "all") {
-            // Find user name
-            const userName = users.find(u => u.id === technicianFilter)?.name
-            if (userName) {
-                // Logic: Does this project have tasks assigned to this user? 
-                const project = projects.find(p => p.id === doc.projectId)
-                if (project) {
-                    matchesTechnician = project.tasks?.some(t => t.assignedTo === userName) || false
+            // 3. User Filter (Was Technician, now User)
+            let matchesTechnician = true
+            if (technicianFilter !== "all") {
+                // Find user name
+                const userName = users.find(u => u.id === technicianFilter)?.name
+                if (userName) {
+                    // Logic: Does this project have tasks assigned to this user? 
+                    const project = projects.find(p => p.id === doc.projectId)
+                    if (project) {
+                        matchesTechnician = project.tasks?.some(t => t.assignedTo === userName) || false
+                    } else {
+                        matchesTechnician = false
+                    }
                 } else {
                     matchesTechnician = false
                 }
-            } else {
-                matchesTechnician = false
             }
-        }
 
-        return matchesType && matchesSearch && matchesProject && matchesMonth && matchesCustomer && matchesTechnician
-    }).sort((a, b) => {
-        if (sortOption === 'created') {
-            const timeA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime()
-            const timeB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime()
-            return timeB - timeA
-        } else if (sortOption === 'date') {
-            return new Date(b.date).getTime() - new Date(a.date).getTime()
-        } else if (sortOption === 'alphabetical') {
-            const nameA = getCustomerName(a.customerId).toLowerCase()
-            const nameB = getCustomerName(b.customerId).toLowerCase()
-            return nameA.localeCompare(nameB)
-        }
-        return 0
-    })
+            return matchesType && matchesSearch && matchesProject && matchesMonth && matchesCustomer && matchesTechnician
+        }).sort((a, b) => {
+            if (sortOption === 'created') {
+                const timeA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime()
+                const timeB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime()
+                return timeB - timeA
+            } else if (sortOption === 'date') {
+                return new Date(b.date).getTime() - new Date(a.date).getTime()
+            } else if (sortOption === 'alphabetical') {
+                const nameA = getCustomerName(a.customerId).toLowerCase()
+                const nameB = getCustomerName(b.customerId).toLowerCase()
+                return nameA.localeCompare(nameB)
+            }
+            return 0
+        })
+    }, [incomes, filter, search, projectFilter, monthFilter, customerFilter, technicianFilter, sortOption, customers, projects, users])
 
 
 

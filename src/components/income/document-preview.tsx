@@ -217,7 +217,30 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
         }
     }
 
+    const handleSaveImage = async () => {
+        setIsExporting(true)
+        try {
+            const { toPng } = await import('html-to-image')
+            const element = window.document.getElementById('preview-page-0')
+            if (!element) throw new Error("Element not found")
 
+            // Wait a moment
+            await new Promise(r => setTimeout(r, 200))
+
+            const dataUrl = await toPng(element, { quality: 0.95, backgroundColor: 'white' })
+
+            const link = window.document.createElement('a')
+            link.download = `${document.documentNumber}.png`
+            link.href = dataUrl
+            link.click()
+
+        } catch (error) {
+            console.error('Image Export Error:', error)
+            alert(`Image Export Failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        } finally {
+            setIsExporting(false)
+        }
+    }
 
     // Print to PDF via browser (supports Thai fonts perfectly)
     const handlePrint = () => {
@@ -351,6 +374,24 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleExport}
+                            disabled={isExporting}
+                            title="Download PDF File"
+                            className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isExporting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Download className="w-5 h-5" />}
+                        </button>
+
+                        <button
+                            onClick={handleSaveImage}
+                            disabled={isExporting}
+                            title="Save as Image (Mobile Friendly)"
+                            className="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all shadow active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isExporting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ImageIcon className="w-5 h-5" />}
+                        </button>
+
                         {/* Print Button (Thai Font Friendly) */}
                         <button
                             onClick={handlePrint}
@@ -359,9 +400,9 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                         >
                             <Printer className="w-5 h-5" />
                         </button>
-
-
                     </div>
+
+
                 </div>
             </div>
 
