@@ -466,7 +466,11 @@ export function CalendarView() {
                             dayGridMonth: {
                                 titleFormat: { year: 'numeric', month: 'long' }
                             },
+                            listMonth: {
+                                listDaySideFormat: false,
+                            },
                         }}
+                        eventOrder="-start"
                         eventContent={(arg) => {
                             const { event, view } = arg
                             const isTimeGrid = view.type.startsWith('timeGrid')

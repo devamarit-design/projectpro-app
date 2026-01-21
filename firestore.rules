@@ -51,10 +51,14 @@ service cloud.firestore {
       allow read: if isAuthenticated(); 
       
       // Only owner can update/delete their profile
-      // Exception: Admins might need to update roles, but for now stick to Owner or strict
       allow create: if isAuthenticated() && isOwner(userId);
       allow update: if isAuthenticated() && isOwner(userId);
       allow delete: if isAuthenticated() && isOwner(userId);
+
+      // Org-scoped user settings
+      match /orgSettings/{orgId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // 2. Organizations

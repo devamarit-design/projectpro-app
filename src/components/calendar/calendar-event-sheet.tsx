@@ -121,7 +121,7 @@ export function CalendarEventSheet({ event, onClose, onEdit }: CalendarEventShee
 
             <div className="relative w-full max-w-md h-full bg-card/95 backdrop-blur-3xl border-l border-white/10 shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-white/10 shrink-0">
+                <div className="flex items-center justify-between p-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] border-b border-white/10 shrink-0">
                     <div className="flex items-center gap-3">
                         <div className={cn("p-3 rounded-xl border",
                             isTask ? "bg-blue-500/10 text-blue-500 border-blue-500/20" : "bg-amber-500/10 text-amber-500 border-amber-500/20"

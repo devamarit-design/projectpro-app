@@ -79,7 +79,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${kanit.variable} font-sans antialiased`} suppressHydrationWarning>
+      <body className={`${kanit.variable} font-sans antialiased overflow-x-hidden`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

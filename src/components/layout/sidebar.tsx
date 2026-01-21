@@ -21,7 +21,8 @@ import {
     Archive,
     Info,
     ShieldCheck,
-    Gamepad2
+    Gamepad2,
+    Megaphone
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -73,6 +74,7 @@ export function Sidebar({ className }: { className?: string }) {
             title: "อื่นๆ", // Other
             items: [
                 { href: "/settings", label: t.common.settings, icon: Settings, permission: "COMPANY_UPDATE" },
+                { href: "/announcements", label: "ประกาศ", icon: Megaphone },
                 { href: "/about", label: t.navbar.about, icon: Info },
                 { href: "/policy", label: t.navbar.policy, icon: ShieldCheck },
                 { href: "/bored", label: t.navbar.bored, icon: Gamepad2 },

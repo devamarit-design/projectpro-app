@@ -7,9 +7,13 @@ import { MobileNav } from "./mobile-nav"
 
 import { useProjects } from "@/context/project-context"
 import { TeamOnboarding } from "@/components/team/team-onboarding"
+import { useScrollRestoration } from "@/hooks/use-scroll-restoration"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
     const { teams } = useProjects()
+
+    // Enable scroll position restoration for iOS back navigation
+    useScrollRestoration("main-scroll-container")
 
     // Guard: Force Team Creation
     if (teams.length === 0) {

@@ -14,6 +14,10 @@ interface UserDashboardProps {
     hideHeader?: boolean
 }
 
+import { DashboardBanner } from "@/components/dashboard/dashboard-banner"
+import { QuickActionsGrid } from "@/components/dashboard/quick-actions-grid"
+import { PromoCards } from "@/components/dashboard/promo-cards"
+
 export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
     const { currentUser, projects, tasks } = useProjects()
 
@@ -23,32 +27,17 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
         <div className="pb-20 space-y-6 pt-6">
             {!hideHeader && (
                 <>
-                    {/* Mood-based Header Card */}
+                    {/* 1. Banner Carousel */}
+                    <DashboardBanner />
+
+                    {/* 2. Quick Actions Grid (Icons) */}
+                    <QuickActionsGrid />
+
+                    {/* 3. Promo / Feature Cards */}
+                    <PromoCards />
+
+                    {/* 4. Mood-based Header (Welcome) */}
                     <DashboardHeader />
-
-                    {/* Weather Card */}
-                    <WeatherCard />
-
-                    {/* Quick Stats */}
-                    <div className="glass-card rounded-2xl p-6 border border-white/5 bg-gradient-to-br from-primary/10 to-transparent">
-                        <h3 className="font-bold text-lg mb-2">{t.dashboard.quick_stats}</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <Link href="/tasks" className="p-3 rounded-xl bg-background/50 backdrop-blur-sm hover:bg-background/80 transition-colors group cursor-pointer">
-                                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold group-hover:text-primary transition-colors">{t.dashboard.pending_tasks}</p>
-                                <p className="text-2xl font-black text-primary">
-                                    {currentUser ?
-                                        tasks.filter(t => (t.assignedTo === currentUser.id || t.assignedTo === currentUser.name) && t.status !== 'Done').length
-                                        : 0}
-                                </p>
-                            </Link>
-                            <Link href="/projects" className="p-3 rounded-xl bg-background/50 backdrop-blur-sm hover:bg-background/80 transition-colors group cursor-pointer">
-                                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold group-hover:text-blue-500 transition-colors">{t.dashboard.active_projects}</p>
-                                <p className="text-2xl font-black text-blue-500">
-                                    {projects.filter(p => p.status === 'In Progress').length}
-                                </p>
-                            </Link>
-                        </div>
-                    </div>
                 </>
             )}
 

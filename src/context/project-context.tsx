@@ -30,6 +30,7 @@ export interface ProjectTask {
     isArchived?: boolean // Archive flag
     createdAt?: string // Timestamp
     updatedAt?: string // Timestamp
+    doneAt?: string // Timestamp when task was marked as Done (for auto-archive)
 }
 
 // Sub-project (โปรเจคย่อย) - Different from Task
@@ -897,7 +898,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                         await deleteDoc(placeholderDoc.ref)
                     }
 
-                    // Create Profile
+                    // Create Profile (inherit organizations from invite placeholder)
                     const newUser: User = {
                         id: firebaseUser.uid,
                         name: firebaseUser.displayName || initialData.name || "User",
@@ -905,6 +906,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                         role: initialData.role || "Member",
                         status: "Active",
                         orgIds: initialData.orgIds || [],
+                        organizations: (initialData as any).organizations || [], // IMPORTANT: Inherit orgs for OrgContext
                         ...(firebaseUser.photoURL ? { avatar: firebaseUser.photoURL } : {})
                     }
                     await setDoc(userRef, newUser)
@@ -1234,10 +1236,30 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
         // 8. Tasks
         const qTasks = query(collection(db, "tasks"), where("orgId", "==", currentTeam.id))
-        const unsubTasks = onSnapshot(qTasks, (snap) => {
+        const unsubTasks = onSnapshot(qTasks, async (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask))
             setTasks(data)
             set(`tasks_${currentTeam.id}`, data)
+
+            // Auto-archive tasks that have been Done for more than 2 days
+            const twoDaysAgo = new Date()
+            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+
+            for (const task of data) {
+                if (
+                    task.status === 'Done' &&
+                    task.doneAt &&
+                    !task.isArchived &&
+                    new Date(task.doneAt) < twoDaysAgo
+                ) {
+                    try {
+                        await updateDoc(doc(db, "tasks", task.id), { isArchived: true })
+                        console.log(`Auto-archived task: ${task.title}`)
+                    } catch (e) {
+                        console.error("Error auto-archiving task:", e)
+                    }
+                }
+            }
         })
 
         // 9. Team Members - Query both orgIds and teamIds for compatibility
@@ -1532,7 +1554,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     const updateTask = async (projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
         try {
-            await updateDoc(doc(db, "tasks", taskId), { ...updates, updatedAt: new Date().toISOString() })
+            // Handle doneAt timestamp for auto-archive feature
+            const currentTask = tasks.find(t => t.id === taskId)
+            const finalUpdates: Partial<ProjectTask> & { updatedAt: string } = {
+                ...updates,
+                updatedAt: new Date().toISOString()
+            }
+
+            // If status is changing to Done, set doneAt
+            if (updates.status === 'Done' && currentTask?.status !== 'Done') {
+                finalUpdates.doneAt = new Date().toISOString()
+            }
+            // If status is changing from Done to something else, clear doneAt
+            else if (updates.status && updates.status !== 'Done' && currentTask?.status === 'Done') {
+                finalUpdates.doneAt = null as any // Clear the field
+            }
+
+            await updateDoc(doc(db, "tasks", taskId), finalUpdates)
 
             if (currentTeam && currentUser) {
                 const t = tasks.find(t => t.id === taskId)
@@ -1905,14 +1943,42 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     // 2. Expenses
     const addExpense = async (expense: Omit<Expense, "id">) => {
-        if (!currentTeam) return
+        if (!currentTeam || !currentUser) {
+            console.error("Missing currentTeam or currentUser", { currentTeam, currentUser })
+            throw new Error("Cannot add expense: Missing organization context or user session.")
+        }
+
         try {
+            // Helper to recursively remove undefined values for Firestore
+            const sanitize = (data: any): any => {
+                if (data === null || data === undefined) return undefined
+                if (Array.isArray(data)) {
+                    return data.map(sanitize).filter(v => v !== undefined)
+                }
+                if (typeof data === 'object' && !(data instanceof Date)) {
+                    const cleaned: any = {}
+                    Object.entries(data).forEach(([key, value]) => {
+                        const sanitized = sanitize(value)
+                        if (sanitized !== undefined) {
+                            cleaned[key] = sanitized
+                        }
+                    })
+                    return Object.keys(cleaned).length > 0 ? cleaned : undefined
+                }
+                return data
+            }
+
+            const sanitizedExpense = sanitize(expense)
+            if (!sanitizedExpense) {
+                throw new Error("Cannot add expense: Expense data is empty after sanitization.")
+            }
+
             // Ensure teamId is attached
             const docRef = await addDoc(collection(db, "expenses"), {
-                ...expense,
+                ...sanitizedExpense,
                 orgId: currentTeam.id,
                 createdAt: new Date().toISOString(),
-                createdBy: currentUser?.id
+                createdBy: currentUser.id
             })
 
             // Notification: Everyone gets notified for every payment

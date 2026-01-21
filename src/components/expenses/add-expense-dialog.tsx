@@ -293,33 +293,54 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                 await addExpense(expenseData)
             } else {
-                // SPLIT MODE: Group items by projectId and create separate expenses
-                const itemsByProject: Record<string, typeof items> = {}
+                // SPLIT MODE: Group items by projectId + subProjectId combination
+                const itemsByProjectSubProject: Record<string, typeof items> = {}
 
                 items.forEach(item => {
+                    // Create unique key combining projectId and subProjectId
                     const pid = item.projectId || "unassigned"
-                    if (!itemsByProject[pid]) {
-                        itemsByProject[pid] = []
+                    const spid = item.subProjectId || "none"
+                    const key = `${pid}__${spid}`
+
+                    if (!itemsByProjectSubProject[key]) {
+                        itemsByProjectSubProject[key] = []
                     }
-                    itemsByProject[pid].push(item)
+                    itemsByProjectSubProject[key].push(item)
                 })
 
-                // Create one expense per project
-                await Promise.all(Object.entries(itemsByProject).map(async ([projectId, projectItems]) => {
-                    const projectTotal = projectItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
-                    const projectName = projects.find(p => p.id === projectId)?.name || "Unassigned"
+                // Create one expense per project+subproject group
+                await Promise.all(Object.entries(itemsByProjectSubProject).map(async ([key, groupItems]) => {
+                    const [projectId, subProjectId] = key.split("__")
+                    const groupTotal = groupItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+
+                    const project = projects.find(p => p.id === projectId)
+                    const projectName = project?.name || "Unassigned"
+                    const subProject = project?.subProjects?.find(sp => sp.id === subProjectId)
+                    const subProjectName = subProject?.name
+
+                    // Build title with project and optionally subproject name
+                    let groupTitle = `${title || payee || "Split Bill"} (${projectName}`
+                    if (subProjectName) {
+                        groupTitle += ` - ${subProjectName}`
+                    }
+                    groupTitle += ")"
 
                     const expenseData: Parameters<typeof addExpense>[0] = {
-                        title: `${title || payee || "Split Bill"} (${projectName})`,
-                        amount: `฿${projectTotal.toLocaleString()} `,
-                        totalValue: projectTotal,
+                        title: groupTitle,
+                        amount: `฿${groupTotal.toLocaleString()} `,
+                        totalValue: groupTotal,
                         date,
-                        category: projectItems[0]?.category || "Other",
-                        items: projectItems,
+                        category: groupItems[0]?.category || "Other",
+                        items: groupItems,
                         payee: payee || "",
                         status,
                         vatIncluded,
                         projectId: projectId === "unassigned" ? "" : projectId
+                    }
+
+                    // Add subProjectId if it exists
+                    if (subProjectId && subProjectId !== "none") {
+                        expenseData.subProjectId = subProjectId
                     }
 
                     if (status === 'Advanced' && paidBy) expenseData.paidBy = paidBy
@@ -333,9 +354,16 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
             toast.success("Expense added successfully")
             onClose()
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error adding expense:", error)
-            toast.error("Failed to add expense. You might not have permission.")
+            const errorMsg = error?.message || "Unknown error"
+            const isPermissionError = errorMsg.toLowerCase().includes("permission")
+
+            toast.error(
+                isPermissionError
+                    ? "Failed to add expense. You might not have permission."
+                    : `Error: ${errorMsg}`
+            )
         } finally {
             setIsUploading(false)
         }

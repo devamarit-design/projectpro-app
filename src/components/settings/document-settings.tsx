@@ -53,17 +53,20 @@ export function DocumentSettings() {
     return (
         <div className="space-y-6">
             {/* Tabs */}
-            <div className="flex border-b">
+            <div className="flex gap-6 border-b border-border/50">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
-                            ? "border-primary text-primary"
-                            : "border-transparent text-muted-foreground hover:text-foreground"
+                        className={`pb-3 text-sm font-medium transition-all relative ${activeTab === tab.id
+                            ? "text-foreground"
+                            : "text-muted-foreground hover:text-foreground"
                             }`}
                     >
                         {tab.label}
+                        {activeTab === tab.id && (
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                        )}
                     </button>
                 ))}
             </div>

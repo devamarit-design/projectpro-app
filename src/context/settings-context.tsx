@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { useProjects, CompanyProfile } from "@/context/project-context"
 import { useOrganization } from "@/context/organization-context" // Add this
-import { doc, setDoc, onSnapshot } from "firebase/firestore" // update import
+import { doc, setDoc, onSnapshot, getDoc } from "firebase/firestore" // update import
 import { db } from "@/lib/firebase"
 
 export type DocumentTemplate = {
@@ -57,6 +57,27 @@ export type MoodThresholds = {
     pumped: number
 }
 
+export type Banner = {
+    id: string
+    url: string
+    title?: string
+    description?: string
+    buttonText?: string
+    active: boolean
+    order: number
+    buttonLink?: string
+}
+
+export type Notice = {
+    id: string
+    content: string
+    startDate: string
+    endDate: string
+    createdBy: string
+    createdAt: string
+    type?: 'info' | 'warning' | 'success'
+}
+
 type SettingsContextType = {
     // Mapped from ProjectContext
     orgProfile: OrgProfile
@@ -80,6 +101,12 @@ type SettingsContextType = {
 
     moodThresholds: MoodThresholds
     updateMoodThresholds: (data: Partial<MoodThresholds>) => Promise<void>
+
+    banners: Banner[]
+    updateBanners: (banners: Banner[]) => Promise<void>
+
+    notices: Notice[]
+    updateNotices: (notices: Notice[]) => Promise<void>
 
     resetSettings: () => void
     setPreviewTheme: (theme: AppTheme | null) => void
@@ -135,6 +162,60 @@ const defaultMoodThresholds: MoodThresholds = {
     pumped: 2
 }
 
+// Default banners (Curated for App Introduction)
+const defaultBanners: Banner[] = [
+    {
+        id: "default-1",
+        title: "Welcome to ProjectPro",
+        description: "Your all-in-one platform for construction management. Slide to learn more.",
+        active: true,
+        order: 0,
+        url: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80", // Modern Office/Dashboard
+        buttonText: "Get Started",
+        buttonLink: "/projects"
+    },
+    {
+        id: "default-2",
+        title: "Master Project Control",
+        description: "Track progress, manage timelines, and organize blueprints in one place.",
+        active: true,
+        order: 1,
+        url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80", // Architecture/Blueprints
+        buttonText: "View Projects",
+        buttonLink: "/projects"
+    },
+    {
+        id: "default-3",
+        title: "Smart Financial Tracking",
+        description: "Scan receipts with AI, split bills, and monitor project budgets in real-time.",
+        active: true,
+        order: 2,
+        url: "https://images.unsplash.com/photo-1554224155-9726b551e7a5?auto=format&fit=crop&w=1200&q=80", // Finance/Calculator
+        buttonText: "Manage Finances",
+        buttonLink: "/expenses"
+    },
+    {
+        id: "default-4",
+        title: "Collaborate Anywhere",
+        description: "Connect your entire team. Assign tasks and chat directly within the app.",
+        active: true,
+        order: 3,
+        url: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80", // Team Collaboration
+        buttonText: "Invite Team",
+        buttonLink: "/settings/team"
+    },
+    {
+        id: "default-5",
+        title: "Data-Driven Decisions",
+        description: "Gain insights with powerful analytics and automated reports.",
+        active: true,
+        order: 4,
+        url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80", // Analytics/Charts
+        buttonText: "View Reports",
+        buttonLink: "/financial-report"
+    }
+]
+
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
@@ -155,10 +236,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     // Cloud Settings State
     const [financialTargets, setFinancialTargets] = useState<FinancialTargets>(defaultFinancialTargets)
     const [moodThresholds, setMoodThresholds] = useState<MoodThresholds>(defaultMoodThresholds)
+    const [banners, setBanners] = useState<Banner[]>(defaultBanners)
+    const [notices, setNotices] = useState<Notice[]>([])
 
     const [isLoaded, setIsLoaded] = useState(false)
 
-    // Load from LocalStorage on mount
+    // Load from LocalStorage on mount (Global defaults/legacy)
     useEffect(() => {
         const load = <T,>(key: string, setter: (value: T) => void) => {
             const saved = localStorage.getItem(`hipslothproject_settings_${key}`)
@@ -172,14 +255,74 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         }
 
         load('documentSettings', setDocumentSettings)
-        load('appTheme', setAppTheme)
         load('teamSettings', setTeamSettings)
         load('notificationSettings', setNotificationSettings)
 
-        // NO load for financial/mood from local storage anymore
+        // Load org-scoped theme FIRST if lastOrgId exists, otherwise fallback to global
+        const lastOrgId = localStorage.getItem('lastOrgId')
+        if (lastOrgId) {
+            const orgTheme = localStorage.getItem(`hipslothproject_settings_${lastOrgId}_appTheme`)
+            if (orgTheme) {
+                try {
+                    setAppTheme(JSON.parse(orgTheme))
+                } catch (e) {
+                    console.error('Failed to parse org theme from local storage', e)
+                    load('appTheme', setAppTheme) // Fallback to global
+                }
+            } else {
+                load('appTheme', setAppTheme) // No org theme, use global
+            }
+        } else {
+            load('appTheme', setAppTheme) // No org selected, use global
+        }
 
         setTimeout(() => setIsLoaded(true), 0)
     }, [])
+
+
+    // Load/Sync Org-Scoped Theme
+    useEffect(() => {
+        if (!isLoaded) return
+        if (!currentOrg?.id || !currentUser?.id) return
+
+        // 1. Try Local Storage first (fastest)
+        const savedOrgTheme = localStorage.getItem(`hipslothproject_settings_${currentOrg.id}_appTheme`)
+        if (savedOrgTheme) {
+            try {
+                setAppTheme(JSON.parse(savedOrgTheme))
+            } catch (e) {
+                console.error("Failed to parse org theme from local storage", e)
+            }
+        }
+
+        // 2. Fetch from Firestore (Source of Truth) - with graceful fallback
+        const fetchOrgSettings = async () => {
+            try {
+                const orgSettingsRef = doc(db, "users", currentUser.id, "orgSettings", currentOrg.id)
+                const snap = await getDoc(orgSettingsRef)
+                if (snap.exists() && snap.data().theme) {
+                    const theme = snap.data().theme
+                    setAppTheme(theme)
+                    // Sync to local storage
+                    localStorage.setItem(`hipslothproject_settings_${currentOrg.id}_appTheme`, JSON.stringify(theme))
+                } else if (currentUser.settings?.theme) {
+                    // Fallback to global user theme if org-specific doesn't exist
+                    setAppTheme(currentUser.settings.theme)
+                }
+            } catch (error: any) {
+                // Gracefully handle permission errors - use local storage or default theme
+                console.warn("Org settings fetch failed (may need firestore rules deployment):", error?.code || error)
+                // If local storage was already loaded above, this is fine.
+                // Otherwise, fall back to global user theme or default
+                if (!savedOrgTheme && currentUser.settings?.theme) {
+                    setAppTheme(currentUser.settings.theme)
+                }
+            }
+        }
+
+        fetchOrgSettings()
+    }, [currentOrg?.id, currentUser?.id, isLoaded])
+
 
     // Real-time Sync with Firestore Organization Settings
     useEffect(() => {
@@ -189,12 +332,40 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         const unsubscribe = onSnapshot(orgRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data()
+
+                // Income/Expense Targets
                 if (data.settings?.financialTargets) {
                     setFinancialTargets(data.settings.financialTargets)
+                } else {
+                    setFinancialTargets(defaultFinancialTargets)
                 }
+
+                // AI/Mood Thresholds
                 if (data.settings?.moodThresholds) {
                     setMoodThresholds(data.settings.moodThresholds)
+                } else {
+                    setMoodThresholds(defaultMoodThresholds)
                 }
+
+                // Marketing Banners
+                if (data.settings?.banners && data.settings.banners.length > 0) {
+                    setBanners(data.settings.banners)
+                } else {
+                    setBanners(defaultBanners)
+                }
+
+                // Organization Notices
+                if (data.settings?.notices) {
+                    setNotices(data.settings.notices)
+                } else {
+                    setNotices([])
+                }
+            } else {
+                // Document not found? Revert to defaults
+                setFinancialTargets(defaultFinancialTargets)
+                setMoodThresholds(defaultMoodThresholds)
+                setBanners(defaultBanners)
+                setNotices([])
             }
         })
 
@@ -209,7 +380,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (!isLoaded) return
-        localStorage.setItem('hipslothproject_settings_appTheme', JSON.stringify(appTheme))
+        if (currentOrg?.id) {
+            localStorage.setItem(`hipslothproject_settings_${currentOrg.id}_appTheme`, JSON.stringify(appTheme))
+        } else {
+            localStorage.setItem('hipslothproject_settings_appTheme', JSON.stringify(appTheme))
+        }
 
         const activeTheme = previewTheme || appTheme
 
@@ -326,7 +501,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 document.documentElement.classList.remove('dark')
             }
         }
-    }, [appTheme, previewTheme, isLoaded])
+    }, [appTheme, previewTheme, isLoaded, currentOrg?.id])
 
     useEffect(() => {
         if (!isLoaded) return
@@ -355,27 +530,37 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         const newTheme = { ...appTheme, ...data }
         setAppTheme(newTheme)
 
+        // Persist to Local Storage immediately
+        if (currentOrg?.id) {
+            localStorage.setItem(`hipslothproject_settings_${currentOrg.id}_appTheme`, JSON.stringify(newTheme))
+        }
+
         // Persist to Firestore if user is logged in
         if (currentUser) {
             try {
-                const userRef = doc(db, "users", currentUser.id)
-                await setDoc(userRef, {
-                    settings: {
-                        theme: newTheme
-                    }
-                }, { merge: true })
+                // Save to Org-Scoped settings if in an org
+                if (currentOrg?.id) {
+                    const orgSettingsRef = doc(db, "users", currentUser.id, "orgSettings", currentOrg.id)
+                    await setDoc(orgSettingsRef, {
+                        theme: newTheme,
+                        updatedAt: new Date().toISOString()
+                    }, { merge: true })
+                } else {
+                    // Save to Global settings as fallback/base
+                    const userRef = doc(db, "users", currentUser.id)
+                    await setDoc(userRef, {
+                        settings: {
+                            theme: newTheme
+                        }
+                    }, { merge: true })
+                }
             } catch (error) {
                 console.error("Failed to save theme settings:", error)
             }
         }
     }
 
-    // Load theme from user profile on login
-    useEffect(() => {
-        if (currentUser?.settings?.theme) {
-            setAppTheme(prev => ({ ...prev, ...currentUser.settings?.theme }))
-        }
-    }, [currentUser])
+    // Initial theme load from user profile is now handled by the org-scoped sync effect
 
     const updateTeamSettings = (data: Partial<TeamSettings>) => {
         setTeamSettings(prev => ({ ...prev, ...data }))
@@ -387,6 +572,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     const updateFinancialTargets = async (data: Partial<FinancialTargets>) => {
         if (!currentOrg?.id) return
+        if (currentUser?.role !== 'Owner' && currentUser?.role !== 'Admin') return
         const newTargets = { ...financialTargets, ...data }
         setFinancialTargets(newTargets) // Optimistic update
 
@@ -406,6 +592,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     const updateMoodThresholds = async (data: Partial<MoodThresholds>) => {
         if (!currentOrg?.id) return
+        if (currentUser?.role !== 'Owner' && currentUser?.role !== 'Admin') return
         const newThresholds = { ...moodThresholds, ...data }
         setMoodThresholds(newThresholds) // Optimistic update
 
@@ -419,6 +606,44 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             }, { merge: true })
         } catch (error) {
             console.error("Failed to update mood thresholds:", error)
+        }
+    }
+
+    const updateBanners = async (newBanners: Banner[]) => {
+        if (!currentOrg?.id) return
+        if (currentUser?.role !== 'Owner' && currentUser?.role !== 'Admin') return
+        setBanners(newBanners) // Optimistic update
+
+        try {
+            const orgRef = doc(db, "organizations", currentOrg.id)
+            await setDoc(orgRef, {
+                settings: {
+                    ...currentOrg.settings,
+                    banners: newBanners
+                }
+            }, { merge: true })
+        } catch (error) {
+            console.error("Failed to update banners:", error)
+        }
+    }
+
+    const updateNotices = async (newNotices: Notice[]) => {
+        if (!currentOrg?.id) return
+        // Allow Accountant and above to manage notices
+        const allowedRoles = ['Owner', 'Admin', 'Manager', 'Accountant']
+        if (!currentUser?.role || !allowedRoles.includes(currentUser.role)) return
+        setNotices(newNotices) // Optimistic update
+
+        try {
+            const orgRef = doc(db, "organizations", currentOrg.id)
+            await setDoc(orgRef, {
+                settings: {
+                    ...currentOrg.settings,
+                    notices: newNotices
+                }
+            }, { merge: true })
+        } catch (error) {
+            console.error("Failed to update notices:", error)
         }
     }
 
@@ -451,6 +676,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             updateFinancialTargets,
             moodThresholds,
             updateMoodThresholds,
+            banners,
+            updateBanners,
+            notices,
+            updateNotices,
             resetSettings,
             setPreviewTheme
         }}>

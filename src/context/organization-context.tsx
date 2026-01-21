@@ -309,9 +309,9 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         localStorage.setItem("lastOrgId", org.id)
         setCurrentOrgState(org)
 
-        // NO RELOAD: ProjectContext handles switching teams via useEffect cleanup and re-subscription.
-        // Reloading caused infinite loops and memory crashes.
-        // window.location.reload() 
+        // RELOAD: Force a full app refresh to ensure all contexts (Settings, Projects, etc.)
+        // are completely re-initialized with the new organization's data.
+        window.location.reload()
     }
 
     const refreshOrgs = async () => {
