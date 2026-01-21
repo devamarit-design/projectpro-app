@@ -777,7 +777,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-3">
                                     <button
                                         type="button"
-                                        onClick={() => !receiptFile && document.getElementById('receipt-upload')?.click()}
+                                        onClick={() => setReceiptExpanded(!receiptExpanded)}
                                         className="w-full flex items-center justify-between gap-3 group"
                                     >
                                         <div className="flex items-center gap-3 text-zinc-400 group-hover:text-white transition-colors">
@@ -796,7 +796,6 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                 <X
                                                     className="w-4 h-4 text-zinc-500 hover:text-red-500 transition-colors"
                                                     onClick={(e) => {
-                                                        e.stopPropagation()
                                                         setReceiptFile(null)
                                                         setReceiptImage(null)
                                                     }}
@@ -807,30 +806,60 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                 <Upload className="w-4 h-4" />
                                             </div>
                                         )}
+                                        <span className={`transition-transform duration-300 ml-auto ${receiptExpanded ? 'rotate-180 text-primary' : 'opacity-50 text-muted-foreground'}`}>▼</span>
                                     </button>
 
-                                    <input
-                                        id="receipt-upload"
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={handleImageUpload}
-                                    />
-                                </div>
-
-                                {/* Totals */}
-                                <div className="flex justify-end gap-8 text-sm">
-                                    {vatIncluded && (
-                                        <div className="text-muted-foreground text-right">
-                                            <p>{t.expenses.dialog.subtotal}: ฿{(subtotal - vatAmount).toLocaleString()}</p>
-                                            <p>{t.expenses.dialog.vat}: ฿{vatAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                                    {/* Expanded Inline Preview */}
+                                    {receiptExpanded && (
+                                        <div className="mt-3 animate-in fade-in slide-in-from-top-2">
+                                            {receiptImage ? (
+                                                <div className="relative rounded-xl overflow-hidden border border-white/10 group aspect-video bg-black/40">
+                                                    <img src={receiptImage} alt="Receipt Preview" className="w-full h-full object-contain" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            removeImage()
+                                                        }}
+                                                        className="absolute top-2 right-2 p-2 bg-black/60 text-white rounded-full hover:bg-red-500/80 transition-colors"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/10 rounded-xl hover:bg-white/5 hover:border-primary/50 transition-all cursor-pointer group">
+                                                    <div className="flex flex-col items-center justify-center pt-4 pb-5">
+                                                        <div className="p-3 rounded-full bg-white/5 group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-2">
+                                                            <Upload className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground group-hover:text-foreground font-medium">{t.expenses.dialog.upload_hint}</p>
+                                                    </div>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={handleImageUpload}
+                                                    />
+                                                </label>
+                                            )}
                                         </div>
                                     )}
-                                    <div className="text-right">
-                                        <p className="text-muted-foreground font-bold tracking-wider">{t.expenses.dialog.grand_total}</p>
-                                        <p className="text-2xl font-black text-primary">฿{subtotal.toLocaleString()}</p>
+
+                                    {/* Totals */}
+                                    <div className="flex justify-end gap-8 text-sm">
+                                        {vatIncluded && (
+                                            <div className="text-muted-foreground text-right">
+                                                <p>{t.expenses.dialog.subtotal}: ฿{(subtotal - vatAmount).toLocaleString()}</p>
+                                                <p>{t.expenses.dialog.vat}: ฿{vatAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                                            </div>
+                                        )}
+                                        <div className="text-right">
+                                            <p className="text-muted-foreground font-bold tracking-wider">{t.expenses.dialog.grand_total}</p>
+                                            <p className="text-2xl font-black text-primary">฿{subtotal.toLocaleString()}</p>
+                                        </div>
                                     </div>
                                 </div>
+
                             </div>
 
                             <div className="h-px bg-white/10" />
@@ -901,61 +930,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                         </div>
 
-                        {/* Image Upload Section - Collapsible */}
-                        <div className="space-y-2 p-6 pt-2">
-                            <button
-                                type="button"
-                                onClick={() => setReceiptExpanded(!receiptExpanded)}
-                                className={cn(
-                                    "w-full flex items-center justify-between text-xs font-bold uppercase tracking-wider transition-all p-3 rounded-xl border border-dashed",
-                                    receiptExpanded
-                                        ? "bg-primary/5 border-primary/20 text-primary"
-                                        : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10 hover:text-foreground"
-                                )}
-                            >
-                                <span className="flex items-center gap-2">
-                                    <div className={cn("p-1.5 rounded-lg", receiptExpanded ? "bg-primary/10" : "bg-white/10")}>
-                                        <Camera className="w-4 h-4" />
-                                    </div>
-                                    <span>{t.expenses.dialog.receipt_image}</span>
-                                    {receiptImage ? (
-                                        <span className="flex items-center gap-1 text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded text-[10px]">
-                                            <CheckCircle2 className="w-3 h-3" /> Uploaded
-                                        </span>
-                                    ) : (
-                                        <span className="text-[10px] opacity-50 normal-case font-normal">(Optional but recommended)</span>
-                                    )}
-                                </span>
-                                <span className={`transition - transform duration - 300 ${receiptExpanded ? 'rotate-180 text-primary' : 'opacity-50'} `}>▼</span>
-                            </button>
 
-                            {receiptExpanded && (
-                                <>
-                                    {receiptImage ? (
-                                        <div className="relative rounded-xl overflow-hidden border border-white/10 group aspect-video bg-black/40 mt-2">
-                                            <img src={receiptImage} alt="Receipt Preview" className="w-full h-full object-contain" />
-                                            <button
-                                                type="button"
-                                                onClick={removeImage}
-                                                className="absolute top-2 right-2 p-2 bg-black/60 text-white rounded-full hover:bg-red-500/80 transition-colors opacity-0 group-hover:opacity-100"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/10 rounded-xl hover:bg-white/5 hover:border-primary/50 transition-all cursor-pointer group mt-2">
-                                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                                <div className="p-3 rounded-full bg-white/5 group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-2">
-                                                    <Upload className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
-                                                </div>
-                                                <p className="text-sm text-muted-foreground group-hover:text-foreground font-medium">{t.expenses.dialog.upload_hint}</p>
-                                            </div>
-                                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                                        </label>
-                                    )}
-                                </>
-                            )}
-                        </div>
 
                         {/* Footer Actions */}
                         <div className="p-6 border-t border-white/10 bg-background/20 backdrop-blur-md shrink-0">

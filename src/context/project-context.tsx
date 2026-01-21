@@ -927,7 +927,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 // But we can log success or handle specific post-redirect logic if needed
             } catch (error: any) {
                 console.error("Redirect login failed", error)
-                // Optional: Set a global error state if you have one, or just log
+                if (error.code === 'auth/unauthorized-domain') {
+                    console.error("This domain is not authorized in the Firebase Console.")
+                }
             }
         }
         handleRedirect()
@@ -1318,6 +1320,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         try {
             await addDoc(collection(db, "projects"), {
                 ...project,
+                orgId: currentTeam.id,
                 createdAt: new Date().toISOString()
             })
 

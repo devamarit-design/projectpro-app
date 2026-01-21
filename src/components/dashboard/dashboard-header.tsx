@@ -2,41 +2,17 @@
 
 import { useProjects } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
+import { useSettings } from "@/context/settings-context"
 import { Download, Sun, Moon, Sparkles, Coffee, Flame, Zap, PartyPopper } from "lucide-react"
-import { useState, useEffect } from "react"
 
 interface DashboardHeaderProps {
     onDownload?: () => void
 }
 
-interface MoodThreshold {
-    relaxed: number
-    chill: number
-    pumped: number
-}
-
-const DEFAULT_THRESHOLDS: MoodThreshold = {
-    relaxed: 0,
-    chill: 1,
-    pumped: 2
-}
-
 export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
     const { currentUser, tasks } = useProjects()
+    const { moodThresholds } = useSettings()
     const { t } = useTranslation()
-    const [thresholds, setThresholds] = useState<MoodThreshold>(DEFAULT_THRESHOLDS)
-
-    // Load thresholds from localStorage
-    useEffect(() => {
-        const stored = localStorage.getItem("mood-thresholds")
-        if (stored) {
-            try {
-                setThresholds(JSON.parse(stored))
-            } catch {
-                setThresholds(DEFAULT_THRESHOLDS)
-            }
-        }
-    }, [])
 
     // Count pending tasks (not done) assigned to user
     const pendingTasksCount = tasks.filter(task =>
@@ -76,7 +52,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                 accentColor: "text-emerald-200",
                 particleColor: "bg-emerald-300"
             }
-        } else if (pendingTasksCount <= thresholds.chill) {
+        } else if (pendingTasksCount <= moodThresholds.chill) {
             return {
                 gradient: "from-sky-400 via-blue-300 to-indigo-300",
                 emoji: "☕",
@@ -85,7 +61,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                 accentColor: "text-sky-200",
                 particleColor: "bg-sky-300"
             }
-        } else if (pendingTasksCount <= thresholds.pumped) {
+        } else if (pendingTasksCount <= moodThresholds.pumped) {
             return {
                 gradient: "from-amber-400 via-orange-300 to-yellow-300",
                 emoji: "💪",
