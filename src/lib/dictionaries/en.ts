@@ -800,7 +800,40 @@ export const en = {
             current_rating: "Current Rating",
             initial_rating: "Initial Rating",
             save: "Save Partner",
-            update: "Update Partner"
+            update: "Update Partner",
+            cancel: "Cancel"
+        },
+        invitations: {
+            title: "Invite Members",
+            tabs: {
+                link: "Copy Link",
+                email: "Send Email"
+            },
+            link_label: "Invite Link",
+            copy: "Copy",
+            copied: "Copied",
+            or_share_code: "Or share code",
+            org_id_label: "Organization ID (Code)",
+            email_label: "Email Address",
+            email_placeholder: "colleague@example.com",
+            send_invite: "Send Invite",
+            sent_via_mail: "Sent via Mail App",
+            email_hint: "This will open your default email client with a pre-filled invitation.",
+            success_placeholder: "Placeholder created for {email}",
+        },
+        join_org: {
+            title: "Join Organization",
+            subtitle: "Enter the invite code shared with you by your organization admin.",
+            invite_code: "Invite Code",
+            placeholder: "Paste invite code here",
+            join_btn: "Join Organization",
+            joining: "Joining...",
+            back_to_create: "Back to Create",
+            success_title: "Successfully Joined!",
+            success_msg: "Welcome to the team. Redirecting you to the dashboard...",
+            preview_title: "You are invited to join",
+            members_count: "{count} members",
+            sign_in_required: "Sign in to join this organization",
         },
         add_project: {
             title: "Quick Add Project",

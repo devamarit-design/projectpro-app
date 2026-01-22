@@ -135,7 +135,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     useEffect(() => {
         if (!currentTeam) return
 
-        // Simple query without orderBy to avoid composite index requirement
+        // Simple query for notifications within the organization
         const q = query(
             collection(db, "notifications"),
             where("orgId", "==", currentTeam.id),
@@ -151,7 +151,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             manualNotifs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
             setRealtimeNotifications(manualNotifs)
         }, (error) => {
-            console.warn("Notification query error:", error.message)
+            console.warn("Notification sync error:", error.message)
             setRealtimeNotifications([])
         })
 

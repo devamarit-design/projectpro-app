@@ -60,6 +60,9 @@ export function SnakeGame({ showTitle = true }: { showTitle?: boolean }) {
                 ...doc.data()
             } as LeaderboardEntry))
             setLeaderboard(entries)
+        }, (error) => {
+            console.warn("Snake leaderboard sync error:", error)
+            setLeaderboard([])
         })
 
         return () => unsubscribe()

@@ -896,58 +896,63 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // Auth State Listener
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                const userRef = doc(db, "users", firebaseUser.uid)
-                const userSnap = await getDoc(userRef)
+            try {
+                if (firebaseUser) {
+                    const userRef = doc(db, "users", firebaseUser.uid)
+                    const userSnap = await getDoc(userRef)
 
-                if (userSnap.exists()) {
-                    const userData = userSnap.data() as User & { organizations?: { orgId: string; role: string }[] }
-                    setCurrentUser({ ...userData, id: firebaseUser.uid } as User)
+                    if (userSnap.exists()) {
+                        const userData = userSnap.data() as User & { organizations?: { orgId: string; role: string }[] }
+                        setCurrentUser({ ...userData, id: firebaseUser.uid } as User)
 
-                    // SYNC: Ensure orgIds is in sync with organizations (for legacy data)
-                    if (userData.organizations && userData.organizations.length > 0) {
-                        const orgIds = userData.organizations.map(o => o.orgId)
-                        const currentTeamIds = userData.orgIds || []
-                        const missingTeamIds = orgIds.filter(id => !currentTeamIds.includes(id))
+                        // SYNC: Ensure orgIds is in sync with organizations (for legacy data)
+                        if (userData.organizations && userData.organizations.length > 0) {
+                            const orgIds = userData.organizations.map(o => o.orgId)
+                            const currentTeamIds = userData.orgIds || []
+                            const missingTeamIds = orgIds.filter(id => !currentTeamIds.includes(id))
 
-                        if (missingTeamIds.length > 0) {
-                            // Background sync - update orgIds to include all org IDs
-                            const updatedTeamIds = Array.from(new Set([...currentTeamIds, ...orgIds]))
-                            setDoc(userRef, { orgIds: updatedTeamIds }, { merge: true })
-                                .catch(err => console.warn("Failed to sync orgIds:", err))
+                            if (missingTeamIds.length > 0) {
+                                // Background sync - update orgIds to include all org IDs
+                                const updatedTeamIds = Array.from(new Set([...currentTeamIds, ...orgIds]))
+                                setDoc(userRef, { orgIds: updatedTeamIds }, { merge: true })
+                                    .catch(err => console.warn("Failed to sync orgIds:", err))
+                            }
                         }
+                    } else {
+                        // New User - Check for Placeholder (Invite)
+                        const q = query(collection(db, "users"), where("email", "==", firebaseUser.email))
+                        const snapshot = await getDocs(q)
+
+                        let initialData: Partial<User> = {}
+                        if (!snapshot.empty) {
+                            const placeholderDoc = snapshot.docs[0]
+                            initialData = placeholderDoc.data() as User
+                            // Delete placeholder
+                            await deleteDoc(placeholderDoc.ref)
+                        }
+
+                        // Create Profile (inherit organizations from invite placeholder)
+                        const newUser: User = {
+                            id: firebaseUser.uid,
+                            name: firebaseUser.displayName || initialData.name || "User",
+                            email: firebaseUser.email || "",
+                            role: initialData.role || "Member",
+                            status: "Active",
+                            orgIds: initialData.orgIds || [],
+                            organizations: (initialData as any).organizations || [],
+                            ...(firebaseUser.photoURL ? { avatar: firebaseUser.photoURL } : {})
+                        }
+                        await setDoc(userRef, newUser)
+                        setCurrentUser(newUser)
                     }
                 } else {
-                    // New User - Check for Placeholder (Invite)
-                    const q = query(collection(db, "users"), where("email", "==", firebaseUser.email))
-                    const snapshot = await getDocs(q)
-
-                    let initialData: Partial<User> = {}
-                    if (!snapshot.empty) {
-                        const placeholderDoc = snapshot.docs[0]
-                        initialData = placeholderDoc.data() as User
-                        // Delete placeholder
-                        await deleteDoc(placeholderDoc.ref)
-                    }
-
-                    // Create Profile (inherit organizations from invite placeholder)
-                    const newUser: User = {
-                        id: firebaseUser.uid,
-                        name: firebaseUser.displayName || initialData.name || "User",
-                        email: firebaseUser.email || "",
-                        role: initialData.role || "Member",
-                        status: "Active",
-                        orgIds: initialData.orgIds || [],
-                        organizations: (initialData as any).organizations || [], // IMPORTANT: Inherit orgs for OrgContext
-                        ...(firebaseUser.photoURL ? { avatar: firebaseUser.photoURL } : {})
-                    }
-                    await setDoc(userRef, newUser)
-                    setCurrentUser(newUser)
+                    setCurrentUser(null)
                 }
-            } else {
-                setCurrentUser(null)
+            } catch (error) {
+                console.error("Auth state processing failed:", error)
+            } finally {
+                setIsAuthLoading(false)
             }
-            setIsAuthLoading(false)
         })
         return () => unsubscribe()
     }, [])
@@ -967,16 +972,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     console.log("Logged in via redirect", result.user.email)
                 }
             } catch (error: any) {
-                console.error("Redirect login failed", error)
-                if (error.code === 'auth/unauthorized-domain') {
-                    console.error("This domain is not authorized in the Firebase Console.")
-                }
+                console.warn("Redirect login non-fatal error:", error)
+                // This is often just "no redirect result found", so we don't treat it as a crash
             } finally {
                 setIsRedirecting(false)
             }
         }
         handleRedirect()
-    }, [])
+    }, [getEnvironment])
 
 
 
@@ -1240,6 +1243,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             setProjects(data)
             set(`projects_${currentTeam.id}`, data)
             setIsLoading(false)
+        }, (error) => {
+            console.error("Project sync error:", error)
+            setIsLoading(false) // Clear loading state even on error to prevent stuck UI
         })
 
         // 2. Expenses
@@ -1248,7 +1254,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
             setExpenses(data)
             set(`expenses_${currentTeam.id}`, data)
-        })
+        }, (error) => console.error("Expense sync error:", error))
 
         // 3. Workers
         const qWorkers = query(collection(db, "workers"), where("orgId", "==", currentTeam.id))
@@ -1256,7 +1262,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Worker))
             setWorkers(data)
             set(`workers_${currentTeam.id}`, data)
-        })
+        }, (error) => console.error("Worker sync error:", error))
 
         // 4. Vendors
         const qVendors = query(collection(db, "vendors"), where("orgId", "==", currentTeam.id))
@@ -1264,7 +1270,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Vendor))
             setVendors(data)
             set(`vendors_${currentTeam.id}`, data)
-        })
+        }, (error) => console.error("Vendor sync error:", error))
 
         // 5. Customers
         const qCustomers = query(collection(db, "customers"), where("orgId", "==", currentTeam.id))
@@ -1272,7 +1278,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer))
             setCustomers(data)
             set(`customers_${currentTeam.id}`, data)
-        })
+        }, (error) => console.error("Customer sync error:", error))
 
         // 6. Incomes
         const qIncomes = query(collection(db, "incomes"), where("orgId", "==", currentTeam.id))
@@ -1280,6 +1286,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
             setIncomes(data)
             set(`incomes_${currentTeam.id}`, data)
+            setIncomesLoading(false)
+        }, (error) => {
+            console.error("Income sync error:", error)
             setIncomesLoading(false)
         })
 
@@ -1289,7 +1298,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract))
             setContracts(data)
             set(`contracts_${currentTeam.id}`, data)
-        })
+        }, (error) => console.error("Contract sync error:", error))
 
         // 8. Tasks
         const qTasks = query(collection(db, "tasks"), where("orgId", "==", currentTeam.id))
@@ -1316,7 +1325,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     }
                 }
             }
-        })
+        }, (error) => console.error("Task sync error:", error))
 
         // 9. Team Members
         const qUsersOrgIds = query(collection(db, "users"), where("orgIds", "array-contains", currentTeam.id))
@@ -1335,12 +1344,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const unsubUsersOrgIds = onSnapshot(qUsersOrgIds, (snap) => {
             usersFromOrgIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
             mergeUsers()
-        })
+        }, (error) => console.error("Users (orgIds) sync error:", error))
 
         const unsubUsersTeamIds = onSnapshot(qUsersTeamIds, (snap) => {
             usersFromTeamIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
             mergeUsers()
-        })
+        }, (error) => console.error("Users (teamIds) sync error:", error))
 
         // 10. Files
         const qFiles = query(collection(db, "files"), where("orgId", "==", currentTeam.id))
@@ -1348,7 +1357,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectFile))
             setFiles(data)
             set(`files_${currentTeam.id}`, data)
-        })
+        }, (error) => console.error("Files sync error:", error))
 
         return () => {
             unsubProjects()
@@ -1788,9 +1797,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     organizations: updatedOrganizations
                 })
 
+                await logActivity(db, currentTeam.id, {
+                    action: "UPDATE",
+                    entityType: "USER",
+                    entityId: existingUserDoc.id,
+                    entityTitle: userData.name,
+                    details: `${userData.name} was added to the organization.`,
+                    performedBy: {
+                        uid: currentUser?.id || "system",
+                        name: currentUser?.name || "System",
+                        role: currentTeam.role || "Staff"
+                    },
+                    relatedUserIds: [existingUserDoc.id]
+                })
+
             } else {
                 // 2. User does not exist - Create new placeholder
-                await addDoc(collection(db, "users"), {
+                const docRef = await addDoc(collection(db, "users"), {
                     ...userData,
                     joinedDate: new Date().toISOString().split('T')[0],
                     status: "Pending", // Default to Pending for invites
@@ -1800,6 +1823,20 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                         role: userData.role || "Staff"
                     }],
                     role: userData.role || "Staff"
+                })
+
+                await logActivity(db, currentTeam.id, {
+                    action: "CREATE",
+                    entityType: "USER",
+                    entityId: docRef.id,
+                    entityTitle: userData.name,
+                    details: `Invitation sent to ${userData.email} (${userData.name})`,
+                    performedBy: {
+                        uid: currentUser?.id || "system",
+                        name: currentUser?.name || "System",
+                        role: currentTeam.role || "Staff"
+                    },
+                    relatedUserIds: [docRef.id]
                 })
             }
 

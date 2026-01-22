@@ -59,6 +59,7 @@ interface OrganizationContextType {
     createOrganization: (name: string) => Promise<string>
     joinOrganization: (orgId: string) => Promise<void>
     joinOrganizationByCode: (code: string) => Promise<string> // Returns Team Name
+    getOrganizationPreview: (code: string) => Promise<{ id: string, name: string, memberCount: number } | null>
 }
 
 
@@ -99,12 +100,30 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                 const userData = userSnap.data()
                 const orgList: Organization[] = []
 
+                // Support both legacy "organizations" array of objects and newer "orgIds" array of strings
+                const rawOrgIds: string[] = []
+
+                if (userData.orgIds && Array.isArray(userData.orgIds)) {
+                    rawOrgIds.push(...userData.orgIds)
+                }
+
                 if (userData.organizations && Array.isArray(userData.organizations)) {
-                    const orgPromises = userData.organizations.map(async (orgMeta: any) => {
-                        const orgRef = doc(db, "organizations", orgMeta.orgId)
-                        const orgSnap = await getDoc(orgRef)
-                        if (orgSnap.exists()) {
-                            return { id: orgSnap.id, ...orgSnap.data() } as Organization
+                    userData.organizations.forEach((org: any) => {
+                        const id = typeof org === 'string' ? org : org.orgId
+                        if (id && !rawOrgIds.includes(id)) rawOrgIds.push(id)
+                    })
+                }
+
+                if (rawOrgIds.length > 0) {
+                    const orgPromises = rawOrgIds.map(async (id: string) => {
+                        try {
+                            const orgRef = doc(db, "organizations", id)
+                            const orgSnap = await getDoc(orgRef)
+                            if (orgSnap.exists()) {
+                                return { id: orgSnap.id, ...orgSnap.data() } as Organization
+                            }
+                        } catch (e) {
+                            console.warn(`Failed to fetch org ${id}:`, e)
                         }
                         return null
                     })
@@ -323,25 +342,56 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         await fetchUserOrgs()
     }
 
-    return (
-        <OrganizationContext.Provider value={{
-            currentOrg,
-            userOrgs,
-            isLoading,
-            setCurrentOrg,
-            refreshOrgs,
-            createOrganization,
-            joinOrganization,
-            joinOrganizationByCode
-        }}>
+    const getOrganizationPreview = async (code: string): Promise<{ id: string, name: string, memberCount: number } | null> => {
+        let targetOrgId = ""
 
+        // 1. Try Find Invite
+        const q = query(collection(db, "invites"), where("code", "==", code))
+        const snap = await getDocs(q)
+
+        if (!snap.empty) {
+            targetOrgId = snap.docs[0].data().teamId
+        } else {
+            targetOrgId = code
+        }
+
+        // 2. Fetch Org Data
+        const orgRef = doc(db, "organizations", targetOrgId)
+        const orgSnap = await getDoc(orgRef)
+
+        if (orgSnap.exists()) {
+            const data = orgSnap.data()
+            return {
+                id: orgSnap.id,
+                name: data.name,
+                memberCount: data.members?.length || 0
+            }
+        }
+
+        return null
+    }
+
+    const value = {
+        currentOrg,
+        userOrgs,
+        setCurrentOrg,
+        isLoading,
+        refreshOrgs: fetchUserOrgs,
+        createOrganization,
+        joinOrganization,
+        joinOrganizationByCode,
+        getOrganizationPreview
+    }
+
+    return (
+        <OrganizationContext.Provider value={value}>
             {children}
         </OrganizationContext.Provider>
     )
 }
 
 export function useOrganization() {
-    const context = useContext(OrganizationContext)
+    const context = React.useContext(OrganizationContext)
     if (context === undefined) {
         throw new Error("useOrganization must be used within an OrganizationProvider")
     }

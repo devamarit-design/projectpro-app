@@ -802,6 +802,38 @@ export const th = {
             save: "บันทึกคู่ค้า",
             update: "อัปเดตคู่ค้า"
         },
+        invitations: {
+            title: "เชิญทีมงาน",
+            tabs: {
+                link: "คัดลอกลิงก์",
+                email: "ส่งอีเมล"
+            },
+            link_label: "ลิงก์คำเชิญ",
+            copy: "คัดลอก",
+            copied: "คัดลอกแล้ว",
+            or_share_code: "หรือแชร์รหัส",
+            org_id_label: "รหัสองค์กร (ID)",
+            email_label: "ที่อยู่อีเมล",
+            email_placeholder: "colleague@example.com",
+            send_invite: "ส่งคำเชิญ",
+            sent_via_mail: "ส่งผ่านแอปเมลแล้ว",
+            email_hint: "ระบบจะเปิดแอปอีเมลพื้นฐานของคุณพร้อมข้อความคำเชิญที่จัดเตรียมไว้ให้",
+            success_placeholder: "สร้างรายการชั่วคราวสำหรับ {email} แล้ว",
+        },
+        join_org: {
+            title: "เข้าร่วมองค์กร",
+            subtitle: "ระบุรหัสคำเชิญที่คุณได้รับจากผู้ดูแลระบบ",
+            invite_code: "รหัสคำเชิญ",
+            placeholder: "วางรหัสคำเชิญที่นี่",
+            join_btn: "เข้าร่วมองค์กร",
+            joining: "กำลังเข้าร่วม...",
+            back_to_create: "กลับไปหน้าสร้างทีม",
+            success_title: "เข้าร่วมสำเร็จ!",
+            success_msg: "ยินดีต้อนรับสู่ทีม เรากำลังพาท่านไปที่หน้าแผงควบคุม...",
+            preview_title: "คุณได้รับเชิญให้เข้าร่วม",
+            members_count: "สมาชิก {count} คน",
+            sign_in_required: "กรุณาเข้าสู่ระบบเพื่อเข้าร่วมองค์กรนี้",
+        },
         add_project: {
             title: "เพิ่มโครงการด่วน",
             subtitle: "สร้างโครงการใหม่อย่างรวดเร็ว",

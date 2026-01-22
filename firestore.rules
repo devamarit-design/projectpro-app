@@ -5,95 +5,77 @@ service cloud.firestore {
     
     // --- Helper Functions ---
     
-    // Check if user is signed in
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Check if user is accessing their own document
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // Fetch the current user's document data
     function getUserData() {
       let path = /databases/$(database)/documents/users/$(request.auth.uid);
-      return exists(path) ? get(path).data : null;
+      return isAuthenticated() && exists(path) ? get(path).data : null;
     }
 
-    // Check if the user is a member of the given Organization ID
     function isOrgMember(orgId) {
-      let userData = getUserData();
-      return isAuthenticated() && 
-             userData != null && 
-             'orgIds' in userData && 
-             orgId in userData.orgIds;
+      let data = getUserData();
+      return data != null && 'orgIds' in data && orgId in data.orgIds;
     }
     
-    // Check if the resource belongs to an Org the user is in (for Reads/Updates/Deletes)
+    function isOrgOwner(orgId) {
+      let path = /databases/$(database)/documents/organizations/$(orgId);
+      return isAuthenticated() && exists(path) && get(path).data.ownerId == request.auth.uid;
+    }
+
+    function isOrgAdminOrOwner(orgId) {
+      let data = getUserData();
+      return data != null && 
+             'orgIds' in data && 
+             orgId in data.orgIds && 
+             (data.role == "Owner" || data.role == "Admin");
+    }
+
     function resourceBelongsToUserOrg() {
-      return isOrgMember(resource.data.orgId);
+      return isAuthenticated() && isOrgMember(resource.data.orgId);
     }
 
-    // Check if the new resource is being created for an Org the user is in
     function requestBelongsToUserOrg() {
-      return isOrgMember(request.resource.data.orgId);
+      return isAuthenticated() && isOrgMember(request.resource.data.orgId);
     }
 
-    // --- Collection Rules ---
-
-    // Default: Deny all by default
-    match /{document=**} {
-      allow read, write: if false;
+    // --- Public Access Rules (Preview & Onboarding) ---
+    
+    match /invites/{inviteId} {
+       allow get, list: if true; 
+       allow create, update: if isAuthenticated() && isOrgAdminOrOwner(request.resource.data.orgId || resource.data.orgId);
     }
 
-    // 1. Users Collection
+    match /organizations/{orgId} {
+      allow get: if true; 
+      allow list, create: if isAuthenticated();
+      allow update: if isAuthenticated() && (isOrgMember(orgId) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']));
+      allow delete: if isAuthenticated() && isOrgMember(orgId) && isOrgOwner(orgId);
+
+      match /settings/{settingDoc} {
+        allow read: if isAuthenticated() && isOrgMember(orgId);
+        allow write: if isAuthenticated() && isOrgOwner(orgId);
+      }
+    }
+
+    // --- Authenticated Resource Rules ---
+
     match /users/{userId} {
-      // Allow user to read/write their own profile
-      // Also allow authenticated users to read other profiles (needed for team collaboration)
       allow read: if isAuthenticated(); 
-      
-      // Only owner can update/delete their profile
-      allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isAuthenticated() && isOwner(userId);
-      allow delete: if isAuthenticated() && isOwner(userId);
+      allow create: if isOwner(userId) || (isAuthenticated() && isOrgAdminOrOwner(request.resource.data.orgIds[0]));
+      allow update: if isOwner(userId) || (isAuthenticated() && isOrgAdminOrOwner(resource.data.orgIds[0]));
+      allow delete: if isOwner(userId);
 
-      // Org-scoped user settings
       match /orgSettings/{orgId} {
         allow read, write: if isOwner(userId);
       }
     }
 
-    // Check if user is the Owner of the Organization
-    function isOrgOwner(orgId) {
-      let orgData = get(/databases/$(database)/documents/organizations/$(orgId)).data;
-      return isAuthenticated() && orgData.ownerId == request.auth.uid;
-    }
-
-    // 2. Organizations
-    match /organizations/{orgId} {
-      // Allow any authenticated user to read org info (needed for joining)
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated(); // Anyone can create a new org
-      
-      // Allow members to update anything, but non-members can ONLY update the 'members' list (for joining)
-      allow update: if isAuthenticated() && (
-        isOrgMember(orgId) || 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
-      );
-      allow delete: if isOrgMember(orgId) && isOrgOwner(orgId);
-
-      
-      // Settings subcollection (e.g. Telegram settings)
-      match /settings/{settingDoc} {
-        allow read: if isOrgMember(orgId);
-        allow write: if isOrgOwner(orgId);
-      }
-    }
-
-    // 3. Organization Resources (Projects, Tasks, Finances)
-    // Common pattern for resources that have 'orgId' field
-    
     match /projects/{projectId} {
       allow read: if resourceBelongsToUserOrg();
       allow create: if requestBelongsToUserOrg();
@@ -113,7 +95,7 @@ service cloud.firestore {
       allow create: if requestBelongsToUserOrg();
       allow update: if resourceBelongsToUserOrg();
       allow delete: if resourceBelongsToUserOrg();
-    } // Supports 'income' and 'incomes' if collection name varies, but based on code it is 'incomes'
+    }
 
     match /expenses/{docId} {
       allow read: if resourceBelongsToUserOrg();
@@ -157,40 +139,20 @@ service cloud.firestore {
       allow delete: if resourceBelongsToUserOrg();
     }
 
-    // 4. Notifications
     match /notifications/{notificationId} {
-      // Notifications usually track 'userId' or 'orgId'
-      // If notifications are user-specific:
-      allow read: if request.auth.uid == resource.data.userId;
-      allow create: if isAuthenticated(); // System or triggers might create
-      allow update: if request.auth.uid == resource.data.userId; // Mark as read
-      allow delete: if request.auth.uid == resource.data.userId;
+      allow read: if resourceBelongsToUserOrg(); 
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && request.auth.uid == (resource.data.userId || resource.data.createdBy);
     }
 
-    // 5. Game Scores (Bored Page)
     match /game_scores/{scoreId} {
         allow read: if isAuthenticated();
-        // Allow creating score if it belongs to the user
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-        // Scores shouldn't be updated typically, or maybe only by owner
-        allow update: if false; 
     }
     
-    // 6. Invitations
-    match /invites/{inviteId} {
-       // Ideally restricted to org members or email recipients
-       allow read: if isAuthenticated();
-       allow create: if isOrgMember(request.resource.data.orgId);
-       allow update: if isOrgMember(resource.data.orgId); // Cancel invite
-    }
-
-    // 7. Activities (Audit Log)
     match /activities/{activityId} {
         allow read: if resourceBelongsToUserOrg();
         allow create: if requestBelongsToUserOrg();
-        // Audit logs should be immutable
-        allow update: if false;
-        allow delete: if false;
     }
   }
 }

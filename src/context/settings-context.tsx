@@ -411,6 +411,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 setNotices([])
                 setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, paymentDueDays: 3 })
             }
+        }, (error) => {
+            console.warn("Organization settings sync error:", error)
         })
 
         return () => unsubscribe()
