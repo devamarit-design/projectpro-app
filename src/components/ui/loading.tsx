@@ -43,7 +43,7 @@ export function Loading() {
                 <motion.h2
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-2xl font-bold tracking-tight text-primary uppercase py-1"
+                    className="text-2xl font-bold tracking-tight text-primary uppercase py-1 drop-shadow-[0_0_15px_hsl(var(--primary)/0.5)]"
                 >
                     Hipslothproject
                 </motion.h2>
