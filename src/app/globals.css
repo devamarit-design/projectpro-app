@@ -201,12 +201,41 @@
 }
 
 :root[data-theme-gradient] .border-primary {
-  border-color: transparent !important;
-  /* Often better for gradients */
-  position: relative;
-  background: linear-gradient(var(--background), var(--background)) padding-box, var(--primary-gradient) border-box !important;
-  border: 2px solid transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-image: var(--primary-gradient) 1 !important;
+  border-radius: 0 !important;
+  /* border-image doesn't work with border-radius well */
 }
+
+/* Specific fix for text-primary combined with border-primary */
+:root[data-theme-gradient] .text-primary.border-primary {
+  background-image: var(--primary-gradient) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  border-image: var(--primary-gradient) 1 !important;
+}
+
+/* For elements that should have a transparent background but a gradient border (full box) */
+:root[data-theme-gradient] .border-primary-full {
+  position: relative;
+  border: none !important;
+}
+
+:root[data-theme-gradient] .border-primary-full::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: var(--primary-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 
 
 
@@ -327,11 +356,13 @@
   background: rgba(30, 30, 40, 0.9) !important;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 /* Marquee Animation for Notice Ticker */
 @keyframes marquee {
   0% {
     transform: translateX(0);
   }
+
   100% {
     transform: translateX(-50%);
   }
