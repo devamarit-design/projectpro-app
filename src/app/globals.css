@@ -201,20 +201,40 @@
 }
 
 :root[data-theme-gradient] .border-primary {
+  position: relative !important;
   border: none !important;
-  border-bottom: 2px solid transparent !important;
-  border-image: var(--primary-gradient) 1 !important;
-  border-radius: 0 !important;
-  /* border-image doesn't work with border-radius well */
 }
 
-/* Specific fix for text-primary combined with border-primary */
+:root[data-theme-gradient] .border-primary::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  padding: 2px !important;
+  border-radius: inherit !important;
+  background: var(--primary-gradient) !important;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
+  -webkit-mask-composite: xor !important;
+  mask-composite: exclude !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+/* Specific fix for text-primary combined with border-primary (Selection circles) */
 :root[data-theme-gradient] .text-primary.border-primary {
   background-image: var(--primary-gradient) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
-  border-image: var(--primary-gradient) 1 !important;
+  /* respects inherited roundness from ::after */
+}
+
+/* Document Color Restoration: Keep solid colors in white/document containers */
+:root[data-theme-gradient] .bg-white .text-primary,
+:root[data-theme-gradient] .bg-white .bg-primary {
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+  color: inherit !important;
 }
 
 /* Global Neon Glow for Titles, Buttons & Cards (Gradient Theme) */
