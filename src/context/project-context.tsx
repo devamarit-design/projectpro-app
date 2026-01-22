@@ -807,7 +807,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const [isRedirecting, setIsRedirecting] = useState(false)
 
     // Environment Detection Helpers
-    const getEnvironment = () => {
+    const getEnvironment = React.useCallback(() => {
         if (typeof window === 'undefined') return { isIOS: false, isPWA: false, isRestricted: false }
         const ua = navigator.userAgent || navigator.vendor || (window as any).opera
         const isIOS = /iPhone|iPad|iPod/i.test(ua)
@@ -815,7 +815,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         // Detect Line, Facebook, etc. which usually block Google OAuth
         const isRestricted = /Line|FBAN|FBAV|Instagram/i.test(ua)
         return { isIOS, isPWA, isRestricted }
-    }
+    }, [])
 
     const currentTeam: Team | null = React.useMemo(() => {
         if (!currentOrg || !currentUser) return null

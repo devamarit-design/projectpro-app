@@ -166,7 +166,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         } finally {
             setIsLoading(false)
         }
-    }, [firebaseUser, currentOrg])
+    }, [firebaseUser])
 
     useEffect(() => {
         if (firebaseUser) {
