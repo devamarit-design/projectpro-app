@@ -17,14 +17,17 @@ service cloud.firestore {
     
     // Fetch the current user's document data
     function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      let path = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(path) ? get(path).data : null;
     }
 
     // Check if the user is a member of the given Organization ID
-    // Uses the 'orgIds' array on the user document for efficient lookup
     function isOrgMember(orgId) {
+      let userData = getUserData();
       return isAuthenticated() && 
-             (orgId in getUserData().orgIds);
+             userData != null && 
+             'orgIds' in userData && 
+             orgId in userData.orgIds;
     }
     
     // Check if the resource belongs to an Org the user is in (for Reads/Updates/Deletes)
@@ -63,16 +66,23 @@ service cloud.firestore {
 
     // Check if user is the Owner of the Organization
     function isOrgOwner(orgId) {
-      return isAuthenticated() && 
-             get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid;
+      let orgData = get(/databases/$(database)/documents/organizations/$(orgId)).data;
+      return isAuthenticated() && orgData.ownerId == request.auth.uid;
     }
 
     // 2. Organizations
     match /organizations/{orgId} {
-      allow read: if isOrgMember(orgId);
+      // Allow any authenticated user to read org info (needed for joining)
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated(); // Anyone can create a new org
-      allow update: if isOrgMember(orgId); // Only members can update (refine to Admin later with roles)
-      allow delete: if isOrgMember(orgId); // Only members can delete
+      
+      // Allow members to update anything, but non-members can ONLY update the 'members' list (for joining)
+      allow update: if isAuthenticated() && (
+        isOrgMember(orgId) || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+      );
+      allow delete: if isOrgMember(orgId) && isOrgOwner(orgId);
+
       
       // Settings subcollection (e.g. Telegram settings)
       match /settings/{settingDoc} {
