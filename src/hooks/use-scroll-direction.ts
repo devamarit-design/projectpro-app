@@ -5,13 +5,14 @@ export function useScrollDirection() {
     const lastScrollY = useRef(0);
 
     useEffect(() => {
-        if (typeof window === 'undefined') return;
+        // Target the specific scroll container used in AppShell
+        const container = document.getElementById("main-scroll-container") || window;
 
-        lastScrollY.current = window.scrollY;
+        lastScrollY.current = container instanceof HTMLElement ? container.scrollTop : window.scrollY;
         let ticking = false;
 
         const updateScrollDirection = () => {
-            const scrollY = window.scrollY;
+            const scrollY = container instanceof HTMLElement ? container.scrollTop : window.scrollY;
 
             // 1. Force "up" (show) status when at the very top of the page
             if (scrollY <= 10) {
@@ -34,7 +35,9 @@ export function useScrollDirection() {
             const newDirection = diff > 0 ? "down" : "up";
 
             // 4. State update
-            setScrollDirection(newDirection);
+            if (newDirection !== scrollDirection) {
+                setScrollDirection(newDirection);
+            }
 
             lastScrollY.current = scrollY > 0 ? scrollY : 0;
             ticking = false;
@@ -47,9 +50,9 @@ export function useScrollDirection() {
             }
         };
 
-        window.addEventListener("scroll", onScroll, { passive: true });
-        return () => window.removeEventListener("scroll", onScroll);
-    }, []); // Empty dependency array - we use refs for tracking
+        container.addEventListener("scroll", onScroll, { passive: true });
+        return () => container.removeEventListener("scroll", onScroll);
+    }, [scrollDirection]); // Re-bind if scrollDirection changes to ensure closure has latest state (or use ref for setScrollDirection but this is cleaner with limited states)
 
     return scrollDirection;
 }
