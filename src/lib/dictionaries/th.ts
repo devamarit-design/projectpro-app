@@ -800,7 +800,8 @@ export const th = {
             current_rating: "คะแนนปัจจุบัน",
             initial_rating: "คะแนนเริ่มต้น",
             save: "บันทึกคู่ค้า",
-            update: "อัปเดตคู่ค้า"
+            update: "อัปเดตคู่ค้า",
+            cancel: "ยกเลิก"
         },
         invitations: {
             title: "เชิญทีมงาน",
