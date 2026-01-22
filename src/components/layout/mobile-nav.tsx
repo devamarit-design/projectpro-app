@@ -78,39 +78,39 @@ export function MobileNav() {
         {
             title: "งาน", // Work
             items: [
-                { href: "/calendar", label: t.calendar?.title || "ปฏิทิน", icon: CalendarDays, color: "text-teal-500 from-teal-500/20 to-teal-500/5" },
-                { href: "/tasks", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 from-blue-500/20 to-blue-500/5" },
-                { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
-                { href: "/storage", label: t.common.storage, icon: HardDrive, color: "text-indigo-500 from-indigo-500/20 to-indigo-500/5" },
+                { href: "/calendar", label: t.calendar?.title || "ปฏิทิน", icon: CalendarDays, color: "text-teal-500 bg-teal-500/10" },
+                { href: "/tasks", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 bg-blue-500/10" },
+                { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 bg-amber-500/10" },
+                { href: "/storage", label: t.common.storage, icon: HardDrive, color: "text-indigo-500 bg-indigo-500/10" },
             ]
         },
         {
             title: "ข้อมูล", // Data
             items: [
-                { href: "/customers", label: t.common.customers, icon: Users, color: "text-orange-500 from-orange-500/20 to-orange-500/5" },
-                { href: "/partners", label: t.common.partners, icon: Handshake, color: "text-cyan-500 from-cyan-500/20 to-cyan-500/5" },
+                { href: "/customers", label: t.common.customers, icon: Users, color: "text-orange-500 bg-orange-500/10" },
+                { href: "/partners", label: t.common.partners, icon: Handshake, color: "text-cyan-500 bg-cyan-500/10" },
             ]
         },
         {
             title: "ทีม", // Team
             items: [
-                { href: "/profile", label: t.common.profile, icon: User, color: "text-rose-500 from-rose-500/20 to-rose-500/5" },
+                { href: "/profile", label: t.common.profile, icon: User, color: "text-rose-500 bg-rose-500/10" },
                 ...(hasPermission(currentUser, "TEAM_VIEW") ? [{
                     href: "/team",
                     label: t.common.team,
                     icon: Briefcase,
-                    color: "text-purple-500 from-purple-500/20 to-purple-500/5"
+                    color: "text-purple-500 bg-purple-500/10"
                 }] : []),
-                { href: "/announcements", label: "ประกาศ", icon: Megaphone, color: "text-yellow-500 from-yellow-500/20 to-yellow-500/5" },
+                { href: "/announcements", label: "ประกาศ", icon: Megaphone, color: "text-yellow-500 bg-yellow-500/10" },
             ]
         },
         {
             title: "อื่นๆ", // Other
             items: [
-                { href: "/settings", label: t.common.settings, icon: Settings, color: "text-gray-500 from-gray-500/20 to-gray-500/5" },
-                { href: "/about", label: t.navbar.about, icon: Info, color: "text-blue-500 from-blue-500/20 to-blue-500/5" },
-                { href: "/policy", label: t.navbar.policy, icon: ShieldCheck, color: "text-emerald-500 from-emerald-500/20 to-emerald-500/5" },
-                { href: "/bored", label: t.navbar.bored, icon: Gamepad2, color: "text-indigo-500 from-indigo-500/20 to-indigo-500/5" },
+                { href: "/settings", label: t.common.settings, icon: Settings, color: "text-gray-500 bg-gray-500/10" },
+                { href: "/about", label: t.navbar.about, icon: Info, color: "text-blue-500 bg-blue-500/10" },
+                { href: "/policy", label: t.navbar.policy, icon: ShieldCheck, color: "text-emerald-500 bg-emerald-500/10" },
+                { href: "/bored", label: t.navbar.bored, icon: Gamepad2, color: "text-indigo-500 bg-indigo-500/10" },
             ]
         }
     ], [currentUser, t])
@@ -216,7 +216,7 @@ export function MobileNav() {
                         className="w-full max-w-sm bg-background/95 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 animate-in slide-in-from-bottom-10 zoom-in-95 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto hide-scrollbar"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur-xl z-20 pb-2 border-b border-white/5">
+                        <div className="flex items-center justify-between sticky top-0 bg-transparent backdrop-blur-xl z-20 pb-2">
                             <h3 className="text-lg font-black">{t.navbar.more_utils}</h3>
                             <button onClick={() => setShowMoreMenu(false)} className="p-1 rounded-full hover:bg-muted/50 transition-colors">
                                 <X className="w-5 h-5 text-muted-foreground" />
@@ -238,7 +238,7 @@ export function MobileNav() {
                                             className="flex flex-col items-center gap-1.5 group p-1"
                                         >
                                             <div className={cn(
-                                                "w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br shadow-sm transition-transform group-hover:scale-105 group-active:scale-95",
+                                                "w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm transition-transform group-hover:scale-105 group-active:scale-95",
                                                 item.color
                                             )}>
                                                 <item.icon className="w-5 h-5" />

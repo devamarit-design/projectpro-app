@@ -49,7 +49,7 @@ export default function SettingsPage() {
             <div className="flex flex-col lg:flex-row gap-8">
                 {/* Sidebar Navigation */}
                 <aside className="lg:w-64 flex-shrink-0">
-                    <nav className="flex lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 scrollbar-hide">
+                    <nav className="flex lg:flex-col gap-2 overflow-x-auto px-4 lg:px-0 pb-4 pt-2 lg:pt-0 lg:pb-0 scrollbar-hide">
                         {menuItems.map((item) => {
                             const Icon = item.icon
                             return (

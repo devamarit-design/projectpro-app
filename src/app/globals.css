@@ -238,8 +238,8 @@
 }
 
 /* Global Neon Glow for Titles, Buttons & Cards (Gradient Theme) */
-html[data-theme-gradient="true"] h1,
-html[data-theme-gradient="true"] h2:not(.text-muted-foreground),
+html[data-theme-gradient="true"] h1:not([class*="bg-gradient"] *):not(.bg-white *),
+html[data-theme-gradient="true"] h2:not(.text-muted-foreground):not([class*="bg-gradient"] *):not(.bg-white *),
 html[data-theme-gradient="true"] .neon-glow-title {
   text-transform: uppercase !important;
   letter-spacing: 0.1em !important;
@@ -278,7 +278,7 @@ html[data-theme-gradient="true"] .neon-glow-title [class*="icon"] {
 /* Borderless Neon Cards & Containers (Soften glow) */
 html[data-theme-gradient="true"] .bg-card,
 html[data-theme-gradient="true"] .glass-card,
-html[data-theme-gradient="true"] [class*="bg-muted"]:not(body):not(.bg-muted\/20) {
+html[data-theme-gradient="true"] [class*="bg-muted"]:not(body):not(.bg-muted\/20):not(nav *):not(.fixed *) {
   border: none !important;
   /* Remove all borders */
   box-shadow:
