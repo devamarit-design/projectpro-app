@@ -826,18 +826,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         return {
             id: currentOrg.id,
             name: currentOrg.name,
-            nameEn: currentOrg.settings.nameEn || "",
+            nameEn: currentOrg.settings?.nameEn || "",
             role: role,
-            address: currentOrg.settings.address || "",
-            addressEn: currentOrg.settings.addressEn || "",
-            taxId: currentOrg.settings.taxId || "",
-            phone: currentOrg.settings.phone || "",
-            email: currentOrg.settings.email || "",
-            website: currentOrg.settings.website || "",
-            logo: currentOrg.settings.logoUrl,
-            description: currentOrg.settings.description || "",
-            paymentInfo: currentOrg.settings.paymentInfo || "",
-            signatureName: currentOrg.settings.signatureName || ""
+            address: currentOrg.settings?.address || "",
+            addressEn: currentOrg.settings?.addressEn || "",
+            taxId: currentOrg.settings?.taxId || "",
+            phone: currentOrg.settings?.phone || "",
+            email: currentOrg.settings?.email || "",
+            website: currentOrg.settings?.website || "",
+            logo: currentOrg.settings?.logoUrl,
+            description: currentOrg.settings?.description || "",
+            paymentInfo: currentOrg.settings?.paymentInfo || "",
+            signatureName: currentOrg.settings?.signatureName || ""
         }
     }, [currentOrg, currentUser])
 
@@ -850,16 +850,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             return {
                 id: org.id,
                 name: org.name,
-                nameEn: org.settings.nameEn || "",
+                nameEn: org.settings?.nameEn || "",
                 role: role,
-                address: org.settings.address || "",
-                addressEn: org.settings.addressEn || "",
-                taxId: org.settings.taxId || "",
-                phone: org.settings.phone || "",
-                logo: org.settings.logoUrl,
-                description: org.settings.description || "",
-                paymentInfo: org.settings.paymentInfo || "",
-                signatureName: org.settings.signatureName || ""
+                address: org.settings?.address || "",
+                addressEn: org.settings?.addressEn || "",
+                taxId: org.settings?.taxId || "",
+                phone: org.settings?.phone || "",
+                logo: org.settings?.logoUrl,
+                description: org.settings?.description || "",
+                paymentInfo: org.settings?.paymentInfo || "",
+                signatureName: org.settings?.signatureName || ""
             }
         })
     }, [userOrgs, currentUser])
