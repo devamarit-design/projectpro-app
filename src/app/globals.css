@@ -217,25 +217,69 @@
   border-image: var(--primary-gradient) 1 !important;
 }
 
-/* Global Neon Glow for Titles & Buttons (Gradient Theme) */
-:root[data-theme-gradient] h1,
-:root[data-theme-gradient] h2:not(.text-muted-foreground),
-:root[data-theme-gradient] .neon-glow-title {
-  filter: drop-shadow(0 0 8px hsl(var(--primary)/0.5)) drop-shadow(0 0 2px hsl(var(--primary)/0.3)) !important;
-  transition: filter 0.3s ease;
-}
+/* Global Neon Glow for Titles, Buttons & Cards (Gradient Theme) */
+html[data-theme-gradient="true"] h1,
+html[data-theme-gradient="true"] h2:not(.text-muted-foreground),
+html[data-theme-gradient="true"] .neon-glow-title {
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
 
-:root[data-theme-gradient] button.bg-primary,
-:root[data-theme-gradient] a.bg-primary,
-:root[data-theme-gradient] .neon-glow-btn {
-  box-shadow: 0 0 15px hsl(var(--primary)/0.4), 0 0 5px hsl(var(--primary)/0.2) !important;
+  /* Pure Gradient Text */
+  background: var(--primary-gradient);
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+
+  /* Subtle Colored Neon Aura (Soften intensity) */
+  filter:
+    drop-shadow(0 0 3px hsl(var(--primary)/0.6)) drop-shadow(0 0 10px hsl(var(--primary)/0.4)) drop-shadow(0 0 20px hsl(var(--primary)/0.2)) !important;
+
   transition: all 0.3s ease;
+  display: inline-block;
 }
 
-:root[data-theme-gradient] button.bg-primary:hover,
-:root[data-theme-gradient] a.bg-primary:hover {
-  box-shadow: 0 0 25px hsl(var(--primary)/0.6), 0 0 10px hsl(var(--primary)/0.3) !important;
-  transform: scale(1.02);
+/* Borderless Neon Cards & Containers (Soften glow) */
+html[data-theme-gradient="true"] .bg-card,
+html[data-theme-gradient="true"] .glass-card,
+html[data-theme-gradient="true"] [class*="bg-muted"]:not(body):not(.bg-muted\/20) {
+  border: none !important;
+  /* Remove all borders */
+  box-shadow:
+    0 0 15px hsl(var(--primary)/0.15),
+    0 0 30px hsl(var(--primary)/0.05),
+    inset 0 0 20px rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Borderless Neon Buttons & Primary Actions (Soften glow) */
+html[data-theme-gradient="true"] .bg-primary,
+html[data-theme-gradient="true"] .neon-glow-btn {
+  background: var(--primary-gradient) !important;
+  background-size: 200% 100% !important;
+  border: none !important;
+  /* Remove all borders */
+  color: #fff !important;
+  font-weight: 800 !important;
+
+  /* Refined Colored Box Shadow Glow */
+  box-shadow:
+    0 0 10px hsl(var(--primary)/0.5),
+    0 0 25px hsl(var(--primary)/0.3),
+    inset 0 0 10px rgba(255, 255, 255, 0.15) !important;
+
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+html[data-theme-gradient="true"] .bg-primary:hover,
+html[data-theme-gradient="true"] .neon-glow-btn:hover {
+  background-position: 100% 0 !important;
+  box-shadow:
+    0 0 20px hsl(var(--primary)/0.8),
+    0 0 40px hsl(var(--primary)/0.5),
+    inset 0 0 20px rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.05) translateY(-2px);
+  filter: brightness(1.1) saturate(1.1);
 }
 
 /* For elements that should have a transparent background but a gradient border (full box) */
