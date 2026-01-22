@@ -21,9 +21,14 @@ export interface Organization {
         logoUrl?: string
         taxId?: string
         address?: string
+        addressEn?: string
+        nameEn?: string
         phone?: string
         email?: string
         website?: string
+        description?: string
+        paymentInfo?: string
+        signatureName?: string
         financialTargets?: {
             incomeMin: number
             incomeMax: number

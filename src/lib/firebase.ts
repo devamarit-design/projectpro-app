@@ -15,7 +15,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase (Singleton Pattern)
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Export services
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";

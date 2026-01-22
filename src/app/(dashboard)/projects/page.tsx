@@ -313,6 +313,7 @@ export default function ProjectsPage() {
                                         status: project.status === 'In Progress' ? 'active' : project.status === 'Completed' ? 'completed' : 'pending'
                                     }}
                                     columns={columns as 1 | 2 | 3}
+                                    priority={idx < 6}
                                 />
                             </div>
                         )

@@ -51,21 +51,12 @@ export function HeaderProfile() {
             }
         }
 
-        // Also close on scroll
-        function handleScroll() {
-            if (isOpen) setIsOpen(false)
-        }
-
         if (isOpen) {
             document.addEventListener("mousedown", handleClickOutside)
-            window.addEventListener("scroll", handleScroll, true)
-            window.addEventListener("resize", handleScroll)
         }
 
         return () => {
             document.removeEventListener("mousedown", handleClickOutside)
-            window.removeEventListener("scroll", handleScroll, true)
-            window.removeEventListener("resize", handleScroll)
         }
     }, [isOpen])
 

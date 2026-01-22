@@ -61,12 +61,24 @@ service cloud.firestore {
       }
     }
 
+    // Check if user is the Owner of the Organization
+    function isOrgOwner(orgId) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid;
+    }
+
     // 2. Organizations
     match /organizations/{orgId} {
       allow read: if isOrgMember(orgId);
       allow create: if isAuthenticated(); // Anyone can create a new org
       allow update: if isOrgMember(orgId); // Only members can update (refine to Admin later with roles)
       allow delete: if isOrgMember(orgId); // Only members can delete
+      
+      // Settings subcollection (e.g. Telegram settings)
+      match /settings/{settingDoc} {
+        allow read: if isOrgMember(orgId);
+        allow write: if isOrgOwner(orgId);
+      }
     }
 
     // 3. Organization Resources (Projects, Tasks, Finances)

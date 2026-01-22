@@ -49,13 +49,26 @@ export function CompanySettings() {
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Company Name */}
-                <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                        <Building2 className="w-4 h-4" />
-                        {t.settings.company.fields.name}
-                    </label>
-                    <div className="p-3 bg-muted/30 rounded-lg border border-border/50 font-medium">
-                        {displayProfile.name || "-"}
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium flex items-center gap-2 text-muted-foreground transition-all group-hover:text-primary">
+                            <Building2 className="w-4 h-4" />
+                            {t.settings.company.fields.name} (TH)
+                        </label>
+                        <div className="p-3 bg-muted/30 rounded-lg border border-border/50 font-medium">
+                            {displayProfile.name || "-"}
+                        </div>
+                    </div>
+
+                    {/* Company Name (EN) */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                            <Building2 className="w-4 h-4" />
+                            Company Name (EN)
+                        </label>
+                        <div className="p-3 bg-muted/30 rounded-lg border border-border/50 font-medium">
+                            {displayProfile.nameEn || "-"}
+                        </div>
                     </div>
                 </div>
 
@@ -71,13 +84,26 @@ export function CompanySettings() {
                 </div>
 
                 {/* Address */}
-                <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                        <MapPin className="w-4 h-4" />
-                        {t.settings.company.fields.address}
-                    </label>
-                    <div className="p-3 bg-muted/30 rounded-lg border border-border/50 min-h-[60px] whitespace-pre-wrap">
-                        {displayProfile.address || "-"}
+                <div className="space-y-4 md:col-span-2 border-t pt-4">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                            <MapPin className="w-4 h-4" />
+                            {t.settings.company.fields.address} (TH)
+                        </label>
+                        <div className="p-3 bg-muted/30 rounded-lg border border-border/50 min-h-[60px] whitespace-pre-wrap text-sm">
+                            {displayProfile.address || "-"}
+                        </div>
+                    </div>
+
+                    {/* Address (EN) */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                            <MapPin className="w-4 h-4" />
+                            Company Address (EN)
+                        </label>
+                        <div className="p-3 bg-muted/30 rounded-lg border border-border/50 min-h-[60px] whitespace-pre-wrap text-sm font-sans">
+                            {displayProfile.addressEn || "-"}
+                        </div>
                     </div>
                 </div>
 

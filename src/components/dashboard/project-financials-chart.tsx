@@ -44,7 +44,12 @@ export function ProjectFinancialsChart() {
                 <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Top 5 Projects</span>
             </div>
 
-            <div className="h-[350px] w-full">
+            <div className="h-[350px] w-full relative group">
+                {/* Premium Background Effects */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/5 via-transparent to-blue-500/5 rounded-2xl pointer-events-none" />
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, var(--foreground) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart layout="vertical" data={data} barGap={4} margin={{ left: 0, right: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" opacity={0.3} />
@@ -67,12 +72,12 @@ export function ProjectFinancialsChart() {
                                             <p className="text-sm font-semibold mb-2 max-w-[200px] truncate">{label}</p>
                                             <div className="space-y-1.5">
                                                 <div className="flex items-center gap-2 text-xs">
-                                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#3b82f6' }} />
                                                     <span className="text-muted-foreground">Income:</span>
                                                     <span className="font-mono font-medium ml-auto">฿{Number(payload[0].value).toLocaleString()}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 text-xs">
-                                                    <div className="w-2 h-2 rounded-full bg-red-400" />
+                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#f87171' }} />
                                                     <span className="text-muted-foreground">Expense:</span>
                                                     <span className="font-mono font-medium ml-auto">฿{Number(payload[1].value).toLocaleString()}</span>
                                                 </div>

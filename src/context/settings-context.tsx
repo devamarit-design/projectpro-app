@@ -78,6 +78,16 @@ export type Notice = {
     type?: 'info' | 'warning' | 'success'
 }
 
+export type TelegramSettings = {
+    enabled: boolean
+    botToken: string
+    chatId: string
+    notifyOnExpense: boolean
+    notifyOnPaymentDue: boolean
+    notifyOnQuotation: boolean
+    paymentDueDays: number
+}
+
 type SettingsContextType = {
     // Mapped from ProjectContext
     orgProfile: OrgProfile
@@ -107,6 +117,9 @@ type SettingsContextType = {
 
     notices: Notice[]
     updateNotices: (notices: Notice[]) => Promise<void>
+
+    telegramSettings: TelegramSettings
+    updateTelegramSettings: (data: TelegramSettings) => Promise<void>
 
     resetSettings: () => void
     setPreviewTheme: (theme: AppTheme | null) => void
@@ -238,6 +251,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const [moodThresholds, setMoodThresholds] = useState<MoodThresholds>(defaultMoodThresholds)
     const [banners, setBanners] = useState<Banner[]>(defaultBanners)
     const [notices, setNotices] = useState<Notice[]>([])
+    const [telegramSettings, setTelegramSettings] = useState<TelegramSettings>({
+        enabled: false,
+        botToken: "",
+        chatId: "",
+        notifyOnExpense: true,
+        notifyOnPaymentDue: true,
+        notifyOnQuotation: true,
+        paymentDueDays: 3
+    })
 
     const [isLoaded, setIsLoaded] = useState(false)
 
@@ -326,7 +348,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     // Real-time Sync with Firestore Organization Settings
     useEffect(() => {
-        if (!currentOrg?.id) return
+        if (!currentOrg?.id) {
+            setFinancialTargets(defaultFinancialTargets)
+            setMoodThresholds(defaultMoodThresholds)
+            setBanners(defaultBanners)
+            setNotices([])
+            setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, paymentDueDays: 3 })
+            return
+        }
+
+        // ORG ISOLATION: Clear current data state to prevent leaks while loading next org
+        setFinancialTargets(defaultFinancialTargets)
+        setMoodThresholds(defaultMoodThresholds)
+        setBanners(defaultBanners)
+        setNotices([])
+        setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, paymentDueDays: 3 })
 
         const orgRef = doc(db, "organizations", currentOrg.id)
         const unsubscribe = onSnapshot(orgRef, (docSnap) => {
@@ -360,12 +396,20 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 } else {
                     setNotices([])
                 }
+
+                // Telegram Settings (Owner only sees full data)
+                if (data.settings?.telegram) {
+                    setTelegramSettings({ notifyOnQuotation: true, ...data.settings.telegram })
+                } else {
+                    setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, paymentDueDays: 3 })
+                }
             } else {
                 // Document not found? Revert to defaults
                 setFinancialTargets(defaultFinancialTargets)
                 setMoodThresholds(defaultMoodThresholds)
                 setBanners(defaultBanners)
                 setNotices([])
+                setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, paymentDueDays: 3 })
             }
         })
 
@@ -647,6 +691,27 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
+    const updateTelegramSettings = async (data: TelegramSettings) => {
+        if (!currentOrg?.id) return
+        // Only Owner can update telegram settings
+        if (currentUser?.role !== 'Owner') return
+        setTelegramSettings(data) // Optimistic update
+
+        try {
+            const orgRef = doc(db, "organizations", currentOrg.id)
+            await setDoc(orgRef, {
+                settings: {
+                    ...currentOrg.settings,
+                    telegram: data
+                }
+            }, { merge: true })
+        } catch (error) {
+            console.error("Failed to update telegram settings:", error)
+            throw error
+        }
+    }
+
+
     const resetSettings = () => {
         // Only reset local settings, not company profile (which is synced)
         setDocumentSettings({
@@ -680,6 +745,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             updateBanners,
             notices,
             updateNotices,
+            telegramSettings,
+            updateTelegramSettings,
             resetSettings,
             setPreviewTheme
         }}>

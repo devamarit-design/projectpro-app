@@ -26,7 +26,7 @@ function UserDetailContent() {
         }
     }, [userId, router])
 
-    const { users, currentUser, tasks, projects, expenses, incomes } = useProjects()
+    const { users, currentUser, tasks, projects, expenses, incomes, currentTeam } = useProjects()
     const { t } = useTranslation()
 
     // State for Edit Dialog
@@ -67,7 +67,8 @@ function UserDetailContent() {
         // Better: where('relatedUserIds', 'array-contains', user.id)
 
         try {
-            const currentOrgId = currentUser?.orgIds?.[0] || user.orgIds[0] // Fallback
+            const currentOrgId = currentTeam?.id
+            if (!currentOrgId) return
 
             // Construct Query
             const q = query(

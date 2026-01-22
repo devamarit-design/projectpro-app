@@ -46,7 +46,9 @@ export interface SubProject {
 
 export interface CompanyProfile {
     name: string
+    nameEn?: string // English Company Name
     address: string
+    addressEn?: string // English Address
     taxId: string
     phone: string
     logo?: string
@@ -55,6 +57,8 @@ export interface CompanyProfile {
     description?: string // Added description
     email?: string
     website?: string
+    primaryColor?: string
+    secondaryColor?: string
     updatedAt?: string // Timestamp
 }
 
@@ -743,17 +747,20 @@ export interface CompanyProfile {
 }
 
 export const INITIAL_COMPANY_PROFILE: CompanyProfile = {
-    name: "Project Pro Construction Co., Ltd.",
-    address: "123 Construction Road, Building A, Bangkok 10110",
-    taxId: "0105551234567",
-    phone: "02-123-4567",
-    email: "contact@hipslothproject.com",
-    website: "www.hipslothproject.com",
+    name: "",
+    nameEn: "",
+    address: "",
+    addressEn: "",
+    taxId: "",
+    phone: "",
+    paymentInfo: "",
+    signatureName: "",
+    description: "",
+    email: "",
+    website: "",
     logo: "",
     primaryColor: "#000000",
     secondaryColor: "#ffffff",
-    paymentInfo: "Bank: KBANK\nAcc: 123-4-56789-0",
-    description: "Welcome to HipslothProject"
 }
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
@@ -802,16 +809,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         return {
             id: currentOrg.id,
             name: currentOrg.name,
+            nameEn: currentOrg.settings.nameEn || "",
             role: role,
             address: currentOrg.settings.address || "",
+            addressEn: currentOrg.settings.addressEn || "",
             taxId: currentOrg.settings.taxId || "",
             phone: currentOrg.settings.phone || "",
             email: currentOrg.settings.email || "",
             website: currentOrg.settings.website || "",
             logo: currentOrg.settings.logoUrl,
-            description: "",
-            paymentInfo: "",
-            signatureName: ""
+            description: currentOrg.settings.description || "",
+            paymentInfo: currentOrg.settings.paymentInfo || "",
+            signatureName: currentOrg.settings.signatureName || ""
         }
     }, [currentOrg, currentUser])
 
@@ -824,14 +833,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             return {
                 id: org.id,
                 name: org.name,
+                nameEn: org.settings.nameEn || "",
                 role: role,
                 address: org.settings.address || "",
+                addressEn: org.settings.addressEn || "",
                 taxId: org.settings.taxId || "",
                 phone: org.settings.phone || "",
                 logo: org.settings.logoUrl,
-                description: "",
-                paymentInfo: "",
-                signatureName: ""
+                description: org.settings.description || "",
+                paymentInfo: org.settings.paymentInfo || "",
+                signatureName: org.settings.signatureName || ""
             }
         })
     }, [userOrgs, currentUser])
@@ -844,7 +855,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // Derived Company Profile from Current Team (Moved here to fix hoisting)
     const companyProfile: CompanyProfile = currentTeam ? {
         name: currentTeam.name,
+        nameEn: currentTeam.nameEn,
         address: currentTeam.address,
+        addressEn: currentTeam.addressEn,
         taxId: currentTeam.taxId,
         phone: currentTeam.phone,
         email: currentTeam.email,
@@ -852,7 +865,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         logo: currentTeam.logo,
         primaryColor: currentTeam.primaryColor,
         secondaryColor: currentTeam.secondaryColor,
-        description: currentTeam.description
+        description: currentTeam.description,
+        paymentInfo: currentTeam.paymentInfo,
+        signatureName: currentTeam.signatureName
     } : INITIAL_COMPANY_PROFILE
 
 
@@ -1106,23 +1121,38 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // Load User's Teams (Real-time) - REMOVED (Handled by OrganizationContext)
 
 
-    // --- Real-time Data Sync ---
     // --- Real-time Data Sync with Cache-First Strategy ---
     useEffect(() => {
-        if (!currentTeam) {
-            // ... (clear state logic remains same if needed)
-            setTimeout(() => {
-                setProjects([])
-                setExpenses([])
-                setWorkers([])
-                setVendors([])
-                setCustomers([])
-                setIncomes([])
-                setIncomesLoading(false)
-                setIsLoading(false) // FIX: Ensure global loading stops so redirections can happen
-            }, 0)
+        if (!currentTeam?.id) {
+            // If no team, clear everything
+            setProjects([])
+            setExpenses([])
+            setWorkers([])
+            setVendors([])
+            setCustomers([])
+            setIncomes([])
+            setIncomesLoading(false)
+            setContracts([])
+            setTasks([])
+            setUsers([])
+            setFiles([])
+            setIsLoading(false)
             return
         }
+
+        setIsLoading(true)
+
+        // ORG ISOLATION: Clear current data state to prevent leaks while loading next org
+        setProjects([])
+        setExpenses([])
+        setWorkers([])
+        setVendors([])
+        setCustomers([])
+        setIncomes([])
+        setContracts([])
+        setTasks([])
+        setUsers([])
+        setFiles([])
 
         // 0. Cache Hydration (Load from IndexedDB immediately)
         const hydrateFromCache = async () => {
@@ -1254,7 +1284,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 ) {
                     try {
                         await updateDoc(doc(db, "tasks", task.id), { isArchived: true })
-                        console.log(`Auto-archived task: ${task.title}`)
                     } catch (e) {
                         console.error("Error auto-archiving task:", e)
                     }
@@ -1262,7 +1291,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             }
         })
 
-        // 9. Team Members - Query both orgIds and teamIds for compatibility
+        // 9. Team Members
         const qUsersOrgIds = query(collection(db, "users"), where("orgIds", "array-contains", currentTeam.id))
         const qUsersTeamIds = query(collection(db, "users"), where("teamIds", "array-contains", currentTeam.id))
 
@@ -1270,30 +1299,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         let usersFromTeamIds: User[] = []
 
         const mergeUsers = () => {
-            // Merge and dedupe by id - combine both arrays
             const userMap = new Map<string, User>()
-            // Add from orgIds first
             usersFromOrgIds.forEach(u => userMap.set(u.id, u))
-            // Add from teamIds (will overwrite or add new)
             usersFromTeamIds.forEach(u => userMap.set(u.id, u))
-
-            const merged = Array.from(userMap.values())
-            console.log(`[DEBUG] Merged users:`, merged.map(u => u.name))
-            setUsers(merged)
-            if (merged.length > 0) {
-                set(`users_${currentTeam.id}`, merged)
-            }
+            setUsers(Array.from(userMap.values()))
         }
 
         const unsubUsersOrgIds = onSnapshot(qUsersOrgIds, (snap) => {
             usersFromOrgIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
-            console.log(`[DEBUG] Users from orgIds (${currentTeam.id}):`, usersFromOrgIds.map(u => u.name))
             mergeUsers()
         })
 
         const unsubUsersTeamIds = onSnapshot(qUsersTeamIds, (snap) => {
             usersFromTeamIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
-            console.log(`[DEBUG] Users from teamIds (${currentTeam.id}):`, usersFromTeamIds.map(u => u.name))
             mergeUsers()
         })
 
@@ -1318,7 +1336,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             unsubUsersTeamIds()
             unsubFiles()
         }
-    }, [currentTeam])
+    }, [currentTeam?.id])
 
     const seedData = async () => {
         if (!currentTeam || !currentUser) return
@@ -2150,14 +2168,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
             const orgUpdates: any = {}
             if (updates.name) orgUpdates.name = updates.name
+            if (updates.nameEn !== undefined) orgUpdates['settings.nameEn'] = updates.nameEn
 
             // Settings map
             if (updates.address) orgUpdates['settings.address'] = updates.address
+            if (updates.addressEn !== undefined) orgUpdates['settings.addressEn'] = updates.addressEn
             if (updates.taxId) orgUpdates['settings.taxId'] = updates.taxId
             if (updates.phone) orgUpdates['settings.phone'] = updates.phone
             if (updates.logo) orgUpdates['settings.logoUrl'] = updates.logo
             if (updates.email) orgUpdates['settings.email'] = updates.email
             if (updates.website) orgUpdates['settings.website'] = updates.website
+            if (updates.paymentInfo !== undefined) orgUpdates['settings.paymentInfo'] = updates.paymentInfo
+            if (updates.signatureName !== undefined) orgUpdates['settings.signatureName'] = updates.signatureName
+            if (updates.description !== undefined) orgUpdates['settings.description'] = updates.description
 
             await updateDoc(orgRef, { ...orgUpdates, updatedAt: new Date().toISOString() })
 

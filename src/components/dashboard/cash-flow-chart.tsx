@@ -84,7 +84,13 @@ export function CashFlowChart() {
                 </div>
             </div>
 
-            <div className="h-[300px] w-full">
+            <div className="h-[300px] w-full relative group">
+                {/* Premium Background Effects */}
+                <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent rounded-2xl pointer-events-none" />
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, var(--foreground) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+                <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
+                <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none" />
+
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} barGap={8}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.3} />
@@ -112,12 +118,12 @@ export function CashFlowChart() {
                                             <p className="text-sm font-semibold mb-2">{payload[0].payload.fullName}</p>
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2 text-xs">
-                                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#3b82f6' }} />
                                                     <span className="text-muted-foreground">Income:</span>
                                                     <span className="font-mono font-medium ml-auto">฿{Number(payload[0].value).toLocaleString()}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 text-xs">
-                                                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }} />
                                                     <span className="text-muted-foreground">Expense:</span>
                                                     <span className="font-mono font-medium ml-auto">฿{Number(payload[1].value).toLocaleString()}</span>
                                                 </div>

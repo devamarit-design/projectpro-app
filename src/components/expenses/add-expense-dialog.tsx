@@ -10,6 +10,8 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { uploadWithThumbnail } from "@/lib/upload"
 import SearchableCombobox from "@/components/ui/searchable-combobox"
+import { useOrganization } from "@/context/organization-context"
+import { sendExpenseNotification } from "@/lib/functions-client"
 
 interface AddExpenseDialogProps {
     isOpen: boolean
@@ -23,6 +25,7 @@ import { useTranslation } from "@/lib/i18n-context"
 
 export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, startScanning, defaultDate }: AddExpenseDialogProps) {
     const { addExpense, addProject, addTask, addSubProject, addUser, addVendor, addWorker, projects, tasks, users, vendors, workers, currentUser } = useProjects()
+    const { currentOrg } = useOrganization()
     const { t } = useTranslation()
 
     const [isScanOpen, setIsScanOpen] = React.useState(false)
@@ -243,12 +246,41 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         try {
             let finalReceiptUrl = receiptImage
             let finalThumbnailUrl = undefined
+            let fileToUpload = receiptFile
 
-            if (receiptFile) {
+            // handle smart scan base64 image
+            if (!fileToUpload && receiptImage && receiptImage.startsWith('data:image')) {
+                try {
+                    const res = await fetch(receiptImage)
+                    const blob = await res.blob()
+                    fileToUpload = new File([blob], `scan_${Date.now()}.jpg`, { type: "image/jpeg" })
+                } catch (err) {
+                    console.error("Failed to convert base64 to file", err)
+                }
+            }
+
+            if (fileToUpload) {
+                // Compress before upload
+                if (fileToUpload.size > 1024 * 1024) { // Only compress if > 1MB
+                    try {
+                        const { default: imageCompression } = await import('browser-image-compression')
+                        const options = {
+                            maxSizeMB: 1.5,
+                            maxWidthOrHeight: 1920,
+                            useWebWorker: true
+                        }
+                        const compressedFile = await imageCompression(fileToUpload, options)
+                        // Create a new File from the Blob to preserve name/type (imageCompression returns Blob)
+                        fileToUpload = new File([compressedFile], fileToUpload.name, { type: fileToUpload.type })
+                    } catch (error) {
+                        console.warn("Compression failed, uploading original:", error)
+                    }
+                }
+
                 // Determine path based on organization or project
                 // For now, simpler path structure
-                const path = `expenses / ${new Date().getFullYear()} `
-                const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(receiptFile, path)
+                const path = `expenses/${new Date().getFullYear()}`
+                const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(fileToUpload, path)
                 finalReceiptUrl = originalUrl
                 finalThumbnailUrl = thumbnailUrl
             }
@@ -353,6 +385,37 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             }
 
             toast.success("Expense added successfully")
+
+            // Send Telegram Notification (silent fail - don't block expense creation)
+            if (currentOrg?.id) {
+                const project = projects.find(p => p.id === (billType === 'combine' ? globalProjectId : items[0]?.projectId))
+
+                // Find subProjectName
+                let subProjectName = undefined
+                const subProjectId = billType === 'combine' ? globalSubProjectId : items[0]?.subProjectId
+                if (subProjectId && project) {
+                    subProjectName = project.subProjects?.find(sp => sp.id === subProjectId)?.name
+                }
+
+                try {
+                    await sendExpenseNotification({
+                        orgId: currentOrg.id,
+                        expense: {
+                            projectName: project?.name || 'ไม่ระบุโครงการ',
+                            subProjectName: subProjectName,
+                            itemName: title || payee || 'ไม่ระบุรายการ',
+                            amount: subtotal,
+                            userName: currentUser?.name || 'Unknown',
+                            date: date,
+                            status: status
+                        }
+                    })
+                } catch (telegramError) {
+                    // Silent fail - don't show error to user
+                    console.warn('Telegram notification failed:', telegramError)
+                }
+            }
+
             onClose()
         } catch (error: any) {
             console.error("Error adding expense:", error)

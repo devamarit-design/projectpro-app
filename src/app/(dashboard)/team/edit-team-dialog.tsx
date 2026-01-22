@@ -45,8 +45,10 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
         if (isOpen && team) {
             setFormData({
                 name: team.name,
+                nameEn: team.nameEn || "",
                 description: team.description || "",
                 address: team.address || "",
+                addressEn: team.addressEn || "",
                 taxId: team.taxId || "",
                 phone: team.phone || "",
                 email: team.email || "",
@@ -139,6 +141,18 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
                             />
                         </div>
 
+                        {/* Name (EN) */}
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium ml-1">Company Name (English)</label>
+                            <input
+                                name="nameEn"
+                                value={formData.nameEn || ""}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2.5 rounded-xl border bg-muted/30 focus:bg-background transition-colors outline-none focus:ring-2 focus:ring-primary/50"
+                                placeholder="Company Name in English"
+                            />
+                        </div>
+
                         {/* Description */}
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium ml-1">Team Description</label>
@@ -160,8 +174,21 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
                                 rows={2}
                                 value={formData.address || ""}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2.5 rounded-xl border bg-muted/30 focus:bg-background transition-colors outline-none focus:ring-2 focus:ring-primary/50 resize-none"
-                                placeholder="Office Address"
+                                className="w-full px-3 py-2.5 rounded-xl border bg-muted/30 focus:bg-background transition-colors outline-none focus:ring-2 focus:ring-primary/50 resize-none text-sm"
+                                placeholder="ที่อยู่ภาษาไทย"
+                            />
+                        </div>
+
+                        {/* Address (EN) */}
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium ml-1">Company Address (English)</label>
+                            <textarea
+                                name="addressEn"
+                                rows={2}
+                                value={formData.addressEn || ""}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2.5 rounded-xl border bg-muted/30 focus:bg-background transition-colors outline-none focus:ring-2 focus:ring-primary/50 resize-none text-sm"
+                                placeholder="Address in English"
                             />
                         </div>
 

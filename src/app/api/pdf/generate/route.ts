@@ -1,69 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server'
-import puppeteer from 'puppeteer-core'
+import puppeteer from 'puppeteer'
 
-// PDF generation using Puppeteer - supports Thai fonts
+// PDF generation using Puppeteer - renders actual preview page for pixel-perfect output
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { html, filename = 'document.pdf' } = body
+        const { url, filename = 'document.pdf' } = body
 
-        if (!html) {
-            return NextResponse.json({ error: 'HTML content is required' }, { status: 400 })
+        if (!url) {
+            return NextResponse.json({ error: 'URL is required' }, { status: 400 })
         }
 
-        // Get Chrome executable path based on platform
-        let executablePath: string
-        if (process.platform === 'darwin') {
-            executablePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-        } else if (process.platform === 'win32') {
-            executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-        } else {
-            executablePath = '/usr/bin/chromium-browser'
-        }
-
-        // Configure browser
+        // Launch Puppeteer with full Chrome
         const browser = await puppeteer.launch({
-            executablePath,
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--font-render-hinting=none', // Better font rendering
+            ]
         })
 
         const page = await browser.newPage()
 
-        // Inject Thai font CSS with proper loading
-        const fullHtml = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <link rel="preconnect" href="https://fonts.googleapis.com">
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-                <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
-                    * { font-family: 'Sarabun', 'Noto Sans Thai', sans-serif !important; }
-                    body { margin: 0; padding: 20px; }
-                    @page { margin: 0; }
-                </style>
-            </head>
-            <body>
-                ${html}
-            </body>
-            </html>
-        `
+        // Set viewport to A4 size at high DPI
+        await page.setViewport({
+            width: 794, // A4 width at 96 DPI
+            height: 1123, // A4 height at 96 DPI
+            deviceScaleFactor: 2 // High quality
+        })
 
-        await page.setContent(fullHtml, { waitUntil: 'networkidle0' })
+        // Navigate to the preview page with print mode (hides toolbars)
+        const printUrl = url.includes('?') ? `${url}&print=true` : `${url}?print=true`
+
+        await page.goto(printUrl, {
+            waitUntil: 'networkidle0',
+            timeout: 30000
+        })
+
+        // Wait for content to be ready
+        try {
+            await page.waitForSelector('#preview-content', { timeout: 10000 })
+        } catch {
+            // Fallback if selector not found
+            await new Promise(r => setTimeout(r, 2000))
+        }
+
+        // Wait for all images to load
+        await page.evaluate(() => {
+            return Promise.all(
+                Array.from(document.images)
+                    .filter(img => !img.complete)
+                    .map(img => new Promise(resolve => {
+                        img.onload = img.onerror = resolve
+                    }))
+            )
+        })
 
         // Wait for fonts to load
         await page.evaluateHandle('document.fonts.ready')
 
-        // Additional wait to ensure fonts are rendered
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Small delay for any animations to complete
+        await new Promise(r => setTimeout(r, 500))
 
+        // Generate PDF
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
-            margin: { top: '20mm', right: '20mm', bottom: '20mm', left: '20mm' }
+            margin: { top: 0, right: 0, bottom: 0, left: 0 },
+            preferCSSPageSize: true
         })
 
         await browser.close()
@@ -76,8 +83,10 @@ export async function POST(request: NextRequest) {
             headers: {
                 'Content-Type': 'application/pdf',
                 'Content-Disposition': `attachment; filename*=UTF-8''${safeFilename}`,
+                'Content-Length': pdfBuffer.length.toString()
             },
         })
+
     } catch (error) {
         console.error('PDF generation error:', error)
         return NextResponse.json(
@@ -86,3 +95,23 @@ export async function POST(request: NextRequest) {
         )
     }
 }
+
+// Support GET for simple testing
+export async function GET(request: NextRequest) {
+    const url = request.nextUrl.searchParams.get('url')
+    const filename = request.nextUrl.searchParams.get('filename') || 'document.pdf'
+
+    if (!url) {
+        return NextResponse.json({ error: 'URL parameter is required' }, { status: 400 })
+    }
+
+    // Create a mock request body and call POST
+    const mockRequest = new NextRequest(request.url, {
+        method: 'POST',
+        body: JSON.stringify({ url, filename }),
+        headers: { 'Content-Type': 'application/json' }
+    })
+
+    return POST(mockRequest)
+}
+

@@ -1,0 +1,332 @@
+[debug] [2026-01-22T08:04:46.289Z] ----------------------------------------------------------------------
+[debug] [2026-01-22T08:04:46.290Z] Command:       /usr/local/bin/node /Users/beer/.gemini/antigravity/scratch/projectpro-app/node_modules/.bin/firebase emulators:start --only functions
+[debug] [2026-01-22T08:04:46.291Z] CLI Version:   15.3.1
+[debug] [2026-01-22T08:04:46.291Z] Platform:      darwin
+[debug] [2026-01-22T08:04:46.291Z] Node Version:  v22.16.0
+[debug] [2026-01-22T08:04:46.291Z] Time:          Thu Jan 22 2026 15:04:46 GMT+0700 (Indochina Time)
+[debug] [2026-01-22T08:04:46.291Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-01-22T08:04:46.937Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-22T08:04:46.938Z] > authorizing via signed-in user (dev.amarit@gmail.com)
+[info] i  emulators: Starting emulators: functions {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: functions"}}
+[debug] [2026-01-22T08:04:47.126Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-01-22T08:04:47.127Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2026-01-22T08:04:47.129Z] Write emulator hub locator at /var/folders/1f/_z9lz9ln0kn53xjznsss_1d40000gn/T/hub-projectpro-app-76535.json
+[debug] [2026-01-22T08:04:47.298Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-01-22T08:04:47.298Z] [eventarc] Eventarc Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-01-22T08:04:47.298Z] [tasks] Cloud Tasks Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-01-22T08:04:47.298Z] late-assigned ports for functions and eventarc emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"functions":[{"address":"127.0.0.1","family":"IPv4","port":5001}],"eventarc":[{"address":"127.0.0.1","family":"IPv4","port":9299}],"tasks":[{"address":"127.0.0.1","family":"IPv4","port":9499}]},"metadata":{"message":"late-assigned ports for functions and eventarc emulators"}}
+[warn] ⚠  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect {"metadata":{"emulator":{"name":"functions"},"message":"The following emulators are not running, calls to these services from the Functions emulator will affect production: \u001b[1mapphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect\u001b[22m"}}
+[debug] [2026-01-22T08:04:47.303Z] defaultcredentials: writing to file /Users/beer/.config/firebase/dev_amarit_gmail.com_application_default_credentials.json
+[debug] [2026-01-22T08:04:47.304Z] Setting GAC to /Users/beer/.config/firebase/dev_amarit_gmail.com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /Users/beer/.config/firebase/dev_amarit_gmail.com_application_default_credentials.json"}}
+[debug] [2026-01-22T08:04:47.304Z] Checked if tokens are valid: false, expires at: 1768998918434
+[debug] [2026-01-22T08:04:47.304Z] Checked if tokens are valid: false, expires at: 1768998918434
+[debug] [2026-01-22T08:04:47.304Z] > refreshing access token with scopes: []
+[debug] [2026-01-22T08:04:47.305Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-22T08:04:47.305Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-22T08:04:47.729Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-01-22T08:04:47.730Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-22T08:04:47.741Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535/adminSdkConfig [none]
+[debug] [2026-01-22T08:04:48.642Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535/adminSdkConfig 200
+[debug] [2026-01-22T08:04:48.642Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535/adminSdkConfig {"projectId":"projectpro-app-76535","storageBucket":"projectpro-app-76535.firebasestorage.app"}
+[info] i  ui: downloading ui-v1.15.0.zip... {"metadata":{"emulator":{"name":"ui"},"message":"downloading ui-v1.15.0.zip..."}}
+[debug] [2026-01-22T08:04:48.652Z] >>> [apiv2][query] GET https://storage.googleapis.com/firebase-preview-drop/emulator/ui-v1.15.0.zip 
+[debug] [2026-01-22T08:04:49.262Z] <<< [apiv2][status] GET https://storage.googleapis.com/firebase-preview-drop/emulator/ui-v1.15.0.zip 200
+[debug] [2026-01-22T08:04:49.262Z] <<< [apiv2][body] GET https://storage.googleapis.com/firebase-preview-drop/emulator/ui-v1.15.0.zip [stream]
+[debug] [2026-01-22T08:04:50.007Z] Data is 3538469
+[debug] [2026-01-22T08:04:50.008Z] [unzip] Entry: client/ (compressed_size=0 bytes, uncompressed_size=0 bytes)
+[debug] [2026-01-22T08:04:50.008Z] [unzip] Processing entry: client/
+[debug] [2026-01-22T08:04:50.008Z] [unzip] mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/
+[debug] [2026-01-22T08:04:50.008Z] [unzip] Entry: client/favicon-16x16.png (compressed_size=293 bytes, uncompressed_size=293 bytes)
+[debug] [2026-01-22T08:04:50.008Z] [unzip] Processing entry: client/favicon-16x16.png
+[debug] [2026-01-22T08:04:50.008Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client
+[debug] [2026-01-22T08:04:50.008Z] [unzip] Writing file: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/favicon-16x16.png
+[debug] [2026-01-22T08:04:50.009Z] [unzip] Entry: client/safari-pinned-tab.svg (compressed_size=1433 bytes, uncompressed_size=2611 bytes)
+[debug] [2026-01-22T08:04:50.009Z] [unzip] Processing entry: client/safari-pinned-tab.svg
+[debug] [2026-01-22T08:04:50.009Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client
+[debug] [2026-01-22T08:04:50.009Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/safari-pinned-tab.svg
+[debug] [2026-01-22T08:04:50.011Z] [unzip] Entry: client/favicon.ico (compressed_size=2933 bytes, uncompressed_size=13294 bytes)
+[debug] [2026-01-22T08:04:50.011Z] [unzip] Processing entry: client/favicon.ico
+[debug] [2026-01-22T08:04:50.011Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client
+[debug] [2026-01-22T08:04:50.011Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/favicon.ico
+[debug] [2026-01-22T08:04:50.012Z] [unzip] Entry: client/index.html (compressed_size=1364 bytes, uncompressed_size=3071 bytes)
+[debug] [2026-01-22T08:04:50.012Z] [unzip] Processing entry: client/index.html
+[debug] [2026-01-22T08:04:50.012Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client
+[debug] [2026-01-22T08:04:50.012Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/index.html
+[debug] [2026-01-22T08:04:50.013Z] [unzip] Entry: client/android-chrome-192x192.png (compressed_size=2684 bytes, uncompressed_size=2684 bytes)
+[debug] [2026-01-22T08:04:50.013Z] [unzip] Processing entry: client/android-chrome-192x192.png
+[debug] [2026-01-22T08:04:50.013Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client
+[debug] [2026-01-22T08:04:50.013Z] [unzip] Writing file: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/android-chrome-192x192.png
+[debug] [2026-01-22T08:04:50.013Z] [unzip] Entry: client/apple-touch-icon.png (compressed_size=2123 bytes, uncompressed_size=2152 bytes)
+[debug] [2026-01-22T08:04:50.013Z] [unzip] Processing entry: client/apple-touch-icon.png
+[debug] [2026-01-22T08:04:50.013Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client
+[debug] [2026-01-22T08:04:50.013Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/apple-touch-icon.png
+[debug] [2026-01-22T08:04:50.014Z] [unzip] Entry: client/android-chrome-512x512.png (compressed_size=5369 bytes, uncompressed_size=5411 bytes)
+[debug] [2026-01-22T08:04:50.014Z] [unzip] Processing entry: client/android-chrome-512x512.png
+[debug] [2026-01-22T08:04:50.014Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client
+[debug] [2026-01-22T08:04:50.014Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/android-chrome-512x512.png
+[debug] [2026-01-22T08:04:50.014Z] [unzip] Entry: client/manifest.json (compressed_size=245 bytes, uncompressed_size=551 bytes)
+[debug] [2026-01-22T08:04:50.014Z] [unzip] Processing entry: client/manifest.json
+[debug] [2026-01-22T08:04:50.014Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client
+[debug] [2026-01-22T08:04:50.016Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/manifest.json
+[debug] [2026-01-22T08:04:50.018Z] [unzip] Entry: client/robots.txt (compressed_size=26 bytes, uncompressed_size=26 bytes)
+[debug] [2026-01-22T08:04:50.018Z] [unzip] Processing entry: client/robots.txt
+[debug] [2026-01-22T08:04:50.018Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client
+[debug] [2026-01-22T08:04:50.018Z] [unzip] Writing file: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/robots.txt
+[debug] [2026-01-22T08:04:50.019Z] [unzip] Entry: client/mstile-150x150.png (compressed_size=2034 bytes, uncompressed_size=2034 bytes)
+[debug] [2026-01-22T08:04:50.019Z] [unzip] Processing entry: client/mstile-150x150.png
+[debug] [2026-01-22T08:04:50.019Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client
+[debug] [2026-01-22T08:04:50.019Z] [unzip] Writing file: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/mstile-150x150.png
+[debug] [2026-01-22T08:04:50.020Z] [unzip] Entry: client/assets/ (compressed_size=0 bytes, uncompressed_size=0 bytes)
+[debug] [2026-01-22T08:04:50.020Z] [unzip] Processing entry: client/assets/
+[debug] [2026-01-22T08:04:50.020Z] [unzip] mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/
+[debug] [2026-01-22T08:04:50.020Z] [unzip] Entry: client/assets/index-BX-A56oj.js (compressed_size=582089 bytes, uncompressed_size=2092775 bytes)
+[debug] [2026-01-22T08:04:50.020Z] [unzip] Processing entry: client/assets/index-BX-A56oj.js
+[debug] [2026-01-22T08:04:50.020Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets
+[debug] [2026-01-22T08:04:50.020Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/index-BX-A56oj.js
+[debug] [2026-01-22T08:04:50.033Z] [unzip] Entry: client/assets/index-CjB9C900.css (compressed_size=35979 bytes, uncompressed_size=298654 bytes)
+[debug] [2026-01-22T08:04:50.033Z] [unzip] Processing entry: client/assets/index-CjB9C900.css
+[debug] [2026-01-22T08:04:50.033Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets
+[debug] [2026-01-22T08:04:50.033Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/index-CjB9C900.css
+[debug] [2026-01-22T08:04:50.034Z] [unzip] Entry: client/assets/index-BX-A56oj.js.map (compressed_size=2362482 bytes, uncompressed_size=10036679 bytes)
+[debug] [2026-01-22T08:04:50.034Z] [unzip] Processing entry: client/assets/index-BX-A56oj.js.map
+[debug] [2026-01-22T08:04:50.034Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets
+[debug] [2026-01-22T08:04:50.035Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/index-BX-A56oj.js.map
+[debug] [2026-01-22T08:04:50.056Z] [unzip] Entry: client/assets/extensions/ (compressed_size=0 bytes, uncompressed_size=0 bytes)
+[debug] [2026-01-22T08:04:50.056Z] [unzip] Processing entry: client/assets/extensions/
+[debug] [2026-01-22T08:04:50.056Z] [unzip] mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/extensions/
+[debug] [2026-01-22T08:04:50.056Z] [unzip] Entry: client/assets/extensions/default-extension.png (compressed_size=1646 bytes, uncompressed_size=1657 bytes)
+[debug] [2026-01-22T08:04:50.056Z] [unzip] Processing entry: client/assets/extensions/default-extension.png
+[debug] [2026-01-22T08:04:50.056Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/extensions
+[debug] [2026-01-22T08:04:50.056Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/extensions/default-extension.png
+[debug] [2026-01-22T08:04:50.057Z] [unzip] Entry: client/assets/img/ (compressed_size=0 bytes, uncompressed_size=0 bytes)
+[debug] [2026-01-22T08:04:50.057Z] [unzip] Processing entry: client/assets/img/
+[debug] [2026-01-22T08:04:50.057Z] [unzip] mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/img/
+[debug] [2026-01-22T08:04:50.057Z] [unzip] Entry: client/assets/img/database.png (compressed_size=29449 bytes, uncompressed_size=29988 bytes)
+[debug] [2026-01-22T08:04:50.057Z] [unzip] Processing entry: client/assets/img/database.png
+[debug] [2026-01-22T08:04:50.057Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/img
+[debug] [2026-01-22T08:04:50.057Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/img/database.png
+[debug] [2026-01-22T08:04:50.057Z] [unzip] Entry: client/assets/provider-icons/ (compressed_size=0 bytes, uncompressed_size=0 bytes)
+[debug] [2026-01-22T08:04:50.057Z] [unzip] Processing entry: client/assets/provider-icons/
+[debug] [2026-01-22T08:04:50.057Z] [unzip] mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/
+[debug] [2026-01-22T08:04:50.057Z] [unzip] Entry: client/assets/provider-icons/auth_service_saml.svg (compressed_size=575 bytes, uncompressed_size=1226 bytes)
+[debug] [2026-01-22T08:04:50.057Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_saml.svg
+[debug] [2026-01-22T08:04:50.057Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.057Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_saml.svg
+[debug] [2026-01-22T08:04:50.057Z] [unzip] Entry: client/assets/provider-icons/auth_service_phone.svg (compressed_size=261 bytes, uncompressed_size=414 bytes)
+[debug] [2026-01-22T08:04:50.057Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_phone.svg
+[debug] [2026-01-22T08:04:50.057Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.057Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_phone.svg
+[debug] [2026-01-22T08:04:50.058Z] [unzip] Entry: client/assets/provider-icons/auth_service_facebook.svg (compressed_size=289 bytes, uncompressed_size=457 bytes)
+[debug] [2026-01-22T08:04:50.058Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_facebook.svg
+[debug] [2026-01-22T08:04:50.058Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.058Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_facebook.svg
+[debug] [2026-01-22T08:04:50.058Z] [unzip] Entry: client/assets/provider-icons/auth_service_game_center.svg (compressed_size=991 bytes, uncompressed_size=3921 bytes)
+[debug] [2026-01-22T08:04:50.058Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_game_center.svg
+[debug] [2026-01-22T08:04:50.058Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.058Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_game_center.svg
+[debug] [2026-01-22T08:04:50.058Z] [unzip] Entry: client/assets/provider-icons/auth_service_apple.svg (compressed_size=230 bytes, uncompressed_size=334 bytes)
+[debug] [2026-01-22T08:04:50.058Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_apple.svg
+[debug] [2026-01-22T08:04:50.058Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.058Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_apple.svg
+[debug] [2026-01-22T08:04:50.058Z] [unzip] Entry: client/assets/provider-icons/auth_service_github.svg (compressed_size=466 bytes, uncompressed_size=838 bytes)
+[debug] [2026-01-22T08:04:50.058Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_github.svg
+[debug] [2026-01-22T08:04:50.058Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.059Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_github.svg
+[debug] [2026-01-22T08:04:50.059Z] [unzip] Entry: client/assets/provider-icons/auth_service_mslive.svg (compressed_size=203 bytes, uncompressed_size=378 bytes)
+[debug] [2026-01-22T08:04:50.059Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_mslive.svg
+[debug] [2026-01-22T08:04:50.059Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.059Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_mslive.svg
+[debug] [2026-01-22T08:04:50.059Z] [unzip] Entry: client/assets/provider-icons/auth_service_yahoo.svg (compressed_size=577 bytes, uncompressed_size=1182 bytes)
+[debug] [2026-01-22T08:04:50.059Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_yahoo.svg
+[debug] [2026-01-22T08:04:50.059Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.059Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_yahoo.svg
+[debug] [2026-01-22T08:04:50.059Z] [unzip] Entry: client/assets/provider-icons/auth_service_twitter.svg (compressed_size=444 bytes, uncompressed_size=751 bytes)
+[debug] [2026-01-22T08:04:50.059Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_twitter.svg
+[debug] [2026-01-22T08:04:50.059Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.059Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_twitter.svg
+[debug] [2026-01-22T08:04:50.059Z] [unzip] Entry: client/assets/provider-icons/auth_service_play_games.svg (compressed_size=565 bytes, uncompressed_size=1173 bytes)
+[debug] [2026-01-22T08:04:50.059Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_play_games.svg
+[debug] [2026-01-22T08:04:50.059Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.060Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_play_games.svg
+[debug] [2026-01-22T08:04:50.060Z] [unzip] Entry: client/assets/provider-icons/auth_service_email.svg (compressed_size=228 bytes, uncompressed_size=326 bytes)
+[debug] [2026-01-22T08:04:50.060Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_email.svg
+[debug] [2026-01-22T08:04:50.060Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.060Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_email.svg
+[debug] [2026-01-22T08:04:50.060Z] [unzip] Entry: client/assets/provider-icons/auth_service_google.svg (compressed_size=409 bytes, uncompressed_size=720 bytes)
+[debug] [2026-01-22T08:04:50.060Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_google.svg
+[debug] [2026-01-22T08:04:50.060Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.060Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_google.svg
+[debug] [2026-01-22T08:04:50.060Z] [unzip] Entry: client/assets/provider-icons/auth_service_oidc.svg (compressed_size=414 bytes, uncompressed_size=858 bytes)
+[debug] [2026-01-22T08:04:50.060Z] [unzip] Processing entry: client/assets/provider-icons/auth_service_oidc.svg
+[debug] [2026-01-22T08:04:50.060Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons
+[debug] [2026-01-22T08:04:50.060Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/assets/provider-icons/auth_service_oidc.svg
+[debug] [2026-01-22T08:04:50.061Z] [unzip] Entry: client/browserconfig.xml (compressed_size=491 bytes, uncompressed_size=822 bytes)
+[debug] [2026-01-22T08:04:50.061Z] [unzip] Processing entry: client/browserconfig.xml
+[debug] [2026-01-22T08:04:50.061Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client
+[debug] [2026-01-22T08:04:50.061Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/browserconfig.xml
+[debug] [2026-01-22T08:04:50.061Z] [unzip] Entry: client/favicon-32x32.png (compressed_size=475 bytes, uncompressed_size=475 bytes)
+[debug] [2026-01-22T08:04:50.061Z] [unzip] Processing entry: client/favicon-32x32.png
+[debug] [2026-01-22T08:04:50.061Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client
+[debug] [2026-01-22T08:04:50.061Z] [unzip] Writing file: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/client/favicon-32x32.png
+[debug] [2026-01-22T08:04:50.061Z] [unzip] Entry: server/ (compressed_size=0 bytes, uncompressed_size=0 bytes)
+[debug] [2026-01-22T08:04:50.061Z] [unzip] Processing entry: server/
+[debug] [2026-01-22T08:04:50.061Z] [unzip] mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/server/
+[debug] [2026-01-22T08:04:50.061Z] [unzip] Entry: server/server.mjs.map (compressed_size=217845 bytes, uncompressed_size=944978 bytes)
+[debug] [2026-01-22T08:04:50.061Z] [unzip] Processing entry: server/server.mjs.map
+[debug] [2026-01-22T08:04:50.061Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/server
+[debug] [2026-01-22T08:04:50.061Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/server/server.mjs.map
+[debug] [2026-01-22T08:04:50.063Z] [unzip] Entry: server/server.mjs (compressed_size=276407 bytes, uncompressed_size=933701 bytes)
+[debug] [2026-01-22T08:04:50.063Z] [unzip] Processing entry: server/server.mjs
+[debug] [2026-01-22T08:04:50.063Z] [unzip] else mkdir: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/server
+[debug] [2026-01-22T08:04:50.063Z] [unzip] deflating: /Users/beer/.cache/firebase/emulators/ui-v1.15.0/server/server.mjs
+[info] i  functions: Watching "/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions" for Cloud Functions... {"metadata":{"emulator":{"name":"functions"},"message":"Watching \"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions\" for Cloud Functions..."}}
+[debug] [2026-01-22T08:04:50.067Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2026-01-22T08:04:50.671Z] > [functions] package.json contents: {
+  "name": "functions",
+  "version": "1.0.0",
+  "description": "Cloud Functions for ProjectPro App",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "private": true
+}
+[debug] [2026-01-22T08:04:50.671Z] Building nodejs source
+[debug] [2026-01-22T08:04:50.671Z] Failed to find version of module node: reached end of search path /Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2026-01-22T08:04:50.672Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-01-22T08:04:50.675Z] Found firebase-functions binary at '/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8404
+
+[debug] [2026-01-22T08:04:51.440Z] Got response from /__/functions.yaml {"endpoints":{"sendExpenseNotification":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"region":["asia-southeast1"],"callableTrigger":{},"entryPoint":"sendExpenseNotification"},"testTelegramConnection":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"region":["asia-southeast1"],"callableTrigger":{},"entryPoint":"testTelegramConnection"},"sendPaymentDueReminders":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"region":["asia-southeast1"],"scheduleTrigger":{"schedule":"0 9 * * *","retryConfig":{"retryCount":null,"maxDoublings":null,"maxRetryDuration":null,"maxBackoffDuration":null,"minBackoffDuration":null},"timeZone":"Asia/Bangkok"},"labels":{},"entryPoint":"sendPaymentDueReminders"}},"specVersion":"v1alpha1","requiredAPIs":[{"api":"cloudscheduler.googleapis.com","reason":"Needed for scheduled functions."}],"extensions":{}}
+[info] ✔  functions: Loaded functions definitions from source: sendExpenseNotification, testTelegramConnection, sendPaymentDueReminders. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: sendExpenseNotification, testTelegramConnection, sendPaymentDueReminders."}}
+[info] ✔  functions[asia-southeast1-sendExpenseNotification]: http function initialized (http://127.0.0.1:5001/projectpro-app-76535/asia-southeast1/sendExpenseNotification). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/projectpro-app-76535/asia-southeast1/sendExpenseNotification)."}}
+[info] ✔  functions[asia-southeast1-testTelegramConnection]: http function initialized (http://127.0.0.1:5001/projectpro-app-76535/asia-southeast1/testTelegramConnection). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/projectpro-app-76535/asia-southeast1/testTelegramConnection)."}}
+[info] i  functions[asia-southeast1-sendPaymentDueReminders]: function ignored because the pubsub emulator does not exist or is not running. {"metadata":{"emulator":{"name":"functions"},"message":"function ignored because the pubsub emulator does not exist or is not running."}}
+[debug] [2026-01-22T08:04:55.464Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌───────────┬────────────────┬─────────────────────────────────┐
+│ Emulator  │ Host:Port      │ View in Emulator UI             │
+├───────────┼────────────────┼─────────────────────────────────┤
+│ Functions │ 127.0.0.1:5001 │ http://127.0.0.1:4000/functions │
+└───────────┴────────────────┴─────────────────────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+[debug] [2026-01-22T08:08:48.830Z] [work-queue] {"queuedWork":["/projectpro-app-76535/asia-southeast1/testTelegramConnection-2026-01-22T08:08:48.829Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2026-01-22T08:08:48.830Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/projectpro-app-76535/asia-southeast1/testTelegramConnection-2026-01-22T08:08:48.829Z"],"workRunningCount":1}
+[debug] [2026-01-22T08:08:48.830Z] Accepted request OPTIONS /projectpro-app-76535/asia-southeast1/testTelegramConnection --> asia-southeast1-testTelegramConnection
+[debug] [2026-01-22T08:08:48.834Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2026-01-22T08:08:48.834Z] [functions] Got req.url=/projectpro-app-76535/asia-southeast1/testTelegramConnection, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/projectpro-app-76535/asia-southeast1/testTelegramConnection, mapping to path=/"}}
+[debug] [2026-01-22T08:08:48.837Z] [worker-pool] addWorker(asia-southeast1-testTelegramConnection) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] addWorker(asia-southeast1-testTelegramConnection)"}}
+[debug] [2026-01-22T08:08:48.837Z] [worker-pool] Adding worker with key asia-southeast1-testTelegramConnection, total=1 {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Adding worker with key asia-southeast1-testTelegramConnection, total=1"}}
+[debug] [2026-01-22T08:08:49.330Z] [runtime-status] [6019] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[runtime-status] [6019] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2026-01-22T08:08:49.330Z] [runtime-status] [6019] Resolved module firebase-functions {"declared":true,"installed":true,"version":"5.1.1","resolution":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-functions/lib/v1/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[runtime-status] [6019] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"5.1.1\",\"resolution\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-functions/lib/v1/index.js\"}"}}
+[debug] [2026-01-22T08:08:49.330Z] [runtime-status] [6019] Outgoing network have been stubbed. [{"name":"http","status":"mocked"},{"name":"http","status":"mocked"},{"name":"https","status":"mocked"},{"name":"https","status":"mocked"},{"name":"net","status":"mocked"}] {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[runtime-status] [6019] Outgoing network have been stubbed. [{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"net\",\"status\":\"mocked\"}]"}}
+[debug] [2026-01-22T08:08:49.330Z] [runtime-status] [6019] Resolved module firebase-functions {"declared":true,"installed":true,"version":"5.1.1","resolution":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-functions/lib/v1/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[runtime-status] [6019] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"5.1.1\",\"resolution\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-functions/lib/v1/index.js\"}"}}
+[debug] [2026-01-22T08:08:49.402Z] [runtime-status] [6019] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[runtime-status] [6019] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2026-01-22T08:08:49.403Z] [runtime-status] [6019] Resolved module firebase-functions {"declared":true,"installed":true,"version":"5.1.1","resolution":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-functions/lib/v1/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[runtime-status] [6019] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"5.1.1\",\"resolution\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-functions/lib/v1/index.js\"}"}}
+[debug] [2026-01-22T08:08:49.468Z] [runtime-status] [6019] firebase-admin has been stubbed. {"adminResolution":{"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-admin/lib/index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[runtime-status] [6019] firebase-admin has been stubbed. {\"adminResolution\":{\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-admin/lib/index.js\"}}"}}
+[debug] [2026-01-22T08:08:49.469Z] [runtime-status] [6019] initializeApp(DEFAULT) {"storageBucket":"projectpro-app-76535.firebasestorage.app","projectId":"projectpro-app-76535"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[runtime-status] [6019] initializeApp(DEFAULT) {\"storageBucket\":\"projectpro-app-76535.firebasestorage.app\",\"projectId\":\"projectpro-app-76535\"}"}}
+[warn] ⚠  functions: The Cloud Firestore emulator is not running, so calls to Firestore will affect production. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"The Cloud Firestore emulator is not running, so calls to Firestore will affect production."}}
+[debug] [2026-01-22T08:08:49.472Z] [runtime-status] [6019] Functions runtime initialized. {"cwd":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions","node_version":"22.16.0"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[runtime-status] [6019] Functions runtime initialized. {\"cwd\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions\",\"node_version\":\"22.16.0\"}"}}
+[debug] [2026-01-22T08:08:49.472Z] [runtime-status] [6019] Listening to port: /var/folders/1f/_z9lz9ln0kn53xjznsss_1d40000gn/T/fire_emu_b10de04c1fba31fd.sock {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[runtime-status] [6019] Listening to port: /var/folders/1f/_z9lz9ln0kn53xjznsss_1d40000gn/T/fire_emu_b10de04c1fba31fd.sock"}}
+[debug] [2026-01-22T08:08:49.545Z] [worker-asia-southeast1-testTelegramConnection-26942ef3-0d22-48e6-b2c8-069fd4181be8]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[worker-asia-southeast1-testTelegramConnection-26942ef3-0d22-48e6-b2c8-069fd4181be8]: IDLE"}}
+[debug] [2026-01-22T08:08:49.545Z] [worker-pool] submitRequest(triggerId=asia-southeast1-testTelegramConnection) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=asia-southeast1-testTelegramConnection)"}}
+[info] i  functions: Beginning execution of "asia-southeast1-testTelegramConnection" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"Beginning execution of \"asia-southeast1-testTelegramConnection\""}}
+[debug] [2026-01-22T08:08:49.545Z] [worker-asia-southeast1-testTelegramConnection-26942ef3-0d22-48e6-b2c8-069fd4181be8]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[worker-asia-southeast1-testTelegramConnection-26942ef3-0d22-48e6-b2c8-069fd4181be8]: BUSY"}}
+[debug] [2026-01-22T08:08:49.547Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "asia-southeast1-testTelegramConnection" in 1.815584ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"Finished \"asia-southeast1-testTelegramConnection\" in 1.815584ms"}}
+[debug] [2026-01-22T08:08:49.547Z] [worker-asia-southeast1-testTelegramConnection-26942ef3-0d22-48e6-b2c8-069fd4181be8]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[worker-asia-southeast1-testTelegramConnection-26942ef3-0d22-48e6-b2c8-069fd4181be8]: IDLE"}}
+[debug] [2026-01-22T08:08:49.547Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2026-01-22T08:08:49.547Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2026-01-22T08:08:49.547Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2026-01-22T08:08:49.549Z] [work-queue] {"queuedWork":["/projectpro-app-76535/asia-southeast1/testTelegramConnection-2026-01-22T08:08:49.549Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2026-01-22T08:08:49.549Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/projectpro-app-76535/asia-southeast1/testTelegramConnection-2026-01-22T08:08:49.549Z"],"workRunningCount":1}
+[debug] [2026-01-22T08:08:49.549Z] Accepted request POST /projectpro-app-76535/asia-southeast1/testTelegramConnection --> asia-southeast1-testTelegramConnection
+[debug] [2026-01-22T08:08:49.549Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2026-01-22T08:08:49.549Z] [functions] Got req.url=/projectpro-app-76535/asia-southeast1/testTelegramConnection, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/projectpro-app-76535/asia-southeast1/testTelegramConnection, mapping to path=/"}}
+[debug] [2026-01-22T08:08:49.549Z] [worker-pool] submitRequest(triggerId=asia-southeast1-testTelegramConnection) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=asia-southeast1-testTelegramConnection)"}}
+[info] i  functions: Beginning execution of "asia-southeast1-testTelegramConnection" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"Beginning execution of \"asia-southeast1-testTelegramConnection\""}}
+[debug] [2026-01-22T08:08:49.550Z] [worker-asia-southeast1-testTelegramConnection-26942ef3-0d22-48e6-b2c8-069fd4181be8]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[worker-asia-southeast1-testTelegramConnection-26942ef3-0d22-48e6-b2c8-069fd4181be8]: BUSY"}}
+[info] >  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"} {"user":{"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"verifications\":{\"app\":\"MISSING\",\"auth\":\"VALID\"},\"logging.googleapis.com/labels\":{\"firebase-log-type\":\"callable-request-verification\"},\"severity\":\"DEBUG\",\"message\":\"Callable request verification passed\"}"}}
+[warn] ⚠  Google API requested!
+   - URL: "https://oauth2.googleapis.com/token"
+   - Be careful, this may be a production service. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"Google API requested!\n   - URL: \"https://oauth2.googleapis.com/token\"\n   - Be careful, this may be a production service."}}
+[debug] [2026-01-22T08:08:52.807Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "asia-southeast1-testTelegramConnection" in 3257.932958ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"Finished \"asia-southeast1-testTelegramConnection\" in 3257.932958ms"}}
+[debug] [2026-01-22T08:08:52.808Z] [worker-asia-southeast1-testTelegramConnection-26942ef3-0d22-48e6-b2c8-069fd4181be8]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"[worker-asia-southeast1-testTelegramConnection-26942ef3-0d22-48e6-b2c8-069fd4181be8]: IDLE"}}
+[debug] [2026-01-22T08:08:52.808Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2026-01-22T08:08:52.808Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-testTelegramConnection"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2026-01-22T08:08:52.808Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2026-01-22T08:18:13.960Z] [work-queue] {"queuedWork":["/projectpro-app-76535/asia-southeast1/sendExpenseNotification-2026-01-22T08:18:13.960Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2026-01-22T08:18:13.960Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/projectpro-app-76535/asia-southeast1/sendExpenseNotification-2026-01-22T08:18:13.960Z"],"workRunningCount":1}
+[debug] [2026-01-22T08:18:13.960Z] Accepted request OPTIONS /projectpro-app-76535/asia-southeast1/sendExpenseNotification --> asia-southeast1-sendExpenseNotification
+[debug] [2026-01-22T08:18:13.962Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2026-01-22T08:18:13.963Z] [functions] Got req.url=/projectpro-app-76535/asia-southeast1/sendExpenseNotification, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/projectpro-app-76535/asia-southeast1/sendExpenseNotification, mapping to path=/"}}
+[debug] [2026-01-22T08:18:13.965Z] [worker-pool] addWorker(asia-southeast1-sendExpenseNotification) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] addWorker(asia-southeast1-sendExpenseNotification)"}}
+[debug] [2026-01-22T08:18:13.965Z] [worker-pool] Adding worker with key asia-southeast1-sendExpenseNotification, total=1 {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Adding worker with key asia-southeast1-sendExpenseNotification, total=1"}}
+[debug] [2026-01-22T08:18:14.524Z] [runtime-status] [6554] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[runtime-status] [6554] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2026-01-22T08:18:14.524Z] [runtime-status] [6554] Resolved module firebase-functions {"declared":true,"installed":true,"version":"5.1.1","resolution":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-functions/lib/v1/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[runtime-status] [6554] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"5.1.1\",\"resolution\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-functions/lib/v1/index.js\"}"}}
+[debug] [2026-01-22T08:18:14.524Z] [runtime-status] [6554] Outgoing network have been stubbed. [{"name":"http","status":"mocked"},{"name":"http","status":"mocked"},{"name":"https","status":"mocked"},{"name":"https","status":"mocked"},{"name":"net","status":"mocked"}] {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[runtime-status] [6554] Outgoing network have been stubbed. [{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"net\",\"status\":\"mocked\"}]"}}
+[debug] [2026-01-22T08:18:14.524Z] [runtime-status] [6554] Resolved module firebase-functions {"declared":true,"installed":true,"version":"5.1.1","resolution":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-functions/lib/v1/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[runtime-status] [6554] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"5.1.1\",\"resolution\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-functions/lib/v1/index.js\"}"}}
+[debug] [2026-01-22T08:18:14.593Z] [runtime-status] [6554] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[runtime-status] [6554] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2026-01-22T08:18:14.594Z] [runtime-status] [6554] Resolved module firebase-functions {"declared":true,"installed":true,"version":"5.1.1","resolution":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-functions/lib/v1/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[runtime-status] [6554] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"5.1.1\",\"resolution\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-functions/lib/v1/index.js\"}"}}
+[debug] [2026-01-22T08:18:14.657Z] [runtime-status] [6554] firebase-admin has been stubbed. {"adminResolution":{"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-admin/lib/index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[runtime-status] [6554] firebase-admin has been stubbed. {\"adminResolution\":{\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions/node_modules/firebase-admin/lib/index.js\"}}"}}
+[debug] [2026-01-22T08:18:14.658Z] [runtime-status] [6554] initializeApp(DEFAULT) {"storageBucket":"projectpro-app-76535.firebasestorage.app","projectId":"projectpro-app-76535"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[runtime-status] [6554] initializeApp(DEFAULT) {\"storageBucket\":\"projectpro-app-76535.firebasestorage.app\",\"projectId\":\"projectpro-app-76535\"}"}}
+[debug] [2026-01-22T08:18:14.661Z] [runtime-status] [6554] Functions runtime initialized. {"cwd":"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions","node_version":"22.16.0"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[runtime-status] [6554] Functions runtime initialized. {\"cwd\":\"/Users/beer/.gemini/antigravity/scratch/projectpro-app/functions\",\"node_version\":\"22.16.0\"}"}}
+[debug] [2026-01-22T08:18:14.661Z] [runtime-status] [6554] Listening to port: /var/folders/1f/_z9lz9ln0kn53xjznsss_1d40000gn/T/fire_emu_7ed655685724b0c6.sock {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[runtime-status] [6554] Listening to port: /var/folders/1f/_z9lz9ln0kn53xjznsss_1d40000gn/T/fire_emu_7ed655685724b0c6.sock"}}
+[debug] [2026-01-22T08:18:14.676Z] [worker-asia-southeast1-sendExpenseNotification-0dbf75d4-62a5-4ade-bd0d-a7d7695af295]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[worker-asia-southeast1-sendExpenseNotification-0dbf75d4-62a5-4ade-bd0d-a7d7695af295]: IDLE"}}
+[debug] [2026-01-22T08:18:14.676Z] [worker-pool] submitRequest(triggerId=asia-southeast1-sendExpenseNotification) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=asia-southeast1-sendExpenseNotification)"}}
+[info] i  functions: Beginning execution of "asia-southeast1-sendExpenseNotification" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"Beginning execution of \"asia-southeast1-sendExpenseNotification\""}}
+[debug] [2026-01-22T08:18:14.676Z] [worker-asia-southeast1-sendExpenseNotification-0dbf75d4-62a5-4ade-bd0d-a7d7695af295]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[worker-asia-southeast1-sendExpenseNotification-0dbf75d4-62a5-4ade-bd0d-a7d7695af295]: BUSY"}}
+[debug] [2026-01-22T08:18:14.680Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "asia-southeast1-sendExpenseNotification" in 4.325083ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"Finished \"asia-southeast1-sendExpenseNotification\" in 4.325083ms"}}
+[debug] [2026-01-22T08:18:14.681Z] [worker-asia-southeast1-sendExpenseNotification-0dbf75d4-62a5-4ade-bd0d-a7d7695af295]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[worker-asia-southeast1-sendExpenseNotification-0dbf75d4-62a5-4ade-bd0d-a7d7695af295]: IDLE"}}
+[debug] [2026-01-22T08:18:14.681Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2026-01-22T08:18:14.681Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2026-01-22T08:18:14.681Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2026-01-22T08:18:14.682Z] [work-queue] {"queuedWork":["/projectpro-app-76535/asia-southeast1/sendExpenseNotification-2026-01-22T08:18:14.682Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2026-01-22T08:18:14.682Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/projectpro-app-76535/asia-southeast1/sendExpenseNotification-2026-01-22T08:18:14.682Z"],"workRunningCount":1}
+[debug] [2026-01-22T08:18:14.682Z] Accepted request POST /projectpro-app-76535/asia-southeast1/sendExpenseNotification --> asia-southeast1-sendExpenseNotification
+[debug] [2026-01-22T08:18:14.682Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2026-01-22T08:18:14.682Z] [functions] Got req.url=/projectpro-app-76535/asia-southeast1/sendExpenseNotification, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/projectpro-app-76535/asia-southeast1/sendExpenseNotification, mapping to path=/"}}
+[debug] [2026-01-22T08:18:14.682Z] [worker-pool] submitRequest(triggerId=asia-southeast1-sendExpenseNotification) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=asia-southeast1-sendExpenseNotification)"}}
+[info] i  functions: Beginning execution of "asia-southeast1-sendExpenseNotification" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"Beginning execution of \"asia-southeast1-sendExpenseNotification\""}}
+[debug] [2026-01-22T08:18:14.682Z] [worker-asia-southeast1-sendExpenseNotification-0dbf75d4-62a5-4ade-bd0d-a7d7695af295]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[worker-asia-southeast1-sendExpenseNotification-0dbf75d4-62a5-4ade-bd0d-a7d7695af295]: BUSY"}}
+[info] >  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"} {"user":{"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"verifications\":{\"app\":\"MISSING\",\"auth\":\"VALID\"},\"logging.googleapis.com/labels\":{\"firebase-log-type\":\"callable-request-verification\"},\"severity\":\"DEBUG\",\"message\":\"Callable request verification passed\"}"}}
+[warn] ⚠  Google API requested!
+   - URL: "https://oauth2.googleapis.com/token"
+   - Be careful, this may be a production service. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"Google API requested!\n   - URL: \"https://oauth2.googleapis.com/token\"\n   - Be careful, this may be a production service."}}
+[debug] [2026-01-22T08:18:17.973Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "asia-southeast1-sendExpenseNotification" in 3290.843375ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"Finished \"asia-southeast1-sendExpenseNotification\" in 3290.843375ms"}}
+[debug] [2026-01-22T08:18:17.973Z] [worker-asia-southeast1-sendExpenseNotification-0dbf75d4-62a5-4ade-bd0d-a7d7695af295]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"[worker-asia-southeast1-sendExpenseNotification-0dbf75d4-62a5-4ade-bd0d-a7d7695af295]: IDLE"}}
+[debug] [2026-01-22T08:18:17.973Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2026-01-22T08:18:17.974Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"asia-southeast1-sendExpenseNotification"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2026-01-22T08:18:17.974Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}

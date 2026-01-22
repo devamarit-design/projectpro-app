@@ -6,6 +6,8 @@ import { X, Calendar, Plus, Trash2, ChevronDown, ChevronUp, Image as ImageIcon, 
 import { cn, generateNextDocumentNumber } from "@/lib/utils"
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 import AddProjectDialog from "@/components/projects/add-project-dialog"
+import { useOrganization } from "@/context/organization-context"
+import { sendQuotationNotification } from "@/lib/functions-client"
 import SearchableCombobox from "@/components/ui/searchable-combobox"
 
 interface AddIncomeDialogProps {
@@ -16,8 +18,9 @@ interface AddIncomeDialogProps {
 }
 
 export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation", initialData }: AddIncomeDialogProps) {
-    const { incomes, customers, projects, addIncome, updateIncome } = useProjects()
+    const { incomes, customers, projects, addIncome, updateIncome, currentUser } = useProjects()
     const { t } = useTranslation()
+    const { currentOrg } = useOrganization()
 
     // Form State
     const [step, setStep] = useState<1 | 2>(1)
@@ -174,6 +177,28 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                 await updateIncome(initialData.id, docPayload as any)
             } else {
                 await addIncome(docPayload as any)
+
+                // Send Telegram Notification (Quotation only)
+                if (type === 'Quotation' && currentOrg?.id) {
+                    try {
+                        const project = projects.find(p => p.id === selectedProject)
+                        const customer = customers.find(c => c.id === selectedCustomer)
+
+                        sendQuotationNotification({
+                            orgId: currentOrg.id,
+                            quotation: {
+                                projectName: project?.name || t.income.dialog.select_project,
+                                customerName: customer?.name || t.income.dialog.select_customer,
+                                docNo: finalDocNumber,
+                                amount: grandTotal,
+                                userName: currentUser?.name || 'Unknown',
+                                date: date
+                            }
+                        })
+                    } catch (error) {
+                        console.error("Failed to send notification:", error)
+                    }
+                }
             }
 
             onOpenChange(false)

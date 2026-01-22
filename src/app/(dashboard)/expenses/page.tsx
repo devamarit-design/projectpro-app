@@ -14,16 +14,13 @@ import { useTranslation } from "@/lib/i18n-context"
 import { CheckCircle2 } from "lucide-react"
 import { Suspense } from "react"
 
-const FINANCIAL_TARGETS_KEY = "financial-targets"
-interface FinancialTargets {
-    incomeMin: number
-    incomeMax: number
-    expenseWarning: number
-    expenseLimit: number
-}
+import { useSettings } from "@/context/settings-context"
+
+const FINANCIAL_TARGETS_KEY = "financial-targets" // Keep for legacy cleanup or remove if not needed, but safe to keep constant
 
 function ExpensesContent() {
     const { expenses, archivedExpenses, projects, users, currentUser, updateExpense } = useProjects()
+    const { financialTargets } = useSettings() // Use global settings
     const { t } = useTranslation()
     const searchParams = useSearchParams()
     const router = useRouter()
@@ -138,21 +135,8 @@ function ExpensesContent() {
     }, [filteredExpenses])
 
     // Mood Card Logic
-    const [finTargets, setFinTargets] = React.useState<FinancialTargets>({
-        incomeMin: 50000,
-        incomeMax: 150000,
-        expenseWarning: 30000,
-        expenseLimit: 50000
-    })
-
-    React.useEffect(() => {
-        const stored = localStorage.getItem(FINANCIAL_TARGETS_KEY)
-        if (stored) {
-            try {
-                setFinTargets(JSON.parse(stored))
-            } catch { } // use defaults
-        }
-    }, [])
+    // Using global financialTargets from useSettings() now
+    const finTargets = financialTargets
 
     // Calculate Monthly Expense for Mood
     const currentMonthPrefix = new Date().toISOString().substring(0, 7) // YYYY-MM

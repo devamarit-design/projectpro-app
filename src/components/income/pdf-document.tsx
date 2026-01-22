@@ -13,8 +13,8 @@ const FONT_FAMILY = THAI_FONT_FAMILY
 const styles = StyleSheet.create({
     page: {
         padding: 40,
-        fontFamily: 'THSarabunNew',
-        fontSize: 14, // Increased from 10 because Sarabun is smaller
+        fontFamily: 'Sarabun',
+        fontSize: 12, // Adjusted for Sarabun
         backgroundColor: '#ffffff'
     },
     header: {
@@ -147,6 +147,7 @@ interface PDFDocumentProps {
     columns?: { id: string, label: string, visible: boolean, order: number }[]
     orgProfile?: OrgProfile
     template?: 'modern' | 'classic' | 'minimal'
+    showLogo?: boolean
 }
 
 // Helper to ensure color is valid hex
@@ -210,7 +211,7 @@ const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3b82f6', lang = 'th', manualPageBreaks = [], columns, orgProfile, template = 'modern' }: PDFDocumentProps) => {
+export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3b82f6', lang = 'th', manualPageBreaks = [], columns, orgProfile, template = 'modern', showLogo = true }: PDFDocumentProps) => {
     const labels = LABELS[lang]
     // Map document type to label key safely
     const docTypeLower = doc.type.toLowerCase() as keyof typeof labels
@@ -318,24 +319,53 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
                         {page.isFirst ? (
                             <>
                                 <View style={getHeaderStyle()}>
-                                    {/* Left Side (Logo + Company) - Or Right if Classic */}
-                                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                                        {orgProfile?.logo && typeof orgProfile.logo === 'string' && (
-                                            /* Image handles generic URLs properly (base64, remote if configured) */
-                                            <Image
-                                                src={orgProfile.logo}
-                                                style={{ width: 50, height: 50, objectFit: 'contain', borderRadius: 4 }}
-                                            />
+                                    {/* Left Side (Logo + Company) */}
+                                    <View style={{ flexDirection: 'row', gap: 15, alignItems: 'flex-start', flex: 1, marginRight: 20 }}>
+                                        {/* Logo or Placeholder */}
+                                        {showLogo && (
+                                            <>
+                                                {orgProfile?.logo ? (
+                                                    <Image
+                                                        src={orgProfile.logo}
+                                                        style={{ width: 70, height: 70, objectFit: 'contain', borderRadius: 8 }}
+                                                    />
+                                                ) : (
+                                                    <View style={{
+                                                        width: 70,
+                                                        height: 70,
+                                                        backgroundColor: finalThemeColor,
+                                                        borderRadius: 8,
+                                                        justifyContent: 'center',
+                                                        alignItems: 'center'
+                                                    }}>
+                                                        <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 28 }}>
+                                                            {orgProfile?.name?.charAt(0) || 'C'}
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                            </>
                                         )}
-                                        <View>
-                                            {orgProfile && <Text style={{ fontSize: 14, fontWeight: 'bold' }}>{orgProfile.name}</Text>}
-                                            {orgProfile && <Text style={[styles.subtitle, { maxWidth: 250 }]}>{orgProfile.address}</Text>}
-                                            {orgProfile && <Text style={styles.infoLabel}>Tax ID: {orgProfile.taxId}</Text>}
+                                        <View style={{ flex: 1, gap: 1 }}>
+                                            {orgProfile && (
+                                                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 2 }}>
+                                                    {(lang === 'en' && orgProfile.nameEn) ? orgProfile.nameEn : orgProfile.name}
+                                                </Text>
+                                            )}
+                                            {orgProfile?.address && (
+                                                <Text style={[styles.subtitle, { maxWidth: 300, fontSize: 10, lineHeight: 1.4, color: '#333' }]}>
+                                                    {(lang === 'en' && orgProfile.addressEn) ? orgProfile.addressEn : orgProfile.address}
+                                                </Text>
+                                            )}
+                                            <View style={{ flexDirection: 'column', gap: 1, marginTop: 4 }}>
+                                                {orgProfile?.taxId && <Text style={[styles.infoLabel, { fontSize: 8 }]}>Tax ID: {orgProfile.taxId}</Text>}
+                                                {orgProfile?.phone && <Text style={[styles.infoLabel, { fontSize: 8 }]}>Tel: {orgProfile.phone}</Text>}
+                                                {orgProfile?.email && <Text style={[styles.infoLabel, { fontSize: 8 }]}>{orgProfile.email}</Text>}
+                                            </View>
                                         </View>
                                     </View>
 
                                     {/* Right Side (Doc Info) */}
-                                    <View style={{ alignItems: isClassic ? 'flex-start' : 'flex-end' }}>
+                                    <View style={{ alignItems: isClassic ? 'flex-start' : 'flex-end', width: 160 }}>
                                         <Text style={getTitleStyle()}>{docTitle}</Text>
                                         <Text style={[styles.subtitle, { marginTop: 4 }]}>{labels.original}</Text>
 
@@ -394,10 +424,32 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
                                 if (item.type === 'header') {
                                     // Try multiple ways to get the zone name (same as preview)
                                     const zoneName = item.data?.name || item.name || item.description || 'Zone'
+                                    const coverImage = item.data?.coverImage || item.coverImage
 
                                     return (
-                                        <View key={`header-${index}`} style={{ backgroundColor: '#f3f4f6', padding: 8, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
-                                            <Text style={{ fontWeight: 'bold', fontSize: 12, color: finalThemeColor }}>{zoneName}</Text>
+                                        <View key={`header-${index}`} style={{ marginVertical: 8 }}>
+                                            {coverImage ? (
+                                                <View style={{ position: 'relative', height: 160, marginBottom: 0 }}>
+                                                    <Image
+                                                        src={coverImage}
+                                                        style={{ width: '100%', height: 160, objectFit: 'cover' }}
+                                                    />
+                                                    <View style={{
+                                                        position: 'absolute',
+                                                        bottom: 0,
+                                                        left: 0,
+                                                        right: 0,
+                                                        backgroundColor: 'rgba(0,0,0,0.6)',
+                                                        padding: 8
+                                                    }}>
+                                                        <Text style={{ fontWeight: 'bold', fontSize: 14, color: '#ffffff' }}>{zoneName}</Text>
+                                                    </View>
+                                                </View>
+                                            ) : (
+                                                <View style={{ backgroundColor: '#f3f4f6', padding: 8, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
+                                                    <Text style={{ fontWeight: 'bold', fontSize: 12, color: finalThemeColor }}>{zoneName}</Text>
+                                                </View>
+                                            )}
                                         </View>
                                     )
                                 }
@@ -413,9 +465,17 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
                                         {visibleColumns.map(col => {
                                             if (col.id === 'item') return <Text key={col.id} style={styles.colNo}>{item.originalIndex + 1}</Text>
                                             if (col.id === 'description') return (
-                                                <View key={col.id} style={styles.colDesc}>
-                                                    <Text style={{ fontWeight: 'bold' }}>{itemData.name}</Text>
-                                                    {itemData.description && <Text style={{ color: '#666666', fontSize: 10 }}>{itemData.description}</Text>}
+                                                <View key={col.id} style={[styles.colDesc, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                                                    {itemData.image && (
+                                                        <Image
+                                                            src={itemData.image}
+                                                            style={{ width: 30, height: 30, objectFit: 'cover', borderRadius: 2 }}
+                                                        />
+                                                    )}
+                                                    <View style={{ flex: 1 }}>
+                                                        <Text style={{ fontWeight: 'bold' }}>{itemData.name}</Text>
+                                                        {itemData.description && <Text style={{ color: '#666666', fontSize: 9 }}>{itemData.description}</Text>}
+                                                    </View>
                                                 </View>
                                             )
                                             if (col.id === 'qty') return <Text key={col.id} style={styles.colQty}>{itemData.quantity}</Text>
@@ -482,8 +542,10 @@ export async function generatePDFBlob(props: PDFDocumentProps): Promise<Blob> {
     return await pdf(<PDFDocument {...props} />).toBlob()
 }
 
+interface GeneratePDFProps extends PDFDocumentProps { }
+
 // Export function to generate and download PDF
-export async function generatePDF(props: PDFDocumentProps): Promise<void> {
+export async function generatePDF(props: GeneratePDFProps): Promise<void> {
     try {
         console.log('generatePDF: Starting...')
 

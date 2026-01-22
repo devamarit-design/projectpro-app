@@ -4,13 +4,14 @@ import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { useTranslation } from "@/lib/i18n-context"
 import { useProjects } from "@/context/project-context"
-import { Building2, FileText, Palette, Users, Shield, Bell, Image as ImageIcon } from "lucide-react"
+import { Building2, FileText, Palette, Users, Shield, Bell, Send } from "lucide-react"
 import { CompanySettings } from "@/components/settings/company-settings"
 import { DocumentSettings } from "@/components/settings/document-settings"
 import { ThemeSettings } from "@/components/settings/theme-settings"
 import { TeamSettings } from "@/components/settings/team-settings"
 import { SecuritySettings } from "@/components/settings/security-settings"
 import { NotificationSettings } from "@/components/settings/notifications-settings"
+import { TelegramSettings } from "@/components/settings/telegram-settings"
 
 
 export default function SettingsPage() {
@@ -19,6 +20,7 @@ export default function SettingsPage() {
     const searchParams = useSearchParams()
     const [activeSection, setActiveSection] = useState("company")
     const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Owner'
+    const isOwner = currentUser?.role === 'Owner'
 
     useEffect(() => {
         const tab = searchParams.get("tab")
@@ -31,6 +33,7 @@ export default function SettingsPage() {
         { id: "company", label: t.settings.menu.company, icon: Building2 },
         { id: "documents", label: t.settings.menu.documents, icon: FileText },
         { id: "notifications", label: t.settings.menu.notifications, icon: Bell },
+        ...(isOwner ? [{ id: "telegram", label: "Telegram", icon: Send }] : []),
         { id: "team", label: t.settings.menu.team, icon: Users },
         { id: "security", label: t.settings.menu.security, icon: Shield },
         { id: "theme", label: t.settings.menu.theme, icon: Palette },
@@ -72,6 +75,7 @@ export default function SettingsPage() {
                         {activeSection === "company" && <CompanySettings />}
                         {activeSection === "documents" && <DocumentSettings />}
                         {activeSection === "notifications" && <NotificationSettings />}
+                        {activeSection === "telegram" && <TelegramSettings />}
                         {activeSection === "theme" && <ThemeSettings />}
                         {activeSection === "team" && <TeamSettings />}
                         {activeSection === "security" && <SecuritySettings />}

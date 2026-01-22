@@ -17,9 +17,10 @@ interface ProjectCardProps {
 interface ProjectCardComponentProps {
     project: ProjectCardProps
     columns?: 1 | 2 | 3 // Layout mode
+    priority?: boolean // LCP Optimization
 }
 
-export function ProjectCard({ project, columns = 1 }: ProjectCardComponentProps) {
+export function ProjectCard({ project, columns = 1, priority = false }: ProjectCardComponentProps) {
     // Calculate expense progress percentage (expenses / budget)
     const budgetValue = project.budget || 1 // Avoid division by zero
     const expensePercent = Math.min(100, Math.max(0, Math.round((project.expenses / budgetValue) * 100)))
@@ -58,6 +59,7 @@ export function ProjectCard({ project, columns = 1 }: ProjectCardComponentProps)
                         src={project.imageUrl}
                         alt={project.name}
                         fill
+                        priority={priority}
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
