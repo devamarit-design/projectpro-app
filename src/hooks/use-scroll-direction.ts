@@ -5,25 +5,24 @@ export function useScrollDirection() {
     const lastScrollY = useRef(0);
 
     useEffect(() => {
-        // Target the specific scroll container used in AppShell
-        const container = document.getElementById("main-scroll-container") || window;
-
-        lastScrollY.current = container instanceof HTMLElement ? container.scrollTop : window.scrollY;
         let ticking = false;
+        let container: HTMLElement | Window | null = null;
+        let retryInterval: NodeJS.Timeout;
 
         const updateScrollDirection = () => {
+            if (!container) return;
+
             const scrollY = container instanceof HTMLElement ? container.scrollTop : window.scrollY;
 
             // 1. Force "up" (show) status when at the very top of the page
-            if (scrollY <= 10) {
+            if (scrollY <= 0) {
                 setScrollDirection("up");
                 lastScrollY.current = scrollY;
                 ticking = false;
                 return;
             }
 
-            // 2. Minimum scroll threshold to trigger a change (avoids jitter)
-            const threshold = 15;
+            const threshold = 10;
             const diff = scrollY - lastScrollY.current;
 
             if (Math.abs(diff) < threshold) {
@@ -31,15 +30,13 @@ export function useScrollDirection() {
                 return;
             }
 
-            // 3. Determine direction
             const newDirection = diff > 0 ? "down" : "up";
 
-            // 4. State update
             if (newDirection !== scrollDirection) {
                 setScrollDirection(newDirection);
             }
 
-            lastScrollY.current = scrollY > 0 ? scrollY : 0;
+            lastScrollY.current = scrollY;
             ticking = false;
         };
 
@@ -50,9 +47,33 @@ export function useScrollDirection() {
             }
         };
 
-        container.addEventListener("scroll", onScroll, { passive: true });
-        return () => container.removeEventListener("scroll", onScroll);
-    }, [scrollDirection]); // Re-bind if scrollDirection changes to ensure closure has latest state (or use ref for setScrollDirection but this is cleaner with limited states)
+        // Retry logic to find the container
+        const bindListener = () => {
+            const el = document.getElementById("main-scroll-container");
+            if (el) {
+                container = el;
+                lastScrollY.current = el.scrollTop;
+                el.addEventListener("scroll", onScroll, { passive: true });
+                if (retryInterval) clearInterval(retryInterval);
+                // console.log("Bound scroll listener to main-scroll-container");
+            }
+        };
+
+        // Try immediately
+        bindListener();
+
+        // If not found, keep trying for a bit
+        if (!container) {
+            retryInterval = setInterval(bindListener, 500);
+        }
+
+        return () => {
+            if (retryInterval) clearInterval(retryInterval);
+            if (container) {
+                container.removeEventListener("scroll", onScroll);
+            }
+        };
+    }, [scrollDirection]);
 
     return scrollDirection;
 }

@@ -8,7 +8,7 @@ export function Loading() {
             <div className="relative flex items-center justify-center h-24 w-24">
                 {/* Concentric rotating arcs */}
                 <motion.div
-                    className="absolute h-full w-full rounded-full border-t-4 border-l-4 border-primary border-transparent shadow-[0_0_15px_rgba(var(--primary),0.3)]"
+                    className="absolute h-full w-full rounded-full border-t-4 border-l-4 border-primary border-transparent shadow-[0_0_15px_hsl(var(--primary)/0.3)]"
                     animate={{ rotate: 360 }}
                     transition={{
                         duration: 1.5,
@@ -17,7 +17,7 @@ export function Loading() {
                     }}
                 />
                 <motion.div
-                    className="absolute h-16 w-16 rounded-full border-b-4 border-r-4 border-primary/60 border-transparent shadow-[0_0_10px_rgba(var(--primary),0.2)]"
+                    className="absolute h-16 w-16 rounded-full border-b-4 border-r-4 border-primary/60 border-transparent shadow-[0_0_10px_hsl(var(--primary)/0.2)]"
                     animate={{ rotate: -360 }}
                     transition={{
                         duration: 2,
