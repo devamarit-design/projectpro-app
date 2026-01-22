@@ -4,11 +4,11 @@ import { motion } from "framer-motion"
 
 export function Loading() {
     return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] w-full gap-8">
-            <div className="relative flex items-center justify-center h-24 w-24">
+        <div className="flex flex-col items-center justify-center min-h-[300px] w-full gap-6">
+            <div className="relative flex items-center justify-center h-16 w-16">
                 {/* Concentric rotating arcs */}
                 <motion.div
-                    className="absolute h-full w-full rounded-full border-t-4 border-l-4 border-primary border-transparent shadow-[0_0_15px_hsl(var(--primary)/0.3)]"
+                    className="absolute h-full w-full rounded-full border-t-4 border-l-4 border-primary border-transparent shadow-[0_0_12px_hsl(var(--primary)/0.4)]"
                     animate={{ rotate: 360 }}
                     transition={{
                         duration: 1.5,
@@ -17,7 +17,7 @@ export function Loading() {
                     }}
                 />
                 <motion.div
-                    className="absolute h-16 w-16 rounded-full border-b-4 border-r-4 border-primary/60 border-transparent shadow-[0_0_10px_hsl(var(--primary)/0.2)]"
+                    className="absolute h-10 w-10 rounded-full border-b-4 border-r-4 border-primary/60 border-transparent shadow-[0_0_8px_hsl(var(--primary)/0.3)]"
                     animate={{ rotate: -360 }}
                     transition={{
                         duration: 2,
@@ -26,7 +26,7 @@ export function Loading() {
                     }}
                 />
                 <motion.div
-                    className="absolute h-8 w-8 rounded-full border-t-2 border-primary/40 border-transparent"
+                    className="absolute h-6 w-6 rounded-full border-t-2 border-primary/40 border-transparent"
                     animate={{ rotate: 360 }}
                     transition={{
                         duration: 1,
@@ -36,14 +36,14 @@ export function Loading() {
                 />
 
                 {/* Center Glow */}
-                <div className="h-2 w-2 rounded-full bg-primary blur-[2px] animate-pulse" />
+                <div className="h-1.5 w-1.5 rounded-full bg-primary blur-[1.5px] animate-pulse" />
             </div>
 
-            <div className="flex flex-col items-center gap-2 text-center">
+            <div className="flex flex-col items-center gap-1.5 text-center">
                 <motion.h2
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-2xl font-bold tracking-tight text-primary uppercase py-1 drop-shadow-[0_0_15px_hsl(var(--primary)/0.5)]"
+                    className="text-xl font-bold tracking-tight text-primary uppercase py-1 drop-shadow-[0_0_15px_hsl(var(--primary)/0.5)]"
                 >
                     Hipslothproject
                 </motion.h2>
@@ -51,7 +51,7 @@ export function Loading() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
-                    className="text-muted-foreground/80 font-medium text-sm tracking-widest uppercase"
+                    className="text-muted-foreground/80 font-medium text-[10px] tracking-widest uppercase"
                 >
                     Preparing Workspace
                 </motion.p>
