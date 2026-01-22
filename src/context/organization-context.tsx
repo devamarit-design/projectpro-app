@@ -89,7 +89,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         return () => unsubscribe()
     }, [])
 
-    const fetchUserOrgs = async () => {
+    const fetchUserOrgs = React.useCallback(async () => {
         if (!firebaseUser) return
 
         setIsLoading(true)
@@ -166,15 +166,15 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [firebaseUser, currentOrg])
 
     useEffect(() => {
         if (firebaseUser) {
             fetchUserOrgs()
         }
-    }, [firebaseUser])
+    }, [firebaseUser, fetchUserOrgs])
 
-    const createOrganization = async (name: string): Promise<string> => {
+    const createOrganization = React.useCallback(async (name: string): Promise<string> => {
         if (!firebaseUser) throw new Error("Not authenticated")
 
         // 1. Create Org Document
@@ -239,12 +239,12 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         // Now it is safe to reload because Firestore has the link.
         const updatedOrgs = [...userOrgs, newOrg]
         setUserOrgs(updatedOrgs)
-        setCurrentOrg(newOrg)
+        setCurrentOrgState(newOrg)
 
         return newOrg.id
-    }
+    }, [firebaseUser, userOrgs])
 
-    const joinOrganization = async (orgId: string): Promise<void> => {
+    const joinOrganization = React.useCallback(async (orgId: string): Promise<void> => {
         if (!firebaseUser) throw new Error("Not authenticated")
 
         // 1. Check if Org Exists
@@ -290,10 +290,10 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         // 5. Update Local State
         const joinedOrg = { ...orgData, id: orgSnap.id, members: updatedMembers }
         setUserOrgs([...userOrgs, joinedOrg])
-        setCurrentOrg(joinedOrg)
-    }
+        setCurrentOrgState(joinedOrg)
+    }, [firebaseUser, userOrgs])
 
-    const joinOrganizationByCode = async (code: string): Promise<string> => {
+    const joinOrganizationByCode = React.useCallback(async (code: string): Promise<string> => {
         if (!firebaseUser) throw new Error("Not authenticated")
 
         let targetOrgId = ""
@@ -324,9 +324,9 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         const orgRef = doc(db, "organizations", targetOrgId)
         const teamSnap = await getDoc(orgRef)
         return teamSnap.exists() ? teamSnap.data().name : "Unknown Team"
-    }
+    }, [firebaseUser, joinOrganization])
 
-    const setCurrentOrg = (org: Organization) => {
+    const setCurrentOrg = React.useCallback((org: Organization) => {
         // Prevent reload if setting the same org
         if (currentOrg?.id === org.id) return
 
@@ -337,13 +337,9 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         // RELOAD: Force a full app refresh to ensure all contexts (Settings, Projects, etc.)
         // are completely re-initialized with the new organization's data.
         window.location.reload()
-    }
+    }, [currentOrg])
 
-    const refreshOrgs = async () => {
-        await fetchUserOrgs()
-    }
-
-    const getOrganizationPreview = async (code: string): Promise<{ id: string, name: string, memberCount: number } | null> => {
+    const getOrganizationPreview = React.useCallback(async (code: string): Promise<{ id: string, name: string, memberCount: number } | null> => {
         let targetOrgId = ""
 
         // 1. Try Find Invite
@@ -370,9 +366,9 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         }
 
         return null
-    }
+    }, [])
 
-    const deleteOrganization = async (orgId: string): Promise<void> => {
+    const deleteOrganization = React.useCallback(async (orgId: string): Promise<void> => {
         if (!firebaseUser) throw new Error("Not authenticated")
 
         // 1. Verify Ownership (Security check)
@@ -418,9 +414,9 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
         // 5. Hard Reload to Reset State
         window.location.href = '/'
-    }
+    }, [firebaseUser])
 
-    const value = {
+    const value = React.useMemo(() => ({
         currentOrg,
         userOrgs,
         setCurrentOrg,
@@ -431,7 +427,18 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         joinOrganizationByCode,
         getOrganizationPreview,
         deleteOrganization
-    }
+    }), [
+        currentOrg,
+        userOrgs,
+        setCurrentOrg,
+        isLoading,
+        fetchUserOrgs,
+        createOrganization,
+        joinOrganization,
+        joinOrganizationByCode,
+        getOrganizationPreview,
+        deleteOrganization
+    ])
 
     return (
         <OrganizationContext.Provider value={value}>

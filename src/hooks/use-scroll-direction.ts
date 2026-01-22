@@ -4,21 +4,22 @@ export function useScrollDirection() {
     const [scrollDirection, setScrollDirection] = useState<"up" | "down" | null>(null);
 
     useEffect(() => {
-        const scrollContainer = document.getElementById('main-scroll-container') || window;
-        let lastScrollY = scrollContainer === window ? window.pageYOffset : (scrollContainer as HTMLElement).scrollTop;
+        let lastScrollY = window.pageYOffset;
 
         const updateScrollDirection = () => {
-            const scrollY = scrollContainer === window ? window.pageYOffset : (scrollContainer as HTMLElement).scrollTop;
+            const scrollY = window.pageYOffset;
             const direction = scrollY > lastScrollY ? "down" : "up";
-            if (direction !== scrollDirection && (Math.abs(scrollY - lastScrollY) > 5)) {
+
+            // Only update if direction changed and we've scrolled more than 10px
+            if (direction !== scrollDirection && (Math.abs(scrollY - lastScrollY) > 10)) {
                 setScrollDirection(direction);
             }
             lastScrollY = scrollY > 0 ? scrollY : 0;
         };
 
-        scrollContainer.addEventListener("scroll", updateScrollDirection);
+        window.addEventListener("scroll", updateScrollDirection, { passive: true });
         return () => {
-            scrollContainer.removeEventListener("scroll", updateScrollDirection);
+            window.removeEventListener("scroll", updateScrollDirection);
         };
     }, [scrollDirection]);
 

@@ -561,18 +561,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
 
     // Map ProjectContext functions
-    const updateOrgProfile = async (data: Partial<OrgProfile>) => {
+    const updateOrgProfile = React.useCallback(async (data: Partial<OrgProfile>) => {
         await updateCompanyProfile(data)
-    }
+    }, [updateCompanyProfile])
 
-    const updateDocumentTemplate = (type: string, data: Partial<DocumentTemplate>) => {
+    const updateDocumentTemplate = React.useCallback((type: string, data: Partial<DocumentTemplate>) => {
         setDocumentSettings(prev => ({
             ...prev,
             [type]: { ...prev[type], ...data }
         }))
-    }
+    }, [])
 
-    const updateAppTheme = async (data: Partial<AppTheme>) => {
+    const updateAppTheme = React.useCallback(async (data: Partial<AppTheme>) => {
         const newTheme = { ...appTheme, ...data }
         setAppTheme(newTheme)
 
@@ -604,19 +604,19 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 console.error("Failed to save theme settings:", error)
             }
         }
-    }
+    }, [appTheme, currentOrg?.id, currentUser])
 
     // Initial theme load from user profile is now handled by the org-scoped sync effect
 
-    const updateTeamSettings = (data: Partial<TeamSettings>) => {
+    const updateTeamSettings = React.useCallback((data: Partial<TeamSettings>) => {
         setTeamSettings(prev => ({ ...prev, ...data }))
-    }
+    }, [])
 
-    const updateNotificationSettings = (data: Partial<NotificationSettings>) => {
+    const updateNotificationSettings = React.useCallback((data: Partial<NotificationSettings>) => {
         setNotificationSettings(prev => ({ ...prev, ...data }))
-    }
+    }, [])
 
-    const updateFinancialTargets = async (data: Partial<FinancialTargets>) => {
+    const updateFinancialTargets = React.useCallback(async (data: Partial<FinancialTargets>) => {
         if (!currentOrg?.id) return
         if (currentUser?.role !== 'Owner' && currentUser?.role !== 'Admin') return
         const newTargets = { ...financialTargets, ...data }
@@ -634,9 +634,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             console.error("Failed to update financial targets:", error)
             // Revert? (Optional, kept simple for now)
         }
-    }
+    }, [currentOrg, currentUser?.role, financialTargets])
 
-    const updateMoodThresholds = async (data: Partial<MoodThresholds>) => {
+    const updateMoodThresholds = React.useCallback(async (data: Partial<MoodThresholds>) => {
         if (!currentOrg?.id) return
         if (currentUser?.role !== 'Owner' && currentUser?.role !== 'Admin') return
         const newThresholds = { ...moodThresholds, ...data }
@@ -653,9 +653,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
             console.error("Failed to update mood thresholds:", error)
         }
-    }
+    }, [currentOrg, currentUser?.role, moodThresholds])
 
-    const updateBanners = async (newBanners: Banner[]) => {
+    const updateBanners = React.useCallback(async (newBanners: Banner[]) => {
         if (!currentOrg?.id) return
         if (currentUser?.role !== 'Owner' && currentUser?.role !== 'Admin') return
         setBanners(newBanners) // Optimistic update
@@ -671,9 +671,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
             console.error("Failed to update banners:", error)
         }
-    }
+    }, [currentOrg, currentUser?.role])
 
-    const updateNotices = async (newNotices: Notice[]) => {
+    const updateNotices = React.useCallback(async (newNotices: Notice[]) => {
         if (!currentOrg?.id) return
         // Allow Accountant and above to manage notices
         const allowedRoles = ['Owner', 'Admin', 'Manager', 'Accountant']
@@ -691,9 +691,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
             console.error("Failed to update notices:", error)
         }
-    }
+    }, [currentOrg, currentUser?.role])
 
-    const updateTelegramSettings = async (data: TelegramSettings) => {
+    const updateTelegramSettings = React.useCallback(async (data: TelegramSettings) => {
         if (!currentOrg?.id) return
         // Only Owner can update telegram settings
         if (currentUser?.role !== 'Owner') return
@@ -711,10 +711,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             console.error("Failed to update telegram settings:", error)
             throw error
         }
-    }
+    }, [currentOrg, currentUser?.role])
 
 
-    const resetSettings = () => {
+    const resetSettings = React.useCallback(() => {
         // Only reset local settings, not company profile (which is synced)
         setDocumentSettings({
             quotation: defaultDocumentTemplate,
@@ -724,34 +724,57 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setAppTheme(defaultTheme)
         setTeamSettings(defaultTeamSettings)
         setNotificationSettings(defaultNotificationSettings)
-    }
+    }, [])
+
+    const value = React.useMemo(() => ({
+        orgProfile: companyProfile, // Use from ProjectContext
+        updateOrgProfile,
+        documentSettings,
+        updateDocumentTemplate,
+        appTheme,
+        updateAppTheme,
+        teamSettings,
+        updateTeamSettings,
+        notificationSettings,
+        updateNotificationSettings,
+
+        financialTargets,
+        updateFinancialTargets,
+        moodThresholds,
+        updateMoodThresholds,
+        banners,
+        updateBanners,
+        notices,
+        updateNotices,
+        telegramSettings,
+        updateTelegramSettings,
+        resetSettings,
+        setPreviewTheme
+    }), [
+        companyProfile,
+        updateOrgProfile,
+        documentSettings,
+        updateDocumentTemplate,
+        appTheme,
+        updateAppTheme,
+        teamSettings,
+        updateTeamSettings,
+        notificationSettings,
+        updateNotificationSettings,
+        financialTargets,
+        updateFinancialTargets,
+        moodThresholds,
+        updateMoodThresholds,
+        banners,
+        updateBanners,
+        notices,
+        updateNotices,
+        telegramSettings,
+        updateTelegramSettings,
+    ])
 
     return (
-        <SettingsContext.Provider value={{
-            orgProfile: companyProfile, // Use from ProjectContext
-            updateOrgProfile,
-            documentSettings,
-            updateDocumentTemplate,
-            appTheme,
-            updateAppTheme,
-            teamSettings,
-            updateTeamSettings,
-            notificationSettings,
-            updateNotificationSettings,
-
-            financialTargets,
-            updateFinancialTargets,
-            moodThresholds,
-            updateMoodThresholds,
-            banners,
-            updateBanners,
-            notices,
-            updateNotices,
-            telegramSettings,
-            updateTelegramSettings,
-            resetSettings,
-            setPreviewTheme
-        }}>
+        <SettingsContext.Provider value={value}>
             {children}
         </SettingsContext.Provider>
     )

@@ -69,12 +69,12 @@ export function MobileNav() {
         setShowMoreMenu(false)
     }
 
-    const financeItems = [
+    const financeItems = React.useMemo(() => [
         ...(hasPermission(currentUser, "INCOME_CREATE") ? [{ href: "/income", label: t.finance.income, icon: TrendingUp, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
         { href: "/expenses", label: t.finance.expense, icon: TrendingDown, color: "text-red-500 from-red-500/20 to-red-500/5" },
-    ]
+    ], [currentUser, t.finance.income, t.finance.expense])
 
-    const moreGroups = [
+    const moreGroups = React.useMemo(() => [
         {
             title: "งาน", // Work
             items: [
@@ -113,14 +113,14 @@ export function MobileNav() {
                 { href: "/bored", label: t.navbar.bored, icon: Gamepad2, color: "text-indigo-500 from-indigo-500/20 to-indigo-500/5" },
             ]
         }
-    ]
+    ], [currentUser, t])
 
-    const addItems = [
+    const addItems = React.useMemo(() => [
         ...(hasPermission(currentUser, "INCOME_CREATE") ? [{ href: "/income?action=new", label: t.finance.income, icon: FileText, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
         { href: "/expenses?action=new", label: t.finance.expense, icon: CreditCard, color: "text-red-500 from-red-500/20 to-red-500/5" },
         { href: "/tasks?action=new", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 from-blue-500/20 to-blue-500/5" },
         { href: "/storage?action=new", label: "Media", icon: HardDrive, color: "text-purple-500 from-purple-500/20 to-purple-500/5" },
-    ]
+    ], [currentUser, t])
 
     const isFinanceActive = pathname === "/income" || pathname === "/expenses"
 
