@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { hasPermission } from "@/lib/permissions"
 import { AddIncomeDialog } from "@/components/income/add-income-dialog"
 import { IncomeDetailSheet } from "@/components/income/income-detail-sheet"
+import { useSettings } from "@/context/settings-context" // Add this import
 
 const documents = [] // Removed hardcoded data
 
@@ -73,21 +74,10 @@ export default function IncomePage() {
     const getProjectName = (id: string) => projects.find((p: Project) => p.id === id)?.name || "Unknown Folder"
 
     // Mood Card Logic
-    const [finTargets, setFinTargets] = useState<FinancialTargets>({
-        incomeMin: 50000,
-        incomeMax: 150000,
-        expenseWarning: 30000,
-        expenseLimit: 50000
-    })
+    const { financialTargets: finTargets } = useSettings() // Use Global Settings
 
-    useEffect(() => {
-        const stored = localStorage.getItem(FINANCIAL_TARGETS_KEY)
-        if (stored) {
-            try {
-                setFinTargets(JSON.parse(stored))
-            } catch { } // use defaults
-        }
-    }, [])
+    // Removed local state and effect for storage handling
+
 
     // Calculate Monthly Income
     const currentMonthPrefix = new Date().toISOString().substring(0, 7) // YYYY-MM

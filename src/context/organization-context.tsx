@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { User as FirebaseUser } from "firebase/auth"
-import { doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs } from "firebase/firestore"
+import { doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "firebase/firestore"
 import { db, auth } from "@/lib/firebase"
 
 
@@ -60,6 +60,7 @@ interface OrganizationContextType {
     joinOrganization: (orgId: string) => Promise<void>
     joinOrganizationByCode: (code: string) => Promise<string> // Returns Team Name
     getOrganizationPreview: (code: string) => Promise<{ id: string, name: string, memberCount: number } | null>
+    deleteOrganization: (orgId: string) => Promise<void>
 }
 
 
@@ -371,6 +372,54 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         return null
     }
 
+    const deleteOrganization = async (orgId: string): Promise<void> => {
+        if (!firebaseUser) throw new Error("Not authenticated")
+
+        // 1. Verify Ownership (Security check)
+        const orgRef = doc(db, "organizations", orgId)
+        const orgSnap = await getDoc(orgRef)
+
+        if (!orgSnap.exists()) throw new Error("Organization not found")
+
+        const orgData = orgSnap.data() as Organization
+        const member = orgData.members?.find(m => m.userId === firebaseUser.uid)
+
+        if (!member || member.role !== 'Owner') {
+            throw new Error("Only the owner can delete this organization")
+        }
+
+        // 2. Delete Org Document
+        await deleteDoc(orgRef)
+
+        // 3. Remove from User Profile
+        const userRef = doc(db, "users", firebaseUser.uid)
+        const userSnap = await getDoc(userRef)
+
+        if (userSnap.exists()) {
+            const userData = userSnap.data()
+            const existingOrgs = userData.organizations || []
+            const existingIds = userData.orgIds || []
+
+            // Filter out the deleted org
+            const updatedOrgs = existingOrgs.filter((o: any) => o.orgId !== orgId)
+            const updatedIds = existingIds.filter((id: string) => id !== orgId)
+
+            await setDoc(userRef, {
+                ...userData,
+                organizations: updatedOrgs,
+                orgIds: updatedIds
+            }, { merge: true })
+        }
+
+        // 4. Cleanup Local Storage
+        if (localStorage.getItem("lastOrgId") === orgId) {
+            localStorage.removeItem("lastOrgId")
+        }
+
+        // 5. Hard Reload to Reset State
+        window.location.href = '/'
+    }
+
     const value = {
         currentOrg,
         userOrgs,
@@ -380,7 +429,8 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         createOrganization,
         joinOrganization,
         joinOrganizationByCode,
-        getOrganizationPreview
+        getOrganizationPreview,
+        deleteOrganization
     }
 
     return (

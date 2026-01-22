@@ -7,6 +7,7 @@ import { useTranslation } from "@/lib/i18n-context"
 import { useState } from "react"
 import EditTeamDialog from "../../app/(dashboard)/team/edit-team-dialog"
 import { hasPermission } from "@/lib/permissions"
+import { useOrganization } from "@/context/organization-context" // Add this import
 
 export function CompanySettings() {
     const { t } = useTranslation()
@@ -160,6 +161,53 @@ export function CompanySettings() {
                     team={currentTeam}
                 />
             )}
+
+            {/* Danger Zone - Only for Owners */}
+            {currentTeam && currentUser?.orgIds?.includes(currentTeam.id) && (
+                <div className="pt-10 mt-10 border-t border-red-500/20">
+                    <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-6">
+                        <h3 className="text-red-500 font-bold text-lg mb-2 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                            Danger Zone
+                        </h3>
+                        <p className="text-sm text-red-500/70 mb-4">
+                            Deleting the organization is permanent and cannot be undone. All data including projects, customers, and financial records will be permanently lost.
+                        </p>
+                        <DeleteOrgButton orgId={currentTeam.id} orgName={currentTeam.name} />
+                    </div>
+                </div>
+            )}
         </div>
+    )
+}
+
+function DeleteOrgButton({ orgId, orgName }: { orgId: string, orgName: string }) {
+    const { deleteOrganization } = useOrganization()
+    const [isDeleting, setIsDeleting] = useState(false)
+    const { t } = useTranslation()
+
+    const handleDelete = async () => {
+        const confirmMessage = `TYPE "${orgName}" TO CONFIRM DELETION`
+        const input = window.prompt(`WARNING: This action cannot be undone.\n\nTo confirm, type "${orgName}" in the box below:`)
+
+        if (input === orgName) {
+            setIsDeleting(true)
+            try {
+                await deleteOrganization(orgId)
+            } catch (error) {
+                alert("Failed to delete organization: " + (error as any).message)
+                setIsDeleting(false)
+            }
+        }
+    }
+
+    return (
+        <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+        >
+            {isDeleting ? 'Deleting...' : 'Delete Organization'}
+        </button>
     )
 }
