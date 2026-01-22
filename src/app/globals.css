@@ -239,6 +239,22 @@ html[data-theme-gradient="true"] .neon-glow-title {
   display: inline-block;
 }
 
+/* Fix: Prevent neon glow from applying to icons/images inside titles */
+html[data-theme-gradient="true"] h1 svg,
+html[data-theme-gradient="true"] h1 img,
+html[data-theme-gradient="true"] h1 [class*="icon"],
+html[data-theme-gradient="true"] h2 svg,
+html[data-theme-gradient="true"] h2 img,
+html[data-theme-gradient="true"] h2 [class*="icon"],
+html[data-theme-gradient="true"] .neon-glow-title svg,
+html[data-theme-gradient="true"] .neon-glow-title img,
+html[data-theme-gradient="true"] .neon-glow-title [class*="icon"] {
+  filter: none !important;
+  -webkit-filter: none !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+
 /* Borderless Neon Cards & Containers (Soften glow) */
 html[data-theme-gradient="true"] .bg-card,
 html[data-theme-gradient="true"] .glass-card,
