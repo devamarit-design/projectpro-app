@@ -26,6 +26,7 @@ export const th = {
         account_settings: "ตั้งค่าบัญชี",
         log_out: "ออกจากระบบ",
         confirm_logout: "คุณแน่ใจหรือไม่ที่จะออกจากระบบ?",
+        loading: "กำลังโหลด...",
     },
 
     calendar: {

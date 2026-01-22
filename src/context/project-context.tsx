@@ -407,6 +407,10 @@ interface ProjectContextType {
     archivedTasks: ProjectTask[]
     archivedExpenses: Expense[]
     archivedIncomes: IncomeDocument[]
+
+    // Environment & System
+    isRedirecting: boolean
+    getEnvironment: () => { isIOS: boolean; isPWA: boolean; isRestricted: boolean }
 }
 
 
@@ -800,6 +804,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // SaaS Adapter
     const { currentOrg, userOrgs, setCurrentOrg, isLoading: isOrgLoading, createOrganization, refreshOrgs } = useOrganization()
 
+    const [isRedirecting, setIsRedirecting] = useState(false)
+
+    // Environment Detection Helpers
+    const getEnvironment = () => {
+        if (typeof window === 'undefined') return { isIOS: false, isPWA: false, isRestricted: false }
+        const ua = navigator.userAgent || navigator.vendor || (window as any).opera
+        const isIOS = /iPhone|iPad|iPod/i.test(ua)
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone
+        // Detect Line, Facebook, etc. which usually block Google OAuth
+        const isRestricted = /Line|FBAN|FBAV|Instagram/i.test(ua)
+        return { isIOS, isPWA, isRestricted }
+    }
+
     const currentTeam: Team | null = React.useMemo(() => {
         if (!currentOrg || !currentUser) return null
 
@@ -938,15 +955,24 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // Handle Redirect Result (for Mobile/PWA)
     useEffect(() => {
         const handleRedirect = async () => {
+            const { isIOS, isPWA } = getEnvironment()
+            // If we are on mobile/PWA, we expect a redirect result
+            if (isIOS || isPWA) {
+                setIsRedirecting(true)
+            }
+
             try {
-                await getRedirectResult(auth)
-                // We don't need to do anything specific here as onAuthStateChanged will trigger
-                // But we can log success or handle specific post-redirect logic if needed
+                const result = await getRedirectResult(auth)
+                if (result) {
+                    console.log("Logged in via redirect", result.user.email)
+                }
             } catch (error: any) {
                 console.error("Redirect login failed", error)
                 if (error.code === 'auth/unauthorized-domain') {
                     console.error("This domain is not authorized in the Firebase Console.")
                 }
+            } finally {
+                setIsRedirecting(false)
             }
         }
         handleRedirect()
@@ -958,50 +984,51 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
 
     const login = async (provider: string, credentials?: { email?: string, password?: string }) => {
-        setIsAuthLoading(true) // Ensure loading state is on
+        setIsAuthLoading(true)
 
         try {
             if (provider === 'google') {
-                // Specialized handling for PWA/Mobile environments
-                const ua = navigator.userAgent || navigator.vendor || (window as any).opera
-                const isIOS = /iPhone|iPad|iPod/i.test(ua)
+                const { isIOS, isPWA, isRestricted } = getEnvironment()
 
-                // iOS PWA: Popups are blocked or time out -> Force Redirect
-                if (isIOS) {
-                    await setPersistence(auth, browserLocalPersistence)
-                    await signInWithRedirect(auth, googleProvider)
-                    return // Flow ends here
+                if (isRestricted) {
+                    throw new Error("SOCIAL_WEBVIEW_BLOCKED")
                 }
 
-                // Android & Desktop: Try Popup first
-                // On Android PWA, Popup opens a Chrome Custom Tab (Allowed UA)
-                // whereas Redirect navigates the WebView (Disallowed UA -> 403)
-                try {
-                    await setPersistence(auth, browserLocalPersistence)
-                    await signInWithPopup(auth, googleProvider)
-                } catch (error: any) {
-                    console.error("Popup login failed, trying redirect fallback", error)
-                    // If popup failed specifically, fallback to redirect
-                    if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-                        // Only fallback if not closed by user
+                // Always set persistence
+                await setPersistence(auth, browserLocalPersistence)
+
+                // iOS (especially PWA) works much better with Redirect
+                // Android/Desktop works better with Popup (Chrome Custom Tabs)
+                if (isIOS || isPWA) {
+                    setIsRedirecting(true)
+                    await signInWithRedirect(auth, googleProvider)
+                    // Flow continues in getRedirectResult effect
+                } else {
+                    try {
+                        await signInWithPopup(auth, googleProvider)
+                    } catch (error: any) {
+                        console.error("Popup failed, fallback to redirect", error)
                         if (error.code !== 'auth/popup-closed-by-user') {
+                            setIsRedirecting(true)
                             await signInWithRedirect(auth, googleProvider)
-                            return
+                        } else {
+                            throw new Error("Login cancelled")
                         }
                     }
-                    throw error
                 }
             } else if ((provider === 'email' || provider === 'credentials') && credentials?.email && credentials?.password) {
                 await setPersistence(auth, browserLocalPersistence)
                 await signInWithEmailAndPassword(auth, credentials.email, credentials.password)
             }
         } catch (error: any) {
+            setIsAuthLoading(false)
+            setIsRedirecting(false)
+            if (error.message === "SOCIAL_WEBVIEW_BLOCKED") {
+                throw error // Pass through for UI to handle
+            }
             console.error("Login failed", error)
-            setIsAuthLoading(false) // Turn off loading if we errored out (and didn't redirect)
             if (error.code === 'auth/popup-closed-by-user') {
                 throw new Error("Login cancelled")
-            } else if (error.code === 'auth/unauthorized-domain') {
-                throw new Error("Domain not authorized. Add to Firebase Console.")
             }
             throw error
         }
@@ -2347,6 +2374,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             archivedTasks: tasks.filter(t => t.isArchived === true),
             archivedExpenses: expenses.filter(e => e.isArchived === true),
             archivedIncomes: incomes.filter(i => i.isArchived === true),
+            isRedirecting,
+            getEnvironment
         }}>
             {children}
         </ProjectContext.Provider>

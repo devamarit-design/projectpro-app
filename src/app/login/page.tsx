@@ -6,13 +6,15 @@ import { useRouter } from "next/navigation"
 import { LayoutDashboard, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
+import { InAppBrowserWarning } from "@/components/auth/InAppBrowserWarning"
 
 export default function LoginPage() {
-    const { login, currentUser, isAuthLoading } = useProjects()
+    const { login, currentUser, isAuthLoading, isRedirecting, getEnvironment } = useProjects()
     const { t } = useTranslation()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [showWebViewWarning, setShowWebViewWarning] = useState(false)
 
     // Auto-redirect if already logged in
     useEffect(() => {
@@ -32,9 +34,30 @@ export default function LoginPage() {
         try {
             await login("google")
         } catch (err: any) {
-            setError(err?.message || t.login.error_login_failed)
+            if (err.message === "SOCIAL_WEBVIEW_BLOCKED") {
+                setShowWebViewWarning(true)
+            } else {
+                setError(err?.message || t.login.error_login_failed)
+            }
             setIsLoading(false)
         }
+    }
+
+    // Effect to check and auto-show warning if needed on mount
+    useEffect(() => {
+        const { isRestricted } = getEnvironment()
+        if (isRestricted) {
+            setShowWebViewWarning(true)
+        }
+    }, [getEnvironment])
+
+    if (isRedirecting) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 p-4 space-y-4">
+                <Loader2 className="w-10 h-10 animate-spin text-white" />
+                <p className="text-zinc-400 animate-pulse font-medium">{t.common.loading}</p>
+            </div>
+        )
     }
 
     return (
@@ -128,9 +151,11 @@ export default function LoginPage() {
                         </div>
                     </div>
 
+                    {showWebViewWarning && <InAppBrowserWarning />}
+
                     <button
                         onClick={handleGoogleLogin}
-                        disabled={isLoading}
+                        disabled={isLoading || showWebViewWarning}
                         className="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-white font-medium py-2.5 px-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
                     >
                         {isLoading ? (

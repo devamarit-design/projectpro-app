@@ -28,6 +28,7 @@ export const en = {
         partners: "Partners",
         log_out: "Log Out",
         confirm_logout: "Are you sure you want to log out?",
+        loading: "Loading...",
     },
 
     calendar: {
