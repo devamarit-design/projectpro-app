@@ -3,10 +3,11 @@
 import { useState } from "react"
 import { useSettings, Notice } from "@/context/settings-context"
 import { useProjects } from "@/context/project-context"
-import { Megaphone, Plus, Calendar, Trash2, Edit2, X } from "lucide-react"
+import { Megaphone, Plus, Calendar, Trash2, Edit2, X, Image as ImageIcon } from "lucide-react"
 import { format } from "date-fns"
 import { th } from "date-fns/locale"
 import { useTranslation } from "@/lib/i18n-context"
+import { BannerSettings } from "@/components/settings/banner-settings" // Import BannerSettings
 
 export default function AnnouncementsPage() {
     const { notices, updateNotices } = useSettings()
@@ -14,6 +15,7 @@ export default function AnnouncementsPage() {
     const { locale } = useTranslation()
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [editingNotice, setEditingNotice] = useState<Notice | null>(null)
+    const [activeTab, setActiveTab] = useState<'announcements' | 'marketing'>('announcements') // Tab State
 
     // Form state
     const [content, setContent] = useState("")
@@ -24,6 +26,7 @@ export default function AnnouncementsPage() {
     // Role check: Accountant and above can edit
     const allowedRoles = ['Owner', 'Admin', 'Manager', 'Accountant']
     const canEdit = currentUser?.role && allowedRoles.includes(currentUser.role)
+    const canManageMarketing = currentUser?.role === 'Owner' || currentUser?.role === 'Admin' // Only Owner/Admin for Marketing
 
     const today = new Date().toISOString().split('T')[0]
 
@@ -100,7 +103,8 @@ export default function AnnouncementsPage() {
                     </h1>
                     <p className="text-muted-foreground mt-2">ข่าวสาร ประกาศ และวันหยุดขององค์กร</p>
                 </div>
-                {canEdit && (
+                {/* Only show Create button if in Announcements tab */}
+                {canEdit && activeTab === 'announcements' && (
                     <button
                         onClick={handleOpenCreate}
                         className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors"
@@ -111,55 +115,89 @@ export default function AnnouncementsPage() {
                 )}
             </div>
 
-            {notices.length === 0 ? (
-                <div className="text-center py-16 text-muted-foreground">
-                    <Megaphone className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                    <p>ยังไม่มีประกาศ</p>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {notices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((notice) => (
-                        <div
-                            key={notice.id}
-                            className={`bg-card border rounded-2xl p-6 shadow-sm relative overflow-hidden ${!isActive(notice) ? 'opacity-50' : ''}`}
-                        >
-                            <div className="flex items-start justify-between">
-                                <div className="space-y-2 flex-1">
-                                    <div className="flex items-center gap-3 flex-wrap">
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase border ${getTypeStyle(notice.type || 'info')}`}>
-                                            {notice.type === 'warning' ? '⚠️ สำคัญ' : notice.type === 'success' ? '✅ ดีใจ' : 'ℹ️ ข่าวสาร'}
-                                        </span>
-                                        {isActive(notice) ? (
-                                            <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-600 text-xs font-medium">กำลังแสดง</span>
-                                        ) : (
-                                            <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-medium">หมดอายุ/ยังไม่เริ่ม</span>
-                                        )}
-                                    </div>
-                                    <p className="text-lg font-semibold">{notice.content}</p>
-                                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                        <Calendar className="w-3 h-3" />
-                                        {format(new Date(notice.startDate), "d MMM yyyy", { locale: locale === 'th' ? th : undefined })} - {format(new Date(notice.endDate), "d MMM yyyy", { locale: locale === 'th' ? th : undefined })}
-                                    </div>
-                                </div>
-                                {canEdit && (
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => handleOpenEdit(notice)}
-                                            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(notice.id)}
-                                            className="p-2 rounded-lg hover:bg-red-500/10 transition-colors text-muted-foreground hover:text-red-500"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+            {/* Tab Navigation */}
+            <div className="flex border-b">
+                <button
+                    onClick={() => setActiveTab('announcements')}
+                    className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'announcements' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                >
+                    <div className="flex items-center gap-2">
+                        <Megaphone className="w-4 h-4" />
+                        ประกาศทั่วไป
+                    </div>
+                </button>
+                {canManageMarketing && (
+                    <button
+                        onClick={() => setActiveTab('marketing')}
+                        className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'marketing' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4" />
+                            ตั้งค่า Banner
                         </div>
-                    ))}
+                    </button>
+                )}
+            </div>
+
+            {/* Tab Content: Announcements */}
+            {activeTab === 'announcements' && (
+                notices.length === 0 ? (
+                    <div className="text-center py-16 text-muted-foreground">
+                        <Megaphone className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                        <p>ยังไม่มีประกาศ</p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {notices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((notice) => (
+                            <div
+                                key={notice.id}
+                                className={`bg-card border rounded-2xl p-6 shadow-sm relative overflow-hidden ${!isActive(notice) ? 'opacity-50' : ''}`}
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="space-y-2 flex-1">
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase border ${getTypeStyle(notice.type || 'info')}`}>
+                                                {notice.type === 'warning' ? '⚠️ สำคัญ' : notice.type === 'success' ? '✅ ดีใจ' : 'ℹ️ ข่าวสาร'}
+                                            </span>
+                                            {isActive(notice) ? (
+                                                <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-600 text-xs font-medium">กำลังแสดง</span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-medium">หมดอายุ/ยังไม่เริ่ม</span>
+                                            )}
+                                        </div>
+                                        <p className="text-lg font-semibold">{notice.content}</p>
+                                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                            <Calendar className="w-3 h-3" />
+                                            {format(new Date(notice.startDate), "d MMM yyyy", { locale: locale === 'th' ? th : undefined })} - {format(new Date(notice.endDate), "d MMM yyyy", { locale: locale === 'th' ? th : undefined })}
+                                        </div>
+                                    </div>
+                                    {canEdit && (
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleOpenEdit(notice)}
+                                                className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(notice.id)}
+                                                className="p-2 rounded-lg hover:bg-red-500/10 transition-colors text-muted-foreground hover:text-red-500"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )
+            )}
+
+            {/* Tab Content: Marketing */}
+            {activeTab === 'marketing' && canManageMarketing && (
+                <div className="bg-card border rounded-2xl p-6 shadow-sm">
+                    <BannerSettings />
                 </div>
             )}
 

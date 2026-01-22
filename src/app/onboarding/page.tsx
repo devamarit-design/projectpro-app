@@ -9,7 +9,7 @@ import FeatureCarousel from "@/components/onboarding/feature-carousel"
 import { useTranslation } from "@/lib/i18n-context"
 
 export default function OnboardingPage() {
-    const { currentUser, teams, addTeam, updateUser, isAuthLoading } = useProjects()
+    const { currentUser, teams, addTeam, updateUser, isAuthLoading, isOrgLoading } = useProjects()
     const { joinOrganizationByCode } = useOrganization()
     const { t } = useTranslation()
     const router = useRouter()
@@ -21,15 +21,14 @@ export default function OnboardingPage() {
     const [error, setError] = React.useState<string | null>(null)
 
     React.useEffect(() => {
-        if (!isAuthLoading && currentUser) {
-            const hasTeams = currentUser.orgIds && currentUser.orgIds.length > 0
-            if (currentUser.hasOnboarded || hasTeams) {
+        if (!isAuthLoading && !isOrgLoading) {
+            if (!currentUser) {
+                router.replace("/login")
+            } else if (currentUser.hasOnboarded || teams.length > 0) {
                 router.replace("/")
             }
-        } else if (!isAuthLoading && !currentUser) {
-            router.replace("/login")
         }
-    }, [currentUser, isAuthLoading, router])
+    }, [currentUser, isAuthLoading, isOrgLoading, teams, router])
 
     const handleCreateTeam = async (e: React.FormEvent) => {
         e.preventDefault()

@@ -11,7 +11,7 @@ import { ThemeSettings } from "@/components/settings/theme-settings"
 import { TeamSettings } from "@/components/settings/team-settings"
 import { SecuritySettings } from "@/components/settings/security-settings"
 import { NotificationSettings } from "@/components/settings/notifications-settings"
-import { BannerSettings } from "@/components/settings/banner-settings"
+
 
 export default function SettingsPage() {
     const { t } = useTranslation()
@@ -34,11 +34,7 @@ export default function SettingsPage() {
         { id: "team", label: t.settings.menu.team, icon: Users },
         { id: "security", label: t.settings.menu.security, icon: Shield },
         { id: "theme", label: t.settings.menu.theme, icon: Palette },
-        { id: "marketing", label: "Marketing", icon: ImageIcon },
-    ].filter(item => {
-        if (item.id === 'marketing' && !isAdmin) return false
-        return true
-    })
+    ]
 
     return (
         <div className="max-w-5xl space-y-8 pb-20">
@@ -79,7 +75,7 @@ export default function SettingsPage() {
                         {activeSection === "theme" && <ThemeSettings />}
                         {activeSection === "team" && <TeamSettings />}
                         {activeSection === "security" && <SecuritySettings />}
-                        {activeSection === "marketing" && <BannerSettings />}
+
                     </div>
                 </main>
             </div>

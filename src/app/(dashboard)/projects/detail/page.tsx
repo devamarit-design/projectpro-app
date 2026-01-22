@@ -1,12 +1,12 @@
 import { Suspense } from "react"
 import ProjectDetailClient from "./project-detail-client"
 
-export default function ProjectDetailPage({
+export default async function ProjectDetailPage({
     searchParams,
 }: {
-    searchParams: { id: string }
+    searchParams: Promise<{ id: string }>
 }) {
-    const { id } = searchParams
+    const { id } = await searchParams
 
     return (
         <Suspense fallback={<div>Loading...</div>}>

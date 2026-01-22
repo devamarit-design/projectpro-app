@@ -1,12 +1,12 @@
 import { Suspense } from "react"
 import EditProjectClient from "./edit-project-client"
 
-export default function EditProjectPage({
+export default async function EditProjectPage({
     searchParams,
 }: {
-    searchParams: { id: string }
+    searchParams: Promise<{ id: string }>
 }) {
-    const { id } = searchParams
+    const { id } = await searchParams
 
     return (
         <Suspense fallback={<div>Loading...</div>}>

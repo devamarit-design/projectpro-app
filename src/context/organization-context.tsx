@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react"
 import { User as FirebaseUser } from "firebase/auth"
 import { doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs } from "firebase/firestore"
 import { db, auth } from "@/lib/firebase"
-import { useProjects } from "./project-context"
+
 
 // Types
 export type SubscriptionPlan = "Free" | "Pro" | "Enterprise"
