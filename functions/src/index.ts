@@ -445,3 +445,95 @@ export const sendDailyTaskSummary = functions
             return null
         }
     })
+
+/**
+ * Remove user from organization
+ * Callable by Owner/Admin
+ */
+export const removeUserFromOrg = functions
+    .region(region)
+    .https.onCall(async (data, context) => {
+        // Verify authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError(
+                'unauthenticated',
+                'User must be authenticated'
+            )
+        }
+
+        const { userId, orgId } = data
+
+        if (!userId || !orgId) {
+            throw new functions.https.HttpsError(
+                'invalid-argument',
+                'Missing userId or orgId'
+            )
+        }
+
+        console.log(`Removing user ${userId} from org ${orgId}. Caller: ${context.auth.uid}`)
+
+        try {
+            // 1. Verify Caller is Admin/Owner of this Org
+            const callerId = context.auth.uid
+            const callerDoc = await db.collection('users').doc(callerId).get()
+
+            if (!callerDoc.exists) {
+                throw new functions.https.HttpsError('not-found', 'Caller profile not found')
+            }
+
+            const callerData = callerDoc.data()
+
+            // Check if caller belongs to org (checking both legacy and new structure)
+            const isMember = callerData?.orgIds?.includes(orgId) ||
+                callerData?.organizations?.some((o: any) => o.orgId === orgId);
+
+            const role = callerData?.role
+
+            if (!isMember || (role !== 'Owner' && role !== 'Admin')) {
+                throw new functions.https.HttpsError(
+                    'permission-denied',
+                    'Only Owner or Admin can remove users'
+                )
+            }
+
+            // 2. Remove orgId from target user's records
+            const userRef = db.collection('users').doc(userId)
+            const userDoc = await userRef.get()
+
+            if (!userDoc.exists) {
+                // If document is missing, arrayRemove might fail silently or error in some SDKs
+                // But here we'll just handle it
+                throw new functions.https.HttpsError('not-found', 'Target user not found')
+            }
+
+            const userData = userDoc.data()
+            const updates: any = {}
+
+            // Remove from legacy orgIds
+            if (userData?.orgIds) {
+                updates.orgIds = admin.firestore.FieldValue.arrayRemove(orgId)
+            }
+
+            // Remove from new organizations array
+            if (userData?.organizations) {
+                const newOrgs = userData.organizations.filter((o: any) => o.orgId !== orgId)
+                if (newOrgs.length !== userData.organizations.length) {
+                    updates.organizations = newOrgs
+                }
+            }
+
+            if (Object.keys(updates).length > 0) {
+                await userRef.update(updates)
+            }
+
+            return { success: true }
+
+        } catch (error) {
+            console.error('Error removing user from org:', error)
+            if (error instanceof functions.https.HttpsError) throw error
+            throw new functions.https.HttpsError(
+                'internal',
+                'Failed to remove user'
+            )
+        }
+    })

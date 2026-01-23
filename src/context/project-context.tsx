@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react"
 import { get, set } from "idb-keyval"
 import { auth, googleProvider, db } from "@/lib/firebase"
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseUser, setPersistence, browserLocalPersistence, updatePassword, deleteUser as deleteAuthUser, reauthenticateWithPopup, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth"
+import { getFunctions, httpsCallable } from "firebase/functions"
 import { doc, getDoc, getDocs, setDoc, onSnapshot, collection, query, where, addDoc, updateDoc, deleteDoc, documentId, orderBy, limit } from "firebase/firestore"
 import { seedDatabase } from "@/lib/seed-data"
 import { useOrganization } from "@/context/organization-context"
@@ -1874,10 +1875,28 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
 
     const deleteUser = async (id: string) => {
+        if (!currentTeam) return
         try {
-            await deleteDoc(doc(db, "users", id))
+            // Call Cloud Function to remove user from org
+            // Region MUST match backend deployment (asia-southeast1)
+            const functions = getFunctions(undefined, 'asia-southeast1')
+            const removeUser = httpsCallable(functions, 'removeUserFromOrg')
+
+            await removeUser({
+                userId: id,
+                orgId: currentTeam.id
+            })
+
+            // Allow UI to update via snapshot listener or optimistic update if needed
+            // For now, snapshot listener on users collection should handle it if we filter by org properly?
+            // ProjectContext loads ALL users currently (line 781), needing optimization.
+            // But since `users` state is likely not real-time updated for all users in `ProjectProvider` yet (it was Mock/Initial),
+            // we should manually update the local state to match the "remove" action
+            setUsers(prev => prev.filter(u => u.id !== id))
+
         } catch (e) {
             console.error("Error deleting user", e)
+            alert("Failed to remove user. Please try again.")
         }
     }
 
