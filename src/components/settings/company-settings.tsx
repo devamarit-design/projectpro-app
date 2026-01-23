@@ -163,7 +163,7 @@ export function CompanySettings() {
             )}
 
             {/* Danger Zone - Only for Owners */}
-            {currentTeam && currentUser?.orgIds?.includes(currentTeam.id) && (
+            {currentTeam && currentUser?.role === 'Owner' && (
                 <div className="pt-10 mt-10 border-t border-red-500/20">
                     <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-6">
                         <h3 className="text-red-500 font-bold text-lg mb-2 flex items-center gap-2">

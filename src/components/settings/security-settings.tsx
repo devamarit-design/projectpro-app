@@ -4,11 +4,15 @@ import { useState } from "react"
 import { useSecurity } from "@/context/security-context"
 import { Shield, Lock, Unlock, KeyRound, AlertTriangle, CheckCircle } from "lucide-react"
 import { DataSettings } from "./data-settings"
+import { useProjects } from "@/context/project-context"
 
 import { useTranslation } from "@/lib/i18n-context"
 export function SecuritySettings() {
     const { t } = useTranslation()
     const { hasPin, setPin, removePin, verifyPin } = useSecurity()
+    const { currentUser } = useProjects()
+
+    const isAdminOrOwner = currentUser?.role === 'Admin' || currentUser?.role === 'Owner'
 
     const [mode, setMode] = useState<"view" | "set" | "change" | "disable">("view")
     const [inputPin, setInputPin] = useState("")
@@ -232,8 +236,12 @@ export function SecuritySettings() {
                 )}
             </div>
 
-            <div className="h-px bg-border my-8" />
-            <DataSettings />
+            {isAdminOrOwner && (
+                <>
+                    <div className="h-px bg-border my-8" />
+                    <DataSettings />
+                </>
+            )}
         </div>
     )
 }

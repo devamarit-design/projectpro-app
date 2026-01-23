@@ -73,7 +73,7 @@ export function Sidebar({ className }: { className?: string }) {
         {
             title: "อื่นๆ", // Other
             items: [
-                { href: "/settings", label: t.common.settings, icon: Settings, permission: "COMPANY_UPDATE" },
+                { href: "/settings", label: t.common.settings, icon: Settings },
                 { href: "/announcements", label: "ประกาศ", icon: Megaphone },
                 { href: "/about", label: t.navbar.about, icon: Info },
                 { href: "/policy", label: t.navbar.policy, icon: ShieldCheck },
