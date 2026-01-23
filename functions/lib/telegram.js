@@ -8,6 +8,7 @@ exports.formatExpenseNotification = formatExpenseNotification;
 exports.formatPaymentDueReminder = formatPaymentDueReminder;
 exports.formatTestMessage = formatTestMessage;
 exports.formatQuotationNotification = formatQuotationNotification;
+exports.formatDailyTaskSummary = formatDailyTaskSummary;
 /**
  * Send a message to Telegram
  */
@@ -115,5 +116,30 @@ function formatQuotationNotification(params) {
 👤 ผู้ออกเอกสาร: ${userName}
 📅 วันที่: ${date}
 -------------------------`;
+}
+/**
+ * Format daily task summary message
+ */
+function formatDailyTaskSummary(params) {
+    const { date, tasks } = params;
+    if (tasks.length === 0) {
+        return `📅 <b>งานที่ต้องทำในวันนี้ (${date})</b>
+-------------------------
+✅ วันนี้ไม่มีงานที่ครบกำหนดส่ง`;
+    }
+    let message = `📅 <b>งานที่ต้องทำในวันนี้ (${date})</b>
+-------------------------`;
+    for (const project of tasks) {
+        message += `\n\n🏗 <b>${project.projectName}</b>`;
+        for (const task of project.tasks) {
+            message += `\n▫️ ${task.title}`;
+            if (task.assignee) {
+                message += ` (👤 ${task.assignee})`;
+            }
+        }
+    }
+    message += `\n\n-------------------------
+เปิดดูงานทั้งหมด: https://app.projectpro.com/tasks`;
+    return message;
 }
 //# sourceMappingURL=telegram.js.map

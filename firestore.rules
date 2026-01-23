@@ -54,7 +54,7 @@ service cloud.firestore {
     match /organizations/{orgId} {
       allow get: if true; 
       allow list, create: if isAuthenticated();
-      allow update: if isAuthenticated() && (isOrgMember(orgId) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']));
+      allow update: if isAuthenticated() && (isOrgMember(orgId) || isOrgOwner(orgId) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']));
       allow delete: if isAuthenticated() && isOrgMember(orgId) && isOrgOwner(orgId);
 
       match /settings/{settingDoc} {
@@ -153,6 +153,12 @@ service cloud.firestore {
     match /activities/{activityId} {
         allow read: if resourceBelongsToUserOrg();
         allow create: if requestBelongsToUserOrg();
+    }
+
+    match /join_requests/{requestId} {
+        allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isOrgMember(resource.data.orgId));
+        allow create: if isAuthenticated();
+        allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isOrgOwner(resource.data.orgId));
     }
   }
 }

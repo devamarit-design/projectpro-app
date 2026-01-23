@@ -1,0 +1,27 @@
+[debug] [2026-01-23T04:02:17.122Z] ----------------------------------------------------------------------
+[debug] [2026-01-23T04:02:17.123Z] Command:       /usr/local/bin/node /Users/beer/.gemini/antigravity/scratch/projectpro-app/node_modules/.bin/firebase deploy --only firestore:rules
+[debug] [2026-01-23T04:02:17.123Z] CLI Version:   15.3.1
+[debug] [2026-01-23T04:02:17.123Z] Platform:      darwin
+[debug] [2026-01-23T04:02:17.124Z] Node Version:  v22.16.0
+[debug] [2026-01-23T04:02:17.124Z] Time:          Fri Jan 23 2026 11:02:17 GMT+0700 (Indochina Time)
+[debug] [2026-01-23T04:02:17.124Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-01-23T04:02:17.743Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-23T04:02:17.744Z] > authorizing via signed-in user (dev.amarit@gmail.com)
+[debug] [2026-01-23T04:02:17.744Z] [iam] checking project projectpro-app-76535 for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]
+[debug] [2026-01-23T04:02:17.744Z] Checked if tokens are valid: true, expires at: 1769143749144
+[debug] [2026-01-23T04:02:17.744Z] Checked if tokens are valid: true, expires at: 1769143749144
+[debug] [2026-01-23T04:02:17.744Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions [none]
+[debug] [2026-01-23T04:02:17.744Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions x-goog-quota-user=projects/projectpro-app-76535
+[debug] [2026-01-23T04:02:17.744Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[debug] [2026-01-23T04:02:19.215Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions 200
+[debug] [2026-01-23T04:02:19.215Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[info] 
+[info] === Deploying to 'projectpro-app-76535'...
+[info] 
+[info] i  deploying firestore 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[debug] [2026-01-23T04:02:19.217Z] Checked if tokens are valid: true, expires at: 1769143749144
+[debug] [2026-01-23T04:02:19.217Z] Checked if tokens are valid: true, expires at: 1769143749144
+[debug] [2026-01-23T04:02:19.217Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/projectpro-app-76535/databases/(default) [none]

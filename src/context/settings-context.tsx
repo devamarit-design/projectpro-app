@@ -365,7 +365,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setMoodThresholds(defaultMoodThresholds)
         setBanners(defaultBanners)
         setNotices([])
-        setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, paymentDueDays: 3 })
+        setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, notifyOnDailyTasks: false, paymentDueDays: 3 })
 
         const orgRef = doc(db, "organizations", currentOrg.id)
         const unsubscribe = onSnapshot(orgRef, (docSnap) => {
