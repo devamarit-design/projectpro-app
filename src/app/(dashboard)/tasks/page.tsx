@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, CheckCircle, Clock, MoreHorizontal, User, Search, Filter, Hash, ExternalLink } from "lucide-react"
+import { Plus, CheckCircle, Clock, MoreHorizontal, User, Search, Filter, Hash, ExternalLink, Archive } from "lucide-react"
 import { useProjects, TaskStatus, ProjectTask, Priority } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -240,7 +240,7 @@ export default function TasksPage() {
                             )}
                             title={showArchived ? "Show Active Tasks" : "Show Archived Tasks"}
                         >
-                            <Filter className="w-4 h-4" />
+                            <Archive className="w-4 h-4" />
                             {showArchived && <span className="text-xs font-semibold">Archived</span>}
                         </button>
 

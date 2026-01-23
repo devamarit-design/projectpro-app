@@ -34,7 +34,7 @@ export default function SettingsPage() {
         { id: "documents", label: t.settings.menu.documents, icon: FileText },
         { id: "notifications", label: t.settings.menu.notifications, icon: Bell },
         ...(isOwner ? [{ id: "telegram", label: "Telegram", icon: Send }] : []),
-        { id: "team", label: t.settings.menu.team, icon: Users },
+        ...(isAdmin ? [{ id: "team", label: t.settings.menu.team, icon: Users }] : []),
         { id: "security", label: t.settings.menu.security, icon: Shield },
         { id: "theme", label: t.settings.menu.theme, icon: Palette },
     ]
@@ -77,7 +77,7 @@ export default function SettingsPage() {
                         {activeSection === "notifications" && <NotificationSettings />}
                         {activeSection === "telegram" && <TelegramSettings />}
                         {activeSection === "theme" && <ThemeSettings />}
-                        {activeSection === "team" && <TeamSettings />}
+                        {activeSection === "team" && isAdmin && <TeamSettings />}
                         {activeSection === "security" && <SecuritySettings />}
 
                     </div>

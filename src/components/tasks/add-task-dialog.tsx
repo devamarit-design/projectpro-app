@@ -267,7 +267,7 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                 onClick={onClose}
             />
 
-            <div className="relative w-full max-w-lg glass-card border-white/10 rounded-[2rem] shadow-2xl shadow-primary/10 overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="relative w-full max-w-lg glass-card border-white/10 rounded-[2rem] shadow-2xl shadow-primary/10 max-h-[85vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
                 <div className="p-8">
                     <div className="flex items-center justify-between mb-8">
                         <div>

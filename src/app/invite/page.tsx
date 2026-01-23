@@ -4,7 +4,7 @@ import * as React from "react"
 import { useProjects } from "@/context/project-context"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Building2, XCircle, Loader2 } from "lucide-react"
-import { doc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from "firebase/firestore"
+import { doc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs, addDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Suspense } from "react"
 import { useTranslation } from "@/lib/i18n-context"
@@ -63,15 +63,43 @@ function InviteContent() {
 
         setStatus("loading")
         try {
-            // Add user to team in Firestore
-            await updateDoc(doc(db, "users", currentUser.id), {
-                orgIds: arrayUnion(teamId)
+            // Check if request already exists
+            const q = query(
+                collection(db, "join_requests"),
+                where("userId", "==", currentUser.id),
+                where("orgId", "==", teamId),
+                where("status", "==", "pending")
+            )
+            const snap = await getDocs(q)
+
+            if (!snap.empty) {
+                setStatus("success")
+                return
+            }
+
+            // Create Join Request
+            await addDoc(collection(db, "join_requests"), {
+                userId: currentUser.id,
+                orgId: teamId,
+                status: "pending",
+                userEmail: currentUser.email,
+                userName: currentUser.name,
+                createdAt: new Date().toISOString()
             })
 
-            // Update local state (optimistic)
-            // But actually we might wait for context to reload or force reload
-            // For simplicity, just force a hard redirect to dashboard which triggers context reload
-            window.location.href = `/projects`
+            // Notify Admins (Broadcast to org admins)
+            await addDoc(collection(db, "notifications"), {
+                title: "New Join Request",
+                message: `${currentUser.name} requested to join ${teamName}`,
+                type: "info",
+                date: new Date().toISOString(),
+                read: false,
+                link: "/settings?tab=team",
+                target: "admin",
+                orgId: teamId
+            })
+
+            setStatus("success")
 
         } catch (error) {
             console.error("Failed to join team", error)
@@ -129,18 +157,38 @@ function InviteContent() {
                         <div className="w-full h-px bg-white/10" />
 
                         <div className="w-full space-y-3">
-                            <button
-                                onClick={handleJoin}
-                                className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                            >
-                                {t.invite.join_workspace}
-                            </button>
-                            <button
-                                onClick={() => router.push("/")}
-                                className="text-sm text-muted-foreground hover:text-white transition-colors"
-                            >
-                                {t.invite.cancel}
-                            </button>
+                            {status === "success" ? (
+                                <div className="space-y-4 animate-in zoom-in duration-300">
+                                    <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 mx-auto">
+                                        <Building2 className="w-8 h-8" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-green-500">{(t.invite as any).request_sent || "Request Sent"}</h2>
+                                        <p className="text-muted-foreground mt-2">{(t.invite as any).request_sent_desc || "Your request to join has been sent to the administrator."}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => router.push("/")}
+                                        className="w-full bg-secondary text-secondary-foreground py-3 rounded-xl font-medium"
+                                    >
+                                        {t.invite.back_home}
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={handleJoin}
+                                        className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                    >
+                                        {t.invite.join_workspace}
+                                    </button>
+                                    <button
+                                        onClick={() => router.push("/")}
+                                        className="text-sm text-muted-foreground hover:text-white transition-colors"
+                                    >
+                                        {t.invite.cancel}
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}

@@ -895,66 +895,85 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     // Auth State Listener
     useEffect(() => {
+        let userUnsubscribe: (() => void) | null = null
+
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             try {
+                // Clear previous listener if exists
+                if (userUnsubscribe) {
+                    userUnsubscribe()
+                    userUnsubscribe = null
+                }
+
                 if (firebaseUser) {
                     const userRef = doc(db, "users", firebaseUser.uid)
-                    const userSnap = await getDoc(userRef)
 
-                    if (userSnap.exists()) {
-                        const userData = userSnap.data() as User & { organizations?: { orgId: string; role: string }[] }
-                        setCurrentUser({ ...userData, id: firebaseUser.uid } as User)
+                    // Real-time listener for User Profile
+                    userUnsubscribe = onSnapshot(userRef, async (userSnap) => {
+                        if (userSnap.exists()) {
+                            const userData = userSnap.data() as User
+                            setCurrentUser({ ...userData, id: firebaseUser.uid } as User)
 
-                        // SYNC: Ensure orgIds is in sync with organizations (for legacy data)
-                        if (userData.organizations && userData.organizations.length > 0) {
-                            const orgIds = userData.organizations.map(o => o.orgId)
-                            const currentTeamIds = userData.orgIds || []
-                            const missingTeamIds = orgIds.filter(id => !currentTeamIds.includes(id))
+                            // SYNC: Ensure orgIds is in sync with organizations (for legacy data)
+                            if (userData.organizations && userData.organizations.length > 0) {
+                                const orgIds = userData.organizations.map(o => o.orgId)
+                                const currentTeamIds = userData.orgIds || []
+                                const missingTeamIds = orgIds.filter(id => !currentTeamIds.includes(id))
 
-                            if (missingTeamIds.length > 0) {
-                                // Background sync - update orgIds to include all org IDs
-                                const updatedTeamIds = Array.from(new Set([...currentTeamIds, ...orgIds]))
-                                setDoc(userRef, { orgIds: updatedTeamIds }, { merge: true })
-                                    .catch(err => console.warn("Failed to sync orgIds:", err))
+                                if (missingTeamIds.length > 0) {
+                                    // Background sync
+                                    const updatedTeamIds = Array.from(new Set([...currentTeamIds, ...orgIds]))
+                                    setDoc(userRef, { orgIds: updatedTeamIds }, { merge: true })
+                                        .catch(err => console.warn("Failed to sync orgIds:", err))
+                                }
                             }
-                        }
-                    } else {
-                        // New User - Check for Placeholder (Invite)
-                        const q = query(collection(db, "users"), where("email", "==", firebaseUser.email))
-                        const snapshot = await getDocs(q)
+                        } else {
+                            // New User - Check for Placeholder (Invite)
+                            const q = query(collection(db, "users"), where("email", "==", firebaseUser.email))
+                            const snapshot = await getDocs(q)
 
-                        let initialData: Partial<User> = {}
-                        if (!snapshot.empty) {
-                            const placeholderDoc = snapshot.docs[0]
-                            initialData = placeholderDoc.data() as User
-                            // Delete placeholder
-                            await deleteDoc(placeholderDoc.ref)
-                        }
+                            let initialData: Partial<User> = {}
+                            if (!snapshot.empty) {
+                                const placeholderDoc = snapshot.docs[0]
+                                initialData = placeholderDoc.data() as User
+                                // Delete placeholder
+                                await deleteDoc(placeholderDoc.ref)
+                            }
 
-                        // Create Profile (inherit organizations from invite placeholder)
-                        const newUser: User = {
-                            id: firebaseUser.uid,
-                            name: firebaseUser.displayName || initialData.name || "User",
-                            email: firebaseUser.email || "",
-                            role: initialData.role || "Member",
-                            status: "Active",
-                            orgIds: initialData.orgIds || [],
-                            organizations: (initialData as any).organizations || [],
-                            ...(firebaseUser.photoURL ? { avatar: firebaseUser.photoURL } : {})
+                            // Create Profile
+                            const newUser: User = {
+                                id: firebaseUser.uid,
+                                name: firebaseUser.displayName || initialData.name || "User",
+                                email: firebaseUser.email || "",
+                                role: initialData.role || "Member",
+                                status: "Active",
+                                orgIds: initialData.orgIds || [],
+                                organizations: (initialData as any).organizations || [],
+                                ...(firebaseUser.photoURL ? { avatar: firebaseUser.photoURL } : {})
+                            }
+                            await setDoc(userRef, newUser)
+                            // Listener will pick this up next update, but we set it optimistically
+                            setCurrentUser(newUser)
                         }
-                        await setDoc(userRef, newUser)
-                        setCurrentUser(newUser)
-                    }
+                        setIsAuthLoading(false)
+                    }, (error) => {
+                        console.error("User snapshot error:", error)
+                        setIsAuthLoading(false)
+                    })
+
                 } else {
                     setCurrentUser(null)
+                    setIsAuthLoading(false)
                 }
             } catch (error) {
                 console.error("Auth state processing failed:", error)
-            } finally {
                 setIsAuthLoading(false)
             }
         })
-        return () => unsubscribe()
+        return () => {
+            unsubscribe()
+            if (userUnsubscribe) userUnsubscribe()
+        }
     }, [])
 
     // Handle Redirect Result (for Mobile/PWA)
@@ -1000,23 +1019,17 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 // Always set persistence
                 await setPersistence(auth, browserLocalPersistence)
 
-                // iOS (especially PWA) works much better with Redirect
-                // Android/Desktop works better with Popup (Chrome Custom Tabs)
-                if (isIOS || isPWA) {
-                    setIsRedirecting(true)
-                    await signInWithRedirect(auth, googleProvider)
-                    // Flow continues in getRedirectResult effect
-                } else {
-                    try {
-                        await signInWithPopup(auth, googleProvider)
-                    } catch (error: any) {
-                        console.error("Popup failed, fallback to redirect", error)
-                        if (error.code !== 'auth/popup-closed-by-user') {
-                            setIsRedirecting(true)
-                            await signInWithRedirect(auth, googleProvider)
-                        } else {
-                            throw new Error("Login cancelled")
-                        }
+                // User requested to force Popup like normal for consistent experience
+                // Previously had specific logic for iOS PWA, but it was causing issues
+                try {
+                    await signInWithPopup(auth, googleProvider)
+                } catch (error: any) {
+                    console.error("Popup failed, fallback to redirect", error)
+                    if (error.code !== 'auth/popup-closed-by-user') {
+                        setIsRedirecting(true)
+                        await signInWithRedirect(auth, googleProvider)
+                    } else {
+                        throw new Error("Login cancelled")
                     }
                 }
             } else if ((provider === 'email' || provider === 'credentials') && credentials?.email && credentials?.password) {

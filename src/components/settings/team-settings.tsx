@@ -1,11 +1,11 @@
-"use client"
+import { doc, updateDoc, arrayUnion, collection, query, where, getDocs, deleteDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { useEffect, useState, useRef } from "react"
+import { Check, X, Copy, Users, Link as LinkIcon, Shield } from "lucide-react"
 
 import { useSettings } from "@/context/settings-context"
 import { useOrganization } from "@/context/organization-context"
-import { Copy, Users, Link as LinkIcon, Shield, Building2, FileText, MapPin, Phone, Mail, Globe } from "lucide-react"
-import { useState, useRef } from "react"
 import { uploadImage } from "@/lib/upload"
-
 import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
 
@@ -14,7 +14,51 @@ export function TeamSettings() {
     const { currentOrg } = useOrganization()
     const { t } = useTranslation()
     const [isUploading, setIsUploading] = useState(false)
+    const [joinRequests, setJoinRequests] = useState<any[]>([])
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        if (!currentOrg) return
+
+        const fetchRequests = async () => {
+            const q = query(
+                collection(db, "join_requests"),
+                where("orgId", "==", currentOrg.id),
+                where("status", "==", "pending")
+            )
+            const snap = await getDocs(q)
+            setJoinRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+        }
+
+        fetchRequests()
+    }, [currentOrg])
+
+    const handleApprove = async (req: any) => {
+        try {
+            // 1. Add user to org
+            await updateDoc(doc(db, "users", req.userId), {
+                orgIds: arrayUnion(currentOrg?.id)
+            })
+
+            // 2. Delete request (or mark approved)
+            await deleteDoc(doc(db, "join_requests", req.id))
+
+            // 3. UI Update
+            setJoinRequests(prev => prev.filter(r => r.id !== req.id))
+
+        } catch (error) {
+            console.error("Approve failed", error)
+        }
+    }
+
+    const handleDecline = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "join_requests", id))
+            setJoinRequests(prev => prev.filter(r => r.id !== id))
+        } catch (error) {
+            console.error("Decline failed", error)
+        }
+    }
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -42,6 +86,41 @@ export function TeamSettings() {
 
     return (
         <div className="space-y-8">
+
+            {joinRequests.length > 0 && (
+                <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 text-card-foreground shadow-sm">
+                    <div className="flex flex-col space-y-1.5 p-6">
+                        <h3 className="text-xl font-semibold leading-none tracking-tight flex items-center gap-2 text-yellow-500">
+                            <Users className="w-5 h-5" />
+                            Pending Join Requests
+                        </h3>
+                    </div>
+                    <div className="p-6 pt-0 space-y-4">
+                        {joinRequests.map(req => (
+                            <div key={req.id} className="flex items-center justify-between bg-background/50 p-4 rounded-lg border">
+                                <div>
+                                    <p className="font-medium">{req.userName || req.userEmail}</p>
+                                    <p className="text-xs text-muted-foreground">{req.userEmail}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleApprove(req)}
+                                        className="p-2 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500/20"
+                                    >
+                                        <Check className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDecline(req.id)}
+                                        className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-4">

@@ -10,9 +10,9 @@ import { app } from './firebase'
 const functions = getFunctions(app, 'asia-southeast1')
 
 // Connect to emulator in development (uncomment for local testing)
-if (process.env.NODE_ENV === 'development') {
-    connectFunctionsEmulator(functions, 'localhost', 5001)
-}
+// if (process.env.NODE_ENV === 'development') {
+//     connectFunctionsEmulator(functions, 'localhost', 5001)
+// }
 
 // Type definitions
 interface ExpenseNotificationData {
