@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useProjects } from "@/context/project-context"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Building2, XCircle, Loader2 } from "lucide-react"
+import { Building2, XCircle, Loader2, Check } from "lucide-react"
 import { doc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs, addDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Suspense } from "react"
@@ -143,6 +143,26 @@ function InviteContent() {
                     </div>
                 )}
 
+                {status === "success" && (
+                    <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-300">
+                        <div className="space-y-4 animate-in zoom-in duration-300 w-full">
+                            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 mx-auto">
+                                <Check className="w-8 h-8" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-green-500">{(t.invite as any).request_sent || "Request Sent"}</h2>
+                                <p className="text-muted-foreground mt-2">{(t.invite as any).request_sent_desc || "Your request to join has been sent to the administrator."}</p>
+                            </div>
+                            <button
+                                onClick={() => router.push("/")}
+                                className="w-full bg-secondary text-secondary-foreground py-3 rounded-xl font-medium"
+                            >
+                                {t.invite.back_home}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {status === "valid" && (
                     <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-300">
                         <div className="w-20 h-20 bg-primary/20 rounded-2xl flex items-center justify-center text-primary mb-2">
@@ -157,38 +177,18 @@ function InviteContent() {
                         <div className="w-full h-px bg-white/10" />
 
                         <div className="w-full space-y-3">
-                            {status === "success" ? (
-                                <div className="space-y-4 animate-in zoom-in duration-300">
-                                    <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 mx-auto">
-                                        <Building2 className="w-8 h-8" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-xl font-bold text-green-500">{(t.invite as any).request_sent || "Request Sent"}</h2>
-                                        <p className="text-muted-foreground mt-2">{(t.invite as any).request_sent_desc || "Your request to join has been sent to the administrator."}</p>
-                                    </div>
-                                    <button
-                                        onClick={() => router.push("/")}
-                                        className="w-full bg-secondary text-secondary-foreground py-3 rounded-xl font-medium"
-                                    >
-                                        {t.invite.back_home}
-                                    </button>
-                                </div>
-                            ) : (
-                                <>
-                                    <button
-                                        onClick={handleJoin}
-                                        className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                                    >
-                                        {t.invite.join_workspace}
-                                    </button>
-                                    <button
-                                        onClick={() => router.push("/")}
-                                        className="text-sm text-muted-foreground hover:text-white transition-colors"
-                                    >
-                                        {t.invite.cancel}
-                                    </button>
-                                </>
-                            )}
+                            <button
+                                onClick={handleJoin}
+                                className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                {t.invite.join_workspace}
+                            </button>
+                            <button
+                                onClick={() => router.push("/")}
+                                className="text-sm text-muted-foreground hover:text-white transition-colors"
+                            >
+                                {t.invite.cancel}
+                            </button>
                         </div>
                     </div>
                 )}
