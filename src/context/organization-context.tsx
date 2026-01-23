@@ -40,6 +40,13 @@ export interface Organization {
             chill: number
             pumped: number
         }
+        notifications?: {
+            warnDaysTasks: number
+            warnDaysExpenses: number
+            notifyOnTaskAssignment: boolean
+            notifyOnOverdue: boolean
+            notifyOnPaymentDue: boolean
+        }
     }
     members?: OrgMember[]
 }

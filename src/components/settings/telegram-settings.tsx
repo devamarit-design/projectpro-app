@@ -59,19 +59,10 @@ export function TelegramSettings() {
     // Check if user is owner
     const isOwner = currentUser?.role === 'Owner'
 
-    if (!isOwner) {
-        return (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-                <MessageCircle className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
-                <p className="text-muted-foreground max-w-md">
-                    Only Organization Owners can configure Telegram notifications.
-                </p>
-            </div>
-        )
-    }
+    // REMOVED: Access Denied Block
 
     const handleTestConnection = async () => {
+        if (!isOwner) return
         if (!localSettings.botToken || !localSettings.chatId) {
             toast.error(t.settings.telegram.config_desc)
             return
@@ -109,6 +100,7 @@ export function TelegramSettings() {
     }
 
     const handleSave = async () => {
+        if (!isOwner) return
         setIsSaving(true)
         try {
             await updateTelegramSettings(localSettings)
@@ -131,36 +123,44 @@ export function TelegramSettings() {
                 <p className="text-muted-foreground mt-1">
                     {t.settings.telegram.subtitle}
                 </p>
+                {!isOwner && (
+                    <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-500">
+                        <Info className="w-3 h-3 mr-1" />
+                        Administrator View (Read-Only)
+                    </div>
+                )}
             </div>
 
-            {/* Setup Instructions */}
-            <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>{t.settings.telegram.setup_guide}</AlertTitle>
-                <AlertDescription className="mt-3 space-y-2">
-                    <ol className="list-decimal list-inside space-y-1.5 text-sm">
-                        <li>{t.settings.telegram.setup_step1}</li>
-                        <li>{t.settings.telegram.setup_step2}</li>
-                        <li>{t.settings.telegram.setup_step3}</li>
-                        <li>{t.settings.telegram.setup_step4}</li>
-                        <li>{t.settings.telegram.setup_step5}</li>
-                    </ol>
-                    <div className="flex gap-2 mt-4">
-                        <Button variant="outline" size="sm" className="gap-1" asChild>
-                            <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="w-3 h-3" />
-                                {t.settings.telegram.open_botfather}
-                            </a>
-                        </Button>
-                        <Button variant="outline" size="sm" className="gap-1" asChild>
-                            <a href="https://t.me/RawDataBot" target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="w-3 h-3" />
-                                {t.settings.telegram.find_chatid}
-                            </a>
-                        </Button>
-                    </div>
-                </AlertDescription>
-            </Alert>
+            {/* Setup Instructions - Hide for non-owners to reduce clutter? Or keep? Keeping for now. */}
+            {isOwner && (
+                <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>{t.settings.telegram.setup_guide}</AlertTitle>
+                    <AlertDescription className="mt-3 space-y-2">
+                        <ol className="list-decimal list-inside space-y-1.5 text-sm">
+                            <li>{t.settings.telegram.setup_step1}</li>
+                            <li>{t.settings.telegram.setup_step2}</li>
+                            <li>{t.settings.telegram.setup_step3}</li>
+                            <li>{t.settings.telegram.setup_step4}</li>
+                            <li>{t.settings.telegram.setup_step5}</li>
+                        </ol>
+                        <div className="flex gap-2 mt-4">
+                            <Button variant="outline" size="sm" className="gap-1" asChild>
+                                <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="w-3 h-3" />
+                                    {t.settings.telegram.open_botfather}
+                                </a>
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-1" asChild>
+                                <a href="https://t.me/RawDataBot" target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="w-3 h-3" />
+                                    {t.settings.telegram.find_chatid}
+                                </a>
+                            </Button>
+                        </div>
+                    </AlertDescription>
+                </Alert>
+            )}
 
             {/* Configuration */}
             <Card>
@@ -168,6 +168,7 @@ export function TelegramSettings() {
                     <CardTitle className="flex items-center justify-between">
                         <span>{t.settings.telegram.config_title}</span>
                         <Switch
+                            disabled={!isOwner}
                             checked={localSettings.enabled}
                             onCheckedChange={(checked) => setLocalSettings(prev => ({ ...prev, enabled: checked }))}
                         />
@@ -184,20 +185,23 @@ export function TelegramSettings() {
                             <Input
                                 id="botToken"
                                 type={showToken ? "text" : "password"}
-                                placeholder="123456789:ABCdefGHIjklMNO..."
+                                placeholder={isOwner ? "123456789:ABCdefGHIjklMNO..." : "•••••••••••••••••••••"}
                                 value={localSettings.botToken}
+                                disabled={!isOwner}
                                 onChange={(e) => setLocalSettings(prev => ({ ...prev, botToken: e.target.value }))}
                                 className="pr-10"
                             />
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="absolute right-0 top-0 h-full px-3"
-                                onClick={() => setShowToken(!showToken)}
-                            >
-                                {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </Button>
+                            {isOwner && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-0 top-0 h-full px-3"
+                                    onClick={() => setShowToken(!showToken)}
+                                >
+                                    {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </Button>
+                            )}
                         </div>
                     </div>
 
@@ -208,6 +212,7 @@ export function TelegramSettings() {
                             id="chatId"
                             placeholder="-1001234567890"
                             value={localSettings.chatId}
+                            disabled={!isOwner}
                             onChange={(e) => setLocalSettings(prev => ({ ...prev, chatId: e.target.value }))}
                         />
                         <p className="text-xs text-muted-foreground">
@@ -216,32 +221,34 @@ export function TelegramSettings() {
                     </div>
 
                     {/* Test Connection Button */}
-                    <div className="flex items-center gap-3">
-                        <Button
-                            variant="outline"
-                            onClick={handleTestConnection}
-                            disabled={isTesting || !localSettings.botToken || !localSettings.chatId}
-                            className="gap-2"
-                        >
-                            {isTesting ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <Bell className="w-4 h-4" />
-                            )}
-                            {t.settings.telegram.test_conn}
-                        </Button>
-
-                        {testResult && (
-                            <div className={`flex items-center gap-1 text-sm ${testResult.success ? 'text-green-600' : 'text-red-600'}`}>
-                                {testResult.success ? (
-                                    <CheckCircle2 className="w-4 h-4" />
+                    {isOwner && (
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={handleTestConnection}
+                                disabled={isTesting || !localSettings.botToken || !localSettings.chatId}
+                                className="gap-2"
+                            >
+                                {isTesting ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
-                                    <XCircle className="w-4 h-4" />
+                                    <Bell className="w-4 h-4" />
                                 )}
-                                {testResult.message}
-                            </div>
-                        )}
-                    </div>
+                                {t.settings.telegram.test_conn}
+                            </Button>
+
+                            {testResult && (
+                                <div className={`flex items-center gap-1 text-sm ${testResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                                    {testResult.success ? (
+                                        <CheckCircle2 className="w-4 h-4" />
+                                    ) : (
+                                        <XCircle className="w-4 h-4" />
+                                    )}
+                                    {testResult.message}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -264,6 +271,7 @@ export function TelegramSettings() {
                             </p>
                         </div>
                         <Switch
+                            disabled={!isOwner}
                             checked={localSettings.notifyOnExpense}
                             onCheckedChange={(checked) => setLocalSettings(prev => ({ ...prev, notifyOnExpense: checked }))}
                         />
@@ -283,6 +291,7 @@ export function TelegramSettings() {
                             </p>
                         </div>
                         <Switch
+                            disabled={!isOwner}
                             checked={localSettings.notifyOnQuotation}
                             onCheckedChange={(checked) => setLocalSettings(prev => ({ ...prev, notifyOnQuotation: checked }))}
                         />
@@ -302,6 +311,7 @@ export function TelegramSettings() {
                             </p>
                         </div>
                         <Switch
+                            disabled={!isOwner}
                             checked={localSettings.notifyOnPaymentDue}
                             onCheckedChange={(checked) => setLocalSettings(prev => ({ ...prev, notifyOnPaymentDue: checked }))}
                         />
@@ -321,6 +331,7 @@ export function TelegramSettings() {
                             </p>
                         </div>
                         <Switch
+                            disabled={!isOwner}
                             checked={localSettings.notifyOnDailyTasks}
                             onCheckedChange={(checked) => setLocalSettings(prev => ({ ...prev, notifyOnDailyTasks: checked }))}
                         />
@@ -336,6 +347,7 @@ export function TelegramSettings() {
                                     type="number"
                                     min={1}
                                     max={30}
+                                    disabled={!isOwner}
                                     value={localSettings.paymentDueDays}
                                     onChange={(e) => setLocalSettings(prev => ({
                                         ...prev,
@@ -351,16 +363,18 @@ export function TelegramSettings() {
             </Card>
 
             {/* Save Button */}
-            <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={isSaving} className="gap-2">
-                    {isSaving ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                        <CheckCircle2 className="w-4 h-4" />
-                    )}
-                    {t.settings.telegram.save_btn}
-                </Button>
-            </div>
+            {isOwner && (
+                <div className="flex justify-end">
+                    <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+                        {isSaving ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <CheckCircle2 className="w-4 h-4" />
+                        )}
+                        {t.settings.telegram.save_btn}
+                    </Button>
+                </div>
+            )}
         </div>
     )
 }

@@ -100,26 +100,23 @@ export default function RootLayout({
                       <LockScreen />
                       <ThemeSync />
                       <Toaster
-                        position="top-center"
+                        position="bottom-center"
                         toastOptions={{
-                          className: "bg-black/80 backdrop-blur-xl border border-white/10 text-white shadow-2xl rounded-2xl p-4 gap-3",
-                          style: {
-                            background: 'rgba(0,0,0,0.8)',
-                            backdropFilter: 'blur(16px)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            color: 'white',
-                          },
+                          unstyled: true,
                           classNames: {
-                            toast: "bg-black/80 backdrop-blur-xl border border-white/10 text-white shadow-2xl rounded-2xl",
-                            title: "text-white font-bold text-sm",
-                            description: "text-white/70 text-xs",
-                            actionButton: "bg-white text-black font-bold",
-                            cancelButton: "bg-white/10 text-white hover:bg-white/20",
-                            success: "border-emerald-500/50 bg-emerald-500/10 text-emerald-500",
-                            error: "border-red-500/50 bg-red-500/10 text-red-500",
-                            warning: "border-amber-500/50 bg-amber-500/10 text-amber-500",
-                            info: "border-blue-500/50 bg-blue-500/10 text-blue-500",
-                          }
+                            toast: "bg-background/40 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl p-4 gap-3 flex items-center w-full md:w-[356px]",
+                            title: "text-foreground font-semibold text-sm",
+                            description: "text-muted-foreground text-xs",
+                            actionButton: "bg-primary text-primary-foreground font-medium text-xs px-3 py-1.5 rounded-lg",
+                            cancelButton: "bg-muted text-muted-foreground hover:bg-muted/80 text-xs px-3 py-1.5 rounded-lg",
+                            success: "border-emerald-500/20 text-emerald-500",
+                            error: "border-red-500/20 text-red-500",
+                            warning: "border-amber-500/20 text-amber-500",
+                            info: "border-blue-500/20 text-blue-500",
+                          },
+                          style: {
+                            bottom: 'calc(env(safe-area-inset-bottom) + 24px)',
+                          },
                         }}
                       />
                       {children}

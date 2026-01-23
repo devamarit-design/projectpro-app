@@ -42,6 +42,7 @@ export type NotificationSettings = {
     warnDaysExpenses: number
     notifyOnTaskAssignment: boolean
     notifyOnOverdue: boolean
+    notifyOnPaymentDue: boolean
 }
 
 export type FinancialTargets = {
@@ -161,7 +162,8 @@ const defaultNotificationSettings: NotificationSettings = {
     warnDaysTasks: 3,
     warnDaysExpenses: 7,
     notifyOnTaskAssignment: true,
-    notifyOnOverdue: true
+    notifyOnOverdue: true,
+    notifyOnPaymentDue: true
 }
 
 const defaultFinancialTargets: FinancialTargets = {
@@ -281,7 +283,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
         load('documentSettings', setDocumentSettings)
         load('teamSettings', setTeamSettings)
-        load('notificationSettings', setNotificationSettings)
+        load('documentSettings', setDocumentSettings)
+        load('teamSettings', setTeamSettings)
+        // Notification settings are now org-scoped/driven, but load legacy/local as backup
+        // load('notificationSettings', setNotificationSettings)
 
         // Load org-scoped theme FIRST if lastOrgId exists, otherwise fallback to global
         const lastOrgId = localStorage.getItem('lastOrgId')
@@ -400,12 +405,27 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                     setNotices([])
                 }
 
+                // Notification Settings
+                if (data.settings?.notifications) {
+                    setNotificationSettings({ ...defaultNotificationSettings, ...data.settings.notifications })
+                } else {
+                    setNotificationSettings(defaultNotificationSettings)
+                }
+
                 // Telegram Settings (Owner only sees full data)
                 if (data.settings?.telegram) {
+                    const isOwner = currentUser?.role === 'Owner'
+                    const securedTelegramSettings = {
+                        ...data.settings.telegram,
+                        // Mask sensitive data for non-owners
+                        botToken: isOwner ? data.settings.telegram.botToken : (data.settings.telegram.botToken ? "••••••••" : ""),
+                        chatId: isOwner ? data.settings.telegram.chatId : (data.settings.telegram.chatId ? "••••••••" : ""),
+                    }
+
                     setTelegramSettings({
                         notifyOnQuotation: true,
                         notifyOnDailyTasks: false,
-                        ...data.settings.telegram
+                        ...securedTelegramSettings
                     })
                 } else {
                     setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, notifyOnDailyTasks: false, paymentDueDays: 3 })
@@ -417,13 +437,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 setBanners(defaultBanners)
                 setNotices([])
                 setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, notifyOnDailyTasks: false, paymentDueDays: 3 })
+                setNotificationSettings(defaultNotificationSettings)
             }
         }, (error) => {
             console.warn("Organization settings sync error:", error)
         })
 
         return () => unsubscribe()
-    }, [currentOrg?.id])
+    }, [currentOrg?.id, currentUser?.role])
 
     // Save to LocalStorage whenever state changes
     useEffect(() => {
@@ -561,10 +582,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('hipslothproject_settings_teamSettings', JSON.stringify(teamSettings))
     }, [teamSettings, isLoaded])
 
-    useEffect(() => {
-        if (!isLoaded) return
-        localStorage.setItem('hipslothproject_settings_notificationSettings', JSON.stringify(notificationSettings))
-    }, [notificationSettings, isLoaded])
+    // useEffect(() => {
+    //     if (!isLoaded) return
+    //     localStorage.setItem('hipslothproject_settings_notificationSettings', JSON.stringify(notificationSettings))
+    // }, [notificationSettings, isLoaded])
 
 
     // Map ProjectContext functions
@@ -619,9 +640,25 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setTeamSettings(prev => ({ ...prev, ...data }))
     }, [])
 
-    const updateNotificationSettings = React.useCallback((data: Partial<NotificationSettings>) => {
-        setNotificationSettings(prev => ({ ...prev, ...data }))
-    }, [])
+    const updateNotificationSettings = React.useCallback(async (data: Partial<NotificationSettings>) => {
+        if (!currentOrg?.id) return
+        if (currentUser?.role !== 'Owner' && currentUser?.role !== 'Admin') return // Only Admin/Owner
+
+        const newSettings = { ...notificationSettings, ...data }
+        setNotificationSettings(newSettings) // Optimistic
+
+        try {
+            const orgRef = doc(db, "organizations", currentOrg.id)
+            await setDoc(orgRef, {
+                settings: {
+                    ...(currentOrg.settings || {}),
+                    notifications: newSettings
+                }
+            }, { merge: true })
+        } catch (error) {
+            console.error("Failed to update notification settings:", error)
+        }
+    }, [currentOrg, currentUser?.role, notificationSettings])
 
     const updateFinancialTargets = React.useCallback(async (data: Partial<FinancialTargets>) => {
         if (!currentOrg?.id) return
