@@ -710,7 +710,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             const orgRef = doc(db, "organizations", currentOrg.id)
             await setDoc(orgRef, {
                 settings: {
-                    ...currentOrg.settings,
+                    ...(currentOrg.settings || {}),
                     telegram: data
                 }
             }, { merge: true })
