@@ -13,6 +13,8 @@ const withPWA = require("@ducanh2912/next-pwa").default({
 });
 
 const nextConfig: NextConfig = {
+  // @ts-ignore
+  turbopack: {},
   output: 'standalone',
   compress: true, // Enable Gzip compression
   images: {

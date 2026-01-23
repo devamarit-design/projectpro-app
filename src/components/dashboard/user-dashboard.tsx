@@ -18,6 +18,7 @@ import { DashboardBanner } from "@/components/dashboard/dashboard-banner"
 import { QuickActionsGrid } from "@/components/dashboard/quick-actions-grid"
 import { PromoCards } from "@/components/dashboard/promo-cards"
 import { NoticeTicker } from "@/components/dashboard/notice-ticker"
+import { WallFeed } from "@/components/wall/wall-feed"
 
 export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
     const { currentUser, projects, tasks } = useProjects()
@@ -37,6 +38,37 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
                     {/* 2. Quick Actions Grid (Icons) */}
                     <QuickActionsGrid />
 
+                    {/* 2.5. Team Wall Widget (Moved Here) */}
+                    <div className="w-full mt-4 mb-6">
+                        <div className="flex items-center justify-between px-1 mb-2">
+                            <h3 className="font-semibold text-lg flex items-center gap-2">
+                                <div className="p-1.5 rounded-lg bg-gradient-to-br from-pink-500/20 to-rose-500/20 text-pink-500">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className="w-4 h-4"
+                                    >
+                                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                                        <line x1="3" x2="21" y1="9" y2="9" />
+                                        <path d="M9 21V9" />
+                                    </svg>
+                                </div>
+                                Team Wall
+                            </h3>
+                            <Link href="/wall" className="text-xs text-muted-foreground hover:text-primary hover:underline font-medium">
+                                View All
+                            </Link>
+                        </div>
+                        <div className="bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-sm">
+                            <WallFeed variant="widget" />
+                        </div>
+                    </div>
+
                     {/* 3. Promo / Feature Cards */}
                     <PromoCards />
 
@@ -55,10 +87,11 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
                     </div>
                 </div>
 
-                {/* Sidebar: Files (1/3 width) */}
+                {/* Sidebar: Files & Wall (1/3 width) */}
                 <div className="space-y-6">
-
                     <DashboardFiles />
+
+
                 </div>
             </div>
         </div>

@@ -61,6 +61,22 @@ service cloud.firestore {
         allow read: if isAuthenticated() && isOrgMember(orgId);
         allow write: if isAuthenticated() && isOrgOwner(orgId);
       }
+
+      match /posts/{postId} {
+        allow read: if isAuthenticated() && isOrgMember(orgId);
+        allow create: if isAuthenticated() && isOrgMember(orgId);
+        allow update: if isAuthenticated() && isOrgMember(orgId) && (
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'commentsCount'])) ||
+          (resource.data.author.id == request.auth.uid || isOrgOwner(orgId))
+        );
+        allow delete: if isAuthenticated() && (resource.data.author.id == request.auth.uid || isOrgOwner(orgId));
+        
+        match /comments/{commentId} {
+            allow read: if isAuthenticated() && isOrgMember(orgId);
+            allow create: if isAuthenticated() && isOrgMember(orgId);
+            allow update, delete: if isAuthenticated() && (resource.data.author.id == request.auth.uid || isOrgOwner(orgId));
+        }
+      }
     }
 
     // --- Authenticated Resource Rules ---

@@ -28,7 +28,8 @@ import {
     Info,
     ShieldCheck,
     Gamepad2,
-    Megaphone
+    Megaphone,
+    Newspaper
 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -102,6 +103,7 @@ export function MobileNav() {
                     color: "text-purple-500 bg-purple-500/10"
                 }] : []),
                 { href: "/announcements", label: "ประกาศ", icon: Megaphone, color: "text-yellow-500 bg-yellow-500/10" },
+                { href: "/wall", label: "Team Wall", icon: Newspaper, color: "text-pink-500 bg-pink-500/10" },
             ]
         },
         {
