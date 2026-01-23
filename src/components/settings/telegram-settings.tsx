@@ -41,6 +41,7 @@ export function TelegramSettings() {
         notifyOnExpense: true,
         notifyOnQuotation: true,
         notifyOnPaymentDue: true,
+        notifyOnDailyTasks: false,
         paymentDueDays: 3
     })
     const [showToken, setShowToken] = useState(false)
@@ -303,6 +304,25 @@ export function TelegramSettings() {
                         <Switch
                             checked={localSettings.notifyOnPaymentDue}
                             onCheckedChange={(checked) => setLocalSettings(prev => ({ ...prev, notifyOnPaymentDue: checked }))}
+                        />
+                    </div>
+
+                    <hr className="border-border" />
+
+                    {/* Daily Task Summary */}
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4" />
+                                {t.settings.telegram.notify_daily_tasks || "Daily Task Summary"}
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                                {t.settings.telegram.notify_daily_tasks_desc || "Receive a summary of tasks due today at 8:00 AM"}
+                            </p>
+                        </div>
+                        <Switch
+                            checked={localSettings.notifyOnDailyTasks}
+                            onCheckedChange={(checked) => setLocalSettings(prev => ({ ...prev, notifyOnDailyTasks: checked }))}
                         />
                     </div>
 

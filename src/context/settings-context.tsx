@@ -85,8 +85,10 @@ export type TelegramSettings = {
     notifyOnExpense: boolean
     notifyOnPaymentDue: boolean
     notifyOnQuotation: boolean
+    notifyOnDailyTasks: boolean // New setting
     paymentDueDays: number
 }
+
 
 type SettingsContextType = {
     // Mapped from ProjectContext
@@ -258,6 +260,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         notifyOnExpense: true,
         notifyOnPaymentDue: true,
         notifyOnQuotation: true,
+        notifyOnDailyTasks: false,
         paymentDueDays: 3
     })
 
@@ -353,7 +356,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             setMoodThresholds(defaultMoodThresholds)
             setBanners(defaultBanners)
             setNotices([])
-            setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, paymentDueDays: 3 })
+            setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, notifyOnDailyTasks: false, paymentDueDays: 3 })
             return
         }
 
@@ -399,9 +402,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
                 // Telegram Settings (Owner only sees full data)
                 if (data.settings?.telegram) {
-                    setTelegramSettings({ notifyOnQuotation: true, ...data.settings.telegram })
+                    setTelegramSettings({
+                        notifyOnQuotation: true,
+                        notifyOnDailyTasks: false,
+                        ...data.settings.telegram
+                    })
                 } else {
-                    setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, paymentDueDays: 3 })
+                    setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, notifyOnDailyTasks: false, paymentDueDays: 3 })
                 }
             } else {
                 // Document not found? Revert to defaults
@@ -409,7 +416,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 setMoodThresholds(defaultMoodThresholds)
                 setBanners(defaultBanners)
                 setNotices([])
-                setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, paymentDueDays: 3 })
+                setTelegramSettings({ enabled: false, botToken: "", chatId: "", notifyOnExpense: true, notifyOnPaymentDue: true, notifyOnQuotation: true, notifyOnDailyTasks: false, paymentDueDays: 3 })
             }
         }, (error) => {
             console.warn("Organization settings sync error:", error)

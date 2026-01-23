@@ -566,6 +566,8 @@ export const th = {
             notify_quotation_desc: "รับแจ้งเตือนเมื่อมีการสร้างใบเสนอราคาใหม่",
             notify_payment: "แจ้งเตือนครบกำหนดชำระ",
             notify_payment_desc: "รับแจ้งเตือนเมื่อใกล้ครบกำหนดชำระเงิน",
+            notify_daily_tasks: "สรุปงานประจำวัน",
+            notify_daily_tasks_desc: "รับสรุปงานที่ต้องทำในวันนี้ เวลา 08:00 น.",
             days_advance: "แจ้งล่วงหน้า (วัน)",
             save_btn: "บันทึกการตั้งค่า",
             save_success: "บันทึกการตั้งค่าเรียบร้อย",

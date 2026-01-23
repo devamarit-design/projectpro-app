@@ -567,6 +567,8 @@ export const en = {
             notify_quotation_desc: "Get notified when a new quotation is created",
             notify_payment: "Notify on Payment Due",
             notify_payment_desc: "Get notified when payment is due soon",
+            notify_daily_tasks: "Daily Task Summary",
+            notify_daily_tasks_desc: "Receive a summary of tasks due today at 8:00 AM",
             days_advance: "Advance Notice (Days)",
             save_btn: "Save Settings",
             save_success: "Settings saved successfully",

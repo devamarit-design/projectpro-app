@@ -153,3 +153,43 @@ export function formatQuotationNotification(params: {
 📅 วันที่: ${date}
 -------------------------`
 }
+
+/**
+ * Format daily task summary message
+ */
+export function formatDailyTaskSummary(params: {
+    date: string
+    tasks: {
+        projectName: string
+        tasks: {
+            title: string
+            assignee: string
+        }[]
+    }[]
+}): string {
+    const { date, tasks } = params
+
+    if (tasks.length === 0) {
+        return `📅 <b>งานที่ต้องทำในวันนี้ (${date})</b>
+-------------------------
+✅ วันนี้ไม่มีงานที่ครบกำหนดส่ง`
+    }
+
+    let message = `📅 <b>งานที่ต้องทำในวันนี้ (${date})</b>
+-------------------------`
+
+    for (const project of tasks) {
+        message += `\n\n🏗 <b>${project.projectName}</b>`
+        for (const task of project.tasks) {
+            message += `\n▫️ ${task.title}`
+            if (task.assignee) {
+                message += ` (👤 ${task.assignee})`
+            }
+        }
+    }
+
+    message += `\n\n-------------------------
+เปิดดูงานทั้งหมด: https://app.projectpro.com/tasks`
+
+    return message
+}
