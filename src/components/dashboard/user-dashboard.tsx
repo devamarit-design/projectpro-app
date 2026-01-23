@@ -17,6 +17,7 @@ interface UserDashboardProps {
 import { DashboardBanner } from "@/components/dashboard/dashboard-banner"
 import { QuickActionsGrid } from "@/components/dashboard/quick-actions-grid"
 import { PromoCards } from "@/components/dashboard/promo-cards"
+import { NoticeTicker } from "@/components/dashboard/notice-ticker"
 
 export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
     const { currentUser, projects, tasks } = useProjects()
@@ -29,6 +30,9 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
                 <>
                     {/* 1. Banner Carousel */}
                     <DashboardBanner />
+
+                    {/* 1.5. Notice Ticker */}
+                    <NoticeTicker />
 
                     {/* 2. Quick Actions Grid (Icons) */}
                     <QuickActionsGrid />
