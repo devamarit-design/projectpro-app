@@ -4,9 +4,11 @@ import * as React from "react"
 import { useProjects } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { createPortal } from "react-dom"
-import { auth } from "@/lib/firebase"
-import { Mail, Phone, Shield, User as UserIcon, Save, X, Camera, LogOut, Check, AlertTriangle } from "lucide-react"
+import { auth, storage } from "@/lib/firebase"
+import { Mail, Phone, Shield, User as UserIcon, Save, X, Camera, LogOut, Check, AlertTriangle, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { compressImage } from "@/lib/image-utils"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 
 export default function ProfilePage() {
     const { currentUser, updateUser, setCurrentUser } = useProjects()
@@ -24,15 +26,37 @@ export default function ProfilePage() {
         fileInputRef.current?.click()
     }
 
-    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const [uploading, setUploading] = React.useState(false)
+
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
-        if (file && currentUser) {
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                const base64 = reader.result as string
-                updateUser(currentUser.id, { avatar: base64 })
+        if (!file || !currentUser) return
+
+        try {
+            setUploading(true)
+
+            // 1. Compress Image
+            const compressedBlob = await compressImage(file)
+
+            // 2. Upload to Firebase Storage
+            const storageRef = ref(storage, `profile_pictures/${currentUser.id}/${Date.now()}.jpg`)
+            await uploadBytes(storageRef, compressedBlob)
+
+            // 3. Get Download URL
+            const downloadURL = await getDownloadURL(storageRef)
+
+            // 4. Update Firestore
+            await updateUser(currentUser.id, { avatar: downloadURL })
+
+        } catch (error) {
+            console.error("Failed to upload profile picture", error)
+            alert("Failed to upload image. Please try again.")
+        } finally {
+            setUploading(false)
+            // Reset input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = ""
             }
-            reader.readAsDataURL(file)
         }
     }
 
@@ -121,9 +145,16 @@ export default function ProfilePage() {
                             <img src={currentUser.avatar} alt="Profile" className="w-full h-full object-cover" />
                         )}
 
-                        {/* Hover Overlay */}
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Camera className="w-8 h-8 text-white" />
+                        {/* Hover Overlay & Loading State */}
+                        <div className={cn(
+                            "absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity",
+                            uploading ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        )}>
+                            {uploading ? (
+                                <Loader2 className="w-8 h-8 text-white animate-spin" />
+                            ) : (
+                                <Camera className="w-8 h-8 text-white" />
+                            )}
                         </div>
                         <input
                             type="file"
