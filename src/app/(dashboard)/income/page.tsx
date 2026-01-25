@@ -83,7 +83,11 @@ export default function IncomePage() {
     const currentMonthPrefix = new Date().toISOString().substring(0, 7) // YYYY-MM
 
     const monthlyTotal = incomes
-        .filter(i => i.date.startsWith(currentMonthPrefix) && (i.status === 'Paid' || i.status === 'Accepted' || i.status === 'Invoiced'))
+        .filter(i =>
+            i.date.startsWith(currentMonthPrefix) &&
+            i.type === 'Invoice' &&
+            (i.status === 'Paid' || i.status === 'Invoiced')
+        )
         .reduce((sum, i) => sum + i.grandTotal, 0)
 
     const incomePercent = Math.min(100, Math.round((monthlyTotal / finTargets.incomeMax) * 100))
@@ -200,6 +204,9 @@ export default function IncomePage() {
                         <div className="text-base sm:text-lg text-muted-foreground font-medium">
                             Earned: <span className={`font-bold ${monthlyTotal >= finTargets.incomeMax ? 'text-emerald-500' : 'text-foreground'}`}>฿{monthlyTotal.toLocaleString()}</span>
                             <span className="text-sm ml-2 opacity-80">({incomePercent}%)</span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground/60 italic mt-1 font-medium">
+                            * เฉพาะยอดจาก Invoice เท่านั้น
                         </div>
                     </div>
                 </div>
