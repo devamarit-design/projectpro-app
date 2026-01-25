@@ -17,7 +17,7 @@ interface ProjectHeaderProps {
 }
 
 export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
-    const { deleteProject, updateProject, archiveProject, currentUser, tasks, expenses, incomes, customers, users } = useProjects()
+    const { deleteProject, updateProject, archiveProject, currentUser, tasks, expenses, incomes, customers, users, currentTeam } = useProjects()
     const router = useRouter()
     const [showMenu, setShowMenu] = useState(false)
     const [showStatusPicker, setShowStatusPicker] = useState(false)
@@ -218,7 +218,7 @@ export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
                             </div>
 
                             {/* Quick Stats Cards */}
-                            {hasPermission(currentUser, "FINANCIAL_VIEW") && (
+                            {hasPermission(currentTeam?.role, "FINANCIAL_VIEW") && (
                                 <div className="flex flex-wrap items-center gap-4 md:gap-6 bg-black/60 backdrop-blur-2xl p-6 rounded-3xl border border-white/10 shadow-2xl border-t border-l border-white/20">
                                     <div>
                                         <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">{t.projects.detail.header.cost_paid}</p>

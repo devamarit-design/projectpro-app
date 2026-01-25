@@ -97,7 +97,7 @@ export default function ProjectDetailClient() {
     const searchParams = useSearchParams()
     const id = searchParams.get("id") || ""
     const { t, locale } = useTranslation()
-    const { getProject, addTask, addSubProject, deleteTask, toggleTask, updateTask, expenses, files, addFile, currentUser, users, incomes, customers, isLoading } = useProjects()
+    const { getProject, addTask, addSubProject, deleteTask, toggleTask, updateTask, expenses, files, addFile, currentUser, users, incomes, customers, isLoading, currentTeam } = useProjects()
     const [activeTab, setActiveTab] = useState("overview")
     const project = getProject(id)
 
@@ -206,7 +206,7 @@ export default function ProjectDetailClient() {
     const allIncomesForProject = incomes.filter(i => i.projectId === id || i.projectId === project?.name)
     const rawProjectExpenses = expenses.filter(e => e.projectId === id || e.items?.some(i => i.projectId === id))
     // Filter: If user has FINANCIAL_VIEW, show all. Else, show only their own (Payee/PaidBy).
-    const allProjectExpenses = hasPermission(currentUser, "FINANCIAL_VIEW")
+    const allProjectExpenses = hasPermission(currentTeam?.role, "FINANCIAL_VIEW")
         ? rawProjectExpenses
         : rawProjectExpenses.filter(e => e.payee === currentUser?.name || e.paidBy === currentUser?.name)
     const allProjectIncomes = allIncomesForProject.filter(i => i.type === 'Receipt' && i.status === 'Paid') // Only count Receipts that are Paid for "Received" total
@@ -373,7 +373,7 @@ export default function ProjectDetailClient() {
                                                 {project.location}
                                             </div>
                                         </div>
-                                        {hasPermission(currentUser, "FINANCIAL_VIEW") && (
+                                        {hasPermission(currentTeam?.role, "FINANCIAL_VIEW") && (
                                             <div className="p-3 bg-muted/30 rounded-xl space-y-1">
                                                 <p className="text-xs text-muted-foreground font-medium uppercase">Contract Value</p>
                                                 <div className="flex items-center gap-2 font-semibold text-green-500">
@@ -478,7 +478,7 @@ export default function ProjectDetailClient() {
                         </div>
 
                         {/* High Level Stats - Only for Financial Viewers */}
-                        {hasPermission(currentUser, "FINANCIAL_VIEW") && (
+                        {hasPermission(currentTeam?.role, "FINANCIAL_VIEW") && (
                             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                                 <div className="glass-card p-5 rounded-2xl border-l-4 border-l-primary hover:translate-y-[-2px] transition-transform">
                                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t.projects.detail.financials.contract_value}</p>
@@ -517,7 +517,7 @@ export default function ProjectDetailClient() {
                             >
                                 Expenses (รายจ่าย)
                             </button>
-                            {hasPermission(currentUser, "INCOME_CREATE") && (
+                            {hasPermission(currentTeam?.role, "INCOME_CREATE") && (
                                 <button
                                     onClick={() => setActiveFinancialTab('incomes')}
                                     className={cn(
@@ -689,7 +689,7 @@ export default function ProjectDetailClient() {
                         )}
 
                         {/* INCOMES TAB CONTENT */}
-                        {activeFinancialTab === 'incomes' && hasPermission(currentUser, "INCOME_CREATE") && (
+                        {activeFinancialTab === 'incomes' && hasPermission(currentTeam?.role, "INCOME_CREATE") && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">

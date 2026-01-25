@@ -128,7 +128,27 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                             const orgRef = doc(db, "organizations", id)
                             const orgSnap = await getDoc(orgRef)
                             if (orgSnap.exists()) {
-                                return { id: orgSnap.id, ...orgSnap.data() } as Organization
+                                const orgData = { id: orgSnap.id, ...orgSnap.data() } as Organization
+
+                                // AUTO-PROMOTION: If the organization has only one member, 
+                                // and it's this user, ensure they are the Owner.
+                                if (orgData.members?.length === 1 && orgData.members[0].userId === firebaseUser.uid) {
+                                    if (orgData.ownerId !== firebaseUser.uid || orgData.members[0].role !== 'Owner') {
+                                        console.log(`Auto-promoting user ${firebaseUser.uid} to Owner of org ${id}`)
+                                        const updatedOrgData = {
+                                            ...orgData,
+                                            ownerId: firebaseUser.uid,
+                                            members: [{
+                                                ...orgData.members[0],
+                                                role: 'Owner' as const
+                                            }]
+                                        }
+                                        await setDoc(orgRef, updatedOrgData, { merge: true })
+                                        return updatedOrgData
+                                    }
+                                }
+
+                                return orgData
                             }
                         } catch (e) {
                             console.warn(`Failed to fetch org ${id}:`, e)

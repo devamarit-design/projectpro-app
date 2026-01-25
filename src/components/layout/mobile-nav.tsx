@@ -43,7 +43,7 @@ import { hasPermission } from "@/lib/permissions"
 export function MobileNav() {
     const pathname = usePathname()
     const { t, locale, setLocale } = useTranslation()
-    const { currentUser, logout } = useProjects()
+    const { currentUser, logout, currentTeam } = useProjects()
     const [showAddMenu, setShowAddMenu] = React.useState(false)
     const [showMoreMenu, setShowMoreMenu] = React.useState(false)
     const [showFinanceMenu, setShowFinanceMenu] = React.useState(false)
@@ -71,9 +71,9 @@ export function MobileNav() {
     }
 
     const financeItems = React.useMemo(() => [
-        ...(hasPermission(currentUser, "INCOME_CREATE") ? [{ href: "/income", label: t.finance.income, icon: TrendingUp, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
+        ...(hasPermission(currentTeam?.role, "INCOME_CREATE") ? [{ href: "/income", label: t.finance.income, icon: TrendingUp, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
         { href: "/expenses", label: t.finance.expense, icon: TrendingDown, color: "text-red-500 from-red-500/20 to-red-500/5" },
-    ], [currentUser, t.finance.income, t.finance.expense])
+    ], [currentTeam?.role, t.finance.income, t.finance.expense])
 
     const moreGroups = React.useMemo(() => [
         {
@@ -96,7 +96,7 @@ export function MobileNav() {
             title: "ทีม", // Team
             items: [
                 { href: "/profile", label: t.common.profile, icon: User, color: "text-rose-500 bg-rose-500/10" },
-                ...(hasPermission(currentUser, "TEAM_VIEW") ? [{
+                ...(hasPermission(currentTeam?.role, "TEAM_VIEW") ? [{
                     href: "/team",
                     label: t.common.team,
                     icon: Briefcase,
@@ -115,14 +115,14 @@ export function MobileNav() {
                 { href: "/bored", label: t.navbar.bored, icon: Gamepad2, color: "text-indigo-500 bg-indigo-500/10" },
             ]
         }
-    ], [currentUser, t])
+    ], [currentTeam?.role, t])
 
     const addItems = React.useMemo(() => [
-        ...(hasPermission(currentUser, "INCOME_CREATE") ? [{ href: "/income?action=new", label: t.finance.income, icon: FileText, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
+        ...(hasPermission(currentTeam?.role, "INCOME_CREATE") ? [{ href: "/income?action=new", label: t.finance.income, icon: FileText, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
         { href: "/expenses?action=new", label: t.finance.expense, icon: CreditCard, color: "text-red-500 from-red-500/20 to-red-500/5" },
         { href: "/tasks?action=new", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 from-blue-500/20 to-blue-500/5" },
         { href: "/storage?action=new", label: "Media", icon: HardDrive, color: "text-purple-500 from-purple-500/20 to-purple-500/5" },
-    ], [currentUser, t])
+    ], [currentTeam?.role, t])
 
     const isFinanceActive = pathname === "/income" || pathname === "/expenses"
 
@@ -344,7 +344,7 @@ export function MobileNav() {
                     </button>
 
                     {/* 4. Finance (Expense + Income) */}
-                    {hasPermission(currentUser, "INCOME_CREATE") ? (
+                    {hasPermission(currentTeam?.role, "INCOME_CREATE") ? (
                         <button
                             onClick={toggleFinanceMenu}
                             className={cn(

@@ -32,7 +32,7 @@ function IncomeLoading() {
 }
 
 export default function IncomePage() {
-    const { incomes, customers, projects, workers, users, incomesLoading, currentUser } = useProjects()
+    const { incomes, customers, projects, workers, users, incomesLoading, currentUser, currentTeam } = useProjects()
     const { t } = useTranslation()
     const router = useRouter() // Import useRouter
     const searchParams = useSearchParams()
@@ -40,13 +40,13 @@ export default function IncomePage() {
 
     // Access Control
     useEffect(() => {
-        if (currentUser && !hasPermission(currentUser, "INCOME_CREATE")) {
+        if (currentTeam?.role && !hasPermission(currentTeam.role, "INCOME_CREATE")) {
             router.replace("/")
         }
-    }, [currentUser, router])
+    }, [currentTeam, router])
 
     // If no permission, render nothing while redirecting
-    if (currentUser && !hasPermission(currentUser, "INCOME_CREATE")) {
+    if (currentTeam?.role && !hasPermission(currentTeam.role, "INCOME_CREATE")) {
         return null
     }
     const [search, setSearch] = useState("")

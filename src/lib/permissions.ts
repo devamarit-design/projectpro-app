@@ -60,10 +60,13 @@ export const PERMISSIONS: Record<Role, Action[]> = {
     ]
 }
 
-export function hasPermission(user: User | null, action: Action): boolean {
-    if (!user) return false
+export function hasPermission(userOrRole: User | Role | null | undefined, action: Action): boolean {
+    if (!userOrRole) return false
+
+    // Handle both User object and direct Role string
+    const role = typeof userOrRole === 'string' ? userOrRole : userOrRole.role
 
     // Check if role has the specific permission
-    const userPermissions = PERMISSIONS[user.role] || []
+    const userPermissions = PERMISSIONS[role] || []
     return userPermissions.includes(action)
 }

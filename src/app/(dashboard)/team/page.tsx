@@ -108,7 +108,7 @@ export default function TeamPage() {
                         </select>
                     </div>
 
-                    {hasPermission(currentUser, "COMPANY_UPDATE") && (
+                    {hasPermission(currentTeam?.role, "COMPANY_UPDATE") && (
                         <>
                             <button
                                 onClick={() => setIsCreateTeamOpen(true)}
@@ -130,7 +130,7 @@ export default function TeamPage() {
                 </div>
 
                 <div className="flex-1"></div>
-                {hasPermission(currentUser, "USER_CREATE") && (
+                {hasPermission(currentTeam?.role, "USER_CREATE") && (
                     <div className="flex gap-2">
                         <button
                             onClick={handleInvite}
@@ -229,7 +229,7 @@ export default function TeamPage() {
                                         <h3 className="font-bold text-base group-hover:text-primary transition-colors">{user.name}</h3>
                                         <div className="flex items-center gap-2 mt-0.5">
                                             {/* Role Selector for Owner, Static for others */}
-                                            {currentUser?.role === 'Owner' && user.role !== 'Owner' ? (
+                                            {currentTeam?.role === 'Owner' && user.role !== 'Owner' ? (
                                                 <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="relative group/select">
                                                     <select
                                                         value={user.role}
@@ -271,7 +271,7 @@ export default function TeamPage() {
 
                                 {/* Actions Dropdown / Buttons */}
                                 <div className="relative z-10">
-                                    {(hasPermission(currentUser, "USER_UPDATE") || (hasPermission(currentUser, "USER_DELETE") && user.role !== 'Owner')) && (
+                                    {(hasPermission(currentTeam?.role, "USER_UPDATE") || (hasPermission(currentTeam?.role, "USER_DELETE") && user.role !== 'Owner')) && (
                                         <button
                                             onClick={(e) => {
                                                 e.preventDefault() // Prevent navigation

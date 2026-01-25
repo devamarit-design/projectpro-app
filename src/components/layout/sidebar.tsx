@@ -35,7 +35,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 export function Sidebar({ className }: { className?: string }) {
     const pathname = usePathname()
     const { t } = useTranslation()
-    const { currentUser, logout } = useProjects()
+    const { currentUser, logout, currentTeam } = useProjects()
     const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false)
 
     const navGroups = [
@@ -117,7 +117,7 @@ export function Sidebar({ className }: { className?: string }) {
                         <div className="space-y-0.5">
                             {group.items.map((item: any) => {
                                 // Check Permission
-                                if (item.permission && !hasPermission(currentUser, item.permission as any)) {
+                                if (item.permission && !hasPermission(currentTeam?.role, item.permission as any)) {
                                     return null
                                 }
 
@@ -157,7 +157,7 @@ export function Sidebar({ className }: { className?: string }) {
                             {currentUser?.name || "Guest"}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                            {currentUser?.role || "Viewer"}
+                            {currentTeam?.role || "Viewer"}
                         </p>
                     </div>
                     <button

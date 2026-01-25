@@ -10,7 +10,7 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
-    const { currentUser, tasks } = useProjects()
+    const { currentUser, tasks, currentTeam } = useProjects()
     const { moodThresholds } = useSettings()
     const { t } = useTranslation()
 
@@ -167,7 +167,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                         <div className="flex items-center gap-1 px-3 py-2 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20">
                             <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
                             <span className="text-xs font-bold text-white/90 uppercase tracking-wider">
-                                {currentUser?.role || 'Member'}
+                                {currentTeam?.role || 'Member'}
                             </span>
                         </div>
                     </div>

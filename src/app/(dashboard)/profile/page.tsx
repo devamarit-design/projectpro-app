@@ -11,7 +11,7 @@ import { compressImage } from "@/lib/image-utils"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 
 export default function ProfilePage() {
-    const { currentUser, updateUser, setCurrentUser } = useProjects()
+    const { currentUser, updateUser, setCurrentUser, currentTeam } = useProjects()
     const { t } = useTranslation()
 
     const [isEditing, setIsEditing] = React.useState(false)
@@ -168,12 +168,12 @@ export default function ProfilePage() {
                         <h2 className="text-2xl font-bold">{currentUser.name}</h2>
                         <div className={cn(
                             "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mt-2 border",
-                            currentUser.role === 'Admin' || currentUser.role === 'Owner'
+                            currentTeam?.role === 'Owner' || currentTeam?.role === 'Admin'
                                 ? "bg-purple-500/10 text-purple-600 border-purple-200"
                                 : "bg-blue-500/10 text-blue-600 border-blue-200"
                         )}>
                             <Shield className="w-3 h-3" />
-                            {currentUser.role}
+                            {currentTeam?.role || 'Member'}
                         </div>
 
                     </div>
@@ -248,7 +248,7 @@ export default function ProfilePage() {
                             {t.profile.fields.role}
                         </label>
                         <div className="p-3 bg-muted/30 rounded-xl font-medium">
-                            {currentUser.role}
+                            {currentTeam?.role || 'Member'}
                         </div>
                     </div>
                 </div>

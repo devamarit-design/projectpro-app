@@ -37,7 +37,7 @@ export function CompanySettings() {
                 </div>
 
                 {/* Edit Button */}
-                {currentTeam && hasPermission(currentUser, "COMPANY_UPDATE") && (
+                {currentTeam && hasPermission(currentTeam?.role, "COMPANY_UPDATE") && (
                     <button
                         onClick={() => setIsEditTeamOpen(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
@@ -163,7 +163,7 @@ export function CompanySettings() {
             )}
 
             {/* Danger Zone - Only for Owners */}
-            {currentTeam && currentUser?.role === 'Owner' && (
+            {currentTeam && currentTeam?.role === 'Owner' && (
                 <div className="pt-10 mt-10 border-t border-red-500/20">
                     <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-6">
                         <h3 className="text-red-500 font-bold text-lg mb-2 flex items-center gap-2">
