@@ -32,6 +32,7 @@ export interface ProjectTask {
     createdAt?: string // Timestamp
     updatedAt?: string // Timestamp
     doneAt?: string // Timestamp when task was marked as Done (for auto-archive)
+    images?: string[] // Array of image URLs
 }
 
 // Sub-project (โปรเจคย่อย) - Different from Task

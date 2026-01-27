@@ -109,3 +109,28 @@ export const sendQuotationNotification = async (
         return { success: false, error: String(error) }
     }
 }
+
+interface TestDailySummaryData {
+    orgId: string
+}
+
+/**
+ * Test daily task summary via Cloud Function
+ */
+export const testDailyTaskSummary = async (
+    data: TestDailySummaryData
+): Promise<TelegramResult> => {
+    try {
+        const callable = httpsCallable<TestDailySummaryData, TelegramResult>(
+            functions,
+            'testDailyTaskSummary'
+        )
+        const result = await callable(data)
+        return result.data
+    } catch (error: any) {
+        console.error('Error calling testDailyTaskSummary:', error)
+        // Extract meaningful message from FirebaseError
+        const errorMessage = error.message || error.details?.message || String(error)
+        return { success: false, error: errorMessage }
+    }
+}

@@ -37,7 +37,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeUserFromOrg = exports.sendDailyTaskSummary = exports.sendPaymentDueReminders = exports.testTelegramConnection = exports.sendQuotationNotification = exports.sendExpenseNotification = void 0;
+exports.removeUserFromOrg = exports.sendDailyTaskSummary = exports.sendPaymentDueReminders = exports.testDailyTaskSummary = exports.testTelegramConnection = exports.sendQuotationNotification = exports.sendExpenseNotification = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const telegram_1 = require("./telegram");
@@ -191,6 +191,150 @@ exports.testTelegramConnection = functions
     }
 });
 /**
+ * Test Daily Task Summary
+ * Only accessible by organization owner
+ */
+exports.testDailyTaskSummary = functions
+    .region(region)
+    .https.onCall(async (data, context) => {
+    var _a, _b, _c;
+    // Verify authentication
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+    const { orgId } = data;
+    if (!orgId) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing orgId');
+    }
+    try {
+        // Verify user is owner of the organization
+        const orgDoc = await db.collection('organizations').doc(orgId).get();
+        if (!orgDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'Organization not found');
+        }
+        const orgData = orgDoc.data();
+        const telegramSettings = (_a = orgData === null || orgData === void 0 ? void 0 : orgData.settings) === null || _a === void 0 ? void 0 : _a.telegram;
+        // Check if telegram is enabled
+        if (!(telegramSettings === null || telegramSettings === void 0 ? void 0 : telegramSettings.enabled)) {
+            return { success: false, error: 'Telegram notifications are disabled' };
+        }
+        const { botToken, chatId } = telegramSettings;
+        if (!botToken || !chatId) {
+            return { success: false, error: 'Bot token or chat ID not configured' };
+        }
+        // Check if user is owner
+        if ((orgData === null || orgData === void 0 ? void 0 : orgData.ownerId) !== context.auth.uid) {
+            // Also check members array for Owner role
+            const member = (_b = orgData === null || orgData === void 0 ? void 0 : orgData.members) === null || _b === void 0 ? void 0 : _b.find((m) => { var _a; return m.userId === ((_a = context.auth) === null || _a === void 0 ? void 0 : _a.uid); });
+            if (!member || member.role !== 'Owner') {
+                throw new functions.https.HttpsError('permission-denied', 'Only organization owner can test daily summary');
+            }
+        }
+        const today = new Date();
+        const dateDisplay = today.toLocaleDateString('th-TH', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+        // Query all tasks for organization (filter status memory to avoid index issues)
+        const tasksSnapshot = await db
+            .collection('tasks')
+            .where('organizationId', '==', orgId)
+            .get();
+        if (tasksSnapshot.empty) {
+            const message = (0, telegram_1.formatDailyTaskSummary)({
+                date: dateDisplay,
+                tasks: []
+            });
+            await (0, telegram_1.sendTelegramMessage)(botToken, chatId, message);
+            return { success: true, message: 'Sent empty summary (no tasks)' };
+        }
+        // Filter tasks due today
+        const dueTasks = [];
+        for (const taskDoc of tasksSnapshot.docs) {
+            const task = taskDoc.data();
+            // Active tasks only
+            if (task.status === 'done')
+                continue;
+            if (!task.dueDate)
+                continue;
+            try {
+                const taskDate = new Date(task.dueDate);
+                // Check if it's today in Thai time
+                const taskDateStr = taskDate.toLocaleDateString('th-TH', {
+                    timeZone: 'Asia/Bangkok', day: 'numeric', month: 'numeric', year: 'numeric'
+                });
+                const todayDateStr = today.toLocaleDateString('th-TH', {
+                    timeZone: 'Asia/Bangkok', day: 'numeric', month: 'numeric', year: 'numeric'
+                });
+                if (taskDateStr === todayDateStr) {
+                    dueTasks.push(task);
+                }
+            }
+            catch (e) {
+                // Invalid date
+            }
+        }
+        if (dueTasks.length === 0) {
+            const message = (0, telegram_1.formatDailyTaskSummary)({
+                date: dateDisplay,
+                tasks: []
+            });
+            await (0, telegram_1.sendTelegramMessage)(botToken, chatId, message);
+            return { success: true, message: 'Sent empty summary (no due tasks)' };
+        }
+        // Group tasks by project
+        const tasksByProject = {};
+        const projectNames = {};
+        const userNames = {};
+        for (const task of dueTasks) {
+            const projectId = task.projectId || 'unknown';
+            if (!projectNames[projectId]) {
+                if (projectId === 'unknown') {
+                    projectNames[projectId] = 'ไม่ระบุโครงการ';
+                }
+                else {
+                    const pDoc = await db.collection('projects').doc(projectId).get();
+                    projectNames[projectId] = ((_c = pDoc.data()) === null || _c === void 0 ? void 0 : _c.name) || 'ไม่ระบุโครงการ';
+                }
+            }
+            let assigneeName = '';
+            if (task.assigneeId) {
+                if (userNames[task.assigneeId]) {
+                    assigneeName = userNames[task.assigneeId];
+                }
+                else {
+                    const uDoc = await db.collection('users').doc(task.assigneeId).get();
+                    const userData = uDoc.data();
+                    assigneeName = (userData === null || userData === void 0 ? void 0 : userData.displayName) || (userData === null || userData === void 0 ? void 0 : userData.name) || 'Unknown';
+                    userNames[task.assigneeId] = assigneeName;
+                }
+            }
+            if (!tasksByProject[projectId]) {
+                tasksByProject[projectId] = [];
+            }
+            tasksByProject[projectId].push({
+                title: task.title || 'Untitled Task',
+                assignee: assigneeName
+            });
+        }
+        const groupedTasks = Object.keys(tasksByProject).map(projectId => ({
+            projectName: projectNames[projectId],
+            tasks: tasksByProject[projectId]
+        }));
+        const message = (0, telegram_1.formatDailyTaskSummary)({
+            date: dateDisplay,
+            tasks: groupedTasks
+        });
+        const result = await (0, telegram_1.sendTelegramMessage)(botToken, chatId, message);
+        return result;
+    }
+    catch (error) {
+        console.error('Error testing daily summary:', error);
+        throw new functions.https.HttpsError('internal', `Failed to test daily summary: ${error instanceof Error ? error.message : String(error)}`);
+    }
+});
+/**
  * Scheduled function to send payment due reminders
  * Runs daily at 9:00 AM Bangkok time
  */
@@ -284,9 +428,6 @@ exports.sendDailyTaskSummary = functions
             month: 'short',
             year: 'numeric'
         });
-        // Calculate start and end of today in local time for query
-        // Providing a simplified check: check due date string if stored as YYYY-MM-DD
-        const todayStr = today.toISOString().split('T')[0];
         for (const orgDoc of orgsSnapshot.docs) {
             const orgData = orgDoc.data();
             const telegramSettings = (_a = orgData === null || orgData === void 0 ? void 0 : orgData.settings) === null || _a === void 0 ? void 0 : _a.telegram;
@@ -298,16 +439,47 @@ exports.sendDailyTaskSummary = functions
             if (!botToken || !chatId) {
                 continue;
             }
-            // Query tasks due today
-            // Note: Assuming 'dueDate' is stored as YYYY-MM-DD string or timestamp?
-            // Based on payment reminder, it seems DATE string YYYY-MM-DD
+            // Query all active tasks (avoid index issues)
             const tasksSnapshot = await db
                 .collection('tasks')
                 .where('organizationId', '==', orgDoc.id)
-                .where('dueDate', '==', todayStr)
-                .where('status', '!=', 'done') // Only active tasks
                 .get();
             if (tasksSnapshot.empty) {
+                const message = (0, telegram_1.formatDailyTaskSummary)({
+                    date: dateDisplay,
+                    tasks: []
+                });
+                await (0, telegram_1.sendTelegramMessage)(botToken, chatId, message);
+                continue;
+            }
+            // Filter tasks due today
+            const dueTasks = [];
+            for (const taskDoc of tasksSnapshot.docs) {
+                const task = taskDoc.data();
+                // Active Only
+                if (task.status === 'done')
+                    continue;
+                if (!task.dueDate)
+                    continue;
+                try {
+                    const taskDate = new Date(task.dueDate);
+                    // Check if it's today in Thai time
+                    // Convert both to Thai date string for comparison
+                    const taskDateStr = taskDate.toLocaleDateString('th-TH', {
+                        timeZone: 'Asia/Bangkok', day: 'numeric', month: 'numeric', year: 'numeric'
+                    });
+                    const todayDateStr = today.toLocaleDateString('th-TH', {
+                        timeZone: 'Asia/Bangkok', day: 'numeric', month: 'numeric', year: 'numeric'
+                    });
+                    if (taskDateStr === todayDateStr) {
+                        dueTasks.push(task);
+                    }
+                }
+                catch (e) {
+                    // Invalid date
+                }
+            }
+            if (dueTasks.length === 0) {
                 const message = (0, telegram_1.formatDailyTaskSummary)({
                     date: dateDisplay,
                     tasks: []
@@ -319,8 +491,7 @@ exports.sendDailyTaskSummary = functions
             const tasksByProject = {};
             const projectNames = {};
             const userNames = {}; // Cache user names
-            for (const taskDoc of tasksSnapshot.docs) {
-                const task = taskDoc.data();
+            for (const task of dueTasks) {
                 const projectId = task.projectId || 'unknown';
                 // Fetch Project Name if not cached
                 if (!projectNames[projectId]) {

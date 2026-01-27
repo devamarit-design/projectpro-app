@@ -5,7 +5,7 @@ import { useSettings, TelegramSettings as TelegramSettingsType } from "@/context
 import { useProjects } from "@/context/project-context"
 import { useOrganization } from "@/context/organization-context"
 import { useTranslation } from "@/lib/i18n-context"
-import { testTelegramConnection } from "@/lib/functions-client"
+import { testTelegramConnection, testDailyTaskSummary } from "@/lib/functions-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -336,6 +336,34 @@ export function TelegramSettings() {
                             onCheckedChange={(checked) => setLocalSettings(prev => ({ ...prev, notifyOnDailyTasks: checked }))}
                         />
                     </div>
+
+                    {/* Test Daily Summary Button - Only if enabled */}
+                    {localSettings.notifyOnDailyTasks && isOwner && (
+                        <div className="flex justify-end mt-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                    if (!currentOrg?.id) return
+                                    const toastId = toast.loading("Sending daily summary...")
+                                    try {
+                                        const result = await testDailyTaskSummary({ orgId: currentOrg.id })
+                                        if (result.success) {
+                                            toast.success("Daily summary sent!", { id: toastId })
+                                        } else {
+                                            toast.error(result.error || "Failed to send", { id: toastId })
+                                        }
+                                    } catch (err) {
+                                        toast.error("Error sending summary", { id: toastId })
+                                    }
+                                }}
+                                className="h-8 text-xs gap-1"
+                            >
+                                <Send className="w-3 h-3" />
+                                Send Test Notification
+                            </Button>
+                        </div>
+                    )}
 
                     {/* Payment Due Days */}
                     {localSettings.notifyOnPaymentDue && (

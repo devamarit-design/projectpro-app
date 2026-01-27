@@ -52,8 +52,16 @@ export function CreatePost() {
             let mediaUrls: string[] = []
 
             if (mediaFile) {
-                const storageRef = ref(storage, `organizations/${currentOrg.id}/posts/${Date.now()}_${mediaFile.name}`)
-                const snapshot = await uploadBytes(storageRef, mediaFile)
+                let fileToUpload = mediaFile
+
+                // Compress image if it is an image
+                if (mediaFile.type.startsWith('image/')) {
+                    const { compressImage } = await import('@/lib/image-utils');
+                    fileToUpload = await compressImage(mediaFile);
+                }
+
+                const storageRef = ref(storage, `organizations/${currentOrg.id}/posts/${Date.now()}_${fileToUpload.name}`)
+                const snapshot = await uploadBytes(storageRef, fileToUpload)
                 const url = await getDownloadURL(snapshot.ref)
                 mediaUrls.push(url)
             }
