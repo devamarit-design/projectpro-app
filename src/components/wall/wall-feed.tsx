@@ -29,7 +29,7 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
         // Base constraints
         const constraints: QueryConstraint[] = [
             orderBy("createdAt", "desc"),
-            limit(variant === 'widget' ? 3 : 20)
+            limit(variant === 'widget' ? 8 : 20)
         ]
 
         if (filterByUser && currentUser) {
@@ -97,6 +97,16 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
                             <PostCard post={post} />
                         </div>
                     ))
+                )}
+                {variant === 'widget' && posts.length > 0 && (
+                    <div className="min-w-[150px] max-w-[150px] snap-center flex items-center justify-center">
+                        <a href="/wall" className="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-white/5 transition-colors text-muted-foreground hover:text-primary">
+                            <div className="w-12 h-12 rounded-full bg-white/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+                            </div>
+                            <span className="text-sm font-medium">ดูเพิ่มเติม</span>
+                        </a>
+                    </div>
                 )}
             </div>
         </div>

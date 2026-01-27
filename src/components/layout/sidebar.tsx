@@ -46,6 +46,7 @@ export function Sidebar({ className }: { className?: string }) {
                 { href: "/projects", label: t.common.projects, icon: FolderKanban },
                 { href: "/income", label: t.common.income, icon: FileText, permission: "INCOME_CREATE" },
                 { href: "/expenses", label: t.common.expenses, icon: CreditCard },
+                { href: "/wall", label: "Team Wall", icon: Newspaper },
             ]
         },
         {
@@ -75,7 +76,7 @@ export function Sidebar({ className }: { className?: string }) {
             title: "อื่นๆ", // Other
             items: [
                 { href: "/settings", label: t.common.settings, icon: Settings },
-                { href: "/wall", label: "Team Wall", icon: Newspaper },
+                // { href: "/wall", label: "Team Wall", icon: Newspaper },
                 { href: "/announcements", label: "ประกาศ", icon: Megaphone },
                 { href: "/about", label: t.navbar.about, icon: Info },
                 { href: "/policy", label: t.navbar.policy, icon: ShieldCheck },

@@ -202,67 +202,123 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
 
     const [isExporting, setIsExporting] = useState(false)
 
-    // Helper to convert image URL to Base64 with compression
+    // Helper to convert image URL to strictly PNG Base64
     const processImageForPDF = async (url: string | undefined): Promise<string | undefined> => {
         if (!url) return undefined
-        if (url.startsWith('data:')) return url // Already base64
-
-        // Use Next.js Image Optimization as a proxy to solve CORS issues
-        // This works because the server fetches the image and serves it from the same origin
-        const proxiedUrl = url.startsWith('http')
-            ? `/_next/image?url=${encodeURIComponent(url)}&w=800&q=80`
-            : url;
 
         try {
-            return await new Promise((resolve, reject) => {
-                const img = new Image()
-                // Only use anonymous if it's NOT the proxied URL (proxied is same-origin)
-                if (!url.startsWith('http')) {
-                    img.crossOrigin = 'anonymous'
+            // Case 1: Data URL (Base64) - Convert if strict PNG needed
+            // If it's already a PNG data URL, we can return it directly.
+            // If it's another format (e.g. WebP), we convert it.
+            if (url.startsWith('data:')) {
+                if (url.startsWith('data:image/png')) return url;
+                return await convertBase64ToPng(url);
+            }
+
+            // Case 2: Blob URL (Client-side only) or Relative URL (Same Origin)
+            // Fetch directly on client - no CORS issues for these, and Proxy can't access blob:
+            if (url.startsWith('blob:') || url.startsWith('/')) {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to fetch local image: ${response.statusText}`);
+                const blob = await response.blob();
+                return await convertBlobToPng(blob);
+            }
+
+            // Case 3: Remote URL (http/https) -> Use Proxy to bypass CORS
+            const proxiedUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+            const response = await fetch(proxiedUrl);
+
+            if (!response.ok) {
+                // Try fallback: fetch directly (might work if CORS allows, e.g. some CDNs)
+                console.warn(`Proxy failed for ${url}, trying direct fetch...`);
+                const directRes = await fetch(url, { mode: 'cors' });
+                if (directRes.ok) {
+                    const blob = await directRes.blob();
+                    return await convertBlobToPng(blob);
                 }
+                throw new Error(`Proxy failed: ${response.status}`);
+            }
 
-                img.onload = () => {
-                    const canvas = window.document.createElement('canvas')
-                    const ctx = canvas.getContext('2d')
-                    if (!ctx) {
-                        resolve(url)
-                        return
-                    }
+            const blob = await response.blob();
+            return await convertBlobToPng(blob);
 
-                    // Max dimension for PDF images to keep file size small
-                    const maxDim = 800
-                    let width = img.width
-                    let height = img.height
-
-                    if (width > height) {
-                        if (width > maxDim) {
-                            height *= (maxDim / width)
-                            width = maxDim
-                        }
-                    } else {
-                        if (height > maxDim) {
-                            width *= (maxDim / height)
-                            height = maxDim
-                        }
-                    }
-
-                    canvas.width = width
-                    canvas.height = height
-                    ctx.drawImage(img, 0, 0, width, height)
-
-                    // Use PNG to preserve transparency for logos
-                    resolve(canvas.toDataURL('image/png'))
-                }
-                img.onerror = (e) => {
-                    console.warn("Image load error for PDF:", url, e)
-                    resolve(url) // Fallback to original URL
-                }
-                img.src = proxiedUrl
-            })
         } catch (e) {
-            console.warn("Failed to process image for PDF:", url, e)
-            return url
+            console.error("Failed to process image for PDF:", url, e)
+            return url // Ultimate fallback
         }
+    }
+
+    // Helper: Convert Blob -> PNG Base64
+    const convertBlobToPng = (blob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = URL.createObjectURL(blob);
+            img.onload = () => {
+                const canvas = window.document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('Canvas context failed'));
+                    return;
+                }
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+                URL.revokeObjectURL(url);
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(url);
+                reject(new Error('Image load failed'));
+            };
+            img.src = url;
+        });
+    }
+
+    // Helper: Convert Base64 -> PNG Base64 (for existing data URLs that might be WebP)
+    const convertBase64ToPng = (base64: string): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = window.document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Canvas context failed'));
+                    return;
+                }
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            };
+            img.onerror = reject;
+            img.src = base64;
+        });
+    }
+
+    // Helper to capture logo directly from DOM (WYSIWYG)
+    const processLogoFromDOM = async (originalUrl: string | undefined): Promise<string | undefined> => {
+        if (!originalUrl) return undefined;
+
+        try {
+            // 1. Try to grabbing from DOM first (Most reliable if visible)
+            const imgElement = window.document.getElementById('preview-doc-logo');
+            if (imgElement) {
+                // Use html-to-image to capture what is rendered
+                const { toPng } = await import('html-to-image');
+                const dataUrl = await toPng(imgElement as HTMLElement, {
+                    quality: 1.0,
+                    pixelRatio: 2,
+                    cacheBust: true
+                });
+                return dataUrl;
+            }
+        } catch (e) {
+            console.warn("DOM Logo Capture failed, falling back to fetch:", e);
+        }
+
+        // 2. Fallback to standard fetch processing
+        return await processImageForPDF(originalUrl);
     }
 
     const handleExport = async () => {
@@ -270,8 +326,10 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
         try {
             // Pre-process ALL images to Base64 to solve CORS and size issues
             const processedOrgProfile = { ...orgProfile }
+
+            // SPECIAL HANDLING FOR LOGO: Capture from DOM if possible
             if (orgProfile.logo) {
-                processedOrgProfile.logo = await processImageForPDF(orgProfile.logo) as string
+                processedOrgProfile.logo = await processLogoFromDOM(orgProfile.logo) as string
             }
 
             // Clone document and process item/zone images
@@ -719,7 +777,13 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                                 {showLogo && (
                                                     <div className="relative group">
                                                         {orgProfile.logo ? (
-                                                            <img src={orgProfile.logo} className="w-16 h-16 object-contain rounded-xl" alt="Logo" />
+                                                            <img
+                                                                id="preview-doc-logo"
+                                                                src={orgProfile.logo}
+                                                                className="w-16 h-16 object-contain rounded-xl"
+                                                                alt="Logo"
+                                                                crossOrigin="anonymous"
+                                                            />
                                                         ) : (
                                                             <div
                                                                 className={cn(

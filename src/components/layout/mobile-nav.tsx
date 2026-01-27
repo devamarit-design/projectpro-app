@@ -121,7 +121,8 @@ export function MobileNav() {
         ...(hasPermission(currentTeam?.role, "INCOME_CREATE") ? [{ href: "/income?action=new", label: t.finance.income, icon: FileText, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
         { href: "/expenses?action=new", label: t.finance.expense, icon: CreditCard, color: "text-red-500 from-red-500/20 to-red-500/5" },
         { href: "/tasks?action=new", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 from-blue-500/20 to-blue-500/5" },
-        { href: "/storage?action=new", label: "Media", icon: HardDrive, color: "text-purple-500 from-purple-500/20 to-purple-500/5" },
+        // { href: "/storage?action=new", label: "Media", icon: HardDrive, color: "text-purple-500 from-purple-500/20 to-purple-500/5" },
+        { href: "/wall?action=new", label: "Post", icon: Newspaper, color: "text-pink-500 from-pink-500/20 to-pink-500/5" },
     ], [currentTeam?.role, t])
 
     const isFinanceActive = pathname === "/income" || pathname === "/expenses"
