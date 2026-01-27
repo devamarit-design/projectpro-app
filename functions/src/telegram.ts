@@ -154,42 +154,78 @@ export function formatQuotationNotification(params: {
 -------------------------`
 }
 
-/**
- * Format daily task summary message
- */
 export function formatDailyTaskSummary(params: {
     date: string
-    tasks: {
-        projectName: string
+    dateGroups: {
+        dateLabel: string
         tasks: {
             title: string
+            projectName: string
             assignee: string
+            status: string
+            dueDate: string
         }[]
     }[]
+    overdueTasks: {
+        title: string
+        projectName: string
+        assignee: string
+        dueDate: string
+        status: string
+    }[]
 }): string {
-    const { date, tasks } = params
+    const { date, dateGroups, overdueTasks } = params
 
-    if (tasks.length === 0) {
-        return `📅 <b>งานที่ต้องทำในวันนี้ (${date})</b>
+    const hasTasks = dateGroups.length > 0 || overdueTasks.length > 0
+
+    if (!hasTasks) {
+        return `📅 <b>สรุปงานประจำวัน (${date})</b>
 -------------------------
-✅ วันนี้ไม่มีงานที่ครบกำหนดส่ง`
+✅ ไม่มียอดคงเหลือ (No active tasks)`
     }
 
-    let message = `📅 <b>งานที่ต้องทำในวันนี้ (${date})</b>
--------------------------`
+    let message = `📅 <b>สรุปงานประจำวัน (${date})</b>`
 
-    for (const project of tasks) {
-        message += `\n\n🏗 <b>${project.projectName}</b>`
-        for (const task of project.tasks) {
-            message += `\n▫️ ${task.title}`
-            if (task.assignee) {
-                message += ` (👤 ${task.assignee})`
-            }
+    // 1. Date Groups (Today -> Future)
+    for (const group of dateGroups) {
+        message += `\n\n📅 <b>${group.dateLabel}</b>`
+        message += `\n-------------------------`
+        for (const task of group.tasks) {
+            // Extract Time
+            let timeStr = ""
+            try {
+                if (task.dueDate && task.dueDate.includes("T")) {
+                    const d = new Date(task.dueDate)
+                    timeStr = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' })
+                    if (timeStr === "00:00") timeStr = "" // Don't show if midnight/default
+                }
+            } catch (e) { }
+
+            message += `\n▫️ <b>${task.title}</b>`
+            if (timeStr) message += ` (${timeStr})`
+
+            message += `\n    🏗 ${task.projectName}`
+            if (task.assignee) message += ` | 👤 ${task.assignee}`
+            // message += ` | ${task.status}` // Optional: show status
+        }
+    }
+
+    // 2. Overdue Tasks (At the end)
+    if (overdueTasks.length > 0) {
+        message += `\n\n⚠️ <b>งานที่เกินกำหนด (Overdue)</b>`
+        message += `\n-------------------------`
+        for (const task of overdueTasks) {
+            const taskDate = new Date(task.dueDate)
+            const dateStr = taskDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+
+            message += `\n🔴 <b>${task.title}</b>`
+            message += `\n    📅 ${dateStr} | 🏗 ${task.projectName}`
+            if (task.assignee) message += ` | 👤 ${task.assignee}`
         }
     }
 
     message += `\n\n-------------------------
-เปิดดูงานทั้งหมด: https://app.projectpro.com/tasks`
+เปิดดูงานทั้งหมด: https://www.hipsloth.app/tasks`
 
     return message
 }
