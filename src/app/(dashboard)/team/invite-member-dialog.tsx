@@ -7,6 +7,7 @@ import { useProjects } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
 import { toast } from "sonner"
+import QRCode from "react-qr-code"
 
 interface InviteMemberDialogProps {
     isOpen: boolean
@@ -20,7 +21,7 @@ export default function InviteMemberDialog({ isOpen, onClose }: InviteMemberDial
     const [email, setEmail] = React.useState("")
     const [isSent, setIsSent] = React.useState(false)
     const [isSending, setIsSending] = React.useState(false)
-    const [activeTab, setActiveTab] = React.useState<"email" | "link">("link")
+    const [activeTab, setActiveTab] = React.useState<"email" | "link" | "qr">("link")
     const [hasCopied, setHasCopied] = React.useState(false)
 
     if (!isOpen) return null
@@ -121,7 +122,6 @@ export default function InviteMemberDialog({ isOpen, onClose }: InviteMemberDial
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* Tabs */}
                     <div className="flex p-1 bg-muted rounded-xl">
                         <button
                             onClick={() => setActiveTab("link")}
@@ -132,6 +132,16 @@ export default function InviteMemberDialog({ isOpen, onClose }: InviteMemberDial
                         >
                             <LinkIcon className="w-4 h-4" />
                             {t.dialogs.invitations.tabs.link}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("qr")}
+                            className={cn(
+                                "flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2",
+                                activeTab === "qr" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            <Smartphone className="w-4 h-4" />
+                            QR Code
                         </button>
                         <button
                             onClick={() => setActiveTab("email")}
@@ -145,7 +155,24 @@ export default function InviteMemberDialog({ isOpen, onClose }: InviteMemberDial
                         </button>
                     </div>
 
-                    {activeTab === "link" ? (
+                    {activeTab === "qr" ? (
+                        <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300 flex flex-col items-center justify-center pt-2">
+                            <div className="bg-white p-4 rounded-xl shadow-sm border border-border">
+                                <QRCode
+                                    value={inviteLink}
+                                    size={200}
+                                    className="h-auto max-w-full"
+                                    viewBox={`0 0 256 256`}
+                                />
+                            </div>
+                            <p className="text-center text-sm text-muted-foreground max-w-[250px]">
+                                Scan to join <strong>{currentOrg?.name}</strong>
+                            </p>
+                            <div className="text-xs text-muted-foreground flex gap-2">
+                                <span className="font-mono bg-muted px-2 py-0.5 rounded">{currentOrg?.id}</span>
+                            </div>
+                        </div>
+                    ) : activeTab === "link" ? (
                         <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.dialogs.invitations.link_label}</label>

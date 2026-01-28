@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { X, Calendar, User, Tag, Trash2, Clock, CheckCircle2, Layout, AlignLeft, Hash, ExternalLink, ChevronDown, Archive } from "lucide-react"
 import { useProjects, Priority, TaskStatus, ProjectTask } from "@/context/project-context"
 import { cn } from "@/lib/utils"
@@ -60,7 +61,14 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
 
     const isArchived = task.isArchived
 
-    return (
+    const [mounted, setMounted] = React.useState(false)
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!mounted) return null
+
+    return createPortal(
         <>
             <ConfirmDialog
                 isOpen={showArchiveConfirm}
@@ -250,6 +258,7 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                     </div>
                 </div>
             </div>
-        </>
+        </>,
+        document.body
     )
 }

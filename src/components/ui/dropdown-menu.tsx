@@ -11,7 +11,7 @@ const DropdownMenuContext = React.createContext<{
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 } | null>(null)
 
-const DropdownMenu = ({ children }: { children: React.ReactNode }) => {
+const DropdownMenu = ({ children, className }: { children: React.ReactNode, className?: string }) => {
     const [open, setOpen] = React.useState(false)
     // Close on click outside could be added here, but for MVP we skip
 
@@ -31,7 +31,7 @@ const DropdownMenu = ({ children }: { children: React.ReactNode }) => {
 
     return (
         <DropdownMenuContext.Provider value={{ open, setOpen }}>
-            <div ref={ref} className="relative inline-block text-left">
+            <div ref={ref} className={className || "relative inline-block text-left"}>
                 {children}
             </div>
         </DropdownMenuContext.Provider>

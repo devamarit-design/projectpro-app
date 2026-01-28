@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils"
 interface SelectContextValue {
     value: string
     onValueChange: (value: string) => void
+    open: boolean
+    setOpen: (open: boolean) => void
 }
 
 const SelectContext = React.createContext<SelectContextValue | undefined>(undefined)
@@ -18,9 +20,21 @@ interface SelectProps {
 }
 
 const Select = ({ value = "", onValueChange = () => { }, children }: SelectProps) => {
+    const [open, setOpen] = React.useState(false)
+
+    // Close on click outside
+    React.useEffect(() => {
+        if (!open) return
+        const handleClick = () => setOpen(false)
+        window.addEventListener("click", handleClick)
+        return () => window.removeEventListener("click", handleClick)
+    }, [open])
+
     return (
-        <SelectContext.Provider value={{ value, onValueChange }}>
-            {children}
+        <SelectContext.Provider value={{ value, onValueChange, open, setOpen }}>
+            <div className="relative w-full">
+                {children}
+            </div>
         </SelectContext.Provider>
     )
 }
@@ -36,12 +50,16 @@ interface SelectTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
     ({ className, children, ...props }, ref) => {
-        const [open, setOpen] = React.useState(false)
+        const context = React.useContext(SelectContext)
 
         return (
             <button
                 ref={ref}
                 type="button"
+                onClick={(e) => {
+                    e.stopPropagation()
+                    context?.setOpen(!context?.open)
+                }}
                 className={cn(
                     "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
                     className
@@ -49,7 +67,7 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
                 {...props}
             >
                 {children}
-                <ChevronDown className="h-4 w-4 opacity-50" />
+                <ChevronDown className={cn("h-4 w-4 opacity-50 transition-transform", context?.open && "rotate-180")} />
             </button>
         )
     }
@@ -62,16 +80,22 @@ interface SelectContentProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
     ({ className, children, ...props }, ref) => {
+        const context = React.useContext(SelectContext)
+        if (!context?.open) return null
+
         return (
             <div
                 ref={ref}
+                onClick={(e) => e.stopPropagation()}
                 className={cn(
-                    "absolute z-50 mt-1 max-h-60 min-w-[8rem] overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+                    "absolute z-[100] mt-1 max-h-60 w-full overflow-hidden rounded-xl border bg-popover p-1 text-popover-foreground shadow-2xl animate-in fade-in zoom-in-95 duration-200",
                     className
                 )}
                 {...props}
             >
-                {children}
+                <div className="overflow-auto max-h-56">
+                    {children}
+                </div>
             </div>
         )
     }
@@ -92,11 +116,14 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
             <div
                 ref={ref}
                 className={cn(
-                    "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-                    isSelected && "bg-accent text-accent-foreground",
+                    "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2.5 pl-3 pr-8 text-sm outline-none hover:bg-white/10 transition-colors",
+                    isSelected && "bg-white/5 font-bold text-primary",
                     className
                 )}
-                onClick={() => context?.onValueChange(value)}
+                onClick={() => {
+                    context?.onValueChange(value)
+                    context?.setOpen(false)
+                }}
                 {...props}
             >
                 {children}

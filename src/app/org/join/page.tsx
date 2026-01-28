@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, ArrowLeft, Loader2, CheckCircle2, Building2, LogIn } from "lucide-react"
+import { Users, ArrowLeft, Loader2, CheckCircle2, Building2, LogIn, ScanLine, X } from "lucide-react"
 import { Suspense, useEffect, useState } from "react"
+import { useZxing } from "react-zxing"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 
 function JoinContent() {
     const searchParams = useSearchParams()
@@ -25,6 +27,33 @@ function JoinContent() {
     const [isSuccess, setIsSuccess] = useState(false)
     const [error, setError] = useState("")
     const [orgPreview, setOrgPreview] = useState<{ id: string, name: string, memberCount: number } | null>(null)
+    const [isScanning, setIsScanning] = useState(false)
+
+    const { ref } = useZxing({
+        onDecodeResult(result) {
+            const text = result.getText()
+            if (text) {
+                // Try to extract code from URL if present
+                try {
+                    const url = new URL(text)
+                    const codeParam = url.searchParams.get("code")
+                    if (codeParam) {
+                        setInviteCode(codeParam)
+                        handleFetchPreview(codeParam)
+                        setIsScanning(false)
+                        return
+                    }
+                } catch (e) {
+                    // Not a URL, treat as code
+                }
+
+                setInviteCode(text)
+                handleFetchPreview(text)
+                setIsScanning(false)
+            }
+        },
+        paused: !isScanning
+    });
 
     const handleFetchPreview = async (code: string) => {
         if (!code.trim()) return
@@ -182,15 +211,25 @@ function JoinContent() {
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="inviteCode">{t.dialogs.join_org.invite_code}</Label>
-                            <Input
-                                id="inviteCode"
-                                placeholder={t.dialogs.join_org.placeholder}
-                                value={inviteCode}
-                                onChange={(e) => setInviteCode(e.target.value)}
-                                className="h-12 text-lg text-center tracking-wider"
-                                required
-                                autoFocus
-                            />
+                            <div className="flex gap-2">
+                                <Input
+                                    id="inviteCode"
+                                    placeholder={t.dialogs.join_org.placeholder}
+                                    value={inviteCode}
+                                    onChange={(e) => setInviteCode(e.target.value)}
+                                    className="h-12 text-lg text-center tracking-wider"
+                                    required
+                                    autoFocus
+                                />
+                                <Button
+                                    type="button"
+                                    className="h-12 w-12 px-0 shrink-0"
+                                    variant="outline"
+                                    onClick={() => setIsScanning(true)}
+                                >
+                                    <ScanLine className="w-5 h-5" />
+                                </Button>
+                            </div>
                         </div>
                         {error && (
                             <div className="text-sm text-destructive text-center bg-destructive/10 p-2 rounded">
@@ -225,6 +264,32 @@ function JoinContent() {
                     </CardFooter>
                 </form>
             </Card>
+
+            <Dialog open={isScanning} onOpenChange={setIsScanning}>
+                <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-black border-none">
+                    <div className="relative w-full aspect-square bg-black">
+                        {/* Close button */}
+                        <button
+                            onClick={() => setIsScanning(false)}
+                            className="absolute top-4 right-4 z-50 p-2 bg-black/50 text-white rounded-full hover:bg-black/70"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+
+                        <video ref={ref} className="w-full h-full object-cover" />
+
+                        {/* Scanning Overlay */}
+                        <div className="absolute inset-0 border-2 border-white/20 pointer-events-none">
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-primary rounded-xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
+                                <div className="absolute inset-0 animate-pulse bg-primary/10"></div>
+                            </div>
+                        </div>
+                        <p className="absolute bottom-8 left-0 right-0 text-center text-white font-medium drop-shadow-md">
+                            Scan organization QR code
+                        </p>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

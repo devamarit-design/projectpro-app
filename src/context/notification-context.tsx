@@ -143,10 +143,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         )
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const manualNotifs = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Notification[]
+            const manualNotifs = snapshot.docs.map(doc => {
+                const data = doc.data() as Omit<Notification, "id">
+                // Check if we have marked it as read locally but Firestore hasn't updated yet
+                const isReadLocally = readStatus[doc.id] || data.read
+                return {
+                    id: doc.id,
+                    ...data,
+                    read: isReadLocally
+                }
+            }) as Notification[]
             // Sort client-side by date descending
             manualNotifs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
             setRealtimeNotifications(manualNotifs)
@@ -444,9 +450,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     const unreadCount = notifications.filter(n => !n.read).length
 
-    const markAsRead = (id: string) => {
+    const markAsRead = async (id: string) => {
+        // Optimistic update
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
         setReadStatus(prev => ({ ...prev, [id]: true }))
+
+        // We do not sync read status to Firestore anymore due to restrictive rules.
+        // Local persistence (localStorage) is sufficient for current requirements.
     }
 
     const markAllAsRead = () => {

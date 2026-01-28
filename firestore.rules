@@ -99,11 +99,26 @@ service cloud.firestore {
       allow delete: if resourceBelongsToUserOrg();
     }
     
+    function isOrgStaffOrHigher(orgId) {
+      let data = getUserData();
+      return data != null && 
+             'orgIds' in data && 
+             orgId in data.orgIds && 
+             (data.role == "Owner" || data.role == "Admin" || data.role == "Staff");
+    }
+
     match /tasks/{taskId} {
       allow read: if resourceBelongsToUserOrg();
       allow create: if requestBelongsToUserOrg();
       allow update: if resourceBelongsToUserOrg();
       allow delete: if resourceBelongsToUserOrg();
+    }
+
+    match /works/{workId} {
+      allow read: if isAuthenticated() && isOrgMember(resource.data.orgId);
+      allow create: if isAuthenticated() && isOrgStaffOrHigher(request.resource.data.orgId);
+      allow update: if isAuthenticated() && isOrgStaffOrHigher(resource.data.orgId);
+      allow delete: if isAuthenticated() && isOrgStaffOrHigher(resource.data.orgId);
     }
 
     match /incomes/{docId} {

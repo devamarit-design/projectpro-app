@@ -60,7 +60,9 @@ export function CreatePost() {
                     fileToUpload = await compressImage(mediaFile);
                 }
 
-                const storageRef = ref(storage, `organizations/${currentOrg.id}/posts/${Date.now()}_${fileToUpload.name}`)
+                // Sanitize file name
+                const sanitizedFileName = fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                const storageRef = ref(storage, `organizations/${currentOrg.id}/posts/${Date.now()}_${sanitizedFileName}`)
                 const snapshot = await uploadBytes(storageRef, fileToUpload)
                 const url = await getDownloadURL(snapshot.ref)
                 mediaUrls.push(url)
@@ -89,7 +91,7 @@ export function CreatePost() {
             toast.success("Post created!")
         } catch (error) {
             console.error("Error creating post:", error)
-            toast.error("Failed to post")
+            toast.error(error instanceof Error ? error.message : "Failed to post")
         } finally {
             setIsSubmitting(false)
         }
@@ -137,7 +139,7 @@ export function CreatePost() {
                                 type="file"
                                 ref={fileInputRef}
                                 className="hidden"
-                                accept="image/*"
+                                accept="image/*,.heic,.heif"
                                 onChange={(e) => handleFileSelect(e, 'image')}
                             />
                             <Button

@@ -44,6 +44,11 @@ export const en = {
         today: "Today",
     },
 
+    schedule: {
+        title: "Global Schedule",
+        subtitle: "View all organizational tasks in a unified timeline",
+    },
+
     partners: {
         title: "Partners",
         subtitle: "Manage technicians, contractors, and material stores.",

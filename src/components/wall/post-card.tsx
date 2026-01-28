@@ -11,6 +11,12 @@ import { arrayUnion, arrayRemove } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import Image from "next/image"
 import { CommentSection } from "./comment-section"
+import { Lightbox } from "@/components/ui/lightbox"
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
+} from "@/components/ui/hover-card"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -63,6 +69,11 @@ export function PostCard({ post }: PostCardProps) {
     const [editContent, setEditContent] = useState(post.content)
     const [showDeleteAlert, setShowDeleteAlert] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
+
+    // Lightbox & Likes Modal
+    const [lightboxOpen, setLightboxOpen] = useState(false)
+    const [lightboxSrc, setLightboxSrc] = useState("")
+    const [showLikesModal, setShowLikesModal] = useState(false)
 
     // Filter likes
     const likers = users.filter(user => post.likes.includes(user.id))
@@ -195,7 +206,13 @@ export function PostCard({ post }: PostCardProps) {
                                             {post.mediaType === 'video' ? (
                                                 <video src={url} controls className="w-full h-full object-cover" />
                                             ) : (
-                                                <div className="relative w-full h-full aspect-[4/3]">
+                                                <div
+                                                    className="relative w-full h-full aspect-[4/3] cursor-pointer hover:opacity-95 transition-opacity"
+                                                    onClick={() => {
+                                                        setLightboxSrc(url)
+                                                        setLightboxOpen(true)
+                                                    }}
+                                                >
                                                     <Image
                                                         src={url}
                                                         alt={`Post attachment ${index + 1}`}
@@ -219,38 +236,53 @@ export function PostCard({ post }: PostCardProps) {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className={cn("gap-2 px-2 hover:bg-red-500/10 hover:text-red-500", isLiked && "text-red-500")}
                                 onClick={handleLike}
                             >
                                 <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
-                                <span className="text-xs font-medium">{likesCount}</span>
                             </Button>
 
-                            {/* Custom Tooltip */}
-                            {post.likes.length > 0 && (
-                                <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-50">
-                                    <div className="bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border border-border p-2 min-w-[120px] max-w-[200px]">
-                                        <p className="font-semibold mb-1">Liked by:</p>
-                                        <div className="space-y-0.5 max-h-[100px] overflow-y-auto custom-scrollbar">
-                                            {likers.length > 0 ? likers.map(user => (
-                                                <div key={user.id} className="flex items-center gap-2">
-                                                    <div className="w-4 h-4 rounded-full bg-muted overflow-hidden flex-shrink-0">
-                                                        {user.avatar ? (
-                                                            <img src={user.avatar} className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-[8px]">{user.name.charAt(0)}</div>
-                                                        )}
-                                                    </div>
-                                                    <span className="truncate">{user.id === currentUser?.id ? "You" : user.name}</span>
-                                                </div>
-                                            )) : (
-                                                <span className="text-muted-foreground italic">Unknown users</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                            {/* Likes List Modal Trigger - Replaces Hover Tooltip */}
                         </div>
+                        {likesCount > 0 && (
+                            <HoverCard openDelay={200}>
+                                <HoverCardTrigger asChild>
+                                    <button
+                                        className="text-xs text-muted-foreground hover:text-foreground hover:underline ml-1 focus:outline-none"
+                                        onClick={() => setShowLikesModal(true)}
+                                    >
+                                        {likesCount} likes
+                                    </button>
+                                </HoverCardTrigger>
+                                <HoverCardContent className="w-80 p-0 overflow-hidden bg-[#020617]/95 backdrop-blur-xl border-white/10 text-white rounded-3xl shadow-2xl" side="top" align="start">
+
+                                    <div className="p-1 space-y-0.5 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                        {likers.length > 0 ? likers.map(user => (
+                                            <div key={user.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-xl transition-colors group">
+                                                <Avatar className="h-8 w-8 border border-white/10 shadow-sm">
+                                                    <AvatarImage src={user.avatar} />
+                                                    <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-[10px] text-white font-bold">
+                                                        {user.name.charAt(0)}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-bold text-white truncate leading-none mb-0.5">{user.name}</p>
+                                                    <p className="text-[9px] text-white/40 truncate font-medium">{user.email || "Team Member"}</p>
+                                                </div>
+                                                {user.id === currentUser?.id && (
+                                                    <span className="text-[8px] bg-white/10 text-white/50 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">You</span>
+                                                )}
+                                            </div>
+                                        )) : (
+                                            <div className="flex flex-col items-center justify-center py-8 text-white/20 gap-2">
+                                                <Heart className="w-8 h-8 stroke-1" />
+                                                <p className="text-xs font-bold">No visible likes.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </HoverCardContent>
+                            </HoverCard>
+                        )}
+
                         <Button
                             variant="ghost"
                             size="sm"
@@ -266,7 +298,7 @@ export function PostCard({ post }: PostCardProps) {
                 {showComments && (
                     <CommentSection postId={post.id} />
                 )}
-            </div>
+            </div >
 
             <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
                 <AlertDialogContent>
@@ -284,6 +316,14 @@ export function PostCard({ post }: PostCardProps) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <Lightbox
+                open={lightboxOpen}
+                onOpenChange={setLightboxOpen}
+                src={lightboxSrc}
+            />
+
+
         </>
     )
 }

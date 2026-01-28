@@ -46,6 +46,27 @@ export interface SubProject {
     endDate?: string
 }
 
+export interface WorkItem {
+    id: string
+    title: string
+    startDate: string
+    endDate: string
+    progress: number // 0-100
+    projectId: string
+    orgId: string
+    category?: string // ประเภทงาน (Work Type)
+    assignedTo?: string // Assignee ID
+    priority?: Priority
+    labels?: string[]
+    dependencies?: string[] // IDs of WorkItems this depends on
+    color?: string
+    isArchived?: boolean
+    description?: string // รายละเอียดงาน
+    sortOrder?: number // สำหรับสลับลำดับแถว
+    createdAt?: string
+    updatedAt?: string
+}
+
 export interface CompanyProfile {
     name: string
     nameEn?: string // English Company Name
@@ -130,6 +151,7 @@ export interface Project {
     image: string
     description?: string
     tasks?: ProjectTask[]
+    works?: WorkItem[] // New: Works for Gantt/Schedule
     subProjects?: SubProject[] // โปรเจคย่อย - separate from Tasks
     orgId?: string // Organization ID
     isArchived?: boolean // Archive flag
@@ -327,6 +349,13 @@ interface ProjectContextType {
     updateTask: (projectId: string, taskId: string, updates: Partial<ProjectTask>) => void
     deleteTask: (projectId: string, taskId: string) => void
     toggleTask: (projectId: string, taskId: string) => void
+
+    // Work Management (Schedule/Gantt)
+    works: WorkItem[]
+    addWork: (projectId: string, work: Omit<WorkItem, "id" | "projectId" | "orgId" | "createdAt">) => void
+    updateWork: (projectId: string, workId: string, updates: Partial<WorkItem>) => void
+    updateWorkOrder: (workOrders: { id: string, sortOrder: number }[]) => Promise<void>
+    deleteWork: (projectId: string, workId: string) => void
 
     // Sub-project Management (โปรเจคย่อย)
     addSubProject: (projectId: string, subProject: Omit<SubProject, "id">) => void
@@ -791,6 +820,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     // Task Management Logic (Refactored to Top-level Collection)
     const [tasks, setTasks] = useState<ProjectTask[]>([])
+    const [works, setWorks] = useState<WorkItem[]>([])
 
     // Contracts Logic
     const [contracts, setContracts] = useState<Contract[]>([])
@@ -1342,6 +1372,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             }
         }, (error) => console.error("Task sync error:", error))
 
+        // 9. Works (Schedule)
+        const qWorks = query(collection(db, "works"), where("orgId", "==", currentTeam.id))
+        const unsubWorks = onSnapshot(qWorks, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as WorkItem))
+            setWorks(data)
+            set(`works_${currentTeam.id}`, data)
+        }, (error) => console.error("Work sync error:", error))
+
         // 9. Team Members
         const qUsersOrgIds = query(collection(db, "users"), where("orgIds", "array-contains", currentTeam.id))
         const qUsersTeamIds = query(collection(db, "users"), where("teamIds", "array-contains", currentTeam.id))
@@ -1383,6 +1421,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             unsubIncomes()
             unsubContracts()
             unsubTasks()
+            unsubWorks()
             unsubUsersOrgIds()
             unsubUsersTeamIds()
             unsubFiles()
@@ -1554,9 +1593,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const project = projects.find(p => p.id === id)
         if (!project) return undefined
 
-        // Merge tasks from global state (including archived ones)
+        // Merge tasks and works from global state
         const projectTasks = tasks.filter(t => t.projectId === id)
-        return { ...project, tasks: projectTasks }
+        const projectWorks = works.filter(w => w.projectId === id)
+        return { ...project, tasks: projectTasks, works: projectWorks }
     }
 
     // Task Management Logic (Refactored to Top-level Collection)
@@ -1600,6 +1640,59 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
         } catch (e) {
             console.error("Error adding task", e)
+        }
+    }
+
+    // Work Management (Schedule/Gantt)
+    const addWork = async (projectId: string, work: Omit<WorkItem, "id" | "projectId" | "orgId" | "createdAt">) => {
+        if (!currentTeam) return
+        try {
+            // Find current max sortOrder for this project
+            const projectWorks = works.filter(w => w.projectId === projectId)
+            const maxOrder = projectWorks.length > 0
+                ? Math.max(...projectWorks.map(w => w.sortOrder || 0))
+                : -1
+
+            const payload = {
+                ...work,
+                projectId,
+                orgId: currentTeam.id,
+                sortOrder: maxOrder + 1,
+                createdAt: new Date().toISOString()
+            }
+            await addDoc(collection(db, "works"), payload)
+        } catch (e) {
+            console.error("Error adding work", e)
+        }
+    }
+
+    const updateWork = async (projectId: string, workId: string, updates: Partial<WorkItem>) => {
+        try {
+            await updateDoc(doc(db, "works", workId), { ...updates, updatedAt: new Date().toISOString() })
+        } catch (e) {
+            console.error("Error updating work", e)
+        }
+    }
+
+    const updateWorkOrder = async (workOrders: { id: string, sortOrder: number }[]) => {
+        try {
+            const batchPromises = workOrders.map(wo =>
+                updateDoc(doc(db, "works", wo.id), {
+                    sortOrder: wo.sortOrder,
+                    updatedAt: new Date().toISOString()
+                })
+            )
+            await Promise.all(batchPromises)
+        } catch (e) {
+            console.error("Error updating work order", e)
+        }
+    }
+
+    const deleteWork = async (projectId: string, workId: string) => {
+        try {
+            await deleteDoc(doc(db, "works", workId))
+        } catch (e) {
+            console.error("Error deleting work", e)
         }
     }
 
@@ -1700,7 +1793,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     entityType: "TASK",
                     entityId: taskId,
                     entityTitle: task.title,
-                    details: `Changed status to ${newStatus}`,
+                    details: `Changed status to ${newStatus} `,
                     performedBy: {
                         uid: currentUser.id,
                         name: currentUser.name,
@@ -1727,8 +1820,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             // 1. Create Expense in Firestore
             const worker = workers.find(w => w.id === contract.workerId)
             const expenseRef = await addDoc(collection(db, "expenses"), {
-                title: `Installment Payment (${installment.description})`,
-                amount: `฿${installment.amount.toLocaleString()}`,
+                title: `Installment Payment(${installment.description})`,
+                amount: `฿${installment.amount.toLocaleString()} `,
                 totalValue: installment.amount,
                 date: new Date().toISOString().split('T')[0],
                 category: "Labor",
@@ -1739,7 +1832,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 items: [
                     {
                         id: Math.random().toString(),
-                        description: `Installment: ${installment.description}`,
+                        description: `Installment: ${installment.description} `,
                         amount: installment.amount,
                         category: "Labor",
                         projectId: contract.projectId
@@ -1922,7 +2015,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 entityType: "USER", // Vendor as User/Entity
                 entityId: "",
                 entityTitle: vendorData.name,
-                details: `Added new vendor: ${vendorData.category}`,
+                details: `Added new vendor: ${vendorData.category} `,
                 performedBy: {
                     uid: currentUser.id,
                     name: currentUser.name,
@@ -1970,7 +2063,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 entityType: "USER", // Or OTHER if no worker type
                 entityId: "",
                 entityTitle: workerData.name,
-                details: `Added new worker: ${workerData.role}`,
+                details: `Added new worker: ${workerData.role} `,
                 performedBy: {
                     uid: currentUser.id,
                     name: currentUser.name,
@@ -2037,7 +2130,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 entityType: "FILE",
                 entityId: "",
                 entityTitle: file.name,
-                details: `Uploaded file (${file.type})`,
+                details: `Uploaded file(${file.type})`,
                 performedBy: {
                     uid: currentUser.id,
                     name: currentUser.name,
@@ -2098,12 +2191,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
             // Notification: Everyone gets notified for every payment
             await addDoc(collection(db, "notifications"), {
-                title: `${expense.title}`,
-                message: `New expense added by ${currentUser?.name || 'Unknown'}`,
+                title: `${expense.title} `,
+                message: `New expense added by ${currentUser?.name || 'Unknown'} `,
                 type: 'info',
                 date: new Date().toISOString(),
                 read: false,
-                link: `/expenses?id=${docRef.id}`,
+                link: `/ expenses ? id = ${docRef.id} `,
                 relatedId: docRef.id,
                 target: 'all',
                 orgId: currentTeam.id,
@@ -2120,7 +2213,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     entityType: "EXPENSE",
                     entityId: docRef.id,
                     entityTitle: expense.title,
-                    details: `Expense created by ${currentUser.name}`,
+                    details: `Expense created by ${currentUser.name} `,
                     performedBy: {
                         uid: currentUser.id,
                         name: currentUser.name,
@@ -2149,7 +2242,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             if (updates.status === 'Paid') {
                 await addDoc(collection(db, "notifications"), {
                     title: `Expense Paid`,
-                    message: `Expense has been marked as PAID (previously Pending/Advanced/Credit)`,
+                    message: `Expense has been marked as PAID (previously Pending / Advanced / Credit)`,
                     type: 'success',
                     date: new Date().toISOString(),
                     read: false,
@@ -2207,8 +2300,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
             // Notification: Admin gets notified for Customer Withdrawals (Income)
             await addDoc(collection(db, "notifications"), {
-                title: `New Income/Withdrawal`,
-                message: `New withdrawal recorded by ${currentUser?.name}`,
+                title: `New Income / Withdrawal`,
+                message: `New withdrawal recorded by ${currentUser?.name} `,
                 type: 'info', // or success
                 date: new Date().toISOString(),
                 read: false,
@@ -2224,8 +2317,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 action: "CREATE",
                 entityType: "INCOME",
                 entityId: "", // ID not easily available in void return but harmless
-                entityTitle: `${income.type} ${income.documentNumber}`,
-                details: `Created ${income.type}: ${income.total}`,
+                entityTitle: `${income.type} ${income.documentNumber} `,
+                details: `Created ${income.type}: ${income.total} `,
                 performedBy: {
                     uid: currentUser?.id || "unknown",
                     name: currentUser?.name || "Unknown",
@@ -2347,7 +2440,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 entityType: "CONTRACT",
                 entityId: "",
                 entityTitle: contract.title,
-                details: `Created contract with total amount: ${contract.totalAmount}`,
+                details: `Created contract with total amount: ${contract.totalAmount} `,
                 performedBy: {
                     uid: currentUser?.id || "unknown",
                     name: currentUser?.name || "Unknown",
@@ -2378,6 +2471,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
         addTask,
         tasks: tasks.filter(t => !t.isArchived),
+
+        // Work
+        works,
+        addWork,
+        updateWork,
+        updateWorkOrder,
+        deleteWork,
+
         addSubProject,
         updateTask,
         deleteTask,
@@ -2461,6 +2562,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         updateTask,
         deleteTask,
         toggleTask,
+        works,
+        addWork,
+        updateWork,
+        updateWorkOrder,
         expenses,
         filteredProjectIds,
         addExpense,

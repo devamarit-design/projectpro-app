@@ -42,6 +42,11 @@ export const th = {
         today: "วันนี้",
     },
 
+    schedule: {
+        title: "แผนงานรวม",
+        subtitle: "ดูภาพรวมงานทั้งหมดในองค์กรแบบ Timeline",
+    },
+
     partners: {
         title: "คู่ค้าและช่าง",
         subtitle: "จัดการรายชื่อช่าง ผู้รับเหมา และร้านวัสดุ",

@@ -41,11 +41,15 @@ import { cn } from "@/lib/utils"
 import AddExpenseDialog from "@/components/expenses/add-expense-dialog"
 import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
 import AddTaskDialog from "@/components/tasks/add-task-dialog"
+import { AddWorkDialog } from "@/components/modals/add-work-dialog"
 
 import { TaskBoard } from "@/components/tasks/task-board"
 import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
 
 import { useSearchParams } from "next/navigation"
+import dynamic from "next/dynamic"
+
+const ProjectGantt = dynamic(() => import('@/components/projects/project-gantt').then(mod => mod.ProjectGantt), { ssr: false })
 
 // Helper to group incomes by transaction chain
 const groupIncomes = (docs: IncomeDocument[]) => {
@@ -97,9 +101,13 @@ export default function ProjectDetailClient() {
     const searchParams = useSearchParams()
     const id = searchParams.get("id") || ""
     const { t, locale } = useTranslation()
-    const { getProject, addTask, addSubProject, deleteTask, toggleTask, updateTask, expenses, files, addFile, currentUser, users, incomes, customers, isLoading, currentTeam } = useProjects()
+    const { getProject, addTask, addSubProject, deleteTask, toggleTask, updateTask, expenses, files, addFile, currentUser, users, incomes, customers, isLoading, currentTeam, addWork, updateWork, deleteWork, updateWorkOrder } = useProjects()
     const [activeTab, setActiveTab] = useState("overview")
     const project = getProject(id)
+
+    // Work / Gantt State
+    const [isAddWorkOpen, setIsAddWorkOpen] = useState(false)
+    const [editingWork, setEditingWork] = useState<any>(null)
 
     const projectFiles = files.filter(f => f.projectId === id)
 
@@ -288,6 +296,18 @@ export default function ProjectDetailClient() {
                     {t.projects.detail.tabs.overview}
                 </button>
                 <button
+                    onClick={() => setActiveTab("schedule")}
+                    className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
+                        activeTab === "schedule"
+                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                            : "bg-background/50 hover:bg-muted/50 text-muted-foreground"
+                    )}
+                >
+                    <Calendar className="w-4 h-4" />
+                    Schedule
+                </button>
+                <button
                     onClick={() => setActiveTab("sub_projects")}
                     className={cn(
                         "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
@@ -454,6 +474,43 @@ export default function ProjectDetailClient() {
                         </div>
 
                     </>
+                )}
+
+                {activeTab === 'schedule' && (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-xl font-bold flex items-center gap-2">
+                                    <Calendar className="w-6 h-6 text-primary" />
+                                    Working Schedule
+                                </h3>
+                                <p className="text-muted-foreground">Manage project timeline and dependencies.</p>
+                            </div>
+                        </div>
+                        <ProjectGantt
+                            projectId={project.id}
+                            works={project.works || []}
+                            onWorkUpdate={async (workId, updates) => { await updateWork(project.id, workId, updates) }}
+                            onWorkClick={(workId) => {
+                                const work = project.works?.find(w => w.id === workId)
+                                if (work) {
+                                    setEditingWork(work)
+                                    setIsAddWorkOpen(true)
+                                }
+                            }}
+                            onAddWork={() => {
+                                setEditingWork(null)
+                                setIsAddWorkOpen(true)
+                            }}
+                            onReorder={async (newWorks) => {
+                                const updates = newWorks.map((w, index) => ({
+                                    id: w.id,
+                                    sortOrder: index
+                                }))
+                                await updateWorkOrder(updates)
+                            }}
+                        />
+                    </div>
                 )}
 
                 {activeTab === 'financials' && (
@@ -1085,6 +1142,13 @@ export default function ProjectDetailClient() {
                 isOpen={isAddTaskOpen}
                 onClose={() => setIsAddTaskOpen(false)}
                 defaultProjectId={project.id}
+            />
+
+            <AddWorkDialog
+                isOpen={isAddWorkOpen}
+                onOpenChange={setIsAddWorkOpen}
+                projectId={project.id}
+                initialData={editingWork}
             />
 
             <ExpenseDetailSheet

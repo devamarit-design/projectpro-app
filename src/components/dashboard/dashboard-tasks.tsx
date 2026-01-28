@@ -29,6 +29,7 @@ export function DashboardTasks() {
             .slice(0, 5) // Show top 5
     }, [tasks, projects, currentUser])
 
+    const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
     const priorityColors: Record<Priority, string> = {
         High: "text-red-500 bg-red-500/10 border-red-500/20",
         Medium: "text-orange-500 bg-orange-500/10 border-orange-500/20",
@@ -55,7 +56,11 @@ export function DashboardTasks() {
             <div className="space-y-3">
                 {userTasks.length > 0 ? (
                     userTasks.map(task => (
-                        <div key={`${task.projectId}-${task.id}`} className="group p-3 rounded-xl bg-muted/20 hover:bg-muted/40 border border-white/5 transition-colors flex items-start gap-3">
+                        <div
+                            key={`${task.projectId}-${task.id}`}
+                            onClick={() => setSelectedTaskId(task.id)}
+                            className="group p-3 rounded-xl bg-muted/20 hover:bg-muted/40 border border-white/5 transition-colors flex items-start gap-3 cursor-pointer"
+                        >
                             <div className={cn("mt-1 w-2 h-2 rounded-full",
                                 task.status === 'Done' ? "bg-green-500" :
                                     task.status === 'In Progress' ? "bg-blue-500" : "bg-slate-400"
@@ -90,6 +95,20 @@ export function DashboardTasks() {
                     </div>
                 )}
             </div>
+
+            {/* Task Detail Modal */}
+            {selectedTaskId && (
+                <React.Suspense fallback={null}>
+                    {/* Dynamic import to avoid SSR issues if complex */}
+                    <TaskDetailSheetWrapper
+                        taskId={selectedTaskId}
+                        onClose={() => setSelectedTaskId(null)}
+                    />
+                </React.Suspense>
+            )}
         </div>
     )
 }
+
+// Wrapper for lazy loading
+const TaskDetailSheetWrapper = React.lazy(() => import('@/components/tasks/task-detail-sheet'))
