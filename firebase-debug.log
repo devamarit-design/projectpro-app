@@ -1,0 +1,331 @@
+[debug] [2026-01-27T04:19:20.183Z] ----------------------------------------------------------------------
+[debug] [2026-01-27T04:19:20.184Z] Command:       /usr/local/bin/node /Users/beer/Library/Mobile Documents/com~apple~CloudDocs/DEV/projectpro-app-new/node_modules/.bin/firebase deploy --only hosting
+[debug] [2026-01-27T04:19:20.184Z] CLI Version:   15.3.1
+[debug] [2026-01-27T04:19:20.184Z] Platform:      darwin
+[debug] [2026-01-27T04:19:20.184Z] Node Version:  v22.16.0
+[debug] [2026-01-27T04:19:20.184Z] Time:          Tue Jan 27 2026 11:19:20 GMT+0700 (Indochina Time)
+[debug] [2026-01-27T04:19:20.184Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-01-27T04:19:20.891Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-27T04:19:20.892Z] > authorizing via signed-in user (dev.amarit@gmail.com)
+[debug] [2026-01-27T04:19:20.892Z] [iam] checking project projectpro-app-76535 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-01-27T04:19:20.892Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:19:20.892Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:19:20.892Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions [none]
+[debug] [2026-01-27T04:19:20.892Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions x-goog-quota-user=projects/projectpro-app-76535
+[debug] [2026-01-27T04:19:20.892Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-01-27T04:19:22.354Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions 200
+[debug] [2026-01-27T04:19:22.354Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-01-27T04:19:22.355Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:19:22.355Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:19:22.355Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535 [none]
+[debug] [2026-01-27T04:19:22.920Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535 200
+[debug] [2026-01-27T04:19:22.920Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535 {"projectId":"projectpro-app-76535","projectNumber":"343498206325","displayName":"ProjectPro-App","name":"projects/projectpro-app-76535","resources":{"hostingSite":"projectpro-app-76535"},"state":"ACTIVE","etag":"1_b7aa43a8-93d0-400a-87c9-057b41ba6567"}
+[debug] [2026-01-27T04:19:24.036Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:19:24.036Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:19:24.036Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites pageToken=&pageSize=10
+[debug] [2026-01-27T04:19:25.779Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites 200
+[debug] [2026-01-27T04:19:25.779Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites {"sites":[{"name":"projects/projectpro-app-76535/sites/projectpro-app-76535","defaultUrl":"https://projectpro-app-76535.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2026-01-27T04:19:25.780Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:19:25.780Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:19:25.780Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites 
+[debug] [2026-01-27T04:19:26.274Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites 200
+[debug] [2026-01-27T04:19:26.274Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites {"sites":[{"name":"projects/projectpro-app-76535/sites/projectpro-app-76535","defaultUrl":"https://projectpro-app-76535.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2026-01-27T04:19:26.274Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:19:26.274Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:19:26.274Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535/webApps/-/config [none]
+[debug] [2026-01-27T04:19:27.014Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535/webApps/-/config 200
+[debug] [2026-01-27T04:19:27.014Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535/webApps/-/config {"projectId":"projectpro-app-76535","appId":"1:343498206325:web:44243bb7a9375b7693dc3c","storageBucket":"projectpro-app-76535.firebasestorage.app","apiKey":"AIzaSyBTwH7aBFdmK94IWoy9Yys26494nfWaXMs","authDomain":"projectpro-app-76535.firebaseapp.com","messagingSenderId":"343498206325","measurementId":"G-FJKYP026ZP","projectNumber":"343498206325","version":"2"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+   The integration is known to work with Next.js version 12 - 15.0. You may encounter errors.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2026-01-27T04:19:29.809Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:19:29.810Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:19:29.810Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites/projectpro-app-76535 [none]
+[debug] [2026-01-27T04:19:30.224Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites/projectpro-app-76535 200
+[debug] [2026-01-27T04:19:30.224Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites/projectpro-app-76535 {"name":"projects/projectpro-app-76535/sites/projectpro-app-76535","defaultUrl":"https://projectpro-app-76535.web.app","type":"DEFAULT_SITE"}
+[info] ▲ Next.js 16.1.1 (Turbopack)
+
+[info] - Environments: .env.local
+- Experiments (use with caution):
+  ✓ scrollRestoration
+  · serverActions
+
+
+[info]   Creating an optimized production build ...
+
+[info] 
+-----
+FATAL: An unexpected Turbopack error occurred. A panic log has been written to 
+[info] /var/folders/1f/_z9lz9ln0kn53xjznsss_1d40000gn/T/next-panic-5475db4b8e884d9f4c18124a97acbf41.log.
+
+To help make Turbopack better, report this error by ttps://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20reading%20dir%20%2FUsers%2Fbeer%2FLibrary%2FMobile%20Documents&body=Turbopack%20version%3A%20%60v16.1.0-canary.19-84-g3aa53984e%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0Areading%20dir%20%2FUsers%2Fbeer%2FLibrary%2FMobile%20Documents%0A%0ACaused%20by%3A%0A-%20Operation%20not%20permitted%20%28os%20error%201%29%0A%0ADebug%20info%3A%0A-%20Execution%20of%20get_all_written_entrypoints_with_issues_operation%20failed%0A-%20Execution%20of%20EntrypointsOperation%3A%3Anew%20failed%0A-%20Execution%20of%20all_entrypoints_write_to_disk_operation%20failed%0A-%20Execution%20of%20Project%3A%3Aemit_all_output_assets%20failed%0A-%20Execution%20of%20%2Aemit_assets%20failed%0A-%20Execution%20of%20all_assets_from_entries_operation%20failed%0A-%20Execution%20of%20%2Aall_assets_from_entries%20failed%0A-%20Execution%20of%20output_assets_operation%20failed%0A-%20Execution%20of%20Project%3A%3Aget_all_endpoints%20failed%0A-%20Execution%20of%20Project%3A%3Aget_all_endpoint_groups%20failed%0A-%20Execution%20of%20Project%3A%3Aentrypoints%20failed%0A-%20Execution%20of%20AppProject%3A%3Aroutes%20failed%0A-%20Execution%20of%20directory_tree_to_entrypoints_internal%20failed%0A-%20Execution%20of%20try_get_next_package%20failed%0A-%20Execution%20of%20%2AResolveResult%3A%3Afirst_source%20failed%0A-%20Execution%20of%20resolve%20failed%0A-%20Execution%20of%20resolve_internal%20failed%0A-%20Execution%20of%20find_self_reference%20failed%0A-%20Execution%20of%20find_context_file%20failed%0A-%20Execution%20of%20realpath_with_links%20failed%0A-%20Execution%20of%20realpath_with_links%20failed%0A-%20Execution%20of%20realpath_with_links%20failed%0A-%20Execution%20of%20realpath_with_links%20failed%0A-%20Execution%20of%20realpath_with_links%20failed%0A-%20Execution%20of%20realpath_with_links%20failed%0A-%20Execution%20of%20get_type%20failed%0A-%20Execution%20of%20%3CDiskFileSystem%20as%20FileSystem%3E%3A%3Araw_read_dir%20failed%0A-%20reading%20dir%20%2FUsers%2Fbeer%2FLibrary%2FMobile%20Documents%0A-%20Operation%20not%20permitted%20%28os%20error%201%29%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace\clicking here.
+-----
+
+
+[info] 
+
+[info] > Build error occurred
+
+[info] Error [TurbopackInternalError]: reading dir /Users/beer/Library/Mobile Documents
+
+Caused by:
+- Operation not permitted (os error 1)
+
+Debug info:
+- Execution of get_all_written_entrypoints_with_issues_operation failed
+- Execution of EntrypointsOperation::new failed
+- Execution of all_entrypoints_write_to_disk_operation failed
+- Execution of Project::emit_all_output_assets failed
+- Execution of *emit_assets failed
+- Execution of all_assets_from_entries_operation failed
+- Execution of *all_assets_from_entries failed
+- Execution of output_assets_operation failed
+- Execution of Project::get_all_endpoints failed
+- Execution of Project::get_all_endpoint_groups failed
+- Execution of Project::entrypoints failed
+- Execution of AppProject::routes failed
+- Execution of directory_tree_to_entrypoints_internal failed
+- Execution of try_get_next_package failed
+- Execution of *ResolveResult::first_source failed
+- Execution of resolve failed
+- Execution of resolve_internal failed
+- Execution of find_self_reference failed
+- Execution of find_context_file failed
+- Execution of realpath_with_links failed
+- Execution of realpath_with_links failed
+- Execution of realpath_with_links failed
+- Execution of realpath_with_links failed
+- Execution of realpath_with_links failed
+- Execution of realpath_with_links failed
+- Execution of get_type failed
+- Execution of <DiskFileSystem as FileSystem>::raw_read_dir failed
+- reading dir /Users/beer/Library/Mobile Documents
+- Operation not permitted (os error 1)
+    at <unknown> (TurbopackInternalError: reading dir /Users/beer/Library/Mobile Documents) {
+  type: 'TurbopackInternalError',
+  location: undefined
+}
+
+[debug] [2026-01-27T04:19:37.303Z] Error: ENOENT: no such file or directory, open '/Users/beer/Library/Mobile Documents/com~apple~CloudDocs/DEV/projectpro-app-new/.next/server/middleware-manifest.json'
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2026-01-27T04:21:13.230Z] ----------------------------------------------------------------------
+[debug] [2026-01-27T04:21:13.232Z] Command:       /usr/local/bin/node /Users/beer/Library/Mobile Documents/com~apple~CloudDocs/DEV/projectpro-app-new/node_modules/.bin/firebase deploy --only hosting
+[debug] [2026-01-27T04:21:13.232Z] CLI Version:   15.3.1
+[debug] [2026-01-27T04:21:13.232Z] Platform:      darwin
+[debug] [2026-01-27T04:21:13.232Z] Node Version:  v22.16.0
+[debug] [2026-01-27T04:21:13.232Z] Time:          Tue Jan 27 2026 11:21:13 GMT+0700 (Indochina Time)
+[debug] [2026-01-27T04:21:13.232Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-01-27T04:21:13.918Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-27T04:21:13.919Z] > authorizing via signed-in user (dev.amarit@gmail.com)
+[debug] [2026-01-27T04:21:13.919Z] [iam] checking project projectpro-app-76535 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-01-27T04:21:13.919Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:21:13.919Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:21:13.919Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions [none]
+[debug] [2026-01-27T04:21:13.919Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions x-goog-quota-user=projects/projectpro-app-76535
+[debug] [2026-01-27T04:21:13.919Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-01-27T04:21:15.242Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions 200
+[debug] [2026-01-27T04:21:15.243Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-01-27T04:21:15.243Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:21:15.243Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:21:15.244Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535 [none]
+[debug] [2026-01-27T04:21:15.752Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535 200
+[debug] [2026-01-27T04:21:15.752Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535 {"projectId":"projectpro-app-76535","projectNumber":"343498206325","displayName":"ProjectPro-App","name":"projects/projectpro-app-76535","resources":{"hostingSite":"projectpro-app-76535"},"state":"ACTIVE","etag":"1_b7aa43a8-93d0-400a-87c9-057b41ba6567"}
+[debug] [2026-01-27T04:21:16.864Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:21:16.864Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:21:16.864Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites pageToken=&pageSize=10
+[debug] [2026-01-27T04:21:18.477Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites 200
+[debug] [2026-01-27T04:21:18.477Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites {"sites":[{"name":"projects/projectpro-app-76535/sites/projectpro-app-76535","defaultUrl":"https://projectpro-app-76535.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2026-01-27T04:21:18.478Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:21:18.478Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:21:18.478Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites 
+[debug] [2026-01-27T04:21:18.854Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites 200
+[debug] [2026-01-27T04:21:18.854Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites {"sites":[{"name":"projects/projectpro-app-76535/sites/projectpro-app-76535","defaultUrl":"https://projectpro-app-76535.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2026-01-27T04:21:18.855Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:21:18.855Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:21:18.855Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535/webApps/-/config [none]
+[debug] [2026-01-27T04:21:19.865Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535/webApps/-/config 200
+[debug] [2026-01-27T04:21:19.865Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535/webApps/-/config {"projectId":"projectpro-app-76535","appId":"1:343498206325:web:44243bb7a9375b7693dc3c","storageBucket":"projectpro-app-76535.firebasestorage.app","apiKey":"AIzaSyBTwH7aBFdmK94IWoy9Yys26494nfWaXMs","authDomain":"projectpro-app-76535.firebaseapp.com","messagingSenderId":"343498206325","measurementId":"G-FJKYP026ZP","projectNumber":"343498206325","version":"2"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+   The integration is known to work with Next.js version 12 - 15.0. You may encounter errors.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2026-01-27T04:21:23.331Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:21:23.331Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:21:23.331Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites/projectpro-app-76535 [none]
+[debug] [2026-01-27T04:21:23.693Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites/projectpro-app-76535 200
+[debug] [2026-01-27T04:21:23.693Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites/projectpro-app-76535 {"name":"projects/projectpro-app-76535/sites/projectpro-app-76535","defaultUrl":"https://projectpro-app-76535.web.app","type":"DEFAULT_SITE"}
+[info] ▲ Next.js 16.1.1 (Turbopack)
+
+[info] - Environments: .env.local
+- Experiments (use with caution):
+  ✓ scrollRestoration
+  · serverActions
+
+
+[info]   Creating an optimized production build ...
+
+[info] 
+-----
+FATAL: An unexpected Turbopack error occurred. A panic log has been written to 
+[info] /var/folders/1f/_z9lz9ln0kn53xjznsss_1d40000gn/T/next-panic-45ba749653a8667eff62864e093938de.log.
+
+To help make Turbopack better, report this error by ttps://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20reading%20dir%20%2FUsers%2Fbeer%2FLibrary%2FMobile%20Documents&body=Turbopack%20version%3A%20%60v16.1.0-canary.19-84-g3aa53984e%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0Areading%20dir%20%2FUsers%2Fbeer%2FLibrary%2FMobile%20Documents%0A%0ACaused%20by%3A%0A-%20Operation%20not%20permitted%20%28os%20error%201%29%0A%0ADebug%20info%3A%0A-%20Execution%20of%20get_all_written_entrypoints_with_issues_operation%20failed%0A-%20Execution%20of%20EntrypointsOperation%3A%3Anew%20failed%0A-%20Execution%20of%20all_entrypoints_write_to_disk_operation%20failed%0A-%20Execution%20of%20Project%3A%3Aemit_all_output_assets%20failed%0A-%20Execution%20of%20%2Aemit_assets%20failed%0A-%20Execution%20of%20all_assets_from_entries_operation%20failed%0A-%20Execution%20of%20%2Aall_assets_from_entries%20failed%0A-%20Execution%20of%20output_assets_operation%20failed%0A-%20Execution%20of%20Project%3A%3Aget_all_endpoints%20failed%0A-%20Execution%20of%20Project%3A%3Aget_all_endpoint_groups%20failed%0A-%20Execution%20of%20Project%3A%3Aentrypoints%20failed%0A-%20Execution%20of%20AppProject%3A%3Aroutes%20failed%0A-%20Execution%20of%20directory_tree_to_entrypoints_internal%20failed%0A-%20Execution%20of%20try_get_next_package%20failed%0A-%20Execution%20of%20%2AResolveResult%3A%3Afirst_source%20failed%0A-%20Execution%20of%20resolve%20failed%0A-%20Execution%20of%20resolve_internal%20failed%0A-%20Execution%20of%20find_self_reference%20failed%0A-%20Execution%20of%20find_context_file%20failed%0A-%20Execution%20of%20realpath_with_links%20failed%0A-%20Execution%20of%20realpath_with_links%20failed%0A-%20Execution%20of%20realpath_with_links%20failed%0A-%20Execution%20of%20realpath_with_links%20failed%0A-%20Execution%20of%20realpath_with_links%20failed%0A-%20Execution%20of%20realpath_with_links%20failed%0A-%20Execution%20of%20get_type%20failed%0A-%20Execution%20of%20%3CDiskFileSystem%20as%20FileSystem%3E%3A%3Araw_read_dir%20failed%0A-%20reading%20dir%20%2FUsers%2Fbeer%2FLibrary%2FMobile%20Documents%0A-%20Operation%20not%20permitted%20%28os%20error%201%29%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace\clicking here.
+-----
+
+
+[info] 
+
+[info] > Build error occurred
+
+[info] Error [TurbopackInternalError]: reading dir /Users/beer/Library/Mobile Documents
+
+Caused by:
+- Operation not permitted (os error 1)
+
+Debug info:
+- Execution of get_all_written_entrypoints_with_issues_operation failed
+- Execution of EntrypointsOperation::new failed
+- Execution of all_entrypoints_write_to_disk_operation failed
+- Execution of Project::emit_all_output_assets failed
+- Execution of *emit_assets failed
+- Execution of all_assets_from_entries_operation failed
+- Execution of *all_assets_from_entries failed
+- Execution of output_assets_operation failed
+- Execution of Project::get_all_endpoints failed
+- Execution of Project::get_all_endpoint_groups failed
+- Execution of Project::entrypoints failed
+- Execution of AppProject::routes failed
+- Execution of directory_tree_to_entrypoints_internal failed
+- Execution of try_get_next_package failed
+- Execution of *ResolveResult::first_source failed
+- Execution of resolve failed
+- Execution of resolve_internal failed
+- Execution of find_self_reference failed
+- Execution of find_context_file failed
+- Execution of realpath_with_links failed
+- Execution of realpath_with_links failed
+- Execution of realpath_with_links failed
+- Execution of realpath_with_links failed
+- Execution of realpath_with_links failed
+- Execution of realpath_with_links failed
+- Execution of get_type failed
+- Execution of <DiskFileSystem as FileSystem>::raw_read_dir failed
+- reading dir /Users/beer/Library/Mobile Documents
+- Operation not permitted (os error 1)
+    at <unknown> (TurbopackInternalError: reading dir /Users/beer/Library/Mobile Documents) {
+  type: 'TurbopackInternalError',
+  location: undefined
+}
+
+[debug] [2026-01-27T04:21:31.391Z] Error: ENOENT: no such file or directory, open '/Users/beer/Library/Mobile Documents/com~apple~CloudDocs/DEV/projectpro-app-new/.next/server/middleware-manifest.json'
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2026-01-27T04:22:02.653Z] ----------------------------------------------------------------------
+[debug] [2026-01-27T04:22:02.655Z] Command:       /usr/local/bin/node /Users/beer/Library/Mobile Documents/com~apple~CloudDocs/DEV/projectpro-app-new/node_modules/.bin/firebase deploy --only hosting
+[debug] [2026-01-27T04:22:02.655Z] CLI Version:   15.3.1
+[debug] [2026-01-27T04:22:02.655Z] Platform:      darwin
+[debug] [2026-01-27T04:22:02.655Z] Node Version:  v22.16.0
+[debug] [2026-01-27T04:22:02.655Z] Time:          Tue Jan 27 2026 11:22:02 GMT+0700 (Indochina Time)
+[debug] [2026-01-27T04:22:02.655Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-01-27T04:22:03.411Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-27T04:22:03.411Z] > authorizing via signed-in user (dev.amarit@gmail.com)
+[debug] [2026-01-27T04:22:03.411Z] [iam] checking project projectpro-app-76535 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-01-27T04:22:03.412Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:22:03.412Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:22:03.412Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions [none]
+[debug] [2026-01-27T04:22:03.412Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions x-goog-quota-user=projects/projectpro-app-76535
+[debug] [2026-01-27T04:22:03.412Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-01-27T04:22:04.826Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions 200
+[debug] [2026-01-27T04:22:04.826Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/projectpro-app-76535:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-01-27T04:22:04.826Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:22:04.826Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:22:04.827Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535 [none]
+[debug] [2026-01-27T04:22:06.706Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535 200
+[debug] [2026-01-27T04:22:06.706Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535 {"projectId":"projectpro-app-76535","projectNumber":"343498206325","displayName":"ProjectPro-App","name":"projects/projectpro-app-76535","resources":{"hostingSite":"projectpro-app-76535"},"state":"ACTIVE","etag":"1_b7aa43a8-93d0-400a-87c9-057b41ba6567"}
+[debug] [2026-01-27T04:22:08.188Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:22:08.188Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:22:08.188Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites pageToken=&pageSize=10
+[debug] [2026-01-27T04:22:10.364Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites 200
+[debug] [2026-01-27T04:22:10.364Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites {"sites":[{"name":"projects/projectpro-app-76535/sites/projectpro-app-76535","defaultUrl":"https://projectpro-app-76535.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2026-01-27T04:22:10.365Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:22:10.365Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:22:10.365Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites 
+[debug] [2026-01-27T04:22:10.752Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites 200
+[debug] [2026-01-27T04:22:10.752Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites {"sites":[{"name":"projects/projectpro-app-76535/sites/projectpro-app-76535","defaultUrl":"https://projectpro-app-76535.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2026-01-27T04:22:10.752Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:22:10.752Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:22:10.752Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535/webApps/-/config [none]
+[debug] [2026-01-27T04:22:11.454Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535/webApps/-/config 200
+[debug] [2026-01-27T04:22:11.454Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/projectpro-app-76535/webApps/-/config {"projectId":"projectpro-app-76535","appId":"1:343498206325:web:44243bb7a9375b7693dc3c","storageBucket":"projectpro-app-76535.firebasestorage.app","apiKey":"AIzaSyBTwH7aBFdmK94IWoy9Yys26494nfWaXMs","authDomain":"projectpro-app-76535.firebaseapp.com","messagingSenderId":"343498206325","measurementId":"G-FJKYP026ZP","projectNumber":"343498206325","version":"2"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+   The integration is known to work with Next.js version 12 - 15.0. You may encounter errors.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2026-01-27T04:22:14.784Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:22:14.784Z] Checked if tokens are valid: true, expires at: 1769488759141
+[debug] [2026-01-27T04:22:14.785Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites/projectpro-app-76535 [none]
+[debug] [2026-01-27T04:22:15.191Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites/projectpro-app-76535 200
+[debug] [2026-01-27T04:22:15.191Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/projectpro-app-76535/sites/projectpro-app-76535 {"name":"projects/projectpro-app-76535/sites/projectpro-app-76535","defaultUrl":"https://projectpro-app-76535.web.app","type":"DEFAULT_SITE"}
+[info] ▲ Next.js 16.1.1 (Turbopack)
+
+[info] - Environments: .env.local
+- Experiments (use with caution):
+  ✓ scrollRestoration
+  · serverActions
+
+
+[info]   Creating an optimized production build ...
+
+[info] ⨯ ERROR: This build is using Turbopack, with a `webpack` config and no `turbopack` config.
+   This may be a mistake.
+
+   As of Next.js 16 Turbopack is enabled by default and
+   custom webpack configurations may need to be migrated to Turbopack.
+
+   NOTE: your `webpack` config may have been added by a configuration plugin.
+
+   To configure Turbopack, see https://nextjs.org/docs/app/api-reference/next-config-js/turbopack
+
+   TIP: Many applications work fine under Turbopack with no configuration,
+   if that is the case for you, you can silence this error by passing the
+   `--turbopack` or `--webpack` flag explicitly or simply setting an 
+   empty turbopack config in your Next config file (e.g. `turbopack: {}`).
+
+[info] 
+
+[info] > Build error occurred
+
+[info] Error: Call retries were exceeded
+    at ignore-listed frames {
+  type: 'WorkerError'
+}
+
+[debug] [2026-01-27T04:22:17.964Z] Error: ENOENT: no such file or directory, open '/Users/beer/Library/Mobile Documents/com~apple~CloudDocs/DEV/projectpro-app-new/.next/server/middleware-manifest.json'
+[error] 
+[error] Error: An unexpected error has occurred.

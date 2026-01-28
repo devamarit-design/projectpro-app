@@ -29,9 +29,9 @@ export async function analyzeReceipt(base64Image: string): Promise<AnalyzeReceip
     }
 
     try {
-        // Use Gemini 2.0 Flash Exp (Latest & Most Intelligent Flash model)
+        // Use Gemini 2.0 Flash (Verified working model)
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash-exp",
+            model: "gemini-2.0-flash",
             generationConfig: {
                 temperature: 0.1, // Low temp for deterministic OCR
                 topP: 0.95,

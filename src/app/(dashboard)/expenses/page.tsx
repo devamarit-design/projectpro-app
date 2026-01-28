@@ -62,6 +62,23 @@ function ExpensesContent() {
         setIsAddOpen(true)
     }
 
+    // Dropdown State
+    const [isDropdownOpen, setIsDropdownOpen] = React.useState(false)
+    const dropdownRef = React.useRef<HTMLDivElement>(null)
+
+    // Click Outside to Close Dropdown
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false)
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside)
+        }
+    }, [])
+
     const handleOpenScan = () => {
         setStartScanning(true)
         setIsAddOpen(true)
@@ -190,22 +207,10 @@ function ExpensesContent() {
                         {t.expenses.create_contract}
                     </button>
 
-                    <div className="relative">
-                        {/* Drodown Button */}
+                    {/* Dropdown Button */}
+                    <div className="relative" ref={dropdownRef}>
                         <button
-                            onClick={() => {
-                                // Simple toggle or use a proper dropdown component if available. 
-                                // Since we don't have a UI kit dropdown handy in this file, we'll make a custom one.
-                                const el = document.getElementById('add-expense-dropdown');
-                                if (el) el.classList.toggle('hidden');
-                            }}
-                            onBlur={() => {
-                                // Delay hide to allow click
-                                setTimeout(() => {
-                                    const el = document.getElementById('add-expense-dropdown');
-                                    if (el) el.classList.add('hidden');
-                                }, 200)
-                            }}
+                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                             className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg hover:opacity-90 active:scale-95 transition-all"
                         >
                             <Plus className="w-5 h-5" />
@@ -213,23 +218,31 @@ function ExpensesContent() {
                         </button>
 
                         {/* Dropdown Menu */}
-                        <div id="add-expense-dropdown" className="hidden absolute right-0 top-full mt-2 w-48 bg-background border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 origin-top-right z-50">
-                            <button
-                                onClick={handleOpenAdd}
-                                className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
-                            >
-                                <Plus className="w-4 h-4 text-muted-foreground" />
-                                <span className="font-medium text-sm">{t.expenses.manual_entry}</span>
-                            </button>
-                            <div className="h-px bg-border" />
-                            <button
-                                onClick={handleOpenScan}
-                                className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
-                            >
-                                <ScanLine className="w-4 h-4 text-purple-500" />
-                                <span className="font-medium text-sm text-purple-500">{t.expenses.smart_scan}</span>
-                            </button>
-                        </div>
+                        {isDropdownOpen && (
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-background border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 origin-top-right z-50">
+                                <button
+                                    onClick={() => {
+                                        handleOpenAdd()
+                                        setIsDropdownOpen(false)
+                                    }}
+                                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
+                                >
+                                    <Plus className="w-4 h-4 text-muted-foreground" />
+                                    <span className="font-medium text-sm">{t.expenses.manual_entry}</span>
+                                </button>
+                                <div className="h-px bg-border" />
+                                <button
+                                    onClick={() => {
+                                        handleOpenScan()
+                                        setIsDropdownOpen(false)
+                                    }}
+                                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
+                                >
+                                    <ScanLine className="w-4 h-4 text-purple-500" />
+                                    <span className="font-medium text-sm text-purple-500">{t.expenses.smart_scan}</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

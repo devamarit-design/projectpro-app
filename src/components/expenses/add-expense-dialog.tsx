@@ -63,6 +63,16 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         { id: "1", description: "", amount: 0, quantity: 1, unitPrice: 0, category: "Material", projectId: defaultProjectId }
     ])
 
+    // Validation State
+    const [errors, setErrors] = React.useState<{ [key: string]: boolean }>({})
+
+    // Refs for focus
+    const titleRef = React.useRef<HTMLInputElement>(null)
+    const dateRef = React.useRef<HTMLInputElement>(null)
+    const payeeRef = React.useRef<HTMLButtonElement>(null) // Combobox trigger
+    const amountRef = React.useRef<HTMLInputElement>(null)
+
+
     // Scroll tracking for receipt section auto-expand/collapse
     const scrollRef = React.useRef<HTMLDivElement>(null)
     const lastScrollY = React.useRef(0)
@@ -87,7 +97,9 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             setReceiptImage(null)
             setReceiptFile(null)
             setReceiptExpanded(false)
+            setReceiptExpanded(false)
             setQuickAdd(null)
+            setErrors({})
 
             if (startScanning) {
                 setIsScanOpen(true)
@@ -241,6 +253,44 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        // Validation
+        const newErrors: { [key: string]: boolean } = {}
+        let firstErrorField = null
+
+        if (!title.trim()) {
+            newErrors.title = true
+            if (!firstErrorField) firstErrorField = titleRef
+        }
+        if (!date) {
+            newErrors.date = true
+            if (!firstErrorField) firstErrorField = dateRef
+        }
+        if (!payee && !newItemName) { // Check if payee selected OR quick adding
+            newErrors.payee = true
+            // Focus logic for combobox might be tricky, usually we focus the container or just show red border
+            // if (!firstErrorField) firstErrorField = payeeRef 
+        }
+
+        // Check Items (At least one item with amount > 0)
+        const subtotal = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+        if (subtotal <= 0) {
+            newErrors.amount = true
+            // Try to focus the first amount field
+            if (!firstErrorField) firstErrorField = { current: document.getElementById(`amount-${items[0].id}`) }
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors)
+            toast.error("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน / Please fill in all required fields")
+
+            if (firstErrorField && firstErrorField.current) {
+                firstErrorField.current.focus()
+                firstErrorField.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+            return
+        }
+
         setIsUploading(true)
 
         try {
@@ -567,20 +617,34 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.bill_title}</label>
                                     <input
+                                        ref={titleRef}
                                         required
                                         value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
+                                        onChange={(e) => {
+                                            setTitle(e.target.value)
+                                            if (errors.title) setErrors({ ...errors, title: false })
+                                        }}
                                         placeholder={t.expenses.dialog.bill_placeholder}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                        className={cn(
+                                            "w-full bg-background/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors",
+                                            errors.title ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10"
+                                        )}
                                     />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.date}</label>
                                     <input
                                         type="date"
+                                        ref={dateRef}
                                         value={date}
-                                        onChange={(e) => setDate(e.target.value)}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                        onChange={(e) => {
+                                            setDate(e.target.value)
+                                            if (errors.date) setErrors({ ...errors, date: false })
+                                        }}
+                                        className={cn(
+                                            "w-full bg-background/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors",
+                                            errors.date ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10"
+                                        )}
                                     />
                                 </div>
                             </div>
@@ -607,7 +671,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                    <label className={cn("text-xs font-bold uppercase tracking-wider", errors.payee ? "text-red-500" : "text-muted-foreground")}>
                                         {(items[0]?.category === 'Labor') ? t.expenses.dialog.payee_labor : t.expenses.dialog.payee}
                                     </label>
                                     <div className="relative">
@@ -781,11 +845,18 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                     />
                                                     <div className="col-span-4 sm:col-span-3 relative">
                                                         <input
+                                                            id={`amount-${item.id}`}
                                                             type="number"
                                                             placeholder="0.00"
                                                             value={item.amount || ""}
-                                                            onChange={(e) => updateItem(item.id, { amount: parseFloat(e.target.value) })}
-                                                            className="w-full bg-background border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-right font-bold text-primary"
+                                                            onChange={(e) => {
+                                                                updateItem(item.id, { amount: parseFloat(e.target.value) })
+                                                                if (errors.amount) setErrors({ ...errors, amount: false })
+                                                            }}
+                                                            className={cn(
+                                                                "w-full bg-background border rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-right font-bold text-primary transition-colors",
+                                                                errors.amount ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10"
+                                                            )}
                                                         />
                                                         <span className="absolute left-2 top-2 text-xs text-muted-foreground">฿</span>
                                                     </div>

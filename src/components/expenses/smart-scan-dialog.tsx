@@ -57,7 +57,33 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
 
         try {
             // Client-Side AI Call
-            const result = await analyzeReceipt(previewUrl!)
+            // Client-Side AI Call
+            // Compress image if needed
+            let imageToAnalyze = previewUrl!
+            if (selectedFile) {
+                try {
+                    // Dynamic import
+                    const { default: imageCompression } = await import('browser-image-compression')
+                    const options = {
+                        maxSizeMB: 0.8, // Reduced to < 1MB for server action limit
+                        maxWidthOrHeight: 1280, // Reasonable size for OCR
+                        useWebWorker: true,
+                        fileType: 'image/jpeg'
+                    }
+                    const compressedFile = await imageCompression(selectedFile, options)
+
+                    // Convert to base64
+                    imageToAnalyze = await new Promise((resolve) => {
+                        const reader = new FileReader()
+                        reader.onloadend = () => resolve(reader.result as string)
+                        reader.readAsDataURL(compressedFile)
+                    })
+                } catch (err) {
+                    console.warn("Compression failed, trying original", err)
+                }
+            }
+
+            const result = await analyzeReceipt(imageToAnalyze)
 
             if (!result.success) {
                 throw new Error(result.error)

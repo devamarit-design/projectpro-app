@@ -21,7 +21,7 @@ export default function AboutPage() {
             <div className="glass-card p-8 rounded-3xl border border-white/5 space-y-6">
                 <div>
                     <h2 className="text-xl font-bold mb-2">{t.about.version}</h2>
-                    <p className="text-muted-foreground">0.9 (Beta)</p>
+                    <p className="text-muted-foreground">1.0.1</p>
                 </div>
 
                 <div className="h-px bg-white/5" />
@@ -42,14 +42,14 @@ export default function AboutPage() {
                             <Mail className="w-5 h-5 text-blue-500" />
                             <div>
                                 <p className="text-sm font-bold">{t.about.email_support}</p>
-                                <p className="text-xs text-muted-foreground">support@hipslothproject.app</p>
+                                <p className="text-xs text-muted-foreground">Support@hipsloth.app</p>
                             </div>
                         </a>
                         <a href="#" className="flex items-center gap-3 p-4 bg-muted/20 rounded-2xl border border-white/5 hover:bg-muted/40 transition-all">
                             <Globe className="w-5 h-5 text-emerald-500" />
                             <div>
                                 <p className="text-sm font-bold">{t.about.official_website}</p>
-                                <p className="text-xs text-muted-foreground">www.hipslothproject.app</p>
+                                <p className="text-xs text-muted-foreground">www.hipsloth.app</p>
                             </div>
                         </a>
                     </div>
