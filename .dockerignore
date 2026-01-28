@@ -1,5 +1,5 @@
 .next
-node_modules
+**/node_modules
 Dockerfile
 .dockerignore
 .git
@@ -8,3 +8,6 @@ README.md
 .env*.local
 npm-debug.log
 yarn-error.log
+build.log
+build_log.txt
+.firebase
