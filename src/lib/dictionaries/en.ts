@@ -1057,25 +1057,26 @@ export const en = {
     },
 
     policy: {
-        last_updated: "Last updated: January 20, 2026",
+        last_updated: "Last updated: January 28, 2026",
         data_privacy: {
             title: "Data Privacy",
-            content: "At HipslothProject, we prioritize your data privacy. Since the application operates primarily as a Progressive Web App (PWA) with local-first capabilities, your operational data (expenses, tasks, documents) is stored securely on your device and via our encrypted cloud sync."
+            content: "At HipslothProject, we prioritize your data privacy. Since the application operates primarily as a Progressive Web App (PWA) with local-first capabilities, your operational data (expenses, tasks, documents) is stored securely on your device and via our encrypted cloud sync. We strictly adhere to global data protection standards to ensure your information remains confidential."
         },
         usage_policy: {
             title: "Usage Policy",
-            content: "Users are responsible for the accuracy of the financial data and documents generated within the app. HipslothProject is a tool for management and does not constitute official accounting or legal advice."
+            content: "Users are responsible for the accuracy of the financial data and documents generated within the app. HipslothProject is a management tool tailored for construction and renovation teams. While we provide robust financial tracking, our software does not constitute official accounting or legal advice. Users should verify critical financial reports with a certified accountant."
         },
         security: {
             title: "Security Commitments",
             points: [
-                "Encrypted data transmission between client and server.",
-                "Regular automated backups for all organization data.",
-                "Robust role-based access control (RBAC) to restrict sensitive data.",
-                "PIN-code protection for mobile devices."
+                "End-to-end encrypted data transmission between client and server using TLS 1.3.",
+                "Regular automated daily backups for all organization data to prevent data loss.",
+                "Robust Role-Based Access Control (RBAC) to ensure team members only access what they need.",
+                "Optional PIN-code protection for mobile devices to prevent unauthorized physical access.",
+                "strict data isolation policies ensuring your organization's data is never mixed with others."
             ]
         },
-        footer: "For complete Terms of Service or specific legal inquiries, please contact our legal team at legal@hipslothproject.app."
+        footer: "For complete Terms of Service, Privacy Policy, or specific legal inquiries, please contact our legal team at support@hipsloth.app."
     },
 
     about: {
