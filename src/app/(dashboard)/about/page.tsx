@@ -21,7 +21,7 @@ export default function AboutPage() {
             <div className="glass-card p-8 rounded-3xl border border-white/5 space-y-6">
                 <div>
                     <h2 className="text-xl font-bold mb-2">{t.about.version}</h2>
-                    <p className="text-muted-foreground">1.0.2</p>
+                    <p className="text-muted-foreground">1.0.3</p>
                 </div>
 
                 <div className="h-px bg-white/5" />

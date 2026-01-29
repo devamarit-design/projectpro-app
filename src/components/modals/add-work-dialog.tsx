@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { format } from "date-fns"
-import { Palette, Calendar, Type, Layers, Box, FileText, Briefcase } from "lucide-react"
+import { Palette, Calendar, Type, Layers, Box, FileText, Briefcase, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface AddWorkDialogProps {
@@ -31,7 +31,7 @@ const GANTT_COLORS = [
 ]
 
 export function AddWorkDialog({ isOpen, onOpenChange, projectId, initialData }: AddWorkDialogProps) {
-    const { projects, addWork, updateWork } = useProjects()
+    const { projects, addWork, updateWork, deleteWork } = useProjects()
     const [loading, setLoading] = useState(false)
     const [selectedProjectId, setSelectedProjectId] = useState<string>(projectId || "")
     const [formData, setFormData] = useState({
@@ -249,6 +249,29 @@ export function AddWorkDialog({ isOpen, onOpenChange, projectId, initialData }: 
                         <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-2xl h-14 px-8 text-white/40 hover:text-white hover:bg-white/5 text-base">
                             ยกเลิก
                         </Button>
+                        {initialData && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={async () => {
+                                    if (confirm("คุณต้องการลบแผนงานนี้ใช่หรือไม่?")) {
+                                        setLoading(true)
+                                        try {
+                                            await deleteWork(selectedProjectId, initialData.id)
+                                            onOpenChange(false)
+                                        } catch (error) {
+                                            console.error(error)
+                                        } finally {
+                                            setLoading(false)
+                                        }
+                                    }
+                                }}
+                                className="rounded-2xl h-14 px-4 text-red-500 hover:text-red-400 hover:bg-red-500/10 text-base"
+                            >
+                                <Trash2 className="w-5 h-5 mr-2" />
+                                ลบ
+                            </Button>
+                        )}
                         <Button
                             disabled={loading}
                             className="bg-primary hover:bg-primary/90 text-white rounded-2xl h-14 px-8 font-bold text-base uppercase tracking-widest shadow-xl shadow-primary/20 flex-1 hover:scale-[1.02] transition-transform active:scale-[0.98]"

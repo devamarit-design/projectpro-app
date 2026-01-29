@@ -295,8 +295,8 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                         <div className="space-y-4">
                             {installments.map((inst, idx) => (
                                 <div key={idx} className="p-3 bg-muted/20 rounded-lg border border-border/50 space-y-2">
-                                    <div className="flex gap-2 items-center">
-                                        <div className="flex-[2] min-w-0">
+                                    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                                        <div className="w-full sm:flex-[2] min-w-0">
                                             <input
                                                 value={inst.description}
                                                 onChange={e => handleInstallmentChange(idx, 'description', e.target.value)}
@@ -304,26 +304,28 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
                                                 className="w-full px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm"
                                             />
                                         </div>
-                                        <div className="flex-1 min-w-[80px]">
-                                            <input
-                                                type="number"
-                                                value={inst.amount}
-                                                onChange={e => handleInstallmentChange(idx, 'amount', parseFloat(e.target.value) || 0)}
-                                                placeholder={t.contracts.dialog.installment_amount}
-                                                className="w-full px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm text-right"
-                                            />
+                                        <div className="flex w-full sm:w-auto gap-2 items-center">
+                                            <div className="flex-1 min-w-[80px]">
+                                                <input
+                                                    type="number"
+                                                    value={inst.amount}
+                                                    onChange={e => handleInstallmentChange(idx, 'amount', parseFloat(e.target.value) || 0)}
+                                                    placeholder={t.contracts.dialog.installment_amount}
+                                                    className="w-full px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm text-right"
+                                                />
+                                            </div>
+                                            <div className="flex-1 min-w-[130px]">
+                                                <input
+                                                    type="date"
+                                                    value={inst.dueDate}
+                                                    onChange={e => handleInstallmentChange(idx, 'dueDate', e.target.value)}
+                                                    className="w-full px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm"
+                                                />
+                                            </div>
+                                            <button onClick={() => handleRemoveInstallment(idx)} className="p-2 text-muted-foreground hover:text-red-500 transition-colors shrink-0">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
-                                        <div className="flex-1 min-w-[130px]">
-                                            <input
-                                                type="date"
-                                                value={inst.dueDate}
-                                                onChange={e => handleInstallmentChange(idx, 'dueDate', e.target.value)}
-                                                className="w-full px-3 py-2 bg-muted/30 border border-border rounded-lg text-sm"
-                                            />
-                                        </div>
-                                        <button onClick={() => handleRemoveInstallment(idx)} className="p-2 text-muted-foreground hover:text-red-500 transition-colors shrink-0">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
                                     </div>
                                     <input
                                         value={inst.paymentDetails || ""}
