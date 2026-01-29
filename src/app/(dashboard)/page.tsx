@@ -13,6 +13,7 @@ import { PromoCards } from "@/components/dashboard/promo-cards"
 import { useState } from "react"
 import { WallFeed } from "@/components/wall/wall-feed"
 import Link from "next/link"
+import { MarketOverview } from "@/components/dashboard/market-overview"
 import dynamic from "next/dynamic"
 
 const CashFlowChart = dynamic(() => import("@/components/dashboard/cash-flow-chart").then(mod => mod.CashFlowChart), {
@@ -45,6 +46,9 @@ function AdminDashboard() {
 
       {/* 4. Header Section (Mood Card) */}
       <DashboardHeader onDownload={() => setShowReportDialog(true)} />
+
+      {/* 4.5 Market Overview */}
+      <MarketOverview />
 
       {/* 5. Team Wall Widget (Admin View) */}
       <div className="w-full mt-6 mb-8">

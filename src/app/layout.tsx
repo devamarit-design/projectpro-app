@@ -28,11 +28,11 @@ export const metadata: Metadata = {
   keywords: ["Construction", "Project Management", "Thai Construction", "SME", "Site Management"],
   authors: [{ name: "HipslothProject Team" }],
   creator: "HipslothProject Team",
-  metadataBase: new URL("https://hipslothproject.app"),
+  metadataBase: new URL("https://hipsloth.app"),
   openGraph: {
     title: "HipslothProject - Modern Construction Management",
     description: "Manage your construction projects, expenses, and team efficiently.",
-    url: "https://hipslothproject.app",
+    url: "https://hipsloth.app",
     siteName: "HipslothProject",
     images: [
       {
