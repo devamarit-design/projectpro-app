@@ -19,6 +19,7 @@ import { QuickActionsGrid } from "@/components/dashboard/quick-actions-grid"
 import { PromoCards } from "@/components/dashboard/promo-cards"
 import { NoticeTicker } from "@/components/dashboard/notice-ticker"
 import { WallFeed } from "@/components/wall/wall-feed"
+import { MarketOverview } from "@/components/dashboard/market-overview"
 
 export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
     const { currentUser, projects, tasks } = useProjects()
@@ -74,6 +75,9 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
 
                     {/* 4. Mood-based Header (Welcome) */}
                     <DashboardHeader />
+
+                    {/* 4.5 Market Overview */}
+                    <MarketOverview />
                 </>
             )}
 

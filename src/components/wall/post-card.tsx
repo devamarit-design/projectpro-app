@@ -25,6 +25,12 @@ import {
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -282,6 +288,45 @@ export function PostCard({ post }: PostCardProps) {
                                 </HoverCardContent>
                             </HoverCard>
                         )}
+
+                        {/* Likes Dialog for Mobile/Click */}
+                        <Dialog open={showLikesModal} onOpenChange={setShowLikesModal}>
+                            <DialogContent className="max-w-xs p-0 overflow-hidden bg-slate-950/95 backdrop-blur-xl border border-white/10 text-white rounded-3xl shadow-2xl">
+                                <DialogHeader className="p-4 border-b border-white/10 flex flex-row items-center justify-between">
+                                    <DialogTitle className="text-sm font-bold flex items-center gap-2">
+                                        <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+                                        Liked by
+                                    </DialogTitle>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-white/10" onClick={() => setShowLikesModal(false)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </DialogHeader>
+                                <div className="p-2 space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
+                                    {likers.length > 0 ? likers.map(user => (
+                                        <div key={user.id} className="flex items-center gap-3 p-2.5 hover:bg-white/5 rounded-2xl transition-colors group">
+                                            <Avatar className="h-10 w-10 border border-white/10 shadow-sm">
+                                                <AvatarImage src={user.avatar} />
+                                                <AvatarFallback className="bg-gradient-to-br from-rose-500 to-pink-600 text-xs text-white font-bold">
+                                                    {user.name.charAt(0)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1 min-w-0 text-left">
+                                                <p className="text-sm font-bold text-white truncate leading-none mb-1">{user.name}</p>
+                                                <p className="text-[10px] text-white/40 truncate font-medium">{user.email || "Team Member"}</p>
+                                            </div>
+                                            {user.id === currentUser?.id && (
+                                                <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider scale-90">You</span>
+                                            )}
+                                        </div>
+                                    )) : (
+                                        <div className="flex flex-col items-center justify-center py-12 text-white/20 gap-3">
+                                            <Heart className="w-10 h-10 stroke-1" />
+                                            <p className="text-sm font-bold">No visible likes.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </DialogContent>
+                        </Dialog>
 
                         <Button
                             variant="ghost"
