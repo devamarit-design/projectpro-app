@@ -23,6 +23,9 @@
     "hosting": {
         "site": "projectpro-app-76535",
         "source": ".",
+        "frameworksBackend": {
+            "region": "asia-southeast1"
+        },
         "ignore": [
             "firebase.json",
             "**/.*",

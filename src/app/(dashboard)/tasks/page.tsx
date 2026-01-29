@@ -82,30 +82,22 @@ export default function TasksPage() {
         })
     }, [tasks, projects, showArchived, archivedTasks])
 
-    // Filter tasks based on search, project, and user permissions
+    // Filter tasks based on search and project
     const filteredTasks = React.useMemo(() => {
-        const isAdmin = currentUser?.role === 'Owner' || currentUser?.role === 'Admin'
-
         return allTasks.filter(task => {
             const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 task.projectName.toLowerCase().includes(searchQuery.toLowerCase())
             const matchesProject = projectFilter === "all" || task.projectId === projectFilter
 
-            // User Permission Filtering
+            // User Filter (Optional for all roles now)
             let matchesUser = true
-            if (isAdmin) {
-                // Admin can see all or filter by specific user
-                if (userFilter !== "all") {
-                    matchesUser = task.assignedTo === userFilter
-                }
-            } else {
-                // Non-admin can ONLY see their own tasks
-                matchesUser = task.assignedTo === currentUser?.id || task.assignedTo === currentUser?.name
+            if (userFilter !== "all") {
+                matchesUser = task.assignedTo === userFilter
             }
 
             return matchesSearch && matchesProject && matchesUser
         })
-    }, [allTasks, searchQuery, projectFilter, userFilter, currentUser])
+    }, [allTasks, searchQuery, projectFilter, userFilter])
 
     const getTasksByStatus = (status: TaskStatus) => filteredTasks.filter(task => task.status === status)
 
@@ -209,24 +201,22 @@ export default function TasksPage() {
                             </div>
                         </div>
 
-                        {(currentUser?.role === 'Owner' || currentUser?.role === 'Admin') && (
-                            <div className="relative min-w-[150px]">
-                                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
-                                <select
-                                    value={userFilter}
-                                    onChange={(e) => setUserFilter(e.target.value)}
-                                    className="w-full pl-9 pr-8 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none relative z-0"
-                                >
-                                    <option value="all">{t.tasks.filters.all_users}</option>
-                                    {users.map(u => (
-                                        <option key={u.id} value={u.id}>{u.name}</option>
-                                    ))}
-                                </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
-                                    <MoreHorizontal className="w-4 h-4 text-muted-foreground rotate-90" />
-                                </div>
+                        <div className="relative min-w-[150px]">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                            <select
+                                value={userFilter}
+                                onChange={(e) => setUserFilter(e.target.value)}
+                                className="w-full pl-9 pr-8 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none relative z-0"
+                            >
+                                <option value="all">{t.tasks.filters.all_users}</option>
+                                {users.map(u => (
+                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+                                <MoreHorizontal className="w-4 h-4 text-muted-foreground rotate-90" />
                             </div>
-                        )}
+                        </div>
                     </div>
 
                     <div className="flex gap-3 w-full sm:w-auto">

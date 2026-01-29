@@ -278,15 +278,10 @@ export function TaskBoard({
 
     // Filter logic
     const filteredTasks = localTasks.filter(task => {
-        const isAdmin = currentUser?.role === 'Owner' || currentUser?.role === 'Admin'
-        if (isAdmin) {
-            if (userFilter !== "all") {
-                return task.assignedTo === userFilter
-            }
-            return true
-        } else {
-            return task.assignedTo === currentUser?.name
+        if (userFilter !== "all") {
+            return task.assignedTo === userFilter
         }
+        return true
     })
 
     const columns = {
