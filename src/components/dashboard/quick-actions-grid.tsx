@@ -10,7 +10,8 @@ import {
     FileText,
     Store,
     CalendarDays,
-    Settings
+    Settings,
+    GanttChartSquare
 } from "lucide-react"
 
 export function QuickActionsGrid() {
@@ -39,9 +40,9 @@ export function QuickActionsGrid() {
             bg: "bg-red-500/10"
         },
         {
-            label: "Team",
-            icon: Users,
-            href: "/settings?tab=team",
+            label: "Global Schedule",
+            icon: GanttChartSquare,
+            href: "/schedule",
             color: "text-indigo-500",
             bg: "bg-indigo-500/10"
         },

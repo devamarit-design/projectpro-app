@@ -101,7 +101,14 @@ export function HeaderProfile() {
             {/* User Info Header */}
             <div className="px-4 py-3 border-b border-border bg-muted/20">
                 <p className="font-bold text-sm truncate">{currentUser.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{currentUser.email || currentUser.role}</p>
+                <p className="text-xs text-muted-foreground truncate flex items-center gap-2">
+                    {currentUser.email}
+                    {currentTeam?.role && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold">
+                            {currentTeam.role}
+                        </span>
+                    )}
+                </p>
             </div>
 
             {/* Team Switcher Section */}

@@ -45,7 +45,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
     const getMood = (): MoodType => {
         if (pendingTasksCount === 0) {
             return {
-                gradient: "from-emerald-400 via-teal-300 to-cyan-300",
+                gradient: "from-emerald-600/40 via-teal-600/40 to-cyan-600/40",
                 emoji: "😎",
                 message: "No tasks! Enjoy your peaceful day",
                 MoodIcon: PartyPopper,
@@ -54,7 +54,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
             }
         } else if (pendingTasksCount <= moodThresholds.chill) {
             return {
-                gradient: "from-sky-400 via-blue-300 to-indigo-300",
+                gradient: "from-sky-600/40 via-blue-600/40 to-indigo-600/40",
                 emoji: "☕",
                 message: `Just ${pendingTasksCount} task${pendingTasksCount > 1 ? 's' : ''}. Take it easy!`,
                 MoodIcon: Coffee,
@@ -63,7 +63,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
             }
         } else if (pendingTasksCount <= moodThresholds.pumped) {
             return {
-                gradient: "from-amber-400 via-orange-300 to-yellow-300",
+                gradient: "from-amber-600/40 via-orange-600/40 to-yellow-600/40",
                 emoji: "💪",
                 message: `${pendingTasksCount} tasks today. You've got this!`,
                 MoodIcon: Zap,
@@ -72,7 +72,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
             }
         } else {
             return {
-                gradient: "from-rose-400 via-red-300 to-orange-300",
+                gradient: "from-rose-600/40 via-red-600/40 to-orange-600/40",
                 emoji: "🔥",
                 message: `${pendingTasksCount} tasks! Stay focused!`,
                 MoodIcon: Flame,

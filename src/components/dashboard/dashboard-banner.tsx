@@ -48,7 +48,7 @@ export function DashboardBanner() {
     return (
         <div
             className={cn(
-                "relative w-full h-[180px] sm:h-[240px] rounded-3xl overflow-hidden mb-6 group shadow-lg hover:shadow-2xl transition-all duration-500 bg-background select-none",
+                "relative h-[240px] sm:h-[320px] lg:h-[400px] overflow-hidden mb-10 group shadow-lg transition-all duration-500 bg-background select-none -mx-3 sm:-mx-8 lg:-mx-10 rounded-none",
                 hasLink ? "cursor-pointer" : "cursor-default"
             )}
             onMouseEnter={() => setIsHovered(true)}

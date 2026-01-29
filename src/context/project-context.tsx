@@ -203,7 +203,7 @@ export interface Vendor {
 export interface Worker {
     id: string
     name: string
-    role: "Technician" | "Contractor" | "Foreman" | "Engineer" | "Architect" | "Worker" | "Other"
+    role: string
     phone?: string
     lineId?: string
     location?: string
@@ -1905,6 +1905,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     organizations: updatedOrganizations
                 })
 
+                // 2. Synchronize with Organization Document
+                const orgRef = doc(db, "organizations", currentTeam.id)
+                const orgSnap = await getDoc(orgRef)
+                if (orgSnap.exists()) {
+                    const orgData = orgSnap.data()
+                    const members = orgData.members || []
+                    if (!members.find((m: any) => m.userId === existingUserDoc.id)) {
+                        await updateDoc(orgRef, {
+                            members: [...members, {
+                                userId: existingUserDoc.id,
+                                role: userData.role || "Staff",
+                                joinedAt: new Date().toISOString()
+                            }]
+                        })
+                    }
+                }
+
                 await logActivity(db, currentTeam.id, {
                     action: "UPDATE",
                     entityType: "USER",
@@ -1920,7 +1937,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 })
 
             } else {
-                // 2. User does not exist - Create new placeholder
+                // 3. User does not exist - Create new placeholder
                 const docRef = await addDoc(collection(db, "users"), {
                     ...userData,
                     joinedDate: new Date().toISOString().split('T')[0],
@@ -1932,6 +1949,21 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     }],
                     role: userData.role || "Staff"
                 })
+
+                // 4. Synchronize with Organization Document
+                const orgRef = doc(db, "organizations", currentTeam.id)
+                const orgSnap = await getDoc(orgRef)
+                if (orgSnap.exists()) {
+                    const orgData = orgSnap.data()
+                    const members = orgData.members || []
+                    await updateDoc(orgRef, {
+                        members: [...members, {
+                            userId: docRef.id,
+                            role: userData.role || "Staff",
+                            joinedAt: new Date().toISOString()
+                        }]
+                    })
+                }
 
                 await logActivity(db, currentTeam.id, {
                     action: "CREATE",
@@ -1961,10 +1993,36 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
+            // 1. Update User Document
             await updateDoc(doc(db, "users", id), updates)
+
+            // 2. Synchronize Organizations array in User Document if role changed
+            if (updates.role && currentTeam) {
+                const userRef = doc(db, "users", id)
+                const userSnap = await getDoc(userRef)
+                if (userSnap.exists()) {
+                    const userData = userSnap.data()
+                    const organizations = userData.organizations || []
+                    const updatedOrgs = organizations.map((org: any) =>
+                        org.orgId === currentTeam.id ? { ...org, role: updates.role } : org
+                    )
+                    await updateDoc(userRef, { organizations: updatedOrgs })
+                }
+
+                // 3. Synchronize Organization Document members list
+                const orgRef = doc(db, "organizations", currentTeam.id)
+                const orgSnap = await getDoc(orgRef)
+                if (orgSnap.exists()) {
+                    const orgData = orgSnap.data()
+                    const members = orgData.members || []
+                    const updatedMembers = members.map((m: any) =>
+                        m.userId === id ? { ...m, role: updates.role } : m
+                    )
+                    await updateDoc(orgRef, { members: updatedMembers })
+                }
+            }
         } catch (e) {
             console.error("Error updating user", e)
-            // Revert on error? For now just log.
         }
     }
 

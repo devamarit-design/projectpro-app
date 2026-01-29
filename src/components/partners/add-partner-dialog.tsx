@@ -185,18 +185,12 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                                 {type === "Person" ? t.dialogs.add_partner.role_skill : t.dialogs.add_partner.business_category}
                             </label>
                             {type === "Person" ? (
-                                <select
+                                <input
                                     value={roleOrCategory}
                                     onChange={(e) => setRoleOrCategory(e.target.value)}
+                                    placeholder="e.g. Technician (ช่างทั่วไป)"
                                     className="w-full h-11 px-4 bg-background border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none"
-                                >
-                                    <option value="Technician">Technician (ช่างทั่วไป)</option>
-                                    <option value="Contractor">Contractor (ผู้รับเหมา)</option>
-                                    <option value="Foreman">Foreman (หัวหน้างาน)</option>
-                                    <option value="Engineer">Engineer (วิศวกร)</option>
-                                    <option value="Architect">Architect (สถาปนิก)</option>
-                                    <option value="Worker">Worker (คนงาน)</option>
-                                </select>
+                                />
                             ) : (
                                 <select
                                     value={roleOrCategory}

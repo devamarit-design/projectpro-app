@@ -30,7 +30,7 @@ import {
     Gamepad2,
     Megaphone,
     Newspaper,
-    BarChart
+    GanttChartSquare
 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -81,7 +81,7 @@ export function MobileNav() {
             title: "งาน", // Work
             items: [
                 { href: "/calendar", label: t.calendar?.title || "ปฏิทิน", icon: CalendarDays, color: "text-teal-500 bg-teal-500/10" },
-                { href: "/schedule", label: t.schedule?.title || "แผนงาน", icon: BarChart, color: "text-indigo-500 bg-indigo-500/10" },
+                { href: "/schedule", label: t.schedule?.title || "แผนงาน", icon: GanttChartSquare, color: "text-indigo-500 bg-indigo-500/10" },
                 { href: "/tasks", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 bg-blue-500/10" },
                 { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 bg-amber-500/10" },
             ]

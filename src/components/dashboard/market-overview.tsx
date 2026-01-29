@@ -17,16 +17,6 @@ interface MarketDataPoint {
     value: number
 }
 
-// --- Helper: Generate Mock Data (Fallback) ---
-const generateMockData = (basePrice: number, volatility: number, count: number, labels: string[]) => {
-    let current = basePrice
-    return labels.map(label => {
-        const change = (Math.random() - 0.5) * volatility
-        current += change
-        return { time: label, value: current }
-    })
-}
-
 // --- Helper: Dynamic Labels ---
 const getLabels = (timeframe: TimeframeType, locale: string) => {
     const now = new Date()
@@ -61,6 +51,8 @@ export function MarketOverview() {
     // --- State ---
     const [loading, setLoading] = useState(true)
     const [chartLoading, setChartLoading] = useState(false)
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+    const [fetchError, setFetchError] = useState<string | null>(null)
     const [prices, setPrices] = useState({
         gold: { thb: 43650, usd: 2650, change: 150 },
         btc: { thb: 3580000, usd: 104200, change: 2.5 },
@@ -68,85 +60,178 @@ export function MarketOverview() {
     })
     const [historyData, setHistoryData] = useState<Record<string, MarketDataPoint[]>>({})
 
-    // --- Fetch Live Prices ---
-    useEffect(() => {
-        const fetchLive = async () => {
-            try {
-                const [goldRes, btcRes] = await Promise.all([
-                    fetch('https://api.chnwt.dev/thai-gold-api/latest'),
-                    fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=thb,usd&include_24hr_change=true')
-                ])
-                if (goldRes.ok && btcRes.ok) {
-                    const goldJson = await goldRes.json()
-                    const btcJson = await btcRes.json()
-
-                    if (goldJson?.response?.price && btcJson?.bitcoin) {
-                        const goldSell = goldJson.response.price.gold_bar.sell
-                        const btcThb = btcJson.bitcoin.thb
-                        const btcUsd = btcJson.bitcoin.usd
-                        const rate = btcThb / btcUsd
-
-                        setPrices({
-                            gold: {
-                                thb: parseInt(goldSell.replace(/,/g, '')),
-                                usd: (parseInt(goldSell.replace(/,/g, '')) / rate) / 0.49,
-                                change: parseInt(goldJson.response.price.change.gold_bar || "0")
-                            },
-                            btc: {
-                                thb: btcThb,
-                                usd: btcUsd,
-                                change: btcJson.bitcoin.usd_24h_change
-                            },
-                            exchangeRate: rate
-                        })
-                    }
-                } else {
-                    console.warn("Live prices fetch failed:", goldRes.status, btcRes.status)
-                }
-            } catch (error) {
-                console.error("Live fetch error", error)
-            } finally {
-                setLoading(false)
-            }
+    // --- Helper: Safe Fetch ---
+    const safeFetch = async (url: string, options?: RequestInit) => {
+        try {
+            const res = await fetch(url, options)
+            if (!res.ok) return { ok: false, status: res.status }
+            const data = await res.json()
+            return { ok: true, data }
+        } catch (e) {
+            console.error(`SafeFetch Failed: ${url}`, e)
+            return { ok: false, error: e }
         }
-        fetchLive()
-    }, [])
+    }
 
-    // --- Fetch History for Charts ---
-    useEffect(() => {
-        const fetchHistory = async () => {
-            const daysMap = { '1D': 1, '1M': 30, '1Y': 365 }
-            const idMap = { 'btc': 'bitcoin', 'gold': 'pax-gold' }
+    const fetchLivePrices = async () => {
+        setFetchError(null)
+        try {
+            const [goldResult, btcResult] = await Promise.all([
+                safeFetch('https://api.chnwt.dev/thai-gold-api/latest'),
+                safeFetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=thb,usd&include_24hr_change=true')
+            ])
 
-            try {
-                if (activeAsset === 'btc' || activeAsset === 'gold') {
-                    setChartLoading(true)
-                    const id = idMap[activeAsset]
-                    const res = await fetch(`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${daysMap[timeframe]}&interval=${timeframe === '1D' ? 'hourly' : 'daily'}`)
-                    if (res.ok) {
-                        const json = await res.json()
-                        if (json && json.prices && Array.isArray(json.prices)) {
-                            const labels = getLabels(timeframe, locale)
-                            const points = json.prices.slice(-labels.length).map(([ts, val]: [number, number], i: number) => ({
-                                time: labels[i] || '',
-                                value: val
-                            }))
-                            setHistoryData(prev => ({ ...prev, [`${activeAsset}-${timeframe}`]: points }))
-                        } else {
-                            console.warn("CoinGecko history missing expected structure:", activeAsset, timeframe, json)
-                        }
-                    } else {
-                        console.warn("CoinGecko history fetch failed:", res.status)
+            if (goldResult.ok && btcResult.ok) {
+                const goldJson = goldResult.data
+                const btcJson = btcResult.data
+
+                if (goldJson?.response?.price && btcJson?.bitcoin) {
+                    const goldSell = goldJson.response.price.gold_bar.sell
+                    const btcThb = btcJson.bitcoin.thb
+                    const btcUsd = btcJson.bitcoin.usd
+                    const rate = btcThb / btcUsd
+
+                    setPrices({
+                        gold: {
+                            thb: parseInt(goldSell.replace(/,/g, '')),
+                            usd: (parseInt(goldSell.replace(/,/g, '')) / rate) / 0.49,
+                            change: parseInt(goldJson.response.price.change.gold_bar || "0")
+                        },
+                        btc: {
+                            thb: btcThb,
+                            usd: btcUsd,
+                            change: btcJson.bitcoin.usd_24h_change
+                        },
+                        exchangeRate: rate
+                    })
+                    setLastUpdated(new Date())
+                    return
+                }
+            }
+
+            // If we reach here, one or both failed or had bad data
+            if (!goldResult.ok || !btcResult.ok) {
+                setFetchError("API Rate Limited")
+            }
+        } catch (error) {
+            setFetchError("Network Error")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // --- Helper: Market Status ---
+    const getMarketStatus = (asset: AssetType) => {
+        if (asset === 'btc') return 'OPEN' // Crypto is 24/7
+
+        const now = new Date()
+        const day = now.getDay() // 0=Sun, 6=Sat
+        const hour = now.getHours()
+        const minute = now.getMinutes()
+
+        // Weekend Check (Sat/Sun)
+        if (day === 0 || day === 6) return 'CLOSED'
+
+        if (asset === 'nvidia') {
+            // US Market (approx 9:30 PM - 4:00 AM BKK)
+            // Simulating typical US trading hours in local time (UTC+7)
+            // Winter: 21:30 - 04:00 | Summer: 20:30 - 03:00
+            // Let's assume generic "Night time" in Asia for US stocks
+            if (hour >= 21 || hour < 4) return 'OPEN'
+            return 'CLOSED'
+        }
+
+        if (asset === 'gold' || asset === 'currency') {
+            // Forex/Gold: Mon-Fri basically 24h, but let's say "Closed" if it's weekend (already handled)
+            // Or maybe user considers "Gold" closed outside Thai business hours? 
+            // The user prompt implies "If market closed, say closed".
+            return 'OPEN'
+        }
+
+        return 'OPEN'
+    }
+
+    const fetchHistory = async (asset: AssetType = activeAsset, tf: TimeframeType = timeframe) => {
+        if (asset === 'nvidia' || asset === 'currency') {
+            const key = `${asset}-${tf}`
+            if (!historyData[key]) {
+                const labels = getLabels(tf, locale)
+                const baseVal = asset === 'nvidia' ? 135.5 : 34.5
+                const vol = asset === 'nvidia' ? 2 : 0.05
+                // Deterministic mock: same for the same asset/tf/label
+                const points = labels.map((l, i) => ({
+                    time: l,
+                    value: baseVal + (Math.sin(i * 0.5) * vol) + (Math.cos(i * 0.2) * vol * 0.5)
+                }))
+                setHistoryData(prev => ({ ...prev, [key]: points }))
+            }
+            return
+        }
+
+        const daysMap = { '1D': 1, '1M': 30, '1Y': 365 }
+        const idMap = { 'btc': 'bitcoin', 'gold': 'pax-gold' }
+
+        if (asset === 'btc' || asset === 'gold') {
+            setChartLoading(true)
+            const id = idMap[asset]
+            const result = await safeFetch(`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${daysMap[tf]}&interval=${tf === '1D' ? 'hourly' : 'daily'}`)
+
+            if (result.ok && result.data?.prices && Array.isArray(result.data.prices)) {
+                const labels = getLabels(tf, locale)
+                const points = result.data.prices.slice(-labels.length).map(([ts, val]: [number, number], i: number) => ({
+                    time: labels[i] || '',
+                    value: val
+                }))
+                setHistoryData(prev => ({ ...prev, [`${asset}-${tf}`]: points }))
+                setLastUpdated(new Date())
+                setFetchError(null)
+            } else {
+                if (!result.ok) {
+                    console.warn("CoinGecko history fetch failed:", result.status || 'Network Error')
+                    setFetchError("API Rate Limited")
+
+                    // --- Fallback Mock for Gold/BTC ---
+                    const key = `${asset}-${tf}`
+                    if (!historyData[key]) {
+                        const labels = getLabels(tf, locale)
+                        const baseVal = asset === 'btc' ? 104000 : 2650
+                        const vol = asset === 'btc' ? 1500 : 35
+                        const points = labels.map((l, i) => ({
+                            time: l,
+                            value: baseVal + (Math.sin(i * 0.5) * vol) + (Math.cos(i * 0.1) * vol * 0.5)
+                        }))
+                        setHistoryData(prev => ({ ...prev, [key]: points }))
                     }
                 }
-            } catch (error) {
-                console.error("History fetch error", error)
-            } finally {
-                setChartLoading(false)
             }
+            setChartLoading(false)
         }
-        fetchHistory()
+    }
+
+    // --- Initial and Interval Fetch ---
+    useEffect(() => {
+        fetchLivePrices()
+        // Update every 10 minutes
+        const interval = setInterval(() => {
+            fetchLivePrices()
+            fetchHistory(activeAsset, timeframe)
+        }, 10 * 60 * 1000)
+
+        return () => clearInterval(interval)
+    }, [activeAsset, timeframe])
+
+    useEffect(() => {
+        // Fetch history if not already present for this combination
+        const key = `${activeAsset}-${timeframe}`
+        if (!historyData[key]) {
+            fetchHistory(activeAsset, timeframe)
+        }
     }, [activeAsset, timeframe, locale])
+
+    const handleRefresh = () => {
+        fetchLivePrices()
+        fetchHistory(activeAsset, timeframe)
+    }
 
     // --- Data Mapping ---
     const getData = () => {
@@ -156,15 +241,14 @@ export function MarketOverview() {
         const apiData = historyData[key]
         const labels = getLabels(timeframe, locale)
 
-        const getChartPoints = (base: number, vol: number) => {
+        const getChartPoints = () => {
             if (apiData && apiData.length > 0) {
                 return apiData.map(p => ({
                     ...p,
                     value: isTHB ? p.value * rate * (activeAsset === 'gold' ? 0.49 : 1) : p.value
                 }))
             }
-            const volMult = timeframe === '1M' ? 5 : (timeframe === '1Y' ? 20 : 1)
-            return generateMockData(base, vol * volMult, labels.length, labels)
+            return []
         }
 
         switch (activeAsset) {
@@ -175,7 +259,7 @@ export function MarketOverview() {
                     change: prices.gold.change,
                     percent: (prices.gold.change / prices.gold.thb) * 100,
                     unit: isTHB ? (locale === 'th' ? 'บาท (ทองคำแท่ง 96.5%)' : 'THB (Gold 96.5%)') : 'USD / Oz',
-                    data: getChartPoints(goldPrice, isTHB ? 20 : 1)
+                    data: getChartPoints()
                 }
             case 'btc':
                 return {
@@ -183,7 +267,7 @@ export function MarketOverview() {
                     change: prices.btc.usd * (prices.btc.change / 100),
                     percent: prices.btc.change,
                     unit: isTHB ? 'THB / BTC' : 'USD / BTC',
-                    data: getChartPoints(isTHB ? prices.btc.thb : prices.btc.usd, isTHB ? 5000 : 200)
+                    data: getChartPoints()
                 }
             case 'nvidia':
                 const nvda = 135.50
@@ -192,7 +276,7 @@ export function MarketOverview() {
                     change: -1.5,
                     percent: -1.1,
                     unit: isTHB ? 'THB / Share' : 'USD / Share',
-                    data: getChartPoints(isTHB ? nvda * rate : nvda, isTHB ? 10 : 0.5)
+                    data: getChartPoints()
                 }
             case 'currency':
                 return {
@@ -200,7 +284,7 @@ export function MarketOverview() {
                     change: 0.05,
                     percent: 0.15,
                     unit: 'THB / USD',
-                    data: getChartPoints(rate, 0.02)
+                    data: getChartPoints()
                 }
         }
     }
@@ -216,6 +300,15 @@ export function MarketOverview() {
     }
 
     const currentAsset = assetConfig[activeAsset]
+    const marketStatus = getMarketStatus(activeAsset)
+    const isClosed = marketStatus === 'CLOSED'
+    const statusLabel = isClosed ? 'MARKET CLOSED' :
+        ((fetchError && historyData[`${activeAsset}-${timeframe}`]) ? 'DELAYED' :
+            (fetchError ? 'OFFLINE' : (activeAsset === 'nvidia' || activeAsset === 'currency' ? 'DELAYED' : 'LIVE')))
+
+    const badgeColor = isClosed ? "bg-slate-500/10 text-slate-400" :
+        (statusLabel === 'OFFLINE' ? "bg-red-500/10 text-red-500" :
+            (statusLabel === 'DELAYED' ? "bg-yellow-500/10 text-yellow-500" : "bg-emerald-500/10 text-emerald-500"))
 
     return (
         <div className="w-full mb-8">
@@ -250,12 +343,32 @@ export function MarketOverview() {
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                         <div className="md:col-span-1 space-y-2">
-                            <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider flex items-center gap-2">
+                            <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider flex items-center flex-wrap gap-2">
                                 {currentAsset.label}
-                                <span className={cn("text-[10px] px-1.5 rounded flex items-center gap-1", activeAsset === 'nvidia' ? "bg-yellow-500/10 text-yellow-500" : "bg-emerald-500/10 text-emerald-500")}>
-                                    {(loading || chartLoading) && <Loader2 className="w-3 h-3 animate-spin" />}
-                                    {!loading && !chartLoading && (activeAsset === 'nvidia' ? 'DELAYED' : 'LIVE')}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className={cn("text-[10px] px-1.5 rounded flex items-center gap-1 h-5", badgeColor)}>
+                                        {(loading || chartLoading) && <Loader2 className="w-3 h-3 animate-spin" />}
+                                        {!loading && !chartLoading && statusLabel}
+                                    </span>
+                                    {fetchError && !isClosed && (
+                                        <button onClick={handleRefresh} className="text-[10px] text-blue-400 hover:text-blue-300 underline font-bold px-1 transition-colors">
+                                            Try again
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={handleRefresh}
+                                        disabled={loading || chartLoading}
+                                        className="p-1 hover:bg-white/10 rounded-md transition-colors disabled:opacity-50"
+                                        title="Refresh Data"
+                                    >
+                                        <RefreshCcw className={cn("w-3.5 h-3.5", (loading || chartLoading) && "animate-spin")} />
+                                    </button>
+                                </div>
+                                {lastUpdated && (
+                                    <span className="text-[10px] text-muted-foreground/50 lowercase">
+                                        updated {lastUpdated.toLocaleTimeString(locale === 'th' ? 'th-TH' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                    </span>
+                                )}
                             </h2>
                             <div className="text-4xl sm:text-5xl font-black text-white font-mono tracking-tighter">
                                 <AnimatePresence mode="wait">

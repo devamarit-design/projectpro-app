@@ -13,18 +13,10 @@ import { PromoCards } from "@/components/dashboard/promo-cards"
 import { useState } from "react"
 import { WallFeed } from "@/components/wall/wall-feed"
 import Link from "next/link"
-import { MarketOverview } from "@/components/dashboard/market-overview"
+
 import dynamic from "next/dynamic"
 
-const CashFlowChart = dynamic(() => import("@/components/dashboard/cash-flow-chart").then(mod => mod.CashFlowChart), {
-  ssr: false,
-  loading: () => <div className="h-[300px] w-full animate-pulse bg-muted/10 rounded-2xl" />
-})
 
-const ProjectFinancialsChart = dynamic(() => import("@/components/dashboard/project-financials-chart").then(mod => mod.ProjectFinancialsChart), {
-  ssr: false,
-  loading: () => <div className="h-[350px] w-full animate-pulse bg-muted/10 rounded-2xl" />
-})
 
 function AdminDashboard() {
   const { t } = useTranslation()
@@ -47,8 +39,7 @@ function AdminDashboard() {
       {/* 4. Header Section (Mood Card) */}
       <DashboardHeader onDownload={() => setShowReportDialog(true)} />
 
-      {/* 4.5 Market Overview */}
-      <MarketOverview />
+
 
       {/* 5. Team Wall Widget (Admin View) */}
       <div className="w-full mt-6 mb-8">
@@ -76,7 +67,7 @@ function AdminDashboard() {
             View All
           </Link>
         </div>
-        <div className="bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-sm">
+        <div className="bg-muted/30 dark:bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-border/50 dark:border-white/10 shadow-sm">
           <WallFeed variant="widget" />
         </div>
       </div>
@@ -92,26 +83,7 @@ function AdminDashboard() {
         </div>
       </div>
 
-      {/* 6. Charts Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cash Flow - Takes up 2 columns on large screens */}
-        <div className="lg:col-span-2 glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors">
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-blue-500/10 transition-colors duration-700" />
-          <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-emerald-500/10 transition-colors duration-700" />
-          <div className="relative z-10">
-            <CashFlowChart />
-          </div>
-        </div>
 
-        {/* Project Financials - Takes up 1 column */}
-        <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors">
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-purple-500/10 transition-colors duration-700" />
-          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-orange-500/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-orange-500/10 transition-colors duration-700" />
-          <div className="relative z-10">
-            <ProjectFinancialsChart />
-          </div>
-        </div>
-      </div>
 
       {/* 7. Personal Work Section */}
       <div className="pt-8 border-t border-white/5">

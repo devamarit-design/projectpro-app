@@ -24,7 +24,7 @@ import {
     Gamepad2,
     Megaphone,
     Newspaper,
-    BarChart
+    GanttChartSquare
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -54,7 +54,7 @@ export function Sidebar({ className }: { className?: string }) {
             title: "งาน", // Work
             items: [
                 { href: "/calendar", label: t.calendar?.title || "ปฏิทิน", icon: Calendar },
-                { href: "/schedule", label: t.schedule?.title || "แผนงาน", icon: BarChart },
+                { href: "/schedule", label: t.schedule?.title || "แผนงาน", icon: GanttChartSquare },
                 { href: "/tasks", label: t.common.tasks, icon: CheckSquare },
                 { href: "/contracts", label: t.common.contracts, icon: FileText },
                 { href: "/storage", label: t.common.storage, icon: HardDrive },

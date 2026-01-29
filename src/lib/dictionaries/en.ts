@@ -47,6 +47,38 @@ export const en = {
     schedule: {
         title: "Global Schedule",
         subtitle: "View all organizational tasks in a unified timeline",
+        timeline: "Timeline",
+        list_view: "List View",
+        check_all: "Check All Projects",
+        select_project: "Select Project",
+        today: "Today",
+        pan_hint: "Hold click to pan right",
+        sort_by: "Sort by",
+        sort: {
+            default: "Default",
+            start_date: "Start Date",
+            title: "Title",
+            category: "Category",
+            progress: "Progress",
+            project: "Project Name"
+        },
+        add_work: "Add Work",
+        table: {
+            index: "#",
+            category: "Category",
+            task: "Task Name",
+            due: "Due",
+            team: "Team",
+            project: "Project",
+            assignees: "Assignees",
+            status: "Status",
+            progress: "Progress",
+            no_tasks: "No tasks found for this selection."
+        },
+        gantt: {
+            week: "Week",
+            to: "to"
+        }
     },
 
     partners: {

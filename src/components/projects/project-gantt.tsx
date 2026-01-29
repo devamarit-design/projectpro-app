@@ -5,6 +5,7 @@ import { WorkItem, useProjects } from "@/context/project-context"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Eye, EyeOff, Target, MoveHorizontal, Plus, ChevronLeft, ChevronRight, GripVertical, SortDesc, Calendar as CalendarIcon, Type, Tag } from "lucide-react"
+import { useTranslation } from "@/lib/i18n-context"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -50,15 +51,16 @@ type ViewMode = 'Day' | 'Week' | 'Month'
 
 // ROW_HEIGHT increased to 72px for better readability
 const ROW_HEIGHT = 72
-const TABLE_COL_INDEX_WIDTH = 50
-const TABLE_COL_CAT_WIDTH = 110
-const TABLE_COL_TITLE_WIDTH = 280
-const TABLE_COL_DATE_WIDTH = 140
-const TABLE_COL_USER_WIDTH = 70
+const TABLE_COL_INDEX_WIDTH = 40
+const TABLE_COL_CAT_WIDTH = 90
+const TABLE_COL_TITLE_WIDTH = 180
+const TABLE_COL_DATE_WIDTH = 100
+const TABLE_COL_USER_WIDTH = 50
 const TOTAL_TABLE_WIDTH = TABLE_COL_INDEX_WIDTH + TABLE_COL_CAT_WIDTH + TABLE_COL_TITLE_WIDTH + TABLE_COL_DATE_WIDTH + TABLE_COL_USER_WIDTH
 
 export function ProjectGantt({ projectId, works: initialWorks, onWorkUpdate, onWorkClick, onAddWork, onReorder }: ProjectGanttProps) {
     const { users, currentUser } = useProjects()
+    const { t } = useTranslation()
 
     const [viewMode, setViewMode] = useState<ViewMode>('Day')
     const [isTablePinned, setIsTablePinned] = useState(true)
@@ -112,7 +114,7 @@ export function ProjectGantt({ projectId, works: initialWorks, onWorkUpdate, onW
 
     const config = useMemo(() => {
         switch (viewMode) {
-            case 'Week': return { colWidth: 160, interval: eachWeekOfInterval, fmt: "dd MMM", subFmt: "'สัปดาห์' w" }
+            case 'Week': return { colWidth: 160, interval: eachWeekOfInterval, fmt: "dd MMM", subFmt: `'${t.schedule?.gantt?.week || "Week"}' w` }
             case 'Month': return { colWidth: 240, interval: eachMonthOfInterval, fmt: "MMMM", subFmt: "yyyy" }
             default: return { colWidth: 65, interval: eachDayOfInterval, fmt: "d", subFmt: "EEE" }
         }
@@ -233,16 +235,16 @@ export function ProjectGantt({ projectId, works: initialWorks, onWorkUpdate, onW
     const tableWidthOffset = (isTablePinned && !isMobile) ? TOTAL_TABLE_WIDTH : 0
 
     return (
-        <div className="flex flex-col h-[750px] bg-[#020617] rounded-[42px] overflow-hidden border border-white/10 shadow-[0_32px_100px_-20px_rgba(0,0,0,0.8)] font-sans">
+        <div className="flex flex-col h-full bg-background rounded-[42px] overflow-hidden border border-border shadow-[0_32px_100px_-20px_rgba(0,0,0,0.2)] dark:shadow-[0_32px_100px_-20px_rgba(0,0,0,0.8)] font-sans">
             {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between p-5 bg-slate-950/95 border-b border-white/5 backdrop-blur-3xl z-[40] gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between p-5 bg-card/95 border-b border-border backdrop-blur-3xl z-[40] gap-4">
                 <div className="flex items-center gap-3 overflow-x-auto w-full sm:w-auto no-scrollbar">
-                    <div className="bg-black/40 p-1 rounded-2xl border border-white/10 flex shrink-0 shadow-inner">
+                    <div className="bg-muted p-1 rounded-2xl border border-border flex shrink-0 shadow-inner">
                         {(['Day', 'Week', 'Month'] as const).map((m) => (
                             <button key={m} onClick={() => setViewMode(m)}
                                 className={cn(
                                     "px-5 py-2 text-[11px] font-black rounded-xl transition-all uppercase tracking-widest",
-                                    viewMode === m ? "bg-primary text-white shadow-lg scale-105" : "text-white/30 hover:text-white"
+                                    viewMode === m ? "bg-primary text-primary-foreground shadow-lg scale-105" : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
                                 {isMobile ? m.charAt(0) : m}
@@ -251,62 +253,62 @@ export function ProjectGantt({ projectId, works: initialWorks, onWorkUpdate, onW
                     </div>
 
                     <Button variant="secondary" size="icon" onClick={() => setIsTablePinned(!isTablePinned)}
-                        className={cn("rounded-2xl h-11 w-11 bg-white/5 border border-white/10 text-white shrink-0", (!isTablePinned || isMobile) && "text-primary border-primary/30")}
+                        className={cn("rounded-2xl h-11 w-11 bg-muted border border-border text-foreground shrink-0", (!isTablePinned || isMobile) && "text-primary border-primary/30")}
                     >
                         {isTablePinned && !isMobile ? <Eye size={20} /> : <EyeOff size={20} />}
                     </Button>
 
-                    <Button variant="outline" onClick={scrollToToday} className="rounded-2xl h-11 px-6 bg-white/5 border-white/10 text-white font-bold shrink-0">
+                    <Button variant="outline" onClick={scrollToToday} className="rounded-2xl h-11 px-6 bg-muted/50 border-border text-foreground font-bold shrink-0">
                         <Target className="mr-2 h-4 w-4 text-primary" />
-                        <span className="text-xs uppercase font-black">วันนี้</span>
+                        <span className="text-xs uppercase font-black">{t.schedule?.today || "วันนี้"}</span>
                     </Button>
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/5 whitespace-nowrap hidden lg:flex">
-                        <MoveHorizontal className="w-4 h-4 text-white/20" />
-                        <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">คลิกเมาส์ค้างเพื่อเลื่อนขวา</span>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 rounded-full border border-border whitespace-nowrap hidden lg:flex">
+                        <MoveHorizontal className="w-4 h-4 text-muted-foreground/40" />
+                        <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">{t.schedule?.pan_hint || "คลิกเมาส์ค้างเพื่อเลื่อนขวา"}</span>
                     </div>
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="rounded-2xl h-11 px-6 bg-white/5 border-white/10 text-white font-bold shrink-0">
+                            <Button variant="outline" className="rounded-2xl h-11 px-6 bg-muted/50 border-border text-foreground font-bold shrink-0">
                                 <SortDesc className="mr-2 h-4 w-4 text-primary" />
-                                <span className="text-xs uppercase font-black">Sort by</span>
+                                <span className="text-xs uppercase font-black">{t.schedule?.sort_by || "Sort by"}</span>
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="bg-slate-900 border-white/10 text-white rounded-2xl w-48 p-2">
-                            <DropdownMenuItem onClick={() => setSortBy('sortOrder')} className="rounded-xl focus:bg-primary/20 focus:text-white cursor-pointer py-3 px-4">
+                        <DropdownMenuContent align="start" className="bg-popover border-border text-popover-foreground rounded-2xl w-48 p-2">
+                            <DropdownMenuItem onClick={() => setSortBy('sortOrder')} className="rounded-xl focus:bg-primary/20 focus:text-foreground cursor-pointer py-3 px-4">
                                 <GripVertical className="mr-3 h-4 w-4 opacity-50" />
-                                <span className="text-xs font-bold font-sans">ลำดับ (Default)</span>
+                                <span className="text-xs font-bold font-sans">{t.schedule?.sort?.default || "ลำดับ (Default)"}</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setSortBy('startDate')} className="rounded-xl focus:bg-primary/20 focus:text-white cursor-pointer py-3 px-4">
                                 <CalendarIcon className="mr-3 h-4 w-4 opacity-50" />
-                                <span className="text-xs font-bold font-sans">วันที่เริ่มงาน</span>
+                                <span className="text-xs font-bold font-sans">{t.schedule?.sort?.start_date || "วันที่เริ่มงาน"}</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setSortBy('title')} className="rounded-xl focus:bg-primary/20 focus:text-white cursor-pointer py-3 px-4">
                                 <Type className="mr-3 h-4 w-4 opacity-50" />
-                                <span className="text-xs font-bold font-sans">ชื่อรายการ</span>
+                                <span className="text-xs font-bold font-sans">{t.schedule?.sort?.title || "ชื่อรายการ"}</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setSortBy('category')} className="rounded-xl focus:bg-primary/20 focus:text-white cursor-pointer py-3 px-4">
                                 <Tag className="mr-3 h-4 w-4 opacity-50" />
-                                <span className="text-xs font-bold font-sans">ประเภทงาน</span>
+                                <span className="text-xs font-bold font-sans">{t.schedule?.sort?.category || "ประเภทงาน"}</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setSortBy('progress')} className="rounded-xl focus:bg-primary/20 focus:text-white cursor-pointer py-3 px-4">
                                 <Plus className="mr-3 h-4 w-4 opacity-50 rotate-45" />
-                                <span className="text-xs font-bold font-sans">ความคืบหน้า</span>
+                                <span className="text-xs font-bold font-sans">{t.schedule?.sort?.progress || "ความคืบหน้า"}</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setSortBy('projectName')} className="rounded-xl focus:bg-primary/20 focus:text-white cursor-pointer py-3 px-4">
+                            <DropdownMenuItem onClick={() => setSortBy('projectName')} className="rounded-xl focus:bg-primary/20 focus:text-foreground cursor-pointer py-3 px-4">
                                 <Target className="mr-3 h-4 w-4 opacity-50" />
-                                <span className="text-xs font-bold font-sans">ชื่อโปรเจค</span>
+                                <span className="text-xs font-bold font-sans">{t.schedule?.sort?.project || "ชื่อโปรเจค"}</span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
 
                     {canCreate && (
-                        <Button onClick={onAddWork} className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-white rounded-xl h-11 px-8 font-black text-[12px] uppercase tracking-widest shadow-xl">
+                        <Button onClick={onAddWork} className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-11 px-8 font-black text-[12px] uppercase tracking-widest shadow-xl">
                             <Plus className="mr-2 h-5 w-5 stroke-[3px]" />
-                            เพิ่มเวิร์ค
+                            {t.schedule?.add_work || "เพิ่มเวิร์ค"}
                         </Button>
                     )}
                 </div>
@@ -323,19 +325,19 @@ export function ProjectGantt({ projectId, works: initialWorks, onWorkUpdate, onW
                     onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}
                     onPointerDown={(e) => handlePointerDown(e, 'pan')}
                     onScroll={handleScroll}
-                    className={cn("flex-1 overflow-auto relative select-none bg-[#020617] scroll-smooth", dragMode === 'pan' ? "cursor-grabbing" : "cursor-default")}
+                    className={cn("flex-1 overflow-auto relative select-none bg-background scroll-smooth", dragMode === 'pan' ? "cursor-grabbing" : "cursor-default")}
                 >
                     <div style={{ width: tableWidthOffset + (intervals.length * config.colWidth), minWidth: '100%' }} className="relative">
 
                         {/* Header Row */}
-                        <div className="flex sticky top-0 z-[35] bg-slate-950 border-b border-white/10 h-[65px]">
+                        <div className="flex sticky top-0 z-[35] bg-card border-b border-border h-[65px]">
                             {isTablePinned && !isMobile && (
-                                <div className="flex sticky left-0 z-[36] bg-slate-950 shadow-2xl border-r border-white/10">
-                                    <div style={{ width: TABLE_COL_INDEX_WIDTH }} className="flex items-center justify-center text-[10px] font-black text-white/20 uppercase">#</div>
-                                    <div style={{ width: TABLE_COL_CAT_WIDTH }} className="flex items-center px-4 text-[10px] font-black text-white/20 uppercase">ประเภท</div>
-                                    <div style={{ width: TABLE_COL_TITLE_WIDTH }} className="flex items-center px-6 text-[10px] font-black text-white/20 uppercase">รายการงาน</div>
-                                    <div style={{ width: TABLE_COL_DATE_WIDTH }} className="flex items-center px-6 text-[10px] font-black text-white/20 uppercase">กำหนด</div>
-                                    <div style={{ width: TABLE_COL_USER_WIDTH }} className="flex items-center justify-center text-[10px] font-black text-white/20 uppercase">ทีม</div>
+                                <div className="flex sticky left-0 z-[36] bg-card shadow-2xl border-r border-border">
+                                    <div style={{ width: TABLE_COL_INDEX_WIDTH }} className="flex items-center justify-center text-[10px] font-black text-muted-foreground/30 uppercase">{t.schedule?.table?.index || "#"}</div>
+                                    <div style={{ width: TABLE_COL_CAT_WIDTH }} className="flex items-center px-4 text-[10px] font-black text-muted-foreground/30 uppercase">{t.schedule?.table?.category || "ประเภท"}</div>
+                                    <div style={{ width: TABLE_COL_TITLE_WIDTH }} className="flex items-center px-6 text-[10px] font-black text-muted-foreground/30 uppercase">{t.schedule?.table?.task || "รายการงาน"}</div>
+                                    <div style={{ width: TABLE_COL_DATE_WIDTH }} className="flex items-center px-6 text-[10px] font-black text-muted-foreground/30 uppercase">{t.schedule?.table?.due || "กำหนด"}</div>
+                                    <div style={{ width: TABLE_COL_USER_WIDTH }} className="flex items-center justify-center text-[10px] font-black text-muted-foreground/30 uppercase">{t.schedule?.table?.team || "ทีม"}</div>
                                 </div>
                             )}
 
@@ -343,10 +345,10 @@ export function ProjectGantt({ projectId, works: initialWorks, onWorkUpdate, onW
                                 const active = viewMode === 'Day' ? isToday(d) : viewMode === 'Week' ? isSameWeek(new Date(), d) : isSameMonth(new Date(), d)
                                 return (
                                     <div key={i} style={{ width: config.colWidth }}
-                                        className={cn("flex flex-col items-center justify-center shrink-0 border-r border-white/5", active && "bg-primary/10")}
+                                        className={cn("flex flex-col items-center justify-center shrink-0 border-r border-border/50", active && "bg-primary/10")}
                                     >
-                                        <span className="text-[10px] font-black text-white/20 uppercase leading-none mb-1">{format(d, config.subFmt, { locale: th })}</span>
-                                        <span className={cn("text-sm font-black tracking-tight", active ? "text-primary" : "text-white/60")}>{format(d, config.fmt, { locale: th })}</span>
+                                        <span className="text-[10px] font-black text-muted-foreground/40 uppercase leading-none mb-1">{format(d, config.subFmt, { locale: th })}</span>
+                                        <span className={cn("text-sm font-black tracking-tight", active ? "text-primary" : "text-muted-foreground")}>{format(d, config.fmt, { locale: th })}</span>
                                     </div>
                                 )
                             })}
@@ -399,8 +401,8 @@ export function ProjectGantt({ projectId, works: initialWorks, onWorkUpdate, onW
             <style jsx global>{`
                 .no-scrollbar::-webkit-scrollbar { display: none; }
                 ::-webkit-scrollbar { width: 8px; height: 8px; }
-                ::-webkit-scrollbar-track { background: #020617; }
-                ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 100px; }
+                ::-webkit-scrollbar-track { background: transparent; }
+                ::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 100px; }
             `}</style>
         </div>
     )
@@ -457,6 +459,7 @@ function SortableGanttRow({
         transition,
         isDragging
     } = useSortable({ id: work.id })
+    const { t } = useTranslation()
 
     const style = {
         transform: CSS.Translate.toString(transform),
@@ -510,13 +513,13 @@ function SortableGanttRow({
         <div
             ref={setNodeRef}
             className={cn(
-                "flex group/row border-b border-white/[0.03] hover:bg-white/[0.01]",
-                isDragging && "bg-white/5 opacity-80"
+                "flex group/row border-b border-border/30 hover:bg-muted/30 transition-colors",
+                isDragging && "bg-muted opacity-80"
             )}
             style={{ ...style, height: ROW_HEIGHT }}
         >
             {isTablePinned && !isMobile && (
-                <div className="flex sticky left-0 z-[32] bg-[#020617] border-r border-white/10 shadow-2xl shrink-0 group-hover/row:bg-white/[0.02] transition-colors">
+                <div className="flex sticky left-0 z-[32] bg-background border-r border-border shadow-2xl shrink-0 group-hover/row:bg-muted/50 transition-colors">
                     <div style={{ width: TABLE_COL_INDEX_WIDTH }} className="flex items-center justify-center group/grip relative">
                         {isReorderEnabled && (
                             <div className="absolute left-1 z-[33]" onPointerDown={(e) => e.stopPropagation()}>
@@ -525,25 +528,25 @@ function SortableGanttRow({
                                     {...attributes}
                                     {...listeners}
                                 >
-                                    <GripVertical size={14} className="text-white" />
+                                    <GripVertical size={14} className="text-foreground" />
                                 </div>
                             </div>
                         )}
-                        <span className="text-[11px] font-mono text-white/10">{index + 1}</span>
+                        <span className="text-[11px] font-mono text-muted-foreground/30">{index + 1}</span>
                     </div>
                     <div style={{ width: TABLE_COL_CAT_WIDTH }} className="flex items-center px-4 overflow-hidden">
                         <Badge variant="outline" className="text-[10px] bg-blue-500/10 border-blue-500/20 text-blue-300 px-2 py-0.5 truncate max-w-full uppercase font-black tracking-tight">
                             {work.category || "ทั่วไป"}
                         </Badge>
                     </div>
-                    <div style={{ width: TABLE_COL_TITLE_WIDTH }} className="flex items-center px-6 font-bold text-[13px] text-white/50 group-hover:text-white transition-colors truncate">{work.title}</div>
-                    <div style={{ width: TABLE_COL_DATE_WIDTH }} className="flex flex-col justify-center px-6 text-[10px] font-black text-white/20 uppercase leading-none gap-1">
+                    <div style={{ width: TABLE_COL_TITLE_WIDTH }} className="flex items-center px-6 font-bold text-[13px] text-foreground/70 group-hover:text-foreground transition-colors truncate">{work.title}</div>
+                    <div style={{ width: TABLE_COL_DATE_WIDTH }} className="flex flex-col justify-center px-6 text-[10px] font-black text-muted-foreground/40 uppercase leading-none gap-1">
                         <span>{format(start, "d MMM", { locale: th })}</span>
-                        <span className="opacity-30">ถึง {format(en, "d MMM", { locale: th })}</span>
+                        <span className="opacity-30">{t.schedule?.gantt?.to || "ถึง"} {format(en, "d MMM", { locale: th })}</span>
                     </div>
                     <div style={{ width: TABLE_COL_USER_WIDTH }} className="flex items-center justify-center">
                         {assignee && (
-                            <Avatar className="w-8 h-8 border-2 border-white/5 shadow-xl shrink-0">
+                            <Avatar className="w-8 h-8 border-2 border-border/50 shadow-xl shrink-0">
                                 <AvatarImage src={assignee.avatar} />
                                 <AvatarFallback className="text-[10px] font-black bg-primary/20 text-primary">{assignee.name.substring(0, 2)}</AvatarFallback>
                             </Avatar>
@@ -554,13 +557,13 @@ function SortableGanttRow({
 
             <div className="relative flex-1">
                 <div className="absolute inset-0 flex pointer-events-none">
-                    {intervals.map((_: Date, idx: number) => <div key={idx} style={{ width: config.colWidth }} className="h-full border-r border-white/[0.02]" />)}
+                    {intervals.map((_: Date, idx: number) => <div key={idx} style={{ width: config.colWidth }} className="h-full border-r border-border/20" />)}
                 </div>
 
                 {isFullyOffLeft && (
                     <div
                         className={cn(
-                            "sticky z-[31] flex items-center h-9 mt-[16px] px-4 rounded-[14px] shadow-2xl border border-white/10 cursor-pointer overflow-hidden backdrop-blur-md opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all",
+                            "sticky z-[31] flex items-center h-9 mt-[16px] px-4 rounded-[14px] shadow-lg dark:shadow-2xl border border-white/20 cursor-pointer overflow-hidden backdrop-blur-md opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all",
                             rawColor
                         )}
                         style={{ left: 8, width: 220 }}
@@ -574,7 +577,7 @@ function SortableGanttRow({
                 {isFullyOffRight && (
                     <div
                         className={cn(
-                            "sticky z-[31] flex items-center h-9 mt-[16px] px-4 rounded-[14px] shadow-2xl border border-white/10 cursor-pointer overflow-hidden backdrop-blur-md transition-all",
+                            "sticky z-[31] flex items-center h-9 mt-[16px] px-4 rounded-[14px] shadow-lg dark:shadow-2xl border border-white/20 cursor-pointer overflow-hidden backdrop-blur-md transition-all",
                             rawColor
                         )}
                         style={{ left: (containerRef.current?.clientWidth || 800) - 230, width: 220 }}
@@ -634,7 +637,7 @@ function SortableGanttRow({
                 {pendingDelta !== 0 && (
                     <div
                         className={cn(
-                            "absolute top-[18px] h-9 rounded-[18px] shadow-2xl z-[30] border-2 border-white/80 animate-pulse pointer-events-none opacity-60 grayscale",
+                            "absolute top-[18px] h-9 rounded-[18px] shadow-lg dark:shadow-2xl border-2 border-white dark:border-white/80 animate-pulse pointer-events-none opacity-60 grayscale",
                             rawColor
                         )}
                         style={{ left: ghostPxLeft + 4, width: Math.max(40, ghostPxWidth - 8) }}

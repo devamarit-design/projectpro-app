@@ -88,7 +88,7 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
                 : "space-y-4"
             }>
                 {posts.length === 0 ? (
-                    <div className={variant === 'widget' ? "w-full text-center py-8 text-muted-foreground bg-muted/10 rounded-xl border border-dashed border-white/10" : "text-center py-10 bg-muted/20 rounded-xl border border-dashed border-border"}>
+                    <div className={variant === 'widget' ? "w-full text-center py-8 text-muted-foreground bg-muted/10 rounded-xl border border-dashed border-border/50" : "text-center py-10 bg-muted/20 rounded-xl border border-dashed border-border"}>
                         <p className={variant === 'widget' ? "text-sm" : "text-muted-foreground"}>No posts yet. Be the first to share!</p>
                     </div>
                 ) : (
@@ -100,8 +100,8 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
                 )}
                 {variant === 'widget' && posts.length > 0 && (
                     <div className="min-w-[150px] max-w-[150px] snap-center flex items-center justify-center">
-                        <a href="/wall" className="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-white/5 transition-colors text-muted-foreground hover:text-primary">
-                            <div className="w-12 h-12 rounded-full bg-white/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                        <a href="/wall" className="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-accent transition-colors text-muted-foreground hover:text-primary">
+                            <div className="w-12 h-12 rounded-full bg-muted group-hover:bg-primary/10 flex items-center justify-center transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
                             </div>
                             <span className="text-sm font-medium">ดูเพิ่มเติม</span>

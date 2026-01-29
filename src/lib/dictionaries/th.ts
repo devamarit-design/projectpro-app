@@ -45,6 +45,38 @@ export const th = {
     schedule: {
         title: "แผนงานรวม",
         subtitle: "ดูภาพรวมงานทั้งหมดในองค์กรแบบ Timeline",
+        timeline: "ไทม์ไลน์",
+        list_view: "มุมมองรายการ",
+        check_all: "ดูทุกโครงการ",
+        select_project: "เลือกโครงการ",
+        today: "วันนี้",
+        pan_hint: "คลิกเมาส์ค้างเพื่อเลื่อนขวา",
+        sort_by: "เรียงตาม",
+        sort: {
+            default: "ลำดับ (ค่าเริ่มต้น)",
+            start_date: "วันที่เริ่มงาน",
+            title: "ชื่อรายการ",
+            category: "ประเภทงาน",
+            progress: "ความคืบหน้า",
+            project: "ชื่อโปรเจค"
+        },
+        add_work: "เพิ่มงาน",
+        table: {
+            index: "#",
+            category: "ประเภท",
+            task: "รายการงาน",
+            due: "กำหนด",
+            team: "ทีม",
+            project: "โครงการ",
+            assignees: "ผู้รับผิดชอบ",
+            status: "สถานะ",
+            progress: "ความคืบหน้า",
+            no_tasks: "ไม่พบงานตามเงื่อนไขที่เลือก"
+        },
+        gantt: {
+            week: "สัปดาห์",
+            to: "ถึง"
+        }
     },
 
     partners: {
