@@ -114,11 +114,11 @@ export function ProjectGantt({ projectId, works: initialWorks, onWorkUpdate, onW
 
     const config = useMemo(() => {
         switch (viewMode) {
-            case 'Week': return { colWidth: 160, interval: eachWeekOfInterval, fmt: "dd MMM", subFmt: `'${t.schedule?.gantt?.week || "Week"}' w` }
+            case 'Week': return { colWidth: 160, interval: eachWeekOfInterval, fmt: "dd MMM", subFmt: t.schedule?.gantt?.week || "Week" }
             case 'Month': return { colWidth: 240, interval: eachMonthOfInterval, fmt: "MMMM", subFmt: "yyyy" }
             default: return { colWidth: 65, interval: eachDayOfInterval, fmt: "d", subFmt: "EEE" }
         }
-    }, [viewMode])
+    }, [viewMode, t])
 
     const startDate = useMemo(() => startOfDay(addDays(new Date(), -30)), [])
     const endDate = useMemo(() => startOfDay(addDays(new Date(), 365)), [])
@@ -247,7 +247,7 @@ export function ProjectGantt({ projectId, works: initialWorks, onWorkUpdate, onW
                                     viewMode === m ? "bg-primary text-primary-foreground shadow-lg scale-105" : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
-                                {isMobile ? m.charAt(0) : m}
+                                {isMobile ? m.charAt(0) : (m === 'Day' ? t.schedule?.gantt?.day : m === 'Week' ? t.schedule?.gantt?.week : t.schedule?.gantt?.month) || m}
                             </button>
                         ))}
                     </div>
@@ -308,7 +308,7 @@ export function ProjectGantt({ projectId, works: initialWorks, onWorkUpdate, onW
                     {canCreate && (
                         <Button onClick={onAddWork} className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-11 px-8 font-black text-[12px] uppercase tracking-widest shadow-xl">
                             <Plus className="mr-2 h-5 w-5 stroke-[3px]" />
-                            {t.schedule?.add_work || "เพิ่มเวิร์ค"}
+                            {t.schedule?.add_work || "Add Work"}
                         </Button>
                     )}
                 </div>
@@ -536,7 +536,7 @@ function SortableGanttRow({
                     </div>
                     <div style={{ width: TABLE_COL_CAT_WIDTH }} className="flex items-center px-4 overflow-hidden">
                         <Badge variant="outline" className="text-[10px] bg-blue-500/10 border-blue-500/20 text-blue-300 px-2 py-0.5 truncate max-w-full uppercase font-black tracking-tight">
-                            {work.category || "ทั่วไป"}
+                            {work.category || t.expenses?.categories?.general || "General"}
                         </Badge>
                     </div>
                     <div style={{ width: TABLE_COL_TITLE_WIDTH }} className="flex items-center px-6 font-bold text-[13px] text-foreground/70 group-hover:text-foreground transition-colors truncate">{work.title}</div>
@@ -618,7 +618,7 @@ function SortableGanttRow({
                             className="text-[8px] font-bold text-white/50 leading-none mt-1 cursor-pointer z-[5]"
                             onClick={(e) => { e.stopPropagation(); onWorkClick(work.id); }}
                             onPointerDown={(e) => e.stopPropagation()}
-                        >#{(work.category || "ทั่วไป")}</span>}
+                        >#{(work.category || t.expenses?.categories?.general || "General")}</span>}
                     </div>
                     <div className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-white/20 rounded-r-xl shrink-0"
                         onPointerDown={(e) => { e.stopPropagation(); handlePointerDown(e, 'resize-end', work.id) }}

@@ -74,7 +74,9 @@ export const th = {
             no_tasks: "ไม่พบงานตามเงื่อนไขที่เลือก"
         },
         gantt: {
+            day: "วัน",
             week: "สัปดาห์",
+            month: "เดือน",
             to: "ถึง"
         }
     },
@@ -361,6 +363,7 @@ export const th = {
         credit: "เครดิต/ต้องชำระ",
         categories: {
             all: "ทั้งหมด",
+            general: "ทั่วไป",
             material: "วัสดุ",
             labor: "ค่าแรง",
             subcontract: "เหมาช่วง",

@@ -76,7 +76,9 @@ export const en = {
             no_tasks: "No tasks found for this selection."
         },
         gantt: {
+            day: "Day",
             week: "Week",
+            month: "Month",
             to: "to"
         }
     },
@@ -362,6 +364,7 @@ export const en = {
         credit: "Credit",
         categories: {
             all: "All",
+            general: "General",
             material: "Material",
             labor: "Labor",
             subcontract: "Contract",

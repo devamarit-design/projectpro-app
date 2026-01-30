@@ -77,8 +77,8 @@ export function MarketOverview() {
         setFetchError(null)
         try {
             const [goldResult, btcResult] = await Promise.all([
-                safeFetch('https://api.chnwt.dev/thai-gold-api/latest'),
-                safeFetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=thb,usd&include_24hr_change=true')
+                safeFetch('/api/market?type=gold-latest'),
+                safeFetch('/api/market?type=btc-latest')
             ])
 
             if (goldResult.ok && btcResult.ok) {
@@ -86,16 +86,18 @@ export function MarketOverview() {
                 const btcJson = btcResult.data
 
                 if (goldJson?.response?.price && btcJson?.bitcoin) {
-                    const goldSell = goldJson.response.price.gold_bar.sell
+                    const goldBarBuy = parseInt(goldJson.response.price.gold_bar.buy.replace(/,/g, ''))
+                    const goldBarSell = parseInt(goldJson.response.price.gold_bar.sell.replace(/,/g, ''))
+                    const goldChange = parseInt(goldJson.response.price.change.compare_previous.replace(/[+,]/g, '')) || 0
                     const btcThb = btcJson.bitcoin.thb
                     const btcUsd = btcJson.bitcoin.usd
                     const rate = btcThb / btcUsd
 
                     setPrices({
                         gold: {
-                            thb: parseInt(goldSell.replace(/,/g, '')),
-                            usd: (parseInt(goldSell.replace(/,/g, '')) / rate) / 0.49,
-                            change: parseInt(goldJson.response.price.change.gold_bar || "0")
+                            thb: Math.max(goldBarBuy, goldBarSell), // Use the higher price as current value
+                            usd: (Math.max(goldBarBuy, goldBarSell) / rate) / 0.472, // 0.472 is approx (Baht/Oz * 0.965)
+                            change: goldChange
                         },
                         btc: {
                             thb: btcThb,
@@ -174,14 +176,21 @@ export function MarketOverview() {
         if (asset === 'btc' || asset === 'gold') {
             setChartLoading(true)
             const id = idMap[asset]
-            const result = await safeFetch(`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${daysMap[tf]}&interval=${tf === '1D' ? 'hourly' : 'daily'}`)
+            const result = await safeFetch(`/api/market?type=history&id=${id}&days=${daysMap[tf]}&interval=${tf === '1D' ? 'hourly' : 'daily'}`)
 
             if (result.ok && result.data?.prices && Array.isArray(result.data.prices)) {
                 const labels = getLabels(tf, locale)
-                const points = result.data.prices.slice(-labels.length).map(([ts, val]: [number, number], i: number) => ({
-                    time: labels[i] || '',
-                    value: val
-                }))
+                // Map the results to the labels more accurately
+                const rawPrices = result.data.prices
+                const points = labels.map((l, i) => {
+                    // Try to find the closest point in time if possible, or just sample
+                    const dataIndex = Math.floor((i / labels.length) * rawPrices.length)
+                    const [ts, val] = rawPrices[dataIndex] || [0, 0]
+                    return {
+                        time: l,
+                        value: val
+                    }
+                })
                 setHistoryData(prev => ({ ...prev, [`${asset}-${tf}`]: points }))
                 setLastUpdated(new Date())
                 setFetchError(null)
@@ -245,7 +254,7 @@ export function MarketOverview() {
             if (apiData && apiData.length > 0) {
                 return apiData.map(p => ({
                     ...p,
-                    value: isTHB ? p.value * rate * (activeAsset === 'gold' ? 0.49 : 1) : p.value
+                    value: isTHB ? p.value * rate * (activeAsset === 'gold' ? 0.472 : 1) : p.value
                 }))
             }
             return []

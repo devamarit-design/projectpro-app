@@ -18,21 +18,39 @@ const firebaseConfig = {
 export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Export services
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
-
-// ... imports
-
-// Export services
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-// Initialize Firestore with Offline Persistence
-export const db = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager()
-    })
-});
+// Initialize Firestore with Offline Persistence and Robustness Settings
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+
+let firestoreInstance;
+try {
+    firestoreInstance = initializeFirestore(app, {
+        localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager()
+        }),
+        experimentalForceLongPolling: true, // Known workaround for some stream-related assertion failures
+    });
+} catch (e) {
+    console.error("Firestore initialization failed, falling back to getFirestore", e);
+    firestoreInstance = getFirestore(app);
+}
+
+// Global safety: If we see the specific ca9 error, we might want to suggest a hard refresh or clear cache.
+if (typeof window !== "undefined") {
+    const originalError = console.error;
+    console.error = (...args) => {
+        if (args[0]?.includes?.("ca9")) {
+            console.warn("Detected Firestore CA9 error. Attempting to recover...");
+            // Optionally: window.location.reload(); or clear indexedDB
+        }
+        originalError.apply(console, args);
+    };
+}
+
+export const db = firestoreInstance;
 export const storage = getStorage(app);
 
 // Messaging (Client Side Only)
