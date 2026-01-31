@@ -5,9 +5,11 @@ import { Sparkles, ChevronLeft, ChevronRight } from "lucide-react"
 import { useSettings } from "@/context/settings-context"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import { useTranslation } from "@/lib/i18n-context"
 
 export function DashboardBanner() {
     const { banners } = useSettings()
+    const { t } = useTranslation()
     const activeBanners = banners.filter(b => b.active)
     const [currentIndex, setCurrentIndex] = useState(0)
     const [isHovered, setIsHovered] = useState(false)
@@ -95,7 +97,7 @@ export function DashboardBanner() {
                         </div>
 
                         <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight mb-3 drop-shadow-lg opacity-0 animate-in slide-in-from-bottom-4 fade-in duration-700 delay-200 fill-mode-forwards leading-tight">
-                            {banner.title || "Welcome back!"}
+                            {banner.title || (t.dashboard.banner_fallback?.welcome || "Welcome back!")}
                         </h2>
 
                         {banner.description && (
@@ -112,7 +114,7 @@ export function DashboardBanner() {
                             }}
                             className="mt-6 flex items-center gap-2 text-white font-bold text-sm bg-white/10 hover:bg-white/20 w-fit px-4 py-2 rounded-xl backdrop-blur-md transition-all border border-white/5 opacity-0 animate-in fade-in duration-700 delay-500 fill-mode-forwards"
                         >
-                            <span>{banner.buttonText || "Learn More"}</span>
+                            <span>{banner.buttonText || (t.dashboard.banner_fallback?.learn_more || "Learn More")}</span>
                             <span>→</span>
                         </div>
                     </div>

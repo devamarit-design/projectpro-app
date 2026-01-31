@@ -52,7 +52,7 @@ export function DashboardActivity({ className, limit, showViewAll = false }: Das
                 // we'll try to use createdAt, else fallback.
                 timestamp: e.createdAt || e.date,
                 date: e.date, // Document Date (Bill Date)
-                subtitle: e.payee || "Unknown Payee",
+                subtitle: e.payee || (t.dashboard.unknown_payee || "Unknown Payee"),
                 status: e.status,
                 projectId: e.projectId,
                 userMatch: e.payee
@@ -66,7 +66,7 @@ export function DashboardActivity({ className, limit, showViewAll = false }: Das
             amount: i.total,
             timestamp: i.createdAt || i.date, // Fallback
             date: i.date,
-            subtitle: projects.find(p => p.id === i.projectId)?.name || "Unknown Project",
+            subtitle: projects.find(p => p.id === i.projectId)?.name || (t.dashboard.unknown_project || "Unknown Project"),
             status: i.status,
             projectId: i.projectId,
             userMatch: null
@@ -92,7 +92,7 @@ export function DashboardActivity({ className, limit, showViewAll = false }: Das
             return dateB - dateA
         }).slice(0, displayLimit)
 
-    }, [expenses, incomes, projects, projectFilter, userFilter, isAdmin, sortBy])
+    }, [expenses, incomes, projects, projectFilter, userFilter, isAdmin, sortBy, t])
 
     // Grouping Logic
     const groupedActivities = React.useMemo(() => {
@@ -116,15 +116,15 @@ export function DashboardActivity({ className, limit, showViewAll = false }: Das
                 yesterday.setDate(yesterday.getDate() - 1)
 
                 let title = format(date, 'dd MMM yyyy')
-                if (dateKey === format(today, 'yyyy-MM-dd')) title = "Today"
-                if (dateKey === format(yesterday, 'yyyy-MM-dd')) title = "Yesterday"
+                if (dateKey === format(today, 'yyyy-MM-dd')) title = t.dashboard.today || "Today"
+                if (dateKey === format(yesterday, 'yyyy-MM-dd')) title = t.dashboard.yesterday || "Yesterday"
 
                 return {
                     title,
                     items: groups[dateKey]
                 }
             })
-    }, [processedActivities, sortBy])
+    }, [processedActivities, sortBy, t])
 
     const handleItemClick = (item: any) => {
         if (item.type === 'expense') {
@@ -155,8 +155,8 @@ export function DashboardActivity({ className, limit, showViewAll = false }: Das
                                 onChange={(e) => setSortBy(e.target.value as any)}
                                 className="w-full pl-8 pr-2 py-1.5 bg-background/50 border border-white/10 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary h-8 appearance-none cursor-pointer hover:bg-white/5 transition-colors"
                             >
-                                <option value="timestamp">By Created Time</option>
-                                <option value="date">By Bill Date</option>
+                                <option value="timestamp">{t.dashboard.sort_by_created || "By Created Time"}</option>
+                                <option value="date">{t.dashboard.sort_by_date || "By Bill Date"}</option>
                             </select>
                         </div>
 
@@ -167,7 +167,7 @@ export function DashboardActivity({ className, limit, showViewAll = false }: Das
                                 onChange={(e) => setProjectFilter(e.target.value)}
                                 className="w-full px-2 py-1.5 bg-background/50 border border-white/10 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary h-8 appearance-none cursor-pointer hover:bg-white/5 transition-colors text-center"
                             >
-                                <option value="all">All Projects</option>
+                                <option value="all">{t.dashboard.all_projects_label || "All Projects"}</option>
                                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                             </select>
                         </div>
@@ -239,7 +239,7 @@ export function DashboardActivity({ className, limit, showViewAll = false }: Das
                             onClick={() => router.push('/activity')}
                             className="w-full py-2 text-sm text-muted-foreground hover:text-primary hover:bg-white/5 rounded-lg transition-colors flex items-center justify-center gap-2"
                         >
-                            View All Activity
+                            {t.dashboard.view_all_activity || "View All Activity"}
                         </button>
                     </div>
                 )}

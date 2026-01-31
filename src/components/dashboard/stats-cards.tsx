@@ -30,7 +30,7 @@ export function StatsCards() {
             title: t.dashboard.total_revenue,
             value: formatCurrency(totalRevenue),
             // change: "+20.1% from last month", // TODO: Implement historic comparison later
-            change: "Total Recognized Revenue",
+            change: t.dashboard.stats?.revenue_desc || "Total Recognized Revenue",
             icon: DollarSign,
             trend: "up" as const,
             trendColor: "text-green-500"
@@ -39,7 +39,7 @@ export function StatsCards() {
             title: t.dashboard.total_expenses,
             value: formatCurrency(totalExpenses),
             // change: "+4.5% from last month",
-            change: "Total Recorded Expenses",
+            change: t.dashboard.stats?.expenses_desc || "Total Recorded Expenses",
             icon: CreditCard,
             trend: "down" as const,
             trendColor: "text-red-500"
@@ -48,7 +48,7 @@ export function StatsCards() {
             title: t.dashboard.net_profit,
             value: formatCurrency(netProfit),
             // change: "+12.2% from last month",
-            change: netProfit >= 0 ? "Healthy Profit" : "Loss",
+            change: netProfit >= 0 ? (t.dashboard.stats?.profit_healthy || "Healthy Profit") : (t.dashboard.stats?.profit_loss || "Loss"),
             icon: Wallet,
             trend: netProfit >= 0 ? "up" as const : "down" as const,
             trendColor: netProfit >= 0 ? "text-green-500" : "text-red-500"
@@ -56,7 +56,7 @@ export function StatsCards() {
         {
             title: t.dashboard.active_projects,
             value: activeProjects.toString(),
-            change: "Currently In Progress",
+            change: t.dashboard.stats?.progress_desc || "Currently In Progress",
             icon: Activity,
             trend: "neutral" as const,
             trendColor: "text-blue-500"

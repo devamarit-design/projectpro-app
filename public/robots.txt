@@ -5,4 +5,4 @@ Disallow: /onboarding
 Disallow: /login
 Disallow: /register
 
-Sitemap: https://projectpro.app/sitemap.xml
+Sitemap: https://hipsloth.app/sitemap.xml

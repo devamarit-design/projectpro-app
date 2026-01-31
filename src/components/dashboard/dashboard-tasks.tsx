@@ -19,7 +19,7 @@ export function DashboardTasks() {
             .filter(task => (task.assignedTo === currentUser.id || task.assignedTo === currentUser.name) && task.status !== 'Done')
             .map(task => ({
                 ...task,
-                projectName: projects.find(p => p.id === task.projectId)?.name || "Unknown Project"
+                projectName: projects.find(p => p.id === task.projectId)?.name || (t.dashboard.unknown_project || "Unknown Project")
             }))
             .sort((a, b) => {
                 if (!a.dueDate) return 1
@@ -27,13 +27,25 @@ export function DashboardTasks() {
                 return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
             })
             .slice(0, 5) // Show top 5
-    }, [tasks, projects, currentUser])
+    }, [tasks, projects, currentUser, t])
 
     const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
     const priorityColors: Record<Priority, string> = {
         High: "text-red-500 bg-red-500/10 border-red-500/20",
         Medium: "text-orange-500 bg-orange-500/10 border-orange-500/20",
         Low: "text-slate-500 bg-slate-500/10 border-slate-500/20"
+    }
+
+    const priorityLabels: Record<Priority, string> = {
+        High: t.dashboard.priorities?.high || "High",
+        Medium: t.dashboard.priorities?.medium || "Medium",
+        Low: t.dashboard.priorities?.low || "Low"
+    }
+
+    const statusLabels: Record<TaskStatus, string> = {
+        Todo: t.dashboard.task_statuses?.todo || "To Do",
+        "In Progress": t.dashboard.task_statuses?.in_progress || "In Progress",
+        Done: t.dashboard.task_statuses?.done || "Done"
     }
 
     if (!currentUser) return null
@@ -70,19 +82,19 @@ export function DashboardTasks() {
                                 <div className="flex items-center justify-between gap-2 mb-1">
                                     <span className="text-xs font-medium text-muted-foreground truncate">{task.projectName}</span>
                                     <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider", priorityColors[task.priority])}>
-                                        {task.priority}
+                                        {priorityLabels[task.priority]}
                                     </span>
                                 </div>
                                 <h4 className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors">{task.title}</h4>
                                 <div className="flex items-center gap-3 mt-2">
                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                        <Clock className="w-3 h-3" /> {task.dueDate || "No deadline"}
+                                        <Clock className="w-3 h-3" /> {task.dueDate || (t.dashboard.no_deadline || "No deadline")}
                                     </span>
                                     <span className={cn("text-xs font-medium",
                                         task.status === 'Done' ? "text-green-500" :
                                             task.status === 'In Progress' ? "text-blue-500" : "text-slate-500"
                                     )}>
-                                        {task.status}
+                                        {statusLabels[task.status]}
                                     </span>
                                 </div>
                             </div>

@@ -3,6 +3,8 @@
 import * as React from "react"
 import { Calendar, User, ShoppingBag, Plus, Trash2, ChevronDown, ChevronRight, Save, Download, FileCheck } from "lucide-react"
 
+import { useTranslation } from "@/lib/i18n-context"
+
 type ItemType = "standard" | "parent" | "sub"
 
 interface DocumentItem {
@@ -17,6 +19,7 @@ interface DocumentItem {
 }
 
 export function DocumentCreatorForm() {
+    const { t } = useTranslation()
     const [items, setItems] = React.useState<DocumentItem[]>([
         { id: "1", type: "standard", description: "Consultation Fee", quantity: 1, unitPrice: 5000 },
     ])
@@ -34,7 +37,7 @@ export function DocumentCreatorForm() {
         const newItem: DocumentItem = {
             id: Math.random().toString(36).substr(2, 9),
             type,
-            description: type === "parent" ? "New Section Group" : "New Item",
+            description: type === "parent" ? (t.documents.new_section || "New Section Group") : (t.documents.new_item || "New Item"),
             quantity: 1,
             unitPrice: 0,
             subItems: type === "parent" ? [] : undefined,
@@ -47,7 +50,7 @@ export function DocumentCreatorForm() {
         const newItem: DocumentItem = {
             id: Math.random().toString(36).substr(2, 9),
             type: "sub",
-            description: "Sub-item Detail",
+            description: t.documents.sub_item_detail || "Sub-item Detail",
             quantity: 1,
             unitPrice: 0,
             parentId
@@ -82,13 +85,13 @@ export function DocumentCreatorForm() {
             {/* Header Controls */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-primary">New Quotation</h1>
-                    <p className="text-muted-foreground mt-1">Create a new document for your client.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-primary">{t.documents.new_quotation}</h1>
+                    <p className="text-muted-foreground mt-1">{t.documents.create_new_desc}</p>
                 </div>
                 <div className="flex bg-muted rounded-lg p-1">
-                    <button className="px-4 py-1.5 bg-background shadow-sm rounded-md text-sm font-medium">Quotation</button>
-                    <button className="px-4 py-1.5 text-muted-foreground text-sm font-medium hover:text-foreground">Invoice</button>
-                    <button className="px-4 py-1.5 text-muted-foreground text-sm font-medium hover:text-foreground">Receipt</button>
+                    <button className="px-4 py-1.5 bg-background shadow-sm rounded-md text-sm font-medium">{t.documents.types?.quotation}</button>
+                    <button className="px-4 py-1.5 text-muted-foreground text-sm font-medium hover:text-foreground">{t.documents.types?.invoice}</button>
+                    <button className="px-4 py-1.5 text-muted-foreground text-sm font-medium hover:text-foreground">{t.documents.types?.receipt}</button>
                 </div>
             </div>
 
@@ -96,27 +99,27 @@ export function DocumentCreatorForm() {
                 {/* Client & Project Info */}
                 <div className="md:col-span-2 space-y-4 bg-card p-6 rounded-xl border border-border shadow-sm">
                     <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <User className="w-5 h-5 text-primary" /> Client Details
+                        <User className="w-5 h-5 text-primary" /> {t.documents.client_details}
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="text-sm font-medium text-muted-foreground">Client Name</label>
+                            <label className="text-sm font-medium text-muted-foreground">{t.documents.client_name}</label>
                             <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background mt-1">
-                                <option>Select Client...</option>
+                                <option>{t.documents.select_client}</option>
                                 <option>K. Somsak</option>
                                 <option>ABC Corp</option>
                             </select>
                         </div>
                         <div>
-                            <label className="text-sm font-medium text-muted-foreground">Project</label>
+                            <label className="text-sm font-medium text-muted-foreground">{t.documents.project}</label>
                             <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background mt-1">
-                                <option>Select Project...</option>
+                                <option>{t.documents.select_project}</option>
                                 <option>Modern Loft Renovation</option>
                             </select>
                         </div>
                         <div className="sm:col-span-2">
-                            <label className="text-sm font-medium text-muted-foreground">Service Tags</label>
-                            <input type="text" placeholder="e.g. Renovation, Design, Interior" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background mt-1" />
+                            <label className="text-sm font-medium text-muted-foreground">{t.documents.service_tags}</label>
+                            <input type="text" placeholder={t.documents.service_tags_placeholder} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background mt-1" />
                         </div>
                     </div>
                 </div>
@@ -124,19 +127,19 @@ export function DocumentCreatorForm() {
                 {/* Document Meta */}
                 <div className="space-y-4 bg-card p-6 rounded-xl border border-border shadow-sm">
                     <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-primary" /> Document Info
+                        <Calendar className="w-5 h-5 text-primary" /> {t.documents.info}
                     </h2>
                     <div className="space-y-3">
                         <div>
-                            <label className="text-sm font-medium text-muted-foreground">Issue Date</label>
+                            <label className="text-sm font-medium text-muted-foreground">{t.documents.issue_date}</label>
                             <input type="date" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1" />
                         </div>
                         <div>
-                            <label className="text-sm font-medium text-muted-foreground">Due Date</label>
+                            <label className="text-sm font-medium text-muted-foreground">{t.documents.due_date}</label>
                             <input type="date" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1" />
                         </div>
                         <div>
-                            <label className="text-sm font-medium text-muted-foreground">Document No.</label>
+                            <label className="text-sm font-medium text-muted-foreground">{t.documents.doc_no}</label>
                             <input type="text" value="QT-2024003" readOnly className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm mt-1 text-muted-foreground font-mono" />
                         </div>
                     </div>
@@ -147,14 +150,14 @@ export function DocumentCreatorForm() {
             <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                 <div className="p-4 bg-muted/30 border-b border-border flex justify-between items-center">
                     <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <ShoppingBag className="w-5 h-5 text-primary" /> Items
+                        <ShoppingBag className="w-5 h-5 text-primary" /> {t.documents.items_title}
                     </h2>
                     <div className="flex gap-2">
                         <button onClick={() => addItem('standard')} className="text-xs flex items-center gap-1 bg-white border border-border px-3 py-1.5 rounded-md hover:bg-muted transition-colors">
-                            <Plus className="w-3 h-3" /> Add Item
+                            <Plus className="w-3 h-3" /> {t.documents.add_item}
                         </button>
                         <button onClick={() => addItem('parent')} className="text-xs flex items-center gap-1 bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:opacity-90 transition-opacity">
-                            <Plus className="w-3 h-3" /> Add Group System
+                            <Plus className="w-3 h-3" /> {t.documents.add_group}
                         </button>
                     </div>
                 </div>
@@ -164,10 +167,10 @@ export function DocumentCreatorForm() {
                         <thead className="bg-muted text-muted-foreground text-left">
                             <tr>
                                 <th className="px-4 py-3 w-10"></th>
-                                <th className="px-4 py-3">Description</th>
-                                <th className="px-4 py-3 w-24 text-center">Qty</th>
-                                <th className="px-4 py-3 w-32 text-right">Unit Price</th>
-                                <th className="px-4 py-3 w-32 text-right">Total</th>
+                                <th className="px-4 py-3">{t.documents.description}</th>
+                                <th className="px-4 py-3 w-24 text-center">{t.documents.qty}</th>
+                                <th className="px-4 py-3 w-32 text-right">{t.documents.unit_price}</th>
+                                <th className="px-4 py-3 w-32 text-right">{t.documents.total}</th>
                                 <th className="px-4 py-3 w-10"></th>
                             </tr>
                         </thead>
@@ -241,7 +244,7 @@ export function DocumentCreatorForm() {
                                             <td className="border-r border-border/50"></td>
                                             <td colSpan={5} className="px-4 py-2">
                                                 <button onClick={() => addSubItem(item.id)} className="text-xs text-primary hover:underline flex items-center gap-1 ml-6">
-                                                    <Plus className="w-3 h-3" /> Add Item to Group
+                                                    <Plus className="w-3 h-3" /> {t.documents.add_item_to_group}
                                                 </button>
                                             </td>
                                         </tr>
@@ -251,7 +254,7 @@ export function DocumentCreatorForm() {
                         </tbody>
                         <tfoot className="bg-muted/50 font-bold">
                             <tr>
-                                <td colSpan={4} className="px-4 py-4 text-right">Total Amount (THB)</td>
+                                <td colSpan={4} className="px-4 py-4 text-right">{t.documents.total_amount_thb}</td>
                                 <td className="px-4 py-4 text-right text-lg text-primary">{grandTotal.toLocaleString()}</td>
                                 <td></td>
                             </tr>
@@ -264,13 +267,13 @@ export function DocumentCreatorForm() {
             <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border p-4 shadow-lg z-40 md:pl-64 transition-all duration-300">
                 <div className="max-w-5xl mx-auto flex justify-end gap-3">
                     <button className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-muted bg-background">
-                        Preview
+                        {t.documents.preview}
                     </button>
                     <button className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-muted bg-background flex items-center gap-2">
-                        <Download className="w-4 h-4" /> Save Draft
+                        <Download className="w-4 h-4" /> {t.documents.save_draft}
                     </button>
                     <button className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 flex items-center gap-2 shadow-lg shadow-primary/20">
-                        <FileCheck className="w-4 h-4" /> Approve & Issue
+                        <FileCheck className="w-4 h-4" /> {t.documents.approve_issue}
                     </button>
                 </div>
             </div>

@@ -61,10 +61,10 @@ function AdminDashboard() {
                 <path d="M9 21V9" />
               </svg>
             </div>
-            Team Wall
+            {t.dashboard.team_wall || "Team Wall"}
           </h3>
           <Link href="/wall" className="text-sm text-muted-foreground hover:text-primary hover:underline font-medium">
-            View All
+            {t.dashboard.view_all || "View All"}
           </Link>
         </div>
         <div className="bg-muted/30 dark:bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-border/50 dark:border-white/10 shadow-sm">

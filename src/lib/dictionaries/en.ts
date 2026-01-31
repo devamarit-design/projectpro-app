@@ -29,6 +29,10 @@ export const en = {
         log_out: "Log Out",
         confirm_logout: "Are you sure you want to log out?",
         loading: "Loading...",
+        member: "Member",
+        quotation: "Quotation",
+        invoice: "Invoice",
+        receipt: "Receipt",
     },
 
     calendar: {
@@ -223,6 +227,7 @@ export const en = {
             in_progress: "In Progress",
             completed: "Completed",
             on_hold: "On Hold",
+            planning: "Planning",
         },
         empty: "No projects found matching your criteria",
         edit: {
@@ -334,12 +339,46 @@ export const en = {
         cash_flow: "Cash Flow",
         my_work: "My Work",
         personal: "Personal",
+        stats: {
+            revenue_desc: "Total Recognized Revenue",
+            expenses_desc: "Total Recorded Expenses",
+            profit_healthy: "Healthy Profit",
+            profit_loss: "Loss",
+            progress_desc: "Currently In Progress"
+        },
+        market: {
+            title: "Market Overview",
+            closed: "MARKET CLOSED",
+            delayed: "DELAYED",
+            offline: "OFFLINE",
+            live: "LIVE",
+            try_again: "Try again",
+            updated: "updated",
+            assets: {
+                gold: "Gold",
+                btc: "Bitcoin",
+                nvidia: "Nvidia",
+                currency: "USD/THB"
+            }
+        },
         greeting_morning: "Good Morning",
         greeting_afternoon: "Good Afternoon",
         greeting_evening: "Good Evening",
         personal_overview: "Here's your personal overview for today.",
-        quick_stats: "Quick Stats",
-        pending_tasks: "Pending Tasks",
+        greeting_fallback: "Friend",
+        moods: {
+            no_tasks: "No tasks! Enjoy your peaceful day",
+            chill: "Just {{count}} tasks. Take it easy!",
+            pumped: "{{count}} tasks today. You've got this!",
+            focused: "{{count}} tasks! Stay focused!"
+        },
+        pending_tasks: "pending tasks",
+        report: "Report",
+        banner_fallback: {
+            welcome: "Welcome back!",
+            learn_more: "Learn More"
+        },
+        team_wall: "Team Wall",
         this_week: "This Week",
         my_tasks: "My Tasks",
         pending_tasks_count: "You have {{count}} pending tasks",
@@ -350,7 +389,26 @@ export const en = {
             all_projects: "All Projects",
             all_users: "All Users"
         },
-        no_activity: "No activity found for these filters."
+        no_activity: "No activity found for these filters.",
+        unknown_project: "Unknown Project",
+        unknown_payee: "Unknown Payee",
+        no_deadline: "No deadline",
+        today: "Today",
+        yesterday: "Yesterday",
+        sort_by_created: "By Created Time",
+        sort_by_date: "By Bill Date",
+        all_projects_label: "All Projects",
+        view_all_activity: "View All Activity",
+        priorities: {
+            high: "High",
+            medium: "Medium",
+            low: "Low"
+        },
+        task_statuses: {
+            todo: "To Do",
+            in_progress: "In Progress",
+            done: "Done"
+        }
     },
     expenses: {
         title: "Expenses",
@@ -771,6 +829,7 @@ export const en = {
         title: "Team Members",
         subtitle: "Manage internal team and access permissions.",
         add_member: "Add Member",
+        create_team: "Create New Team",
         edit_team: "Edit Team Details",
         search_placeholder: "Search name, title or email...",
         empty: "No team members found",
@@ -1060,7 +1119,27 @@ export const en = {
         link_hint: "Clicking the link will automatically add you to the team.",
         enter_code: "Or enter a code manually",
         enter_invite: "Enter Invite Code",
-        join: "Join Team"
+        join: "Join Team",
+        carousel: {
+            slide1: {
+                title: "Master Your Projects",
+                description: "Plan, track, and deliver construction projects with powerful Kanban boards and timelines."
+            },
+            slide2: {
+                title: "Smart Financials",
+                description: "Control your budget with precision. Scan receipts, track expenses, and manage cash flow in real-time."
+            },
+            slide3: {
+                title: "Professional Documents",
+                description: "Create and manage contracts, invoices, and quotations effortlessly. Keep everything organized."
+            },
+            slide4: {
+                title: "Unified Teamwork",
+                description: "Connect your office and field teams. Assign tasks, share files, and stay in sync anywhere."
+            },
+            next: "Next",
+            get_started: "Get Started"
+        }
     },
     invite: {
         login_required: "Please log in to join this team.",
@@ -1128,5 +1207,47 @@ export const en = {
         email_support: "Email Support",
         official_website: "Official Website",
         rights_reserved: "© 2026 HipslothProject. All rights reserved."
+    },
+    documents: {
+        new_quotation: "New Quotation",
+        create_new_desc: "Create a new document for your client.",
+        types: {
+            quotation: "Quotation",
+            invoice: "Invoice",
+            receipt: "Receipt"
+        },
+        client_details: "Client Details",
+        client_name: "Client Name",
+        select_client: "Select Client...",
+        project: "Project",
+        select_project: "Select Project...",
+        service_tags: "Service Tags",
+        service_tags_placeholder: "e.g. Renovation, Design, Interior",
+        info: "Document Info",
+        issue_date: "Issue Date",
+        due_date: "Due Date",
+        doc_no: "Document No.",
+        items_title: "Items",
+        add_item: "Add Item",
+        add_group: "Add Group System",
+        description: "Description",
+        qty: "Qty",
+        unit_price: "Unit Price",
+        total: "Total",
+        new_section: "New Section Group",
+        new_item: "New Item",
+        sub_item_detail: "Sub-item Detail",
+        add_item_to_group: "Add Item to Group",
+        total_amount_thb: "Total Amount (THB)",
+        preview: "Preview",
+        save_draft: "Save Draft",
+        approve_issue: "Approve & Issue"
+    },
+    auth_warning: {
+        title: "Please use an external browser",
+        subtitle: "You are currently using an in-app browser (Line, Facebook, or similar). Google Login is blocked in these environments for security reasons.",
+        step1: "Tap the three dots ··· or the share button.",
+        step2: "Select \"Open in Safari\" or \"Open in Chrome\".",
+        ios_tip: "If you are on iOS, look for the Safari icon in the bottom right corner."
     }
 }

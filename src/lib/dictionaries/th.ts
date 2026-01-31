@@ -27,6 +27,10 @@ export const th = {
         log_out: "ออกจากระบบ",
         confirm_logout: "คุณแน่ใจหรือไม่ที่จะออกจากระบบ?",
         loading: "กำลังโหลด...",
+        member: "สมาชิก",
+        quotation: "ใบเสนอราคา",
+        invoice: "ใบแจ้งหนี้",
+        receipt: "ใบเสร็จรับเงิน",
     },
 
     calendar: {
@@ -333,12 +337,46 @@ export const th = {
         cash_flow: "กระแสเงินสด",
         my_work: "งานของฉัน",
         personal: "ส่วนตัว",
+        stats: {
+            revenue_desc: "รายรับที่รับรู้ทั้งหมด",
+            expenses_desc: "ค่าใช้จ่ายที่บันทึกทั้งหมด",
+            profit_healthy: "กำไรสุทธิคงเหลือ",
+            profit_loss: "ขาดทุนสุทธิ",
+            progress_desc: "อยู่ระหว่างดำเนินการ"
+        },
+        market: {
+            title: "ภาพรวมตลาด",
+            closed: "ตลาดปิด",
+            delayed: "ดีเลย์",
+            offline: "ออฟไลน์",
+            live: "สด",
+            try_again: "ลองอีกครั้ง",
+            updated: "อัปเดตเมื่อ",
+            assets: {
+                gold: "ทองคำ",
+                btc: "Bitcoin",
+                nvidia: "Nvidia",
+                currency: "USD/THB"
+            }
+        },
         greeting_morning: "สวัสดีตอนเช้า",
         greeting_afternoon: "สวัสดีตอนบ่าย",
         greeting_evening: "สวัสดีตอนเย็น",
         personal_overview: "นี่คือภาพรวมของคุณสำหรับวันนี้",
-        quick_stats: "สถิติด่วน",
+        greeting_fallback: "เพื่อน",
+        moods: {
+            no_tasks: "ไม่มีงาน! ขอให้เป็นวันที่สดใส",
+            chill: "เหลืออีกแค่ {{count}} งาน สบายๆ!",
+            pumped: "วันนี้มี {{count}} งาน สู้ๆ นะ!",
+            focused: "{{count}} งานแล้ว! ตั้งสติและลุยต่อ!"
+        },
         pending_tasks: "งานที่ค้างอยู่",
+        report: "รายงาน",
+        banner_fallback: {
+            welcome: "ยินดีต้อนรับกลับ!",
+            learn_more: "เรียนรู้เพิ่มเติม"
+        },
+        team_wall: "บอร์ดทีมงาน",
         this_week: "สัปดาห์นี้",
         my_tasks: "งานของฉัน",
         pending_tasks_count: "คุณมี {{count}} งานที่ค้างอยู่",
@@ -349,7 +387,26 @@ export const th = {
             all_projects: "ทุกโครงการ",
             all_users: "ทุกคน"
         },
-        no_activity: "ไม่พบกิจกรรมตามตัวกรองนี้"
+        no_activity: "ไม่พบกิจกรรมตามตัวกรองนี้",
+        unknown_project: "ไม่ระบุโครงการ",
+        unknown_payee: "ไม่ระบุผู้รับเงิน",
+        no_deadline: "ไม่มีกำหนดการ",
+        today: "วันนี้",
+        yesterday: "เมื่อวานนี้",
+        sort_by_created: "ตามเวลาที่สร้าง",
+        sort_by_date: "ตามวันที่ในบิล",
+        all_projects_label: "ทุกโครงการ",
+        view_all_activity: "ดูความเคลื่อนไหวทั้งหมด",
+        priorities: {
+            high: "สูง",
+            medium: "กลาง",
+            low: "ต่ำ"
+        },
+        task_statuses: {
+            todo: "งานใหม่",
+            in_progress: "กำลังทำ",
+            done: "เสร็จสิ้น"
+        }
     },
     expenses: {
         title: "รายจ่าย",
@@ -1060,7 +1117,27 @@ export const th = {
         link_hint: "การคลิกลิงก์จะเพิ่มคุณเข้าทีมโดยอัตโนมัติ",
         enter_code: "หรือกรอกรหัสด้วยตนเอง",
         enter_invite: "กรอกรหัสเชิญ",
-        join: "เข้าร่วมทีม"
+        join: "เข้าร่วมทีม",
+        carousel: {
+            slide1: {
+                title: "จัดการโครงการอย่างมืออาชีพ",
+                description: "วางแผน ติดตาม และส่งมอบงานก่อสร้างด้วยกระดานคัมบังและไทม์ไลน์ที่ทรงพลัง"
+            },
+            slide2: {
+                title: "จัดการการเงินอย่างชาญฉลาด",
+                description: "ควบคุมงบประมาณของคุณอย่างแม่นยำ สแกนใบเสร็จ ติดตามค่าใช้จ่าย และจัดการกระแสเงินสดแบบเรียลไทม์"
+            },
+            slide3: {
+                title: "เอกสารระดับมืออาชีพ",
+                description: "สร้างและจัดการสัญญา ใบแจ้งหนี้ และใบเสนอราคาได้อย่างง่ายดาย จัดระเบียบทุกอย่างให้เข้าที่"
+            },
+            slide4: {
+                title: "ทำงานเป็นทีมอย่างเป็นหนึ่งเดียว",
+                description: "เชื่อมต่อทีมออฟฟิศและทีมหน้างาน มอบหมายงาน แชร์ไฟล์ และทำงานประสานกันได้ทุกที่"
+            },
+            next: "ถัดไป",
+            get_started: "เริ่มใช้งาน"
+        }
     },
     invite: {
         login_required: "กรุณาเข้าสู่ระบบเพื่อเข้าร่วมทีมนี้",
@@ -1128,5 +1205,47 @@ export const th = {
         email_support: "ความช่วยเหลือผ่านอีเมล",
         official_website: "เว็บไซต์อย่างเป็นทางการ",
         rights_reserved: "© 2569 HipslothProject. สงวนลิขสิทธิ์"
+    },
+    documents: {
+        new_quotation: "เพิ่มใบเสนอราคา",
+        create_new_desc: "สร้างเอกสารใหม่สำหรับลูกค้าของคุณ",
+        types: {
+            quotation: "ใบเสนอราคา",
+            invoice: "ใบแจ้งหนี้",
+            receipt: "ใบเสร็จรับเงิน"
+        },
+        client_details: "รายละเอียดลูกค้า",
+        client_name: "ชื่อลูกค้า",
+        select_client: "เลือกลูกค้า...",
+        project: "โครงการ",
+        select_project: "เลือกโครงการ...",
+        service_tags: "ป้ายกำกับบริการ",
+        service_tags_placeholder: "เช่น รีโนเวท, ออกแบบ, ตกแต่งภายใน",
+        info: "ข้อมูลเอกสาร",
+        issue_date: "วันที่ออกเอกสาร",
+        due_date: "วันครบกำหนด",
+        doc_no: "เลขที่เอกสาร",
+        items_title: "รายการ",
+        add_item: "เพิ่มรายการ",
+        add_group: "เพิ่มหมวดหมู่",
+        description: "รายการ",
+        qty: "จำนวน",
+        unit_price: "ราคาต่อหน่วย",
+        total: "รวมเงิน",
+        new_section: "หมวดหมู่ใหม่",
+        new_item: "รายการใหม่",
+        sub_item_detail: "รายละเอียดรายการย่อย",
+        add_item_to_group: "เพิ่มรายการในหมวดหมู่นี้",
+        total_amount_thb: "รวมเงินทั้งสิ้น (บาท)",
+        preview: "ตัวอย่าง",
+        save_draft: "บันทึกร่าง",
+        approve_issue: "อนุมัติและออกเอกสาร"
+    },
+    auth_warning: {
+        title: "โปรดใช้เบราว์เซอร์ภายนอก",
+        subtitle: "คุณกำลังใช้งานผ่านเบราว์เซอร์ในแอป (Line, Facebook หรืออื่นๆ) การเข้าสู่ระบบด้วย Google ถูกระงับในสภาพแวดล้อมเหล่านี้เพื่อความปลอดภัย",
+        step1: "แตะที่จุดสามจุด ··· หรือปุ่มแชร์",
+        step2: "เลือก \"เปิดใน Safari\" หรือ \"เปิดใน Chrome\"",
+        ios_tip: "หากคุณใช้งาน iOS ให้มองหาไอคอน Safari ที่มุมขวาล่าง"
     }
 }

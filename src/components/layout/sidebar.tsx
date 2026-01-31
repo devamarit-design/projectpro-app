@@ -103,9 +103,9 @@ export function Sidebar({ className }: { className?: string }) {
                 variant="danger"
             />
             <div className="p-4">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-sidebar-primary to-purple-600 bg-clip-text text-transparent uppercase tracking-tight">
+                <div className="text-xl font-bold bg-gradient-to-r from-sidebar-primary to-purple-600 bg-clip-text text-transparent uppercase tracking-tight">
                     HIPSLOTHPROJECT
-                </h1>
+                </div>
             </div>
 
             <nav className="flex-1 px-3 space-y-1 overflow-y-auto py-2">

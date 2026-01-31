@@ -56,6 +56,9 @@ export const metadata: Metadata = {
     icon: "/icon.png",
     apple: "/icon.png",
   },
+  alternates: {
+    canonical: "/",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -78,8 +81,41 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="th" suppressHydrationWarning>
       <body className={`${kanit.variable} font-sans antialiased overflow-x-hidden`} suppressHydrationWarning>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "HipslothProject",
+              "url": "https://hipsloth.app",
+              "logo": "https://hipsloth.app/logo.png",
+              "description": "Modern Construction & Project Management for Teams in Thailand.",
+              "sameAs": [
+                "https://facebook.com/hipslothproject",
+                "https://twitter.com/hipslothproject"
+              ]
+            })
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "HipslothProject",
+              "url": "https://hipsloth.app",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://hipsloth.app/search?q={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }
+            })
+          }}
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

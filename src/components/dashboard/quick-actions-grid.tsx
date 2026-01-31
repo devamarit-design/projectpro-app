@@ -40,7 +40,7 @@ export function QuickActionsGrid() {
             bg: "bg-red-500/10"
         },
         {
-            label: "Global Schedule",
+            label: t.schedule?.title || "Global Schedule",
             icon: GanttChartSquare,
             href: "/schedule",
             color: "text-indigo-500",
@@ -61,7 +61,7 @@ export function QuickActionsGrid() {
             bg: "bg-purple-500/10"
         },
         {
-            label: "Vendors",
+            label: t.common?.partners || "Vendors",
             icon: Store,
             href: "/partners", // Links to Partners page
             color: "text-teal-500",

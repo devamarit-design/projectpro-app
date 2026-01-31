@@ -43,7 +43,7 @@ const getLabels = (timeframe: TimeframeType, locale: string) => {
 }
 
 export function MarketOverview() {
-    const { locale } = useTranslation()
+    const { t, locale } = useTranslation()
     const [activeAsset, setActiveAsset] = useState<AssetType>('gold')
     const [timeframe, setTimeframe] = useState<TimeframeType>('1D')
     const [currency, setCurrency] = useState<CurrencyType>('THB')
@@ -302,18 +302,18 @@ export function MarketOverview() {
     const isPositive = percent >= 0 || (activeAsset === 'gold' && change >= 0)
 
     const assetConfig = {
-        gold: { label: locale === 'th' ? 'ทองคำ' : 'Gold', icon: <Coins className="w-5 h-5" />, color: 'from-yellow-400 to-amber-600', stroke: '#f59e0b' },
-        btc: { label: 'Bitcoin', icon: <Bitcoin className="w-5 h-5" />, color: 'from-orange-400 to-red-600', stroke: '#f97316' },
-        nvidia: { label: 'Nvidia', icon: <Cpu className="w-5 h-5" />, color: 'from-green-400 to-emerald-600', stroke: '#10b981' },
-        currency: { label: 'USD/THB', icon: <RefreshCcw className="w-5 h-5" />, color: 'from-blue-400 to-indigo-600', stroke: '#6366f1' }
+        gold: { label: t.dashboard.market?.assets?.gold || 'Gold', icon: <Coins className="w-5 h-5" />, color: 'from-yellow-400 to-amber-600', stroke: '#f59e0b' },
+        btc: { label: t.dashboard.market?.assets?.btc || 'Bitcoin', icon: <Bitcoin className="w-5 h-5" />, color: 'from-orange-400 to-red-600', stroke: '#f97316' },
+        nvidia: { label: t.dashboard.market?.assets?.nvidia || 'Nvidia', icon: <Cpu className="w-5 h-5" />, color: 'from-green-400 to-emerald-600', stroke: '#10b981' },
+        currency: { label: t.dashboard.market?.assets?.currency || 'USD/THB', icon: <RefreshCcw className="w-5 h-5" />, color: 'from-blue-400 to-indigo-600', stroke: '#6366f1' }
     }
 
     const currentAsset = assetConfig[activeAsset]
     const marketStatus = getMarketStatus(activeAsset)
     const isClosed = marketStatus === 'CLOSED'
-    const statusLabel = isClosed ? 'MARKET CLOSED' :
-        ((fetchError && historyData[`${activeAsset}-${timeframe}`]) ? 'DELAYED' :
-            (fetchError ? 'OFFLINE' : (activeAsset === 'nvidia' || activeAsset === 'currency' ? 'DELAYED' : 'LIVE')))
+    const statusLabel = isClosed ? (t.dashboard.market?.closed || 'MARKET CLOSED') :
+        ((fetchError && historyData[`${activeAsset}-${timeframe}`]) ? (t.dashboard.market?.delayed || 'DELAYED') :
+            (fetchError ? (t.dashboard.market?.offline || 'OFFLINE') : (activeAsset === 'nvidia' || activeAsset === 'currency' ? (t.dashboard.market?.delayed || 'DELAYED') : (t.dashboard.market?.live || 'LIVE'))))
 
     const badgeColor = isClosed ? "bg-slate-500/10 text-slate-400" :
         (statusLabel === 'OFFLINE' ? "bg-red-500/10 text-red-500" :
@@ -361,7 +361,7 @@ export function MarketOverview() {
                                     </span>
                                     {fetchError && !isClosed && (
                                         <button onClick={handleRefresh} className="text-[10px] text-blue-400 hover:text-blue-300 underline font-bold px-1 transition-colors">
-                                            Try again
+                                            {t.dashboard.market?.try_again || 'Try again'}
                                         </button>
                                     )}
                                     <button
@@ -375,7 +375,7 @@ export function MarketOverview() {
                                 </div>
                                 {lastUpdated && (
                                     <span className="text-[10px] text-muted-foreground/50 lowercase">
-                                        updated {lastUpdated.toLocaleTimeString(locale === 'th' ? 'th-TH' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                        {t.dashboard.market?.updated || 'updated'} {lastUpdated.toLocaleTimeString(locale === 'th' ? 'th-TH' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                                     </span>
                                 )}
                             </h2>

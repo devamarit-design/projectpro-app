@@ -12,7 +12,7 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
     const { currentUser, tasks, currentTeam } = useProjects()
     const { moodThresholds } = useSettings()
-    const { t } = useTranslation()
+    const { t, locale } = useTranslation()
 
     // Count pending tasks (not done) assigned to user
     const pendingTasksCount = tasks.filter(task =>
@@ -22,13 +22,13 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
 
     // Time based greeting
     const hour = new Date().getHours()
-    let greeting = "Good Morning"
+    let greeting = t.dashboard.greeting_morning
     let TimeIcon = Sun
     if (hour >= 12 && hour < 17) {
-        greeting = "Good Afternoon"
+        greeting = t.dashboard.greeting_afternoon
         TimeIcon = Sun
     } else if (hour >= 17) {
-        greeting = "Good Evening"
+        greeting = t.dashboard.greeting_evening
         TimeIcon = Moon
     }
 
@@ -47,7 +47,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
             return {
                 gradient: "from-emerald-600/40 via-teal-600/40 to-cyan-600/40",
                 emoji: "😎",
-                message: "No tasks! Enjoy your peaceful day",
+                message: t.dashboard.moods?.no_tasks || "No tasks! Enjoy your peaceful day",
                 MoodIcon: PartyPopper,
                 accentColor: "text-emerald-200",
                 particleColor: "bg-emerald-300"
@@ -56,7 +56,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
             return {
                 gradient: "from-sky-600/40 via-blue-600/40 to-indigo-600/40",
                 emoji: "☕",
-                message: `Just ${pendingTasksCount} task${pendingTasksCount > 1 ? 's' : ''}. Take it easy!`,
+                message: (t.dashboard.moods?.chill || `Just ${pendingTasksCount} task${pendingTasksCount > 1 ? 's' : ''}. Take it easy!`).replace('{{count}}', pendingTasksCount.toString()),
                 MoodIcon: Coffee,
                 accentColor: "text-sky-200",
                 particleColor: "bg-sky-300"
@@ -65,7 +65,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
             return {
                 gradient: "from-amber-600/40 via-orange-600/40 to-yellow-600/40",
                 emoji: "💪",
-                message: `${pendingTasksCount} tasks today. You've got this!`,
+                message: (t.dashboard.moods?.pumped || `${pendingTasksCount} tasks today. You've got this!`).replace('{{count}}', pendingTasksCount.toString()),
                 MoodIcon: Zap,
                 accentColor: "text-amber-200",
                 particleColor: "bg-amber-300"
@@ -74,7 +74,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
             return {
                 gradient: "from-rose-600/40 via-red-600/40 to-orange-600/40",
                 emoji: "🔥",
-                message: `${pendingTasksCount} tasks! Stay focused!`,
+                message: (t.dashboard.moods?.focused || `${pendingTasksCount} tasks! Stay focused!`).replace('{{count}}', pendingTasksCount.toString()),
                 MoodIcon: Flame,
                 accentColor: "text-rose-200",
                 particleColor: "bg-rose-300"
@@ -83,7 +83,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
     }
 
     const mood = getMood()
-    const formattedDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    const formattedDate = new Date().toLocaleDateString(locale === 'th' ? 'th-TH' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
     return (
         <div className={`relative w-full min-h-[320px] overflow-hidden rounded-3xl bg-gradient-to-br ${mood.gradient} shadow-2xl`}>
@@ -127,7 +127,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                             <div>
                                 <div>{greeting},</div>
                                 <div className="bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
-                                    {currentUser?.name?.split(' ')[0] || 'Friend'}
+                                    {currentUser?.name?.split(' ')[0] || (t.dashboard.greeting_fallback || 'Friend')}
                                 </div>
                             </div>
                         </h1>
@@ -146,7 +146,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                     <div className="flex items-center gap-3">
                         <div className="px-4 py-2 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20">
                             <span className="text-2xl font-bold">{pendingTasksCount}</span>
-                            <span className="text-sm text-white/70 ml-2">pending tasks</span>
+                            <span className="text-sm text-white/70 ml-2">{t.dashboard.pending_tasks || "pending tasks"}</span>
                         </div>
                     </div>
 
@@ -159,7 +159,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                                 className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 backdrop-blur-md px-3 py-2 rounded-xl transition-all text-sm font-medium border border-white/20 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 group"
                             >
                                 <Download className="w-4 h-4 group-hover:animate-bounce" />
-                                <span className="hidden sm:inline">Report</span>
+                                <span className="hidden sm:inline">{t.dashboard.report || "Report"}</span>
                             </button>
                         )}
 
@@ -167,7 +167,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                         <div className="flex items-center gap-1 px-3 py-2 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20">
                             <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
                             <span className="text-xs font-bold text-white/90 uppercase tracking-wider">
-                                {currentTeam?.role || 'Member'}
+                                {currentTeam?.role || (t.common?.member || 'Member')}
                             </span>
                         </div>
                     </div>

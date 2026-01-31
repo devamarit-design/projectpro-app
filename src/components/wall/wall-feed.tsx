@@ -20,11 +20,16 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
     const [posts, setPosts] = useState<Post[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
-    useEffect(() => {
-        if (!currentOrg) return
+    const currentOrgId = currentOrg?.id
+    const currentUserId = currentUser?.id
 
-        setIsLoading(true)
-        const postsRef = collection(db, "organizations", currentOrg.id, "posts")
+    useEffect(() => {
+        if (!currentOrgId) return
+
+        // Only show loading if we don't have posts for this org yet or org changed
+        setIsLoading(prev => posts.length === 0 || prev)
+
+        const postsRef = collection(db, "organizations", currentOrgId, "posts")
 
         // Base constraints
         const constraints: QueryConstraint[] = [
@@ -32,31 +37,17 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
             limit(variant === 'widget' ? 8 : 20)
         ]
 
-        if (filterByUser && currentUser) {
-            // Note: Requires compound index (author.id + createdAt)
-            // If index missing, might fail. 
-            // For safety without advanced index deployment right now, fetch all then filter client key if small?
-            // Or just try query constraints. Firestore usually prompts for index creation.
-            // Let's rely on client side filtering for now if dataset is small to avoid blocking deployment,
-            // OR use the query and assume we can click the link to create index.
-            // Ideally: constraints.unshift(where("author.id", "==", currentUser.uid))
-            // But orderBy createdAt requires index.
-
-            // Let's use client side filtering for simple prototype to guarantee it works instantly
-            // Real app should index.
-        }
-
         const q = query(postsRef, ...constraints)
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedPosts = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
-                orgId: currentOrg.id
+                orgId: currentOrgId
             })) as Post[]
 
-            if (filterByUser && currentUser) {
-                setPosts(fetchedPosts.filter(p => p.author.id === currentUser.id))
+            if (filterByUser && currentUserId) {
+                setPosts(fetchedPosts.filter(p => p.author.id === currentUserId))
             } else {
                 setPosts(fetchedPosts)
             }
@@ -67,7 +58,7 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
         })
 
         return () => unsubscribe()
-    }, [currentOrg, variant, filterByUser, currentUser])
+    }, [currentOrgId, variant, filterByUser, currentUserId])
 
     if (isLoading) {
         return (
