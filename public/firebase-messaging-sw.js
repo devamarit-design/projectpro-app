@@ -11,18 +11,23 @@ const firebaseConfig = {
     measurementId: "G-FJKYP026ZP"
 };
 
-firebase.initializeApp(firebaseConfig);
+try {
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
 
-const messaging = firebase.messaging();
+    messaging.onBackgroundMessage((payload) => {
+        console.log('[firebase-messaging-sw.js] Received background message ', payload);
+        const notificationTitle = payload.notification.title;
+        const notificationOptions = {
+            body: payload.notification.body,
+            icon: '/icons/icon-192x192.png',
+            badge: '/icons/icon-192x192.png' // For Android/iOS PWA badge
+        };
 
-messaging.onBackgroundMessage((payload) => {
-    console.log('[firebase-messaging-sw.js] Received background message ', payload);
-
-    const notificationTitle = payload.notification.title;
-    const notificationOptions = {
-        body: payload.notification.body,
-        icon: '/icon.png'
-    };
-
-    self.registration.showNotification(notificationTitle, notificationOptions);
-});
+        if (self.registration && self.registration.showNotification) {
+            self.registration.showNotification(notificationTitle, notificationOptions);
+        }
+    });
+} catch (error) {
+    console.error('Firebase messaging service worker initialization failed:', error);
+}

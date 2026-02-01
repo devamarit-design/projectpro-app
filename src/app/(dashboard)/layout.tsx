@@ -5,6 +5,7 @@ import { useProjects } from "@/context/project-context"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Loader2 } from "lucide-react"
+import { useFcmToken } from "@/hooks/use-fcm-token"
 
 
 export default function DashboardLayout({
@@ -14,6 +15,16 @@ export default function DashboardLayout({
 }) {
     const { currentUser, isAuthLoading, isOrgLoading, teams } = useProjects()
     const router = useRouter()
+
+    // Notification System
+    const { requestPermission } = useFcmToken()
+
+    useEffect(() => {
+        if (!isAuthLoading && currentUser) {
+            // Check/Request Notification Permission on load
+            requestPermission()
+        }
+    }, [isAuthLoading, currentUser])
 
     useEffect(() => {
         if (!isAuthLoading && currentUser === null) {
