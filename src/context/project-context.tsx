@@ -1079,26 +1079,17 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 // Always set persistence
                 await setPersistence(auth, browserLocalPersistence)
 
-                // PWA/Mobile: Use Redirect directly to avoid popup blocking/hanging issues
-                if (isIOS || isPWA) {
-                    sessionStorage.setItem('auth_in_progress', 'true')
-                    setIsRedirecting(true)
-                    await signInWithRedirect(auth, googleProvider)
-                    return // Redirecting...
-                }
-
-                // Desktop: Try Popup first for better UX
+                // PWA/Mobile & Desktop: Use Popup to ensure Auth Persistence (avoids iOS ITP Redirect issues)
                 try {
                     await signInWithPopup(auth, googleProvider)
                 } catch (error: any) {
-                    console.error("Popup failed, fallback to redirect", error)
-                    if (error.code !== 'auth/popup-closed-by-user') {
-                        sessionStorage.setItem('auth_in_progress', 'true')
-                        setIsRedirecting(true)
-                        await signInWithRedirect(auth, googleProvider)
-                    } else {
+                    console.error("Popup login failed:", error)
+                    if (error.code === 'auth/popup-closed-by-user') {
                         throw new Error("Login cancelled")
+                    } else if (error.code === 'auth/popup-blocked') {
+                        throw new Error("Popup blocked. Please allow popups for this site.")
                     }
+                    throw error
                 }
             } else if ((provider === 'email' || provider === 'credentials') && credentials?.email && credentials?.password) {
                 await setPersistence(auth, browserLocalPersistence)
