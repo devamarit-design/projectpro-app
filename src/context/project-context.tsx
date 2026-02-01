@@ -1076,10 +1076,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     throw new Error("SOCIAL_WEBVIEW_BLOCKED")
                 }
 
-                // Always set persistence
-                await setPersistence(auth, browserLocalPersistence)
+                // PWA/Mobile & Desktop: Use Popup
+                // CRITICAL: Must not await setPersistence before popup, or iOS blocks it.
+                setPersistence(auth, browserLocalPersistence).catch(console.error)
 
-                // PWA/Mobile & Desktop: Use Popup to ensure Auth Persistence (avoids iOS ITP Redirect issues)
                 try {
                     await signInWithPopup(auth, googleProvider)
                 } catch (error: any) {
