@@ -836,7 +836,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // SaaS Adapter
     const { currentOrg, userOrgs, setCurrentOrg, isLoading: isOrgLoading, createOrganization, refreshOrgs } = useOrganization()
 
-    const [isRedirecting, setIsRedirecting] = useState(false)
+    const [isRedirecting, setIsRedirecting] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return sessionStorage.getItem('auth_in_progress') === 'true'
+        }
+        return false
+    })
 
     // Environment Detection Helpers
     const getEnvironment = React.useCallback(() => {
@@ -1027,6 +1032,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 // This is often just "no redirect result found", so we don't treat it as a crash
             } finally {
                 setIsRedirecting(false)
+                if (typeof window !== 'undefined') {
+                    sessionStorage.removeItem('auth_in_progress')
+                }
             }
         }
         handleRedirect()
@@ -1053,6 +1061,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
                 // PWA/Mobile: Use Redirect directly to avoid popup blocking/hanging issues
                 if (isIOS || isPWA) {
+                    sessionStorage.setItem('auth_in_progress', 'true')
                     setIsRedirecting(true)
                     await signInWithRedirect(auth, googleProvider)
                     return // Redirecting...
@@ -1064,6 +1073,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 } catch (error: any) {
                     console.error("Popup failed, fallback to redirect", error)
                     if (error.code !== 'auth/popup-closed-by-user') {
+                        sessionStorage.setItem('auth_in_progress', 'true')
                         setIsRedirecting(true)
                         await signInWithRedirect(auth, googleProvider)
                     } else {
