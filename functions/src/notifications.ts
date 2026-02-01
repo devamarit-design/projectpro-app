@@ -91,6 +91,20 @@ export const onTaskAssigned = functions
                 }
             }
 
+            // Create In-App Notification
+            await db.collection('notifications').add({
+                title: 'New Task Assigned 📋',
+                message: `You have been assigned to "${newData.title}" in ${projectName}`,
+                type: 'info',
+                date: new Date().toISOString(),
+                read: false,
+                link: `/tasks?taskId=${context.params.taskId}`,
+                relatedId: context.params.taskId,
+                target: newAssigneeId,
+                orgId: newData.orgId || '', // Assuming orgId is on task
+                creatorId: newData.createdBy || 'system'
+            })
+
             // 4. Send Message
             const response = await messaging.sendEachForMulticast(payload)
 
@@ -184,6 +198,21 @@ export const onTaskStatusChanged = functions
                     apns: { payload: { aps: { badge: 1, sound: 'default' } } }
                 }
 
+
+                // Create In-App Notification
+                await db.collection('notifications').add({
+                    title: 'Task Completed ✅',
+                    message: `Task "${newData.title}" in ${projectName} is Done!`,
+                    type: 'success',
+                    date: new Date().toISOString(),
+                    read: false,
+                    link: `/tasks?taskId=${context.params.taskId}`,
+                    relatedId: context.params.taskId,
+                    target: creatorId,
+                    orgId: newData.orgId || '',
+                    creatorId: 'system' // or whoever completed it if we knew
+                })
+
                 await messaging.sendEachForMulticast(payload)
                 return { success: true }
             } catch (error) {
@@ -268,6 +297,20 @@ export const checkTaskDueDates = functions
                             android: { notification: { icon: 'stock_ticker_update', color: '#ff9800' } },
                             apns: { payload: { aps: { badge: 1, sound: 'default' } } }
                         }
+
+                        // Create In-App Notification
+                        await db.collection('notifications').add({
+                            title: 'Task Due Soon ⏰',
+                            message: `"${task.title}" is due tomorrow!`,
+                            type: 'warning',
+                            date: new Date().toISOString(),
+                            read: false,
+                            link: `/tasks?taskId=${doc.id}`,
+                            relatedId: doc.id,
+                            target: task.assignedTo,
+                            orgId: task.orgId || '',
+                            creatorId: 'system'
+                        })
 
                         await messaging.sendEachForMulticast(payload)
                     })())

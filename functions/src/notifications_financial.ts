@@ -61,6 +61,7 @@ export const onExpenseCreated = functions
     .region('asia-southeast1')
     .firestore.document('expenses/{expenseId}')
     .onCreate(async (snap, context) => {
+        const db = admin.firestore()
         const messaging = admin.messaging()
         const expense = snap.data()
         const orgId = expense.orgId
@@ -108,6 +109,21 @@ export const onExpenseCreated = functions
                 apns: { payload: { aps: { badge: 1, sound: 'default' } } }
             }
 
+
+            // Create In-App Notification (One for all admins - simpler than one per user for now, or use target: 'admin')
+            await db.collection('notifications').add({
+                title: notificationTitle,
+                message: notificationBody,
+                type: expense.status === 'Paid' ? 'success' : 'info',
+                date: new Date().toISOString(),
+                read: false,
+                link: '/finance',
+                relatedId: context.params.expenseId,
+                target: 'admin', // Frontend filters this for Admin/Owner
+                orgId: orgId,
+                creatorId: expense.createdBy || 'system'
+            })
+
             const response = await messaging.sendEachForMulticast(payload)
             console.log(`Sent expense notification to ${response.successCount} admins`)
             return { success: true }
@@ -126,6 +142,7 @@ export const onExpenseStatusChanged = functions
     .region('asia-southeast1')
     .firestore.document('expenses/{expenseId}')
     .onUpdate(async (change, context) => {
+        const db = admin.firestore()
         const messaging = admin.messaging()
 
         const newData = change.after.data()
@@ -158,6 +175,21 @@ export const onExpenseStatusChanged = functions
                     apns: { payload: { aps: { badge: 1, sound: 'default' } } }
                 }
 
+
+                // Create In-App Notification
+                await db.collection('notifications').add({
+                    title: 'Expense Paid ✅',
+                    message: `Your request "${newData.title}" has been paid.`,
+                    type: 'success',
+                    date: new Date().toISOString(),
+                    read: false,
+                    link: '/finance',
+                    relatedId: context.params.expenseId,
+                    target: creatorId, // Target specific user
+                    orgId: orgId || '',
+                    creatorId: 'system' // System notification
+                })
+
                 await messaging.sendEachForMulticast(payload)
                 return { success: true }
             } catch (error) {
@@ -177,6 +209,7 @@ export const onIncomeCreated = functions
     .region('asia-southeast1')
     .firestore.document('incomes/{incomeId}')
     .onCreate(async (snap, context) => {
+        const db = admin.firestore()
         const messaging = admin.messaging()
         const income = snap.data()
         const orgId = income.orgId
@@ -202,6 +235,21 @@ export const onIncomeCreated = functions
                 android: { notification: { icon: 'stock_ticker_update', color: '#009688' } }, // Teal for income
                 apns: { payload: { aps: { badge: 1, sound: 'default' } } }
             }
+
+
+            // Create In-App Notification
+            await db.collection('notifications').add({
+                title: 'New Income Recorded 💰',
+                message: `${income.documentNumber} - ${income.total?.toLocaleString()} THB`,
+                type: 'success',
+                date: new Date().toISOString(),
+                read: false,
+                link: '/finance/income',
+                relatedId: context.params.incomeId,
+                target: 'admin',
+                orgId: orgId,
+                creatorId: income.createdBy || 'system'
+            })
 
             await messaging.sendEachForMulticast(payload)
             return { success: true }
