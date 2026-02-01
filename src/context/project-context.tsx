@@ -1049,750 +1049,472 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             if (typeof window !== 'undefined') sessionStorage.removeItem('auth_in_progress')
         }
     }, [currentUser])
-}, [getEnvironment])
 
 
 
 
 
 
-const login = async (provider: string, credentials?: { email?: string, password?: string }) => {
-    setIsAuthLoading(true)
 
-    try {
-        if (provider === 'google') {
-            const { isIOS, isPWA, isRestricted } = getEnvironment()
+    const login = async (provider: string, credentials?: { email?: string, password?: string }) => {
+        setIsAuthLoading(true)
 
-            if (isRestricted) {
-                throw new Error("SOCIAL_WEBVIEW_BLOCKED")
-            }
+        try {
+            if (provider === 'google') {
+                const { isIOS, isPWA, isRestricted } = getEnvironment()
 
-            // Always set persistence
-            await setPersistence(auth, browserLocalPersistence)
+                if (isRestricted) {
+                    throw new Error("SOCIAL_WEBVIEW_BLOCKED")
+                }
 
-            // PWA/Mobile: Use Redirect directly to avoid popup blocking/hanging issues
-            if (isIOS || isPWA) {
-                sessionStorage.setItem('auth_in_progress', 'true')
-                setIsRedirecting(true)
-                await signInWithRedirect(auth, googleProvider)
-                return // Redirecting...
-            }
+                // Always set persistence
+                await setPersistence(auth, browserLocalPersistence)
 
-            // Desktop: Try Popup first for better UX
-            try {
-                await signInWithPopup(auth, googleProvider)
-            } catch (error: any) {
-                console.error("Popup failed, fallback to redirect", error)
-                if (error.code !== 'auth/popup-closed-by-user') {
+                // PWA/Mobile: Use Redirect directly to avoid popup blocking/hanging issues
+                if (isIOS || isPWA) {
                     sessionStorage.setItem('auth_in_progress', 'true')
                     setIsRedirecting(true)
                     await signInWithRedirect(auth, googleProvider)
-                } else {
-                    throw new Error("Login cancelled")
+                    return // Redirecting...
                 }
+
+                // Desktop: Try Popup first for better UX
+                try {
+                    await signInWithPopup(auth, googleProvider)
+                } catch (error: any) {
+                    console.error("Popup failed, fallback to redirect", error)
+                    if (error.code !== 'auth/popup-closed-by-user') {
+                        sessionStorage.setItem('auth_in_progress', 'true')
+                        setIsRedirecting(true)
+                        await signInWithRedirect(auth, googleProvider)
+                    } else {
+                        throw new Error("Login cancelled")
+                    }
+                }
+            } else if ((provider === 'email' || provider === 'credentials') && credentials?.email && credentials?.password) {
+                await setPersistence(auth, browserLocalPersistence)
+                await signInWithEmailAndPassword(auth, credentials.email, credentials.password)
             }
-        } else if ((provider === 'email' || provider === 'credentials') && credentials?.email && credentials?.password) {
-            await setPersistence(auth, browserLocalPersistence)
-            await signInWithEmailAndPassword(auth, credentials.email, credentials.password)
+        } catch (error: any) {
+            setIsAuthLoading(false)
+            setIsRedirecting(false)
+            if (error.message === "SOCIAL_WEBVIEW_BLOCKED") {
+                throw error // Pass through for UI to handle
+            }
+            console.error("Login failed", error)
+            if (error.code === 'auth/popup-closed-by-user') {
+                throw new Error("Login cancelled")
+            }
+            throw error
         }
-    } catch (error: any) {
-        setIsAuthLoading(false)
-        setIsRedirecting(false)
-        if (error.message === "SOCIAL_WEBVIEW_BLOCKED") {
-            throw error // Pass through for UI to handle
-        }
-        console.error("Login failed", error)
-        if (error.code === 'auth/popup-closed-by-user') {
-            throw new Error("Login cancelled")
-        }
-        throw error
     }
-}
 
 
-const register = async (name: string, email: string, password: string) => {
-    try {
-        // 1. Create Auth User
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-        const firebaseUser = userCredential.user
+    const register = async (name: string, email: string, password: string) => {
+        try {
+            // 1. Create Auth User
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+            const firebaseUser = userCredential.user
 
-        // 2. Update Profile Name
-        await updateProfile(firebaseUser, { displayName: name })
+            // 2. Update Profile Name
+            await updateProfile(firebaseUser, { displayName: name })
 
-        // 3. Create Firestore User Doc (Check for Placeholder)
-        const q = query(collection(db, "users"), where("email", "==", email))
-        const snapshot = await getDocs(q)
+            // 3. Create Firestore User Doc (Check for Placeholder)
+            const q = query(collection(db, "users"), where("email", "==", email))
+            const snapshot = await getDocs(q)
 
-        let initialData: Partial<User> = {}
-        if (!snapshot.empty) {
-            const placeholderDoc = snapshot.docs[0]
-            initialData = placeholderDoc.data() as User
-            await deleteDoc(placeholderDoc.ref)
+            let initialData: Partial<User> = {}
+            if (!snapshot.empty) {
+                const placeholderDoc = snapshot.docs[0]
+                initialData = placeholderDoc.data() as User
+                await deleteDoc(placeholderDoc.ref)
+            }
+
+            const newUser: User = {
+                id: firebaseUser.uid,
+                name: name,
+                email: email,
+                role: initialData.role || "Member",
+                status: "Active",
+                orgIds: initialData.orgIds || [],
+                // avatar: undefined, // Removed to avoid Firestore error
+                theme: "system", // Default to system
+                joinedDate: new Date().toISOString()
+            }
+
+            await setDoc(doc(db, "users", firebaseUser.uid), newUser)
+
+            // 4. Update State
+            setCurrentUser(newUser)
+
+        } catch (error) {
+            console.error("Registration failed", error)
+            throw error
+        }
+    }
+
+    const updateUserPassword = async (password: string) => {
+        if (!auth.currentUser) return
+        try {
+            await updatePassword(auth.currentUser, password)
+        } catch (error) {
+            console.error("Failed to update password", error)
+            throw error
+        }
+    }
+
+    const deleteAccount = async (password?: string) => {
+        if (!auth.currentUser) return
+
+        try {
+            const user = auth.currentUser
+            const providerId = user.providerData[0]?.providerId
+
+            // Re-authenticate
+            if (providerId === 'google.com') {
+                await reauthenticateWithPopup(user, googleProvider)
+            } else if (providerId === 'password') {
+                if (!password) throw new Error("Password confirmation required")
+                if (!user.email) throw new Error("User email not found")
+
+                const credential = EmailAuthProvider.credential(user.email, password)
+                await reauthenticateWithCredential(user, credential)
+            }
+
+            const uid = user.uid
+
+            // 1. Delete Firestore Data
+            await deleteDoc(doc(db, "users", uid))
+
+            // 2. Delete Auth Account
+            await deleteAuthUser(user)
+
+            // 3. Cleanup
+            setCurrentUser(null)
+            window.location.href = "/"
+
+        } catch (error) {
+            console.error("Delete account failed", error)
+            throw error
+        }
+    }
+
+    const logout = async () => {
+        try {
+            await signOut(auth)
+            // Clear all local state
+            setCurrentUser(null)
+            // Teams/CurrentTeam handled by OrgContext
+
+
+            // Clear persistence
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem("projectpro_teamid")
+                sessionStorage.removeItem("app_security_unlocked")
+                // Optional: Clear other app-specific storage if needed
+            }
+        } catch (error) {
+            console.error("Logout failed", error)
+        }
+    }
+
+
+
+    // Load User's Teams (Real-time) - REMOVED (Handled by OrganizationContext)
+
+
+    // --- Real-time Data Sync with Cache-First Strategy ---
+    useEffect(() => {
+        if (!currentTeam?.id) {
+            // If no team, clear everything
+            setProjects([])
+            setExpenses([])
+            setWorkers([])
+            setVendors([])
+            setCustomers([])
+            setIncomes([])
+            setIncomesLoading(false)
+            setContracts([])
+            setTasks([])
+            setUsers([])
+            setFiles([])
+            setIsLoading(false)
+            return
         }
 
-        const newUser: User = {
-            id: firebaseUser.uid,
-            name: name,
-            email: email,
-            role: initialData.role || "Member",
-            status: "Active",
-            orgIds: initialData.orgIds || [],
-            // avatar: undefined, // Removed to avoid Firestore error
-            theme: "system", // Default to system
-            joinedDate: new Date().toISOString()
-        }
+        setIsLoading(true)
 
-        await setDoc(doc(db, "users", firebaseUser.uid), newUser)
-
-        // 4. Update State
-        setCurrentUser(newUser)
-
-    } catch (error) {
-        console.error("Registration failed", error)
-        throw error
-    }
-}
-
-const updateUserPassword = async (password: string) => {
-    if (!auth.currentUser) return
-    try {
-        await updatePassword(auth.currentUser, password)
-    } catch (error) {
-        console.error("Failed to update password", error)
-        throw error
-    }
-}
-
-const deleteAccount = async (password?: string) => {
-    if (!auth.currentUser) return
-
-    try {
-        const user = auth.currentUser
-        const providerId = user.providerData[0]?.providerId
-
-        // Re-authenticate
-        if (providerId === 'google.com') {
-            await reauthenticateWithPopup(user, googleProvider)
-        } else if (providerId === 'password') {
-            if (!password) throw new Error("Password confirmation required")
-            if (!user.email) throw new Error("User email not found")
-
-            const credential = EmailAuthProvider.credential(user.email, password)
-            await reauthenticateWithCredential(user, credential)
-        }
-
-        const uid = user.uid
-
-        // 1. Delete Firestore Data
-        await deleteDoc(doc(db, "users", uid))
-
-        // 2. Delete Auth Account
-        await deleteAuthUser(user)
-
-        // 3. Cleanup
-        setCurrentUser(null)
-        window.location.href = "/"
-
-    } catch (error) {
-        console.error("Delete account failed", error)
-        throw error
-    }
-}
-
-const logout = async () => {
-    try {
-        await signOut(auth)
-        // Clear all local state
-        setCurrentUser(null)
-        // Teams/CurrentTeam handled by OrgContext
-
-
-        // Clear persistence
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem("projectpro_teamid")
-            sessionStorage.removeItem("app_security_unlocked")
-            // Optional: Clear other app-specific storage if needed
-        }
-    } catch (error) {
-        console.error("Logout failed", error)
-    }
-}
-
-
-
-// Load User's Teams (Real-time) - REMOVED (Handled by OrganizationContext)
-
-
-// --- Real-time Data Sync with Cache-First Strategy ---
-useEffect(() => {
-    if (!currentTeam?.id) {
-        // If no team, clear everything
+        // ORG ISOLATION: Clear current data state to prevent leaks while loading next org
         setProjects([])
         setExpenses([])
         setWorkers([])
         setVendors([])
         setCustomers([])
         setIncomes([])
-        setIncomesLoading(false)
         setContracts([])
         setTasks([])
         setUsers([])
         setFiles([])
-        setIsLoading(false)
-        return
-    }
 
-    setIsLoading(true)
+        // 0. Cache Hydration (Load from IndexedDB immediately)
+        const hydrateFromCache = async () => {
+            try {
+                // Parallel fetch from local store
+                const [
+                    cachedProjects,
+                    cachedExpenses,
+                    cachedWorkers,
+                    cachedVendors,
+                    cachedCustomers,
+                    cachedIncomes,
+                    cachedContracts,
+                    cachedTasks,
+                    cachedUsers,
+                    cachedFiles
+                ] = await Promise.all([
+                    get(`projects_${currentTeam.id}`),
+                    get(`expenses_${currentTeam.id}`),
+                    get(`workers_${currentTeam.id}`),
+                    get(`vendors_${currentTeam.id}`),
+                    get(`customers_${currentTeam.id}`),
+                    get(`incomes_${currentTeam.id}`),
+                    get(`contracts_${currentTeam.id}`),
+                    get(`tasks_${currentTeam.id}`),
+                    get(`users_${currentTeam.id}`),
+                    get(`files_${currentTeam.id}`)
+                ])
 
-    // ORG ISOLATION: Clear current data state to prevent leaks while loading next org
-    setProjects([])
-    setExpenses([])
-    setWorkers([])
-    setVendors([])
-    setCustomers([])
-    setIncomes([])
-    setContracts([])
-    setTasks([])
-    setUsers([])
-    setFiles([])
+                if (cachedProjects) setProjects(cachedProjects)
+                if (cachedExpenses) setExpenses(cachedExpenses)
+                if (cachedWorkers) setWorkers(cachedWorkers)
+                if (cachedVendors) setVendors(cachedVendors)
+                if (cachedCustomers) setCustomers(cachedCustomers)
+                if (cachedIncomes) {
+                    setIncomes(cachedIncomes)
+                    setIncomesLoading(false)
+                }
+                if (cachedContracts) setContracts(cachedContracts)
+                if (cachedTasks) setTasks(cachedTasks)
+                if (cachedUsers) setUsers(cachedUsers)
+                if (cachedFiles) setFiles(cachedFiles)
 
-    // 0. Cache Hydration (Load from IndexedDB immediately)
-    const hydrateFromCache = async () => {
-        try {
-            // Parallel fetch from local store
-            const [
-                cachedProjects,
-                cachedExpenses,
-                cachedWorkers,
-                cachedVendors,
-                cachedCustomers,
-                cachedIncomes,
-                cachedContracts,
-                cachedTasks,
-                cachedUsers,
-                cachedFiles
-            ] = await Promise.all([
-                get(`projects_${currentTeam.id}`),
-                get(`expenses_${currentTeam.id}`),
-                get(`workers_${currentTeam.id}`),
-                get(`vendors_${currentTeam.id}`),
-                get(`customers_${currentTeam.id}`),
-                get(`incomes_${currentTeam.id}`),
-                get(`contracts_${currentTeam.id}`),
-                get(`tasks_${currentTeam.id}`),
-                get(`users_${currentTeam.id}`),
-                get(`files_${currentTeam.id}`)
-            ])
+                // If we found projects, we can assume initial loading is "done" visually
+                if (cachedProjects) setIsLoading(false)
 
-            if (cachedProjects) setProjects(cachedProjects)
-            if (cachedExpenses) setExpenses(cachedExpenses)
-            if (cachedWorkers) setWorkers(cachedWorkers)
-            if (cachedVendors) setVendors(cachedVendors)
-            if (cachedCustomers) setCustomers(cachedCustomers)
-            if (cachedIncomes) {
-                setIncomes(cachedIncomes)
-                setIncomesLoading(false)
+            } catch (error) {
+                console.warn("Cache hydration failed:", error)
             }
-            if (cachedContracts) setContracts(cachedContracts)
-            if (cachedTasks) setTasks(cachedTasks)
-            if (cachedUsers) setUsers(cachedUsers)
-            if (cachedFiles) setFiles(cachedFiles)
-
-            // If we found projects, we can assume initial loading is "done" visually
-            if (cachedProjects) setIsLoading(false)
-
-        } catch (error) {
-            console.warn("Cache hydration failed:", error)
         }
-    }
 
-    hydrateFromCache()
+        hydrateFromCache()
 
-    // 1. Projects
-    const qProjects = query(collection(db, "projects"), where("orgId", "==", currentTeam.id))
-    const unsubProjects = onSnapshot(qProjects, (snap) => {
-        const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Project))
-        setProjects(data)
-        set(`projects_${currentTeam.id}`, data)
-        setIsLoading(false)
-    }, (error) => {
-        console.error("Project sync error:", error)
-        setIsLoading(false) // Clear loading state even on error to prevent stuck UI
-    })
+        // 1. Projects
+        const qProjects = query(collection(db, "projects"), where("orgId", "==", currentTeam.id))
+        const unsubProjects = onSnapshot(qProjects, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Project))
+            setProjects(data)
+            set(`projects_${currentTeam.id}`, data)
+            setIsLoading(false)
+        }, (error) => {
+            console.error("Project sync error:", error)
+            setIsLoading(false) // Clear loading state even on error to prevent stuck UI
+        })
 
-    // 2. Expenses
-    const qExpenses = query(collection(db, "expenses"), where("orgId", "==", currentTeam.id))
-    const unsubExpenses = onSnapshot(qExpenses, (snap) => {
-        const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
-        setExpenses(data)
-        set(`expenses_${currentTeam.id}`, data)
-    }, (error) => console.error("Expense sync error:", error))
+        // 2. Expenses
+        const qExpenses = query(collection(db, "expenses"), where("orgId", "==", currentTeam.id))
+        const unsubExpenses = onSnapshot(qExpenses, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
+            setExpenses(data)
+            set(`expenses_${currentTeam.id}`, data)
+        }, (error) => console.error("Expense sync error:", error))
 
-    // 3. Workers
-    const qWorkers = query(collection(db, "workers"), where("orgId", "==", currentTeam.id))
-    const unsubWorkers = onSnapshot(qWorkers, (snap) => {
-        const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Worker))
-        setWorkers(data)
-        set(`workers_${currentTeam.id}`, data)
-    }, (error) => console.error("Worker sync error:", error))
+        // 3. Workers
+        const qWorkers = query(collection(db, "workers"), where("orgId", "==", currentTeam.id))
+        const unsubWorkers = onSnapshot(qWorkers, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Worker))
+            setWorkers(data)
+            set(`workers_${currentTeam.id}`, data)
+        }, (error) => console.error("Worker sync error:", error))
 
-    // 4. Vendors
-    const qVendors = query(collection(db, "vendors"), where("orgId", "==", currentTeam.id))
-    const unsubVendors = onSnapshot(qVendors, (snap) => {
-        const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Vendor))
-        setVendors(data)
-        set(`vendors_${currentTeam.id}`, data)
-    }, (error) => console.error("Vendor sync error:", error))
+        // 4. Vendors
+        const qVendors = query(collection(db, "vendors"), where("orgId", "==", currentTeam.id))
+        const unsubVendors = onSnapshot(qVendors, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Vendor))
+            setVendors(data)
+            set(`vendors_${currentTeam.id}`, data)
+        }, (error) => console.error("Vendor sync error:", error))
 
-    // 5. Customers
-    const qCustomers = query(collection(db, "customers"), where("orgId", "==", currentTeam.id))
-    const unsubCustomers = onSnapshot(qCustomers, (snap) => {
-        const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer))
-        setCustomers(data)
-        set(`customers_${currentTeam.id}`, data)
-    }, (error) => console.error("Customer sync error:", error))
+        // 5. Customers
+        const qCustomers = query(collection(db, "customers"), where("orgId", "==", currentTeam.id))
+        const unsubCustomers = onSnapshot(qCustomers, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer))
+            setCustomers(data)
+            set(`customers_${currentTeam.id}`, data)
+        }, (error) => console.error("Customer sync error:", error))
 
-    // 6. Incomes
-    const qIncomes = query(collection(db, "incomes"), where("orgId", "==", currentTeam.id))
-    const unsubIncomes = onSnapshot(qIncomes, (snap) => {
-        const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
-        setIncomes(data)
-        set(`incomes_${currentTeam.id}`, data)
-        setIncomesLoading(false)
-    }, (error) => {
-        console.error("Income sync error:", error)
-        setIncomesLoading(false)
-    })
+        // 6. Incomes
+        const qIncomes = query(collection(db, "incomes"), where("orgId", "==", currentTeam.id))
+        const unsubIncomes = onSnapshot(qIncomes, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
+            setIncomes(data)
+            set(`incomes_${currentTeam.id}`, data)
+            setIncomesLoading(false)
+        }, (error) => {
+            console.error("Income sync error:", error)
+            setIncomesLoading(false)
+        })
 
-    // 7. Contracts
-    const qContracts = query(collection(db, "contracts"), where("orgId", "==", currentTeam.id))
-    const unsubContracts = onSnapshot(qContracts, (snap) => {
-        const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract))
-        setContracts(data)
-        set(`contracts_${currentTeam.id}`, data)
-    }, (error) => console.error("Contract sync error:", error))
+        // 7. Contracts
+        const qContracts = query(collection(db, "contracts"), where("orgId", "==", currentTeam.id))
+        const unsubContracts = onSnapshot(qContracts, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract))
+            setContracts(data)
+            set(`contracts_${currentTeam.id}`, data)
+        }, (error) => console.error("Contract sync error:", error))
 
-    // 8. Tasks
-    const qTasks = query(collection(db, "tasks"), where("orgId", "==", currentTeam.id))
-    const unsubTasks = onSnapshot(qTasks, async (snap) => {
-        const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask))
-        setTasks(data)
-        set(`tasks_${currentTeam.id}`, data)
+        // 8. Tasks
+        const qTasks = query(collection(db, "tasks"), where("orgId", "==", currentTeam.id))
+        const unsubTasks = onSnapshot(qTasks, async (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask))
+            setTasks(data)
+            set(`tasks_${currentTeam.id}`, data)
 
-        // Auto-archive tasks that have been Done for more than 2 days
-        const twoDaysAgo = new Date()
-        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+            // Auto-archive tasks that have been Done for more than 2 days
+            const twoDaysAgo = new Date()
+            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
 
-        for (const task of data) {
-            if (
-                task.status === 'Done' &&
-                task.doneAt &&
-                !task.isArchived &&
-                new Date(task.doneAt) < twoDaysAgo
-            ) {
-                try {
-                    await updateDoc(doc(db, "tasks", task.id), { isArchived: true })
-                } catch (e) {
-                    console.error("Error auto-archiving task:", e)
+            for (const task of data) {
+                if (
+                    task.status === 'Done' &&
+                    task.doneAt &&
+                    !task.isArchived &&
+                    new Date(task.doneAt) < twoDaysAgo
+                ) {
+                    try {
+                        await updateDoc(doc(db, "tasks", task.id), { isArchived: true })
+                    } catch (e) {
+                        console.error("Error auto-archiving task:", e)
+                    }
                 }
             }
-        }
-    }, (error) => console.error("Task sync error:", error))
+        }, (error) => console.error("Task sync error:", error))
 
-    // 9. Works (Schedule)
-    const qWorks = query(collection(db, "works"), where("orgId", "==", currentTeam.id))
-    const unsubWorks = onSnapshot(qWorks, (snap) => {
-        const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as WorkItem))
-        setWorks(data)
-        set(`works_${currentTeam.id}`, data)
-    }, (error) => console.error("Work sync error:", error))
+        // 9. Works (Schedule)
+        const qWorks = query(collection(db, "works"), where("orgId", "==", currentTeam.id))
+        const unsubWorks = onSnapshot(qWorks, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as WorkItem))
+            setWorks(data)
+            set(`works_${currentTeam.id}`, data)
+        }, (error) => console.error("Work sync error:", error))
 
-    // 9. Team Members
-    const qUsersOrgIds = query(collection(db, "users"), where("orgIds", "array-contains", currentTeam.id))
-    const qUsersTeamIds = query(collection(db, "users"), where("teamIds", "array-contains", currentTeam.id))
+        // 9. Team Members
+        const qUsersOrgIds = query(collection(db, "users"), where("orgIds", "array-contains", currentTeam.id))
+        const qUsersTeamIds = query(collection(db, "users"), where("teamIds", "array-contains", currentTeam.id))
 
-    let usersFromOrgIds: User[] = []
-    let usersFromTeamIds: User[] = []
+        let usersFromOrgIds: User[] = []
+        let usersFromTeamIds: User[] = []
 
-    const mergeUsers = () => {
-        const userMap = new Map<string, User>()
-        usersFromOrgIds.forEach(u => userMap.set(u.id, u))
-        usersFromTeamIds.forEach(u => userMap.set(u.id, u))
-        setUsers(Array.from(userMap.values()))
-    }
-
-    const unsubUsersOrgIds = onSnapshot(qUsersOrgIds, (snap) => {
-        usersFromOrgIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
-        mergeUsers()
-    }, (error) => console.error("Users (orgIds) sync error:", error))
-
-    const unsubUsersTeamIds = onSnapshot(qUsersTeamIds, (snap) => {
-        usersFromTeamIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
-        mergeUsers()
-    }, (error) => console.error("Users (teamIds) sync error:", error))
-
-    // 10. Files
-    const qFiles = query(collection(db, "files"), where("orgId", "==", currentTeam.id))
-    const unsubFiles = onSnapshot(qFiles, (snap) => {
-        const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectFile))
-        setFiles(data)
-        set(`files_${currentTeam.id}`, data)
-    }, (error) => console.error("Files sync error:", error))
-
-    return () => {
-        unsubProjects()
-        unsubExpenses()
-        unsubWorkers()
-        unsubVendors()
-        unsubCustomers()
-        unsubIncomes()
-        unsubContracts()
-        unsubTasks()
-        unsubWorks()
-        unsubUsersOrgIds()
-        unsubUsersTeamIds()
-        unsubFiles()
-    }
-}, [currentTeam?.id])
-
-const seedData = async () => {
-    if (!currentTeam || !currentUser) return
-    await seedDatabase(currentTeam.id, currentUser.id)
-}
-
-
-
-
-
-
-// Save data whenever it changes
-
-
-
-// --- CRUD Operations (Firestore) ---
-
-// 1. Projects
-const addProject = async (project: Omit<Project, "id">) => {
-    if (!currentTeam) return
-    try {
-        await addDoc(collection(db, "projects"), {
-            ...project,
-            orgId: currentTeam.id,
-            createdAt: new Date().toISOString()
-        })
-
-        // Log Activity
-        await logActivity(db, currentTeam.id, {
-            action: "CREATE",
-            entityType: "PROJECT",
-            entityId: "",
-            entityTitle: project.name,
-            details: `Created new project: ${project.name}`,
-            performedBy: {
-                uid: currentUser?.id || "unknown",
-                name: currentUser?.name || "Unknown",
-                role: currentUser?.role || "Staff"
-            },
-            relatedUserIds: []
-        })
-
-    } catch (e) {
-        console.error("Error adding project", e)
-    }
-}
-
-const updateProject = async (id: string, updates: Partial<Project>) => {
-    try {
-        await updateDoc(doc(db, "projects", id), { ...updates, updatedAt: new Date().toISOString() })
-    } catch (e) {
-        console.error("Error updating project", e)
-    }
-
-    if (currentTeam && currentUser) {
-        logActivity(db, currentTeam.id, {
-            action: "UPDATE",
-            entityType: "PROJECT",
-            entityId: id,
-            entityTitle: updates.name || "Project",
-            details: `Updated project details`,
-            performedBy: {
-                uid: currentUser.id,
-                name: currentUser.name,
-                role: currentUser.role
-            },
-            relatedUserIds: []
-        })
-    }
-}
-
-const deleteProject = async (id: string) => {
-    try {
-        await deleteDoc(doc(db, "projects", id))
-    } catch (e) {
-        console.error("Error deleting project", e)
-    }
-
-    if (currentTeam && currentUser) {
-        const proj = projects.find(p => p.id === id)
-        logActivity(db, currentTeam.id, {
-            action: "DELETE",
-            entityType: "PROJECT",
-            entityId: id,
-            entityTitle: proj?.name || "Unknown Project",
-            details: `Deleted project`,
-            performedBy: {
-                uid: currentUser.id,
-                name: currentUser.name,
-                role: currentUser.role
-            },
-            relatedUserIds: []
-        })
-    }
-}
-
-// ========== ARCHIVE SYSTEM ==========
-const archiveProject = async (id: string) => {
-    try {
-        await updateDoc(doc(db, "projects", id), { isArchived: true })
-    } catch (e) {
-        console.error("Error archiving project", e)
-    }
-}
-
-const unarchiveProject = async (id: string) => {
-    try {
-        await updateDoc(doc(db, "projects", id), { isArchived: false })
-    } catch (e) {
-        console.error("Error unarchiving project", e)
-    }
-}
-
-const archiveTask = async (projectId: string, taskId: string) => {
-    try {
-        await updateDoc(doc(db, "tasks", taskId), { isArchived: true })
-    } catch (e) {
-        console.error("Error archiving task", e)
-    }
-}
-
-const unarchiveTask = async (projectId: string, taskId: string) => {
-    try {
-        await updateDoc(doc(db, "tasks", taskId), { isArchived: false })
-    } catch (e) {
-        console.error("Error unarchiving task", e)
-    }
-}
-
-const archiveExpense = async (id: string) => {
-    try {
-        await updateDoc(doc(db, "expenses", id), { isArchived: true })
-    } catch (e) {
-        console.error("Error archiving expense", e)
-    }
-}
-
-const unarchiveExpense = async (id: string) => {
-    try {
-        await updateDoc(doc(db, "expenses", id), { isArchived: false })
-    } catch (e) {
-        console.error("Error unarchiving expense", e)
-    }
-}
-
-const archiveIncome = async (id: string) => {
-    try {
-        await updateDoc(doc(db, "incomes", id), { isArchived: true })
-    } catch (e) {
-        console.error("Error archiving income", e)
-    }
-}
-
-const unarchiveIncome = async (id: string) => {
-    try {
-        await updateDoc(doc(db, "incomes", id), { isArchived: false })
-    } catch (e) {
-        console.error("Error unarchiving income", e)
-    }
-}
-
-const getProject = (id: string) => {
-    // use raw state arrays which contain both active and archived items
-    const project = projects.find(p => p.id === id)
-    if (!project) return undefined
-
-    // Merge tasks and works from global state
-    const projectTasks = tasks.filter(t => t.projectId === id)
-    const projectWorks = works.filter(w => w.projectId === id)
-    return { ...project, tasks: projectTasks, works: projectWorks }
-}
-
-// Task Management Logic (Refactored to Top-level Collection)
-
-
-const addTask = async (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "orgId">) => {
-    if (!currentTeam) return
-
-    try {
-        // Clean undefined values
-        const payload = {
-            ...Object.fromEntries(
-                Object.entries({
-                    ...task,
-                    projectId,
-                    orgId: currentTeam.id,
-                    status: task.status || "Todo",
-                    priority: task.priority || "Medium"
-                }).filter(([_, v]) => v !== undefined)
-            ),
-            createdBy: currentUser?.id || "unknown",
-            createdAt: new Date().toISOString()
+        const mergeUsers = () => {
+            const userMap = new Map<string, User>()
+            usersFromOrgIds.forEach(u => userMap.set(u.id, u))
+            usersFromTeamIds.forEach(u => userMap.set(u.id, u))
+            setUsers(Array.from(userMap.values()))
         }
 
-        const docRef = await addDoc(collection(db, "tasks"), payload)
+        const unsubUsersOrgIds = onSnapshot(qUsersOrgIds, (snap) => {
+            usersFromOrgIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
+            mergeUsers()
+        }, (error) => console.error("Users (orgIds) sync error:", error))
 
-        // Log Activity
-        await logActivity(db, currentTeam.id, {
-            action: "CREATE",
-            entityType: "TASK",
-            entityId: docRef.id,
-            entityTitle: task.title,
-            details: `Created new task in project`,
-            performedBy: {
-                uid: currentUser?.id || "unknown",
-                name: currentUser?.name || "Unknown",
-                role: currentUser?.role || "Staff"
-            },
-            relatedUserIds: task.assignedTo ? [task.assignedTo] : []
-        })
+        const unsubUsersTeamIds = onSnapshot(qUsersTeamIds, (snap) => {
+            usersFromTeamIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
+            mergeUsers()
+        }, (error) => console.error("Users (teamIds) sync error:", error))
 
-    } catch (e) {
-        console.error("Error adding task", e)
-    }
-}
+        // 10. Files
+        const qFiles = query(collection(db, "files"), where("orgId", "==", currentTeam.id))
+        const unsubFiles = onSnapshot(qFiles, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectFile))
+            setFiles(data)
+            set(`files_${currentTeam.id}`, data)
+        }, (error) => console.error("Files sync error:", error))
 
-// Work Management (Schedule/Gantt)
-const addWork = async (projectId: string, work: Omit<WorkItem, "id" | "projectId" | "orgId" | "createdAt">) => {
-    if (!currentTeam) return
-    try {
-        // Find current max sortOrder for this project
-        const projectWorks = works.filter(w => w.projectId === projectId)
-        const maxOrder = projectWorks.length > 0
-            ? Math.max(...projectWorks.map(w => w.sortOrder || 0))
-            : -1
-
-        const payload = {
-            ...work,
-            projectId,
-            orgId: currentTeam.id,
-            sortOrder: maxOrder + 1,
-            createdAt: new Date().toISOString()
+        return () => {
+            unsubProjects()
+            unsubExpenses()
+            unsubWorkers()
+            unsubVendors()
+            unsubCustomers()
+            unsubIncomes()
+            unsubContracts()
+            unsubTasks()
+            unsubWorks()
+            unsubUsersOrgIds()
+            unsubUsersTeamIds()
+            unsubFiles()
         }
-        await addDoc(collection(db, "works"), payload)
-    } catch (e) {
-        console.error("Error adding work", e)
-    }
-}
+    }, [currentTeam?.id])
 
-const updateWork = async (projectId: string, workId: string, updates: Partial<WorkItem>) => {
-    try {
-        await updateDoc(doc(db, "works", workId), { ...updates, updatedAt: new Date().toISOString() })
-    } catch (e) {
-        console.error("Error updating work", e)
+    const seedData = async () => {
+        if (!currentTeam || !currentUser) return
+        await seedDatabase(currentTeam.id, currentUser.id)
     }
-}
 
-const updateWorkOrder = async (workOrders: { id: string, sortOrder: number }[]) => {
-    try {
-        const batchPromises = workOrders.map(wo =>
-            updateDoc(doc(db, "works", wo.id), {
-                sortOrder: wo.sortOrder,
-                updatedAt: new Date().toISOString()
+
+
+
+
+
+    // Save data whenever it changes
+
+
+
+    // --- CRUD Operations (Firestore) ---
+
+    // 1. Projects
+    const addProject = async (project: Omit<Project, "id">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "projects"), {
+                ...project,
+                orgId: currentTeam.id,
+                createdAt: new Date().toISOString()
             })
-        )
-        await Promise.all(batchPromises)
-    } catch (e) {
-        console.error("Error updating work order", e)
-    }
-}
 
-const deleteWork = async (projectId: string, workId: string) => {
-    try {
-        await deleteDoc(doc(db, "works", workId))
-    } catch (e) {
-        console.error("Error deleting work", e)
-    }
-}
+            // Log Activity
+            await logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "PROJECT",
+                entityId: "",
+                entityTitle: project.name,
+                details: `Created new project: ${project.name}`,
+                performedBy: {
+                    uid: currentUser?.id || "unknown",
+                    name: currentUser?.name || "Unknown",
+                    role: currentUser?.role || "Staff"
+                },
+                relatedUserIds: []
+            })
 
-// Add Sub-project (โปรเจคย่อย)
-const addSubProject = async (projectId: string, subProject: Omit<SubProject, "id">) => {
-    const project = projects.find(p => p.id === projectId)
-    if (!project) return
-
-    const newSubProject = { ...subProject, id: Math.random().toString(36).substr(2, 9) }
-    const updatedSubProjects = [...(project.subProjects || []), newSubProject]
-
-    // Optimistic Update
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, subProjects: updatedSubProjects } : p))
-
-    try {
-        await updateDoc(doc(db, "projects", projectId), { subProjects: updatedSubProjects })
-    } catch (e) {
-        console.error("Error adding sub-project", e)
-    }
-}
-
-const updateTask = async (projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
-    try {
-        // Handle doneAt timestamp for auto-archive feature
-        const currentTask = tasks.find(t => t.id === taskId)
-        const finalUpdates: Partial<ProjectTask> & { updatedAt: string } = {
-            ...updates,
-            updatedAt: new Date().toISOString()
+        } catch (e) {
+            console.error("Error adding project", e)
         }
+    }
 
-        // If status is changing to Done, set doneAt
-        if (updates.status === 'Done' && currentTask?.status !== 'Done') {
-            finalUpdates.doneAt = new Date().toISOString()
+    const updateProject = async (id: string, updates: Partial<Project>) => {
+        try {
+            await updateDoc(doc(db, "projects", id), { ...updates, updatedAt: new Date().toISOString() })
+        } catch (e) {
+            console.error("Error updating project", e)
         }
-        // If status is changing from Done to something else, clear doneAt
-        else if (updates.status && updates.status !== 'Done' && currentTask?.status === 'Done') {
-            finalUpdates.doneAt = null as any // Clear the field
-        }
-
-        await updateDoc(doc(db, "tasks", taskId), finalUpdates)
 
         if (currentTeam && currentUser) {
-            const t = tasks.find(t => t.id === taskId)
             logActivity(db, currentTeam.id, {
                 action: "UPDATE",
-                entityType: "TASK",
-                entityId: taskId,
-                entityTitle: t?.title || "Task",
-                details: `Updated task`,
-                performedBy: {
-                    uid: currentUser.id,
-                    name: currentUser.name,
-                    role: currentUser.role
-                },
-                relatedUserIds: t?.assignedTo ? [t.assignedTo] : []
-            })
-        }
-    } catch (e) {
-        console.error("Error updating task", e)
-    }
-}
-
-const deleteTask = async (projectId: string, taskId: string) => {
-    try {
-        await deleteDoc(doc(db, "tasks", taskId))
-
-        if (currentTeam && currentUser) {
-            logActivity(db, currentTeam.id, {
-                action: "DELETE",
-                entityType: "TASK",
-                entityId: taskId,
-                entityTitle: "Deleted Task",
-                details: `Deleted task`,
+                entityType: "PROJECT",
+                entityId: id,
+                entityTitle: updates.name || "Project",
+                details: `Updated project details`,
                 performedBy: {
                     uid: currentUser.id,
                     name: currentUser.name,
@@ -1801,551 +1523,584 @@ const deleteTask = async (projectId: string, taskId: string) => {
                 relatedUserIds: []
             })
         }
-    } catch (e) {
-        console.error("Error deleting task", e)
     }
-}
 
-const toggleTask = async (projectId: string, taskId: string) => {
-    const task = tasks.find(t => t.id === taskId)
-    if (!task) return
-
-    const newStatus = task.status === 'Done' ? 'Todo' : 'Done'
-    try {
-        await updateDoc(doc(db, "tasks", taskId), { status: newStatus })
+    const deleteProject = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "projects", id))
+        } catch (e) {
+            console.error("Error deleting project", e)
+        }
 
         if (currentTeam && currentUser) {
+            const proj = projects.find(p => p.id === id)
             logActivity(db, currentTeam.id, {
-                action: "UPDATE",
-                entityType: "TASK",
-                entityId: taskId,
-                entityTitle: task.title,
-                details: `Changed status to ${newStatus} `,
+                action: "DELETE",
+                entityType: "PROJECT",
+                entityId: id,
+                entityTitle: proj?.name || "Unknown Project",
+                details: `Deleted project`,
                 performedBy: {
                     uid: currentUser.id,
                     name: currentUser.name,
                     role: currentUser.role
                 },
-                relatedUserIds: task.assignedTo ? [task.assignedTo] : []
+                relatedUserIds: []
             })
         }
-    } catch (e) {
-        console.error("Error toggling task", e)
     }
-}
 
-const payInstallment = async (contractId: string, installmentId: string) => {
-    if (!currentTeam) return
-    const contract = contracts.find(c => c.id === contractId)
-    if (!contract) return
-
-
-    const installment = contract.installments.find(i => i.id === installmentId)
-    if (!installment || installment.status === 'Paid') return
-
-    try {
-        // 1. Create Expense in Firestore
-        const worker = workers.find(w => w.id === contract.workerId)
-        const expenseRef = await addDoc(collection(db, "expenses"), {
-            title: `Installment Payment(${installment.description})`,
-            amount: `฿${installment.amount.toLocaleString()} `,
-            totalValue: installment.amount,
-            date: new Date().toISOString().split('T')[0],
-            category: "Labor",
-            payee: worker ? worker.name : "Worker",
-            status: "Paid",
-            projectId: contract.projectId,
-            orgId: currentTeam.id,
-            items: [
-                {
-                    id: Math.random().toString(),
-                    description: `Installment: ${installment.description} `,
-                    amount: installment.amount,
-                    category: "Labor",
-                    projectId: contract.projectId
-                }
-            ]
-        })
-
-        // 2. Update Contract Installment Status in Firestore
-        const updatedInstallments = contract.installments.map(i =>
-            i.id === installmentId ? {
-                ...i,
-                status: "Paid",
-                paidAt: new Date().toISOString(),
-                expenseId: expenseRef.id
-            } : i
-        )
-        await updateDoc(doc(db, "contracts", contractId), {
-            installments: updatedInstallments
-        })
-    } catch (e) {
-        console.error("Error paying installment", e)
+    // ========== ARCHIVE SYSTEM ==========
+    const archiveProject = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "projects", id), { isArchived: true })
+        } catch (e) {
+            console.error("Error archiving project", e)
+        }
     }
-}
 
-const updateContract = async (id: string, updates: Partial<Contract>) => {
-    try {
-        await updateDoc(doc(db, "contracts", id), { ...updates, updatedAt: new Date().toISOString() })
-    } catch (e) {
-        console.error("Error updating contract", e)
+    const unarchiveProject = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "projects", id), { isArchived: false })
+        } catch (e) {
+            console.error("Error unarchiving project", e)
+        }
     }
-}
 
-const deleteContract = async (id: string) => {
-    try {
-        await deleteDoc(doc(db, "contracts", id))
-    } catch (e) {
-        console.error("Error deleting contract", e)
+    const archiveTask = async (projectId: string, taskId: string) => {
+        try {
+            await updateDoc(doc(db, "tasks", taskId), { isArchived: true })
+        } catch (e) {
+            console.error("Error archiving task", e)
+        }
     }
-}
+
+    const unarchiveTask = async (projectId: string, taskId: string) => {
+        try {
+            await updateDoc(doc(db, "tasks", taskId), { isArchived: false })
+        } catch (e) {
+            console.error("Error unarchiving task", e)
+        }
+    }
+
+    const archiveExpense = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "expenses", id), { isArchived: true })
+        } catch (e) {
+            console.error("Error archiving expense", e)
+        }
+    }
+
+    const unarchiveExpense = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "expenses", id), { isArchived: false })
+        } catch (e) {
+            console.error("Error unarchiving expense", e)
+        }
+    }
+
+    const archiveIncome = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "incomes", id), { isArchived: true })
+        } catch (e) {
+            console.error("Error archiving income", e)
+        }
+    }
+
+    const unarchiveIncome = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "incomes", id), { isArchived: false })
+        } catch (e) {
+            console.error("Error unarchiving income", e)
+        }
+    }
+
+    const getProject = (id: string) => {
+        // use raw state arrays which contain both active and archived items
+        const project = projects.find(p => p.id === id)
+        if (!project) return undefined
+
+        // Merge tasks and works from global state
+        const projectTasks = tasks.filter(t => t.projectId === id)
+        const projectWorks = works.filter(w => w.projectId === id)
+        return { ...project, tasks: projectTasks, works: projectWorks }
+    }
+
+    // Task Management Logic (Refactored to Top-level Collection)
 
 
-// User CRUD
-// User CRUD
-const addUser = async (userData: Omit<User, "id" | "joinedDate" | "status" | "orgIds">) => {
-    if (!currentTeam) return
-    try {
-        // 1. Check if user with this email already exists
-        const q = query(collection(db, "users"), where("email", "==", userData.email))
-        const snapshot = await getDocs(q)
+    const addTask = async (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "orgId">) => {
+        if (!currentTeam) return
 
-        if (!snapshot.empty) {
-            // User exists - Update their permissions
-            const existingUserDoc = snapshot.docs[0]
-            const existingUserData = existingUserDoc.data() as User
-
-            // Check if already in this org
-            if (existingUserData.orgIds?.includes(currentTeam.id)) {
-                return
+        try {
+            // Clean undefined values
+            const payload = {
+                ...Object.fromEntries(
+                    Object.entries({
+                        ...task,
+                        projectId,
+                        orgId: currentTeam.id,
+                        status: task.status || "Todo",
+                        priority: task.priority || "Medium"
+                    }).filter(([_, v]) => v !== undefined)
+                ),
+                createdBy: currentUser?.id || "unknown",
+                createdAt: new Date().toISOString()
             }
 
-            // Add to Org
-            const updatedOrgIds = [...(existingUserData.orgIds || []), currentTeam.id]
-            const updatedOrganizations = [
-                ...(existingUserData.organizations || []),
-                { orgId: currentTeam.id, role: userData.role || "Staff" }
-            ]
+            const docRef = await addDoc(collection(db, "tasks"), payload)
 
-            await updateDoc(doc(db, "users", existingUserDoc.id), {
-                orgIds: updatedOrgIds,
-                organizations: updatedOrganizations
+            // Log Activity
+            await logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "TASK",
+                entityId: docRef.id,
+                entityTitle: task.title,
+                details: `Created new task in project`,
+                performedBy: {
+                    uid: currentUser?.id || "unknown",
+                    name: currentUser?.name || "Unknown",
+                    role: currentUser?.role || "Staff"
+                },
+                relatedUserIds: task.assignedTo ? [task.assignedTo] : []
             })
 
-            // 2. Synchronize with Organization Document
-            const orgRef = doc(db, "organizations", currentTeam.id)
-            const orgSnap = await getDoc(orgRef)
-            if (orgSnap.exists()) {
-                const orgData = orgSnap.data()
-                const members = orgData.members || []
-                if (!members.find((m: any) => m.userId === existingUserDoc.id)) {
+        } catch (e) {
+            console.error("Error adding task", e)
+        }
+    }
+
+    // Work Management (Schedule/Gantt)
+    const addWork = async (projectId: string, work: Omit<WorkItem, "id" | "projectId" | "orgId" | "createdAt">) => {
+        if (!currentTeam) return
+        try {
+            // Find current max sortOrder for this project
+            const projectWorks = works.filter(w => w.projectId === projectId)
+            const maxOrder = projectWorks.length > 0
+                ? Math.max(...projectWorks.map(w => w.sortOrder || 0))
+                : -1
+
+            const payload = {
+                ...work,
+                projectId,
+                orgId: currentTeam.id,
+                sortOrder: maxOrder + 1,
+                createdAt: new Date().toISOString()
+            }
+            await addDoc(collection(db, "works"), payload)
+        } catch (e) {
+            console.error("Error adding work", e)
+        }
+    }
+
+    const updateWork = async (projectId: string, workId: string, updates: Partial<WorkItem>) => {
+        try {
+            await updateDoc(doc(db, "works", workId), { ...updates, updatedAt: new Date().toISOString() })
+        } catch (e) {
+            console.error("Error updating work", e)
+        }
+    }
+
+    const updateWorkOrder = async (workOrders: { id: string, sortOrder: number }[]) => {
+        try {
+            const batchPromises = workOrders.map(wo =>
+                updateDoc(doc(db, "works", wo.id), {
+                    sortOrder: wo.sortOrder,
+                    updatedAt: new Date().toISOString()
+                })
+            )
+            await Promise.all(batchPromises)
+        } catch (e) {
+            console.error("Error updating work order", e)
+        }
+    }
+
+    const deleteWork = async (projectId: string, workId: string) => {
+        try {
+            await deleteDoc(doc(db, "works", workId))
+        } catch (e) {
+            console.error("Error deleting work", e)
+        }
+    }
+
+    // Add Sub-project (โปรเจคย่อย)
+    const addSubProject = async (projectId: string, subProject: Omit<SubProject, "id">) => {
+        const project = projects.find(p => p.id === projectId)
+        if (!project) return
+
+        const newSubProject = { ...subProject, id: Math.random().toString(36).substr(2, 9) }
+        const updatedSubProjects = [...(project.subProjects || []), newSubProject]
+
+        // Optimistic Update
+        setProjects(prev => prev.map(p => p.id === projectId ? { ...p, subProjects: updatedSubProjects } : p))
+
+        try {
+            await updateDoc(doc(db, "projects", projectId), { subProjects: updatedSubProjects })
+        } catch (e) {
+            console.error("Error adding sub-project", e)
+        }
+    }
+
+    const updateTask = async (projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
+        try {
+            // Handle doneAt timestamp for auto-archive feature
+            const currentTask = tasks.find(t => t.id === taskId)
+            const finalUpdates: Partial<ProjectTask> & { updatedAt: string } = {
+                ...updates,
+                updatedAt: new Date().toISOString()
+            }
+
+            // If status is changing to Done, set doneAt
+            if (updates.status === 'Done' && currentTask?.status !== 'Done') {
+                finalUpdates.doneAt = new Date().toISOString()
+            }
+            // If status is changing from Done to something else, clear doneAt
+            else if (updates.status && updates.status !== 'Done' && currentTask?.status === 'Done') {
+                finalUpdates.doneAt = null as any // Clear the field
+            }
+
+            await updateDoc(doc(db, "tasks", taskId), finalUpdates)
+
+            if (currentTeam && currentUser) {
+                const t = tasks.find(t => t.id === taskId)
+                logActivity(db, currentTeam.id, {
+                    action: "UPDATE",
+                    entityType: "TASK",
+                    entityId: taskId,
+                    entityTitle: t?.title || "Task",
+                    details: `Updated task`,
+                    performedBy: {
+                        uid: currentUser.id,
+                        name: currentUser.name,
+                        role: currentUser.role
+                    },
+                    relatedUserIds: t?.assignedTo ? [t.assignedTo] : []
+                })
+            }
+        } catch (e) {
+            console.error("Error updating task", e)
+        }
+    }
+
+    const deleteTask = async (projectId: string, taskId: string) => {
+        try {
+            await deleteDoc(doc(db, "tasks", taskId))
+
+            if (currentTeam && currentUser) {
+                logActivity(db, currentTeam.id, {
+                    action: "DELETE",
+                    entityType: "TASK",
+                    entityId: taskId,
+                    entityTitle: "Deleted Task",
+                    details: `Deleted task`,
+                    performedBy: {
+                        uid: currentUser.id,
+                        name: currentUser.name,
+                        role: currentUser.role
+                    },
+                    relatedUserIds: []
+                })
+            }
+        } catch (e) {
+            console.error("Error deleting task", e)
+        }
+    }
+
+    const toggleTask = async (projectId: string, taskId: string) => {
+        const task = tasks.find(t => t.id === taskId)
+        if (!task) return
+
+        const newStatus = task.status === 'Done' ? 'Todo' : 'Done'
+        try {
+            await updateDoc(doc(db, "tasks", taskId), { status: newStatus })
+
+            if (currentTeam && currentUser) {
+                logActivity(db, currentTeam.id, {
+                    action: "UPDATE",
+                    entityType: "TASK",
+                    entityId: taskId,
+                    entityTitle: task.title,
+                    details: `Changed status to ${newStatus} `,
+                    performedBy: {
+                        uid: currentUser.id,
+                        name: currentUser.name,
+                        role: currentUser.role
+                    },
+                    relatedUserIds: task.assignedTo ? [task.assignedTo] : []
+                })
+            }
+        } catch (e) {
+            console.error("Error toggling task", e)
+        }
+    }
+
+    const payInstallment = async (contractId: string, installmentId: string) => {
+        if (!currentTeam) return
+        const contract = contracts.find(c => c.id === contractId)
+        if (!contract) return
+
+
+        const installment = contract.installments.find(i => i.id === installmentId)
+        if (!installment || installment.status === 'Paid') return
+
+        try {
+            // 1. Create Expense in Firestore
+            const worker = workers.find(w => w.id === contract.workerId)
+            const expenseRef = await addDoc(collection(db, "expenses"), {
+                title: `Installment Payment(${installment.description})`,
+                amount: `฿${installment.amount.toLocaleString()} `,
+                totalValue: installment.amount,
+                date: new Date().toISOString().split('T')[0],
+                category: "Labor",
+                payee: worker ? worker.name : "Worker",
+                status: "Paid",
+                projectId: contract.projectId,
+                orgId: currentTeam.id,
+                items: [
+                    {
+                        id: Math.random().toString(),
+                        description: `Installment: ${installment.description} `,
+                        amount: installment.amount,
+                        category: "Labor",
+                        projectId: contract.projectId
+                    }
+                ]
+            })
+
+            // 2. Update Contract Installment Status in Firestore
+            const updatedInstallments = contract.installments.map(i =>
+                i.id === installmentId ? {
+                    ...i,
+                    status: "Paid",
+                    paidAt: new Date().toISOString(),
+                    expenseId: expenseRef.id
+                } : i
+            )
+            await updateDoc(doc(db, "contracts", contractId), {
+                installments: updatedInstallments
+            })
+        } catch (e) {
+            console.error("Error paying installment", e)
+        }
+    }
+
+    const updateContract = async (id: string, updates: Partial<Contract>) => {
+        try {
+            await updateDoc(doc(db, "contracts", id), { ...updates, updatedAt: new Date().toISOString() })
+        } catch (e) {
+            console.error("Error updating contract", e)
+        }
+    }
+
+    const deleteContract = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "contracts", id))
+        } catch (e) {
+            console.error("Error deleting contract", e)
+        }
+    }
+
+
+    // User CRUD
+    // User CRUD
+    const addUser = async (userData: Omit<User, "id" | "joinedDate" | "status" | "orgIds">) => {
+        if (!currentTeam) return
+        try {
+            // 1. Check if user with this email already exists
+            const q = query(collection(db, "users"), where("email", "==", userData.email))
+            const snapshot = await getDocs(q)
+
+            if (!snapshot.empty) {
+                // User exists - Update their permissions
+                const existingUserDoc = snapshot.docs[0]
+                const existingUserData = existingUserDoc.data() as User
+
+                // Check if already in this org
+                if (existingUserData.orgIds?.includes(currentTeam.id)) {
+                    return
+                }
+
+                // Add to Org
+                const updatedOrgIds = [...(existingUserData.orgIds || []), currentTeam.id]
+                const updatedOrganizations = [
+                    ...(existingUserData.organizations || []),
+                    { orgId: currentTeam.id, role: userData.role || "Staff" }
+                ]
+
+                await updateDoc(doc(db, "users", existingUserDoc.id), {
+                    orgIds: updatedOrgIds,
+                    organizations: updatedOrganizations
+                })
+
+                // 2. Synchronize with Organization Document
+                const orgRef = doc(db, "organizations", currentTeam.id)
+                const orgSnap = await getDoc(orgRef)
+                if (orgSnap.exists()) {
+                    const orgData = orgSnap.data()
+                    const members = orgData.members || []
+                    if (!members.find((m: any) => m.userId === existingUserDoc.id)) {
+                        await updateDoc(orgRef, {
+                            members: [...members, {
+                                userId: existingUserDoc.id,
+                                role: userData.role || "Staff",
+                                joinedAt: new Date().toISOString()
+                            }]
+                        })
+                    }
+                }
+
+                await logActivity(db, currentTeam.id, {
+                    action: "UPDATE",
+                    entityType: "USER",
+                    entityId: existingUserDoc.id,
+                    entityTitle: userData.name,
+                    details: `${userData.name} was added to the organization.`,
+                    performedBy: {
+                        uid: currentUser?.id || "system",
+                        name: currentUser?.name || "System",
+                        role: currentTeam.role || "Staff"
+                    },
+                    relatedUserIds: [existingUserDoc.id]
+                })
+
+            } else {
+                // 3. User does not exist - Create new placeholder
+                const docRef = await addDoc(collection(db, "users"), {
+                    ...userData,
+                    joinedDate: new Date().toISOString().split('T')[0],
+                    status: "Pending", // Default to Pending for invites
+                    orgIds: [currentTeam.id],
+                    organizations: [{ // Forward compatibility
+                        orgId: currentTeam.id,
+                        role: userData.role || "Staff"
+                    }],
+                    role: userData.role || "Staff"
+                })
+
+                // 4. Synchronize with Organization Document
+                const orgRef = doc(db, "organizations", currentTeam.id)
+                const orgSnap = await getDoc(orgRef)
+                if (orgSnap.exists()) {
+                    const orgData = orgSnap.data()
+                    const members = orgData.members || []
                     await updateDoc(orgRef, {
                         members: [...members, {
-                            userId: existingUserDoc.id,
+                            userId: docRef.id,
                             role: userData.role || "Staff",
                             joinedAt: new Date().toISOString()
                         }]
                     })
                 }
-            }
 
-            await logActivity(db, currentTeam.id, {
-                action: "UPDATE",
-                entityType: "USER",
-                entityId: existingUserDoc.id,
-                entityTitle: userData.name,
-                details: `${userData.name} was added to the organization.`,
-                performedBy: {
-                    uid: currentUser?.id || "system",
-                    name: currentUser?.name || "System",
-                    role: currentTeam.role || "Staff"
-                },
-                relatedUserIds: [existingUserDoc.id]
-            })
-
-        } else {
-            // 3. User does not exist - Create new placeholder
-            const docRef = await addDoc(collection(db, "users"), {
-                ...userData,
-                joinedDate: new Date().toISOString().split('T')[0],
-                status: "Pending", // Default to Pending for invites
-                orgIds: [currentTeam.id],
-                organizations: [{ // Forward compatibility
-                    orgId: currentTeam.id,
-                    role: userData.role || "Staff"
-                }],
-                role: userData.role || "Staff"
-            })
-
-            // 4. Synchronize with Organization Document
-            const orgRef = doc(db, "organizations", currentTeam.id)
-            const orgSnap = await getDoc(orgRef)
-            if (orgSnap.exists()) {
-                const orgData = orgSnap.data()
-                const members = orgData.members || []
-                await updateDoc(orgRef, {
-                    members: [...members, {
-                        userId: docRef.id,
-                        role: userData.role || "Staff",
-                        joinedAt: new Date().toISOString()
-                    }]
+                await logActivity(db, currentTeam.id, {
+                    action: "CREATE",
+                    entityType: "USER",
+                    entityId: docRef.id,
+                    entityTitle: userData.name,
+                    details: `Invitation sent to ${userData.email} (${userData.name})`,
+                    performedBy: {
+                        uid: currentUser?.id || "system",
+                        name: currentUser?.name || "System",
+                        role: currentTeam.role || "Staff"
+                    },
+                    relatedUserIds: [docRef.id]
                 })
             }
 
-            await logActivity(db, currentTeam.id, {
-                action: "CREATE",
-                entityType: "USER",
-                entityId: docRef.id,
-                entityTitle: userData.name,
-                details: `Invitation sent to ${userData.email} (${userData.name})`,
-                performedBy: {
-                    uid: currentUser?.id || "system",
-                    name: currentUser?.name || "System",
-                    role: currentTeam.role || "Staff"
-                },
-                relatedUserIds: [docRef.id]
-            })
+        } catch (e) {
+            console.error("Error adding user", e)
+        }
+    }
+
+    const updateUser = async (id: string, updates: Partial<User>) => {
+        // Optimistic Update
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u))
+        if (currentUser && currentUser.id === id) {
+            setCurrentUser(prev => (prev ? { ...prev, ...updates } : null))
         }
 
-    } catch (e) {
-        console.error("Error adding user", e)
-    }
-}
+        try {
+            // 1. Update User Document
+            await updateDoc(doc(db, "users", id), updates)
 
-const updateUser = async (id: string, updates: Partial<User>) => {
-    // Optimistic Update
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u))
-    if (currentUser && currentUser.id === id) {
-        setCurrentUser(prev => (prev ? { ...prev, ...updates } : null))
-    }
-
-    try {
-        // 1. Update User Document
-        await updateDoc(doc(db, "users", id), updates)
-
-        // 2. Synchronize Organizations array in User Document if role changed
-        if (updates.role && currentTeam) {
-            const userRef = doc(db, "users", id)
-            const userSnap = await getDoc(userRef)
-            if (userSnap.exists()) {
-                const userData = userSnap.data()
-                const organizations = userData.organizations || []
-                const updatedOrgs = organizations.map((org: any) =>
-                    org.orgId === currentTeam.id ? { ...org, role: updates.role } : org
-                )
-                await updateDoc(userRef, { organizations: updatedOrgs })
-            }
-
-            // 3. Synchronize Organization Document members list
-            const orgRef = doc(db, "organizations", currentTeam.id)
-            const orgSnap = await getDoc(orgRef)
-            if (orgSnap.exists()) {
-                const orgData = orgSnap.data()
-                const members = orgData.members || []
-                const updatedMembers = members.map((m: any) =>
-                    m.userId === id ? { ...m, role: updates.role } : m
-                )
-                await updateDoc(orgRef, { members: updatedMembers })
-            }
-        }
-    } catch (e) {
-        console.error("Error updating user", e)
-    }
-}
-
-const deleteUser = async (id: string) => {
-    if (!currentTeam) return
-    try {
-        // Call Cloud Function to remove user from org
-        // Region MUST match backend deployment (asia-southeast1)
-        const functions = getFunctions(undefined, 'asia-southeast1')
-        const removeUser = httpsCallable(functions, 'removeUserFromOrg')
-
-        await removeUser({
-            userId: id,
-            orgId: currentTeam.id
-        })
-
-        // Allow UI to update via snapshot listener or optimistic update if needed
-        // For now, snapshot listener on users collection should handle it if we filter by org properly?
-        // ProjectContext loads ALL users currently (line 781), needing optimization.
-        // But since `users` state is likely not real-time updated for all users in `ProjectProvider` yet (it was Mock/Initial),
-        // we should manually update the local state to match the "remove" action
-        setUsers(prev => prev.filter(u => u.id !== id))
-
-    } catch (e) {
-        console.error("Error deleting user", e)
-        alert("Failed to remove user. Please try again.")
-    }
-}
-
-// Vendor CRUD
-// Vendor CRUD
-const addVendor = async (vendorData: Omit<Vendor, "id" | "status">) => {
-    if (!currentTeam) return
-    try {
-        await addDoc(collection(db, "vendors"), {
-            ...vendorData,
-            status: "Active",
-            orgId: currentTeam.id,
-            createdAt: new Date().toISOString()
-        })
-    } catch (e) {
-        console.error("Error adding vendor", e)
-    }
-
-    if (currentTeam && currentUser) {
-        logActivity(db, currentTeam.id, {
-            action: "CREATE",
-            entityType: "USER", // Vendor as User/Entity
-            entityId: "",
-            entityTitle: vendorData.name,
-            details: `Added new vendor: ${vendorData.category} `,
-            performedBy: {
-                uid: currentUser.id,
-                name: currentUser.name,
-                role: currentUser.role
-            },
-            relatedUserIds: []
-        })
-    }
-}
-
-const updateVendor = async (id: string, updates: Partial<Vendor>) => {
-    try {
-        await updateDoc(doc(db, "vendors", id), { ...updates, updatedAt: new Date().toISOString() })
-    } catch (e) {
-        console.error("Error updating vendor", e)
-    }
-}
-
-const deleteVendor = async (id: string) => {
-    try {
-        await deleteDoc(doc(db, "vendors", id))
-    } catch (e) {
-        console.error("Error deleting vendor", e)
-    }
-}
-
-// Worker CRUD
-const addWorker = async (workerData: Omit<Worker, "id" | "status">) => {
-    if (!currentTeam) return
-    try {
-        await addDoc(collection(db, "workers"), {
-            ...workerData,
-            status: "Active",
-            joinedDate: new Date().toISOString().split('T')[0],
-            orgId: currentTeam.id,
-            createdAt: new Date().toISOString()
-        })
-    } catch (e) {
-        console.error("Error adding worker", e)
-    }
-
-    if (currentTeam && currentUser) {
-        logActivity(db, currentTeam.id, {
-            action: "CREATE",
-            entityType: "USER", // Or OTHER if no worker type
-            entityId: "",
-            entityTitle: workerData.name,
-            details: `Added new worker: ${workerData.role} `,
-            performedBy: {
-                uid: currentUser.id,
-                name: currentUser.name,
-                role: currentUser.role
-            },
-            relatedUserIds: []
-        })
-    }
-}
-
-const updateWorker = async (id: string, updates: Partial<Worker>) => {
-    try {
-        await updateDoc(doc(db, "workers", id), { ...updates, updatedAt: new Date().toISOString() })
-    } catch (e) {
-        console.error("Error updating worker", e)
-    }
-}
-
-const deleteWorker = async (id: string) => {
-    try {
-        await deleteDoc(doc(db, "workers", id))
-    } catch (e) {
-        console.error("Error deleting worker", e)
-    }
-}
-
-// Customer CRUD
-const addCustomer = async (customer: Omit<Customer, "id" | "status" | "totalValue">) => {
-    if (!currentTeam) return
-    try {
-        await addDoc(collection(db, "customers"), {
-            ...customer,
-            orgId: currentTeam.id,
-            status: "Active",
-            totalValue: 0,
-            createdAt: new Date().toISOString()
-        })
-    } catch (e) { console.error(e) }
-}
-const updateCustomer = async (id: string, updates: Partial<Customer>) => {
-    try { await updateDoc(doc(db, "customers", id), { ...updates, updatedAt: new Date().toISOString() }) } catch (e) { console.error(e) }
-}
-const deleteCustomer = async (id: string) => {
-    try { await deleteDoc(doc(db, "customers", id)) } catch (e) { console.error(e) }
-}
-
-// File CRUD
-// 3. Files
-const addFile = async (file: Omit<ProjectFile, "id" | "uploadedAt">) => {
-    if (!currentTeam) return
-    try {
-        await addDoc(collection(db, "files"), {
-            ...file,
-            orgId: currentTeam.id,
-            uploadedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-        })
-    } catch (e) {
-        console.error("Error adding file", e)
-    }
-
-    if (currentTeam && currentUser) {
-        logActivity(db, currentTeam.id, {
-            action: "CREATE",
-            entityType: "FILE",
-            entityId: "",
-            entityTitle: file.name,
-            details: `Uploaded file(${file.type})`,
-            performedBy: {
-                uid: currentUser.id,
-                name: currentUser.name,
-                role: currentUser.role
-            },
-            relatedUserIds: []
-        })
-    }
-}
-
-const deleteFile = async (id: string) => {
-    try {
-        await deleteDoc(doc(db, "files", id))
-    } catch (e) {
-        console.error("Error deleting file", e)
-    }
-}
-
-// 2. Expenses
-const addExpense = async (expense: Omit<Expense, "id">) => {
-    if (!currentTeam || !currentUser) {
-        console.error("Missing currentTeam or currentUser", { currentTeam, currentUser })
-        throw new Error("Cannot add expense: Missing organization context or user session.")
-    }
-
-    try {
-        // Helper to recursively remove undefined values for Firestore
-        const sanitize = (data: any): any => {
-            if (data === null || data === undefined) return undefined
-            if (Array.isArray(data)) {
-                return data.map(sanitize).filter(v => v !== undefined)
-            }
-            if (typeof data === 'object' && !(data instanceof Date)) {
-                const cleaned: any = {}
-                Object.entries(data).forEach(([key, value]) => {
-                    const sanitized = sanitize(value)
-                    if (sanitized !== undefined) {
-                        cleaned[key] = sanitized
-                    }
-                })
-                return Object.keys(cleaned).length > 0 ? cleaned : undefined
-            }
-            return data
-        }
-
-        const sanitizedExpense = sanitize(expense)
-        if (!sanitizedExpense) {
-            throw new Error("Cannot add expense: Expense data is empty after sanitization.")
-        }
-
-        // Ensure teamId is attached
-        const docRef = await addDoc(collection(db, "expenses"), {
-            ...sanitizedExpense,
-            orgId: currentTeam.id,
-            createdAt: new Date().toISOString(),
-            createdBy: currentUser.id
-        })
-
-        // Notification: Everyone gets notified for every payment
-        await addDoc(collection(db, "notifications"), {
-            title: `${expense.title} `,
-            message: `New expense added by ${currentUser?.name || 'Unknown'} `,
-            type: 'info',
-            date: new Date().toISOString(),
-            read: false,
-            link: `/ expenses ? id = ${docRef.id} `,
-            relatedId: docRef.id,
-            target: 'all',
-            orgId: currentTeam.id,
-            creatorId: currentUser?.id
-        })
-
-        // Log Activity
-        if (currentTeam && currentUser) {
-            // Ensure logActivity is imported or defined. Assumed available since used in updateExpense.
-            // If logActivity is not imported, we might need to add it, but context usually has it.
-            // Checking updateExpense usage in same file suggests it's available.
-            await logActivity(db, currentTeam.id, {
-                action: "CREATE",
-                entityType: "EXPENSE",
-                entityId: docRef.id,
-                entityTitle: expense.title,
-                details: `Expense created by ${currentUser.name} `,
-                performedBy: {
-                    uid: currentUser.id,
-                    name: currentUser.name,
-                    role: currentUser.role
-                },
-                relatedUserIds: [currentUser.id],
-                metadata: {
-                    amount: expense.totalValue,
-                    status: expense.status
+            // 2. Synchronize Organizations array in User Document if role changed
+            if (updates.role && currentTeam) {
+                const userRef = doc(db, "users", id)
+                const userSnap = await getDoc(userRef)
+                if (userSnap.exists()) {
+                    const userData = userSnap.data()
+                    const organizations = userData.organizations || []
+                    const updatedOrgs = organizations.map((org: any) =>
+                        org.orgId === currentTeam.id ? { ...org, role: updates.role } : org
+                    )
+                    await updateDoc(userRef, { organizations: updatedOrgs })
                 }
-            })
+
+                // 3. Synchronize Organization Document members list
+                const orgRef = doc(db, "organizations", currentTeam.id)
+                const orgSnap = await getDoc(orgRef)
+                if (orgSnap.exists()) {
+                    const orgData = orgSnap.data()
+                    const members = orgData.members || []
+                    const updatedMembers = members.map((m: any) =>
+                        m.userId === id ? { ...m, role: updates.role } : m
+                    )
+                    await updateDoc(orgRef, { members: updatedMembers })
+                }
+            }
+        } catch (e) {
+            console.error("Error updating user", e)
         }
-    } catch (e) {
-        console.error("Error adding expense", e)
-        throw e
     }
-}
 
-const updateExpense = async (id: string, updates: Partial<Expense>) => {
-    if (!currentTeam) return
-    try {
-        await updateDoc(doc(db, "expenses", id), { ...updates, updatedAt: new Date().toISOString() })
+    const deleteUser = async (id: string) => {
+        if (!currentTeam) return
+        try {
+            // Call Cloud Function to remove user from org
+            // Region MUST match backend deployment (asia-southeast1)
+            const functions = getFunctions(undefined, 'asia-southeast1')
+            const removeUser = httpsCallable(functions, 'removeUserFromOrg')
 
-        // Notification: Status Change (Advanced/Credit -> Paid)
-        // We only notify Admin/Owner on status changes to 'Paid'
-        if (updates.status === 'Paid') {
-            await addDoc(collection(db, "notifications"), {
-                title: `Expense Paid`,
-                message: `Expense has been marked as PAID (previously Pending / Advanced / Credit)`,
-                type: 'success',
-                date: new Date().toISOString(),
-                read: false,
-                link: '/expenses',
-                relatedId: id,
-                target: 'admin',
+            await removeUser({
+                userId: id,
                 orgId: currentTeam.id
             })
+
+            // Allow UI to update via snapshot listener or optimistic update if needed
+            // For now, snapshot listener on users collection should handle it if we filter by org properly?
+            // ProjectContext loads ALL users currently (line 781), needing optimization.
+            // But since `users` state is likely not real-time updated for all users in `ProjectProvider` yet (it was Mock/Initial),
+            // we should manually update the local state to match the "remove" action
+            setUsers(prev => prev.filter(u => u.id !== id))
+
+        } catch (e) {
+            console.error("Error deleting user", e)
+            alert("Failed to remove user. Please try again.")
+        }
+    }
+
+    // Vendor CRUD
+    // Vendor CRUD
+    const addVendor = async (vendorData: Omit<Vendor, "id" | "status">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "vendors"), {
+                ...vendorData,
+                status: "Active",
+                orgId: currentTeam.id,
+                createdAt: new Date().toISOString()
+            })
+        } catch (e) {
+            console.error("Error adding vendor", e)
         }
 
         if (currentTeam && currentUser) {
-            const exp = expenses.find(e => e.id === id)
             logActivity(db, currentTeam.id, {
-                action: "UPDATE",
-                entityType: "EXPENSE",
-                entityId: id,
-                entityTitle: exp?.title || "Expense",
-                details: `Updated expense`,
+                action: "CREATE",
+                entityType: "USER", // Vendor as User/Entity
+                entityId: "",
+                entityTitle: vendorData.name,
+                details: `Added new vendor: ${vendorData.category} `,
                 performedBy: {
                     uid: currentUser.id,
                     name: currentUser.name,
@@ -2354,369 +2109,614 @@ const updateExpense = async (id: string, updates: Partial<Expense>) => {
                 relatedUserIds: []
             })
         }
-    } catch (e) {
-        console.error("Error updating expense", e)
     }
-}
 
-const deleteExpense = async (id: string) => {
-    try {
-        await deleteDoc(doc(db, "expenses", id))
-    } catch (e) {
-        console.error("Error deleting expense", e)
+    const updateVendor = async (id: string, updates: Partial<Vendor>) => {
+        try {
+            await updateDoc(doc(db, "vendors", id), { ...updates, updatedAt: new Date().toISOString() })
+        } catch (e) {
+            console.error("Error updating vendor", e)
+        }
     }
-}
 
-// Income Actions (Firestore)
-const addIncome = async (income: Omit<IncomeDocument, "id">) => {
-    if (!currentTeam) return
-    try {
-        // Clean undefined values - Firestore doesn't accept undefined
-        const cleanedData = Object.fromEntries(
-            Object.entries({
-                ...income,
+    const deleteVendor = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "vendors", id))
+        } catch (e) {
+            console.error("Error deleting vendor", e)
+        }
+    }
+
+    // Worker CRUD
+    const addWorker = async (workerData: Omit<Worker, "id" | "status">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "workers"), {
+                ...workerData,
+                status: "Active",
+                joinedDate: new Date().toISOString().split('T')[0],
                 orgId: currentTeam.id,
-                items: income.items || [],
-                sections: income.sections || undefined,
                 createdAt: new Date().toISOString()
-            }).filter(([_, v]) => v !== undefined)
-        )
-        await addDoc(collection(db, "incomes"), cleanedData)
+            })
+        } catch (e) {
+            console.error("Error adding worker", e)
+        }
 
-        // Notification: Admin gets notified for Customer Withdrawals (Income)
-        await addDoc(collection(db, "notifications"), {
-            title: `New Income / Withdrawal`,
-            message: `New withdrawal recorded by ${currentUser?.name} `,
-            type: 'info', // or success
-            date: new Date().toISOString(),
-            read: false,
-            link: '/incomes',
-            relatedId: 'income-new',
-            target: 'admin',
-            orgId: currentTeam.id,
-            creatorId: currentUser?.id
-        })
-
-        // Log Activity
-        await logActivity(db, currentTeam.id, {
-            action: "CREATE",
-            entityType: "INCOME",
-            entityId: "", // ID not easily available in void return but harmless
-            entityTitle: `${income.type} ${income.documentNumber} `,
-            details: `Created ${income.type}: ${income.total} `,
-            performedBy: {
-                uid: currentUser?.id || "unknown",
-                name: currentUser?.name || "Unknown",
-                role: currentUser?.role || "Staff"
-            },
-            relatedUserIds: [income.customerId]
-        })
-
-    } catch (e) {
-        console.error("Error adding income", e)
+        if (currentTeam && currentUser) {
+            logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "USER", // Or OTHER if no worker type
+                entityId: "",
+                entityTitle: workerData.name,
+                details: `Added new worker: ${workerData.role} `,
+                performedBy: {
+                    uid: currentUser.id,
+                    name: currentUser.name,
+                    role: currentUser.role
+                },
+                relatedUserIds: []
+            })
+        }
     }
-}
 
-const updateIncome = async (id: string, updates: Partial<IncomeDocument>) => {
-    try {
-        await updateDoc(doc(db, "incomes", id), { ...updates, updatedAt: new Date().toISOString() })
-    } catch (e) {
-        console.error("Error updating income", e)
+    const updateWorker = async (id: string, updates: Partial<Worker>) => {
+        try {
+            await updateDoc(doc(db, "workers", id), { ...updates, updatedAt: new Date().toISOString() })
+        } catch (e) {
+            console.error("Error updating worker", e)
+        }
     }
-}
 
-const deleteIncome = async (id: string) => {
-    try {
-        await deleteDoc(doc(db, "incomes", id))
-    } catch (e) {
-        console.error("Error deleting income", e)
+    const deleteWorker = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "workers", id))
+        } catch (e) {
+            console.error("Error deleting worker", e)
+        }
     }
-}
 
-const updateCompanyProfile = async (updates: Partial<CompanyProfile>) => {
-    if (!currentTeam) return
-
-    try {
-        // Update Firestore (Organization)
-        // Map CompanyProfile fields to Organization settings
-        const orgRef = doc(db, "organizations", currentTeam.id)
-
-        const orgUpdates: any = {}
-        if (updates.name) orgUpdates.name = updates.name
-        if (updates.nameEn !== undefined) orgUpdates['settings.nameEn'] = updates.nameEn
-
-        // Settings map
-        if (updates.address) orgUpdates['settings.address'] = updates.address
-        if (updates.addressEn !== undefined) orgUpdates['settings.addressEn'] = updates.addressEn
-        if (updates.taxId) orgUpdates['settings.taxId'] = updates.taxId
-        if (updates.phone) orgUpdates['settings.phone'] = updates.phone
-        if (updates.logo) orgUpdates['settings.logoUrl'] = updates.logo
-        if (updates.email) orgUpdates['settings.email'] = updates.email
-        if (updates.website) orgUpdates['settings.website'] = updates.website
-        if (updates.paymentInfo !== undefined) orgUpdates['settings.paymentInfo'] = updates.paymentInfo
-        if (updates.signatureName !== undefined) orgUpdates['settings.signatureName'] = updates.signatureName
-        if (updates.description !== undefined) orgUpdates['settings.description'] = updates.description
-
-        await updateDoc(orgRef, { ...orgUpdates, updatedAt: new Date().toISOString() })
-
-        // Refresh organization data to update local state (currentTeam)
-        await refreshOrgs()
-
-    } catch (e) {
-        console.error("Error updating company profile", e)
+    // Customer CRUD
+    const addCustomer = async (customer: Omit<Customer, "id" | "status" | "totalValue">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "customers"), {
+                ...customer,
+                orgId: currentTeam.id,
+                status: "Active",
+                totalValue: 0,
+                createdAt: new Date().toISOString()
+            })
+        } catch (e) { console.error(e) }
     }
-}
-
-const restoreData = async (data: Record<string, unknown>) => {
-    try {
-        if (data.projects) setProjects(data.projects as Project[])
-        if (data.expenses) setExpenses(data.expenses as Expense[])
-        if (data.files) setFiles(data.files as ProjectFile[])
-        if (data.users) setUsers(data.users as User[])
-        if (data.workers) setWorkers(data.workers as Worker[])
-        if (data.vendors) setVendors(data.vendors as Vendor[])
-        if (data.customers) setCustomers(data.customers as Customer[])
-        if (data.incomes) setIncomes(data.incomes as IncomeDocument[])
-        if (data.contracts) setContracts(data.contracts as Contract[])
-
-        // Force save to disk immediately to be safe
-        await Promise.all([
-            set("projects_v2", data.projects || []),
-            set("expenses_v2", data.expenses || []),
-            set("files_v2", data.files || []),
-            set("users_v2", data.users || []),
-            set("workers_v2", data.workers || []),
-            set("vendors_v2", data.vendors || []),
-            set("customers_v2", data.customers || []),
-            set("incomes_v2", data.incomes || []),
-            set("companyProfile_v2", data.companyProfile || INITIAL_COMPANY_PROFILE),
-            set("contracts_v2", data.contracts || []),
-        ])
-        return true
-    } catch (e) {
-        console.error("Restore failed", e)
-        return false
+    const updateCustomer = async (id: string, updates: Partial<Customer>) => {
+        try { await updateDoc(doc(db, "customers", id), { ...updates, updatedAt: new Date().toISOString() }) } catch (e) { console.error(e) }
     }
-}
-
-const filteredProjects = React.useMemo(() =>
-    projects.filter(p => p.orgId === currentTeam?.id),
-    [projects, currentTeam?.id])
-
-const filteredProjectIds = React.useMemo(() =>
-    new Set(filteredProjects.map(p => p.id)),
-    [filteredProjects])
-
-// Missing Functions Implementation
-const addContract = async (contract: Omit<Contract, "id" | "createdAt" | "status">) => {
-    if (!currentTeam) return
-    try {
-        await addDoc(collection(db, "contracts"), {
-            ...contract,
-            createdAt: new Date().toISOString(),
-            status: "Active",
-            orgId: currentTeam.id
-        })
-
-
-        // Log Activity
-        await logActivity(db, currentTeam.id, {
-            action: "CREATE",
-            entityType: "CONTRACT",
-            entityId: "",
-            entityTitle: contract.title,
-            details: `Created contract with total amount: ${contract.totalAmount} `,
-            performedBy: {
-                uid: currentUser?.id || "unknown",
-                name: currentUser?.name || "Unknown",
-                role: currentUser?.role || "Staff"
-            },
-            relatedUserIds: [contract.workerId]
-        })
-
-    } catch (e) {
-        console.error("Error adding contract", e)
+    const deleteCustomer = async (id: string) => {
+        try { await deleteDoc(doc(db, "customers", id)) } catch (e) { console.error(e) }
     }
-}
 
-const value = React.useMemo(() => ({
-    projects: filteredProjects.filter(p => !p.isArchived),
-    addProject,
-    updateProject,
-    deleteProject,
-    getProject,
+    // File CRUD
+    // 3. Files
+    const addFile = async (file: Omit<ProjectFile, "id" | "uploadedAt">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "files"), {
+                ...file,
+                orgId: currentTeam.id,
+                uploadedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+            })
+        } catch (e) {
+            console.error("Error adding file", e)
+        }
 
-    // Teams
-    teams,
-    currentTeam,
-    switchTeam,
-    addTeam: async (name: string) => {
-        return await createOrganization(name)
-    },
+        if (currentTeam && currentUser) {
+            logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "FILE",
+                entityId: "",
+                entityTitle: file.name,
+                details: `Uploaded file(${file.type})`,
+                performedBy: {
+                    uid: currentUser.id,
+                    name: currentUser.name,
+                    role: currentUser.role
+                },
+                relatedUserIds: []
+            })
+        }
+    }
 
-    addTask,
-    tasks: tasks.filter(t => !t.isArchived),
+    const deleteFile = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "files", id))
+        } catch (e) {
+            console.error("Error deleting file", e)
+        }
+    }
 
-    // Work
-    works,
-    addWork,
-    updateWork,
-    updateWorkOrder,
-    deleteWork,
+    // 2. Expenses
+    const addExpense = async (expense: Omit<Expense, "id">) => {
+        if (!currentTeam || !currentUser) {
+            console.error("Missing currentTeam or currentUser", { currentTeam, currentUser })
+            throw new Error("Cannot add expense: Missing organization context or user session.")
+        }
 
-    addSubProject,
-    updateTask,
-    deleteTask,
-    toggleTask,
-    expenses: expenses.filter(e => (!e.projectId || filteredProjectIds.has(e.projectId)) && !e.isArchived),
-    addExpense,
-    updateExpense,
-    deleteExpense,
-    users: users.filter(u => u.orgIds?.includes(currentTeam?.id || '')),
-    workers,
-    addUser,
-    updateUser,
-    deleteUser,
-    addWorker,
-    updateWorker,
-    deleteWorker,
-    vendors,
-    addVendor,
-    updateVendor,
-    deleteVendor,
-    customers,
-    addCustomer,
-    updateCustomer,
-    deleteCustomer,
-    incomes: incomes.filter(i => filteredProjectIds.has(i.projectId) && !i.isArchived),
-    incomesLoading,
-    addIncome,
-    updateIncome,
-    deleteIncome,
-    companyProfile,
-    updateCompanyProfile,
-    currentUser,
-    setCurrentUser,
-    isAuthLoading,
-    isOrgLoading,
-    isLoading,
-    login,
-    register,
-    updateUserPassword,
-    logout,
-    deleteAccount,
-    restoreData,
-    seedData,
-    files: files.filter(f => !f.projectId || filteredProjectIds.has(f.projectId)),
-    addFile,
-    deleteFile,
-    contracts: contracts.filter(c => filteredProjectIds.has(c.projectId)),
-    addContract,
-    payInstallment,
-    updateContract,
-    deleteContract,
-    // Archive System
-    archiveProject,
-    unarchiveProject,
-    archiveTask,
-    unarchiveTask,
-    archiveExpense,
-    unarchiveExpense,
-    archiveIncome,
-    unarchiveIncome,
-    // Archived data for Archive page
-    archivedProjects: projects.filter(p => p.isArchived === true),
-    archivedTasks: tasks.filter(t => t.isArchived === true),
-    archivedExpenses: expenses.filter(e => e.isArchived === true),
-    archivedIncomes: incomes.filter(i => i.isArchived === true),
-    isRedirecting,
-    getEnvironment
-}), [
-    filteredProjects,
-    addProject,
-    updateProject,
-    deleteProject,
-    getProject,
-    teams,
-    currentTeam,
-    switchTeam,
-    createOrganization,
-    addTask,
-    tasks,
-    addSubProject,
-    updateTask,
-    deleteTask,
-    toggleTask,
-    works,
-    addWork,
-    updateWork,
-    updateWorkOrder,
-    expenses,
-    filteredProjectIds,
-    addExpense,
-    updateExpense,
-    deleteExpense,
-    users,
-    workers,
-    addUser,
-    updateUser,
-    deleteUser,
-    addWorker,
-    updateWorker,
-    deleteWorker,
-    vendors,
-    addVendor,
-    updateVendor,
-    deleteVendor,
-    customers,
-    addCustomer,
-    updateCustomer,
-    deleteCustomer,
-    incomes,
-    incomesLoading,
-    addIncome,
-    updateIncome,
-    deleteIncome,
-    companyProfile,
-    updateCompanyProfile,
-    currentUser,
-    setCurrentUser,
-    isAuthLoading,
-    isOrgLoading,
-    isLoading,
-    login,
-    register,
-    updateUserPassword,
-    logout,
-    deleteAccount,
-    restoreData,
-    seedData,
-    files,
-    addFile,
-    deleteFile,
-    contracts,
-    addContract,
-    payInstallment,
-    updateContract,
-    deleteContract,
-    archiveProject,
-    unarchiveProject,
-    archiveTask,
-    unarchiveTask,
-    archiveExpense,
-    unarchiveExpense,
-    archiveIncome,
-    unarchiveIncome,
-    projects,
-    isRedirecting,
-    getEnvironment
-])
+        try {
+            // Helper to recursively remove undefined values for Firestore
+            const sanitize = (data: any): any => {
+                if (data === null || data === undefined) return undefined
+                if (Array.isArray(data)) {
+                    return data.map(sanitize).filter(v => v !== undefined)
+                }
+                if (typeof data === 'object' && !(data instanceof Date)) {
+                    const cleaned: any = {}
+                    Object.entries(data).forEach(([key, value]) => {
+                        const sanitized = sanitize(value)
+                        if (sanitized !== undefined) {
+                            cleaned[key] = sanitized
+                        }
+                    })
+                    return Object.keys(cleaned).length > 0 ? cleaned : undefined
+                }
+                return data
+            }
 
-return (
-    <ProjectContext.Provider value={value}>
-        {children}
-    </ProjectContext.Provider>
-)
+            const sanitizedExpense = sanitize(expense)
+            if (!sanitizedExpense) {
+                throw new Error("Cannot add expense: Expense data is empty after sanitization.")
+            }
+
+            // Ensure teamId is attached
+            const docRef = await addDoc(collection(db, "expenses"), {
+                ...sanitizedExpense,
+                orgId: currentTeam.id,
+                createdAt: new Date().toISOString(),
+                createdBy: currentUser.id
+            })
+
+            // Notification: Everyone gets notified for every payment
+            await addDoc(collection(db, "notifications"), {
+                title: `${expense.title} `,
+                message: `New expense added by ${currentUser?.name || 'Unknown'} `,
+                type: 'info',
+                date: new Date().toISOString(),
+                read: false,
+                link: `/ expenses ? id = ${docRef.id} `,
+                relatedId: docRef.id,
+                target: 'all',
+                orgId: currentTeam.id,
+                creatorId: currentUser?.id
+            })
+
+            // Log Activity
+            if (currentTeam && currentUser) {
+                // Ensure logActivity is imported or defined. Assumed available since used in updateExpense.
+                // If logActivity is not imported, we might need to add it, but context usually has it.
+                // Checking updateExpense usage in same file suggests it's available.
+                await logActivity(db, currentTeam.id, {
+                    action: "CREATE",
+                    entityType: "EXPENSE",
+                    entityId: docRef.id,
+                    entityTitle: expense.title,
+                    details: `Expense created by ${currentUser.name} `,
+                    performedBy: {
+                        uid: currentUser.id,
+                        name: currentUser.name,
+                        role: currentUser.role
+                    },
+                    relatedUserIds: [currentUser.id],
+                    metadata: {
+                        amount: expense.totalValue,
+                        status: expense.status
+                    }
+                })
+            }
+        } catch (e) {
+            console.error("Error adding expense", e)
+            throw e
+        }
+    }
+
+    const updateExpense = async (id: string, updates: Partial<Expense>) => {
+        if (!currentTeam) return
+        try {
+            await updateDoc(doc(db, "expenses", id), { ...updates, updatedAt: new Date().toISOString() })
+
+            // Notification: Status Change (Advanced/Credit -> Paid)
+            // We only notify Admin/Owner on status changes to 'Paid'
+            if (updates.status === 'Paid') {
+                await addDoc(collection(db, "notifications"), {
+                    title: `Expense Paid`,
+                    message: `Expense has been marked as PAID (previously Pending / Advanced / Credit)`,
+                    type: 'success',
+                    date: new Date().toISOString(),
+                    read: false,
+                    link: '/expenses',
+                    relatedId: id,
+                    target: 'admin',
+                    orgId: currentTeam.id
+                })
+            }
+
+            if (currentTeam && currentUser) {
+                const exp = expenses.find(e => e.id === id)
+                logActivity(db, currentTeam.id, {
+                    action: "UPDATE",
+                    entityType: "EXPENSE",
+                    entityId: id,
+                    entityTitle: exp?.title || "Expense",
+                    details: `Updated expense`,
+                    performedBy: {
+                        uid: currentUser.id,
+                        name: currentUser.name,
+                        role: currentUser.role
+                    },
+                    relatedUserIds: []
+                })
+            }
+        } catch (e) {
+            console.error("Error updating expense", e)
+        }
+    }
+
+    const deleteExpense = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "expenses", id))
+        } catch (e) {
+            console.error("Error deleting expense", e)
+        }
+    }
+
+    // Income Actions (Firestore)
+    const addIncome = async (income: Omit<IncomeDocument, "id">) => {
+        if (!currentTeam) return
+        try {
+            // Clean undefined values - Firestore doesn't accept undefined
+            const cleanedData = Object.fromEntries(
+                Object.entries({
+                    ...income,
+                    orgId: currentTeam.id,
+                    items: income.items || [],
+                    sections: income.sections || undefined,
+                    createdAt: new Date().toISOString()
+                }).filter(([_, v]) => v !== undefined)
+            )
+            await addDoc(collection(db, "incomes"), cleanedData)
+
+            // Notification: Admin gets notified for Customer Withdrawals (Income)
+            await addDoc(collection(db, "notifications"), {
+                title: `New Income / Withdrawal`,
+                message: `New withdrawal recorded by ${currentUser?.name} `,
+                type: 'info', // or success
+                date: new Date().toISOString(),
+                read: false,
+                link: '/incomes',
+                relatedId: 'income-new',
+                target: 'admin',
+                orgId: currentTeam.id,
+                creatorId: currentUser?.id
+            })
+
+            // Log Activity
+            await logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "INCOME",
+                entityId: "", // ID not easily available in void return but harmless
+                entityTitle: `${income.type} ${income.documentNumber} `,
+                details: `Created ${income.type}: ${income.total} `,
+                performedBy: {
+                    uid: currentUser?.id || "unknown",
+                    name: currentUser?.name || "Unknown",
+                    role: currentUser?.role || "Staff"
+                },
+                relatedUserIds: [income.customerId]
+            })
+
+        } catch (e) {
+            console.error("Error adding income", e)
+        }
+    }
+
+    const updateIncome = async (id: string, updates: Partial<IncomeDocument>) => {
+        try {
+            await updateDoc(doc(db, "incomes", id), { ...updates, updatedAt: new Date().toISOString() })
+        } catch (e) {
+            console.error("Error updating income", e)
+        }
+    }
+
+    const deleteIncome = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "incomes", id))
+        } catch (e) {
+            console.error("Error deleting income", e)
+        }
+    }
+
+    const updateCompanyProfile = async (updates: Partial<CompanyProfile>) => {
+        if (!currentTeam) return
+
+        try {
+            // Update Firestore (Organization)
+            // Map CompanyProfile fields to Organization settings
+            const orgRef = doc(db, "organizations", currentTeam.id)
+
+            const orgUpdates: any = {}
+            if (updates.name) orgUpdates.name = updates.name
+            if (updates.nameEn !== undefined) orgUpdates['settings.nameEn'] = updates.nameEn
+
+            // Settings map
+            if (updates.address) orgUpdates['settings.address'] = updates.address
+            if (updates.addressEn !== undefined) orgUpdates['settings.addressEn'] = updates.addressEn
+            if (updates.taxId) orgUpdates['settings.taxId'] = updates.taxId
+            if (updates.phone) orgUpdates['settings.phone'] = updates.phone
+            if (updates.logo) orgUpdates['settings.logoUrl'] = updates.logo
+            if (updates.email) orgUpdates['settings.email'] = updates.email
+            if (updates.website) orgUpdates['settings.website'] = updates.website
+            if (updates.paymentInfo !== undefined) orgUpdates['settings.paymentInfo'] = updates.paymentInfo
+            if (updates.signatureName !== undefined) orgUpdates['settings.signatureName'] = updates.signatureName
+            if (updates.description !== undefined) orgUpdates['settings.description'] = updates.description
+
+            await updateDoc(orgRef, { ...orgUpdates, updatedAt: new Date().toISOString() })
+
+            // Refresh organization data to update local state (currentTeam)
+            await refreshOrgs()
+
+        } catch (e) {
+            console.error("Error updating company profile", e)
+        }
+    }
+
+    const restoreData = async (data: Record<string, unknown>) => {
+        try {
+            if (data.projects) setProjects(data.projects as Project[])
+            if (data.expenses) setExpenses(data.expenses as Expense[])
+            if (data.files) setFiles(data.files as ProjectFile[])
+            if (data.users) setUsers(data.users as User[])
+            if (data.workers) setWorkers(data.workers as Worker[])
+            if (data.vendors) setVendors(data.vendors as Vendor[])
+            if (data.customers) setCustomers(data.customers as Customer[])
+            if (data.incomes) setIncomes(data.incomes as IncomeDocument[])
+            if (data.contracts) setContracts(data.contracts as Contract[])
+
+            // Force save to disk immediately to be safe
+            await Promise.all([
+                set("projects_v2", data.projects || []),
+                set("expenses_v2", data.expenses || []),
+                set("files_v2", data.files || []),
+                set("users_v2", data.users || []),
+                set("workers_v2", data.workers || []),
+                set("vendors_v2", data.vendors || []),
+                set("customers_v2", data.customers || []),
+                set("incomes_v2", data.incomes || []),
+                set("companyProfile_v2", data.companyProfile || INITIAL_COMPANY_PROFILE),
+                set("contracts_v2", data.contracts || []),
+            ])
+            return true
+        } catch (e) {
+            console.error("Restore failed", e)
+            return false
+        }
+    }
+
+    const filteredProjects = React.useMemo(() =>
+        projects.filter(p => p.orgId === currentTeam?.id),
+        [projects, currentTeam?.id])
+
+    const filteredProjectIds = React.useMemo(() =>
+        new Set(filteredProjects.map(p => p.id)),
+        [filteredProjects])
+
+    // Missing Functions Implementation
+    const addContract = async (contract: Omit<Contract, "id" | "createdAt" | "status">) => {
+        if (!currentTeam) return
+        try {
+            await addDoc(collection(db, "contracts"), {
+                ...contract,
+                createdAt: new Date().toISOString(),
+                status: "Active",
+                orgId: currentTeam.id
+            })
+
+
+            // Log Activity
+            await logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "CONTRACT",
+                entityId: "",
+                entityTitle: contract.title,
+                details: `Created contract with total amount: ${contract.totalAmount} `,
+                performedBy: {
+                    uid: currentUser?.id || "unknown",
+                    name: currentUser?.name || "Unknown",
+                    role: currentUser?.role || "Staff"
+                },
+                relatedUserIds: [contract.workerId]
+            })
+
+        } catch (e) {
+            console.error("Error adding contract", e)
+        }
+    }
+
+    const value = React.useMemo(() => ({
+        projects: filteredProjects.filter(p => !p.isArchived),
+        addProject,
+        updateProject,
+        deleteProject,
+        getProject,
+
+        // Teams
+        teams,
+        currentTeam,
+        switchTeam,
+        addTeam: async (name: string) => {
+            return await createOrganization(name)
+        },
+
+        addTask,
+        tasks: tasks.filter(t => !t.isArchived),
+
+        // Work
+        works,
+        addWork,
+        updateWork,
+        updateWorkOrder,
+        deleteWork,
+
+        addSubProject,
+        updateTask,
+        deleteTask,
+        toggleTask,
+        expenses: expenses.filter(e => (!e.projectId || filteredProjectIds.has(e.projectId)) && !e.isArchived),
+        addExpense,
+        updateExpense,
+        deleteExpense,
+        users: users.filter(u => u.orgIds?.includes(currentTeam?.id || '')),
+        workers,
+        addUser,
+        updateUser,
+        deleteUser,
+        addWorker,
+        updateWorker,
+        deleteWorker,
+        vendors,
+        addVendor,
+        updateVendor,
+        deleteVendor,
+        customers,
+        addCustomer,
+        updateCustomer,
+        deleteCustomer,
+        incomes: incomes.filter(i => filteredProjectIds.has(i.projectId) && !i.isArchived),
+        incomesLoading,
+        addIncome,
+        updateIncome,
+        deleteIncome,
+        companyProfile,
+        updateCompanyProfile,
+        currentUser,
+        setCurrentUser,
+        isAuthLoading,
+        isOrgLoading,
+        isLoading,
+        login,
+        register,
+        updateUserPassword,
+        logout,
+        deleteAccount,
+        restoreData,
+        seedData,
+        files: files.filter(f => !f.projectId || filteredProjectIds.has(f.projectId)),
+        addFile,
+        deleteFile,
+        contracts: contracts.filter(c => filteredProjectIds.has(c.projectId)),
+        addContract,
+        payInstallment,
+        updateContract,
+        deleteContract,
+        // Archive System
+        archiveProject,
+        unarchiveProject,
+        archiveTask,
+        unarchiveTask,
+        archiveExpense,
+        unarchiveExpense,
+        archiveIncome,
+        unarchiveIncome,
+        // Archived data for Archive page
+        archivedProjects: projects.filter(p => p.isArchived === true),
+        archivedTasks: tasks.filter(t => t.isArchived === true),
+        archivedExpenses: expenses.filter(e => e.isArchived === true),
+        archivedIncomes: incomes.filter(i => i.isArchived === true),
+        isRedirecting,
+        getEnvironment
+    }), [
+        filteredProjects,
+        addProject,
+        updateProject,
+        deleteProject,
+        getProject,
+        teams,
+        currentTeam,
+        switchTeam,
+        createOrganization,
+        addTask,
+        tasks,
+        addSubProject,
+        updateTask,
+        deleteTask,
+        toggleTask,
+        works,
+        addWork,
+        updateWork,
+        updateWorkOrder,
+        expenses,
+        filteredProjectIds,
+        addExpense,
+        updateExpense,
+        deleteExpense,
+        users,
+        workers,
+        addUser,
+        updateUser,
+        deleteUser,
+        addWorker,
+        updateWorker,
+        deleteWorker,
+        vendors,
+        addVendor,
+        updateVendor,
+        deleteVendor,
+        customers,
+        addCustomer,
+        updateCustomer,
+        deleteCustomer,
+        incomes,
+        incomesLoading,
+        addIncome,
+        updateIncome,
+        deleteIncome,
+        companyProfile,
+        updateCompanyProfile,
+        currentUser,
+        setCurrentUser,
+        isAuthLoading,
+        isOrgLoading,
+        isLoading,
+        login,
+        register,
+        updateUserPassword,
+        logout,
+        deleteAccount,
+        restoreData,
+        seedData,
+        files,
+        addFile,
+        deleteFile,
+        contracts,
+        addContract,
+        payInstallment,
+        updateContract,
+        deleteContract,
+        archiveProject,
+        unarchiveProject,
+        archiveTask,
+        unarchiveTask,
+        archiveExpense,
+        unarchiveExpense,
+        archiveIncome,
+        unarchiveIncome,
+        projects,
+        isRedirecting,
+        getEnvironment
+    ])
+
+    return (
+        <ProjectContext.Provider value={value}>
+            {children}
+        </ProjectContext.Provider>
+    )
 }
 
 export function useProjects() {
