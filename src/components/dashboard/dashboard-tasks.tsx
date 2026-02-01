@@ -88,7 +88,15 @@ export function DashboardTasks() {
                                 <h4 className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors">{task.title}</h4>
                                 <div className="flex items-center gap-3 mt-2">
                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                        <Clock className="w-3 h-3" /> {task.dueDate || (t.dashboard.no_deadline || "No deadline")}
+                                        <Clock className="w-3 h-3" />
+                                        {task.dueDate ? new Date(task.dueDate).toLocaleString('th-TH', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            hour12: false
+                                        }) : (t.dashboard.no_deadline || "No deadline")}
                                     </span>
                                     <span className={cn("text-xs font-medium",
                                         task.status === 'Done' ? "text-green-500" :

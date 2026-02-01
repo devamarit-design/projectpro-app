@@ -191,5 +191,13 @@ service cloud.firestore {
         allow create: if isAuthenticated();
         allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isOrgOwner(resource.data.orgId));
     }
+
+    match /chat_threads/{threadId} {
+        allow read, write: if isAuthenticated();
+        
+        match /messages/{messageId} {
+            allow read, write: if isAuthenticated();
+        }
+    }
   }
 }

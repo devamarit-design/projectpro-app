@@ -13,6 +13,20 @@
                     "order": "ASCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "chat_threads",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "platform",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "lastUpdated",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []

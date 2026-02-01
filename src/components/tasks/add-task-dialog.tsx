@@ -41,6 +41,9 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
     const [isQuickAddSubProject, setIsQuickAddSubProject] = React.useState(false)
     const [newSubProjectName, setNewSubProjectName] = React.useState("")
 
+    // Refs for scrolling to errors
+    const projectRef = React.useRef<HTMLDivElement>(null)
+
     // AI Suggestion State
     const [isAiLoading, setIsAiLoading] = React.useState(false)
     const [aiReason, setAiReason] = React.useState<string | null>(null)
@@ -215,6 +218,18 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                 setIsUploading(false)
                 return
             } else if (!selectedProjectId && !taskToEdit) {
+                // Validate Project Selection
+                if (projectRef.current) {
+                    projectRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    // Try to focus the combobox trigger
+                    const trigger = projectRef.current.querySelector('button[role="combobox"], input') as HTMLElement
+                    if (trigger) trigger.focus()
+
+                    // Shake effect or highlight could be added here, but scroll+focus is good start
+                    // Using a small timeout to ensure scroll happens before alert if we use alert
+                    // Or preferably use toast/alert
+                    alert(t.tasks.dialog.select_project || "Please select a project")
+                }
                 setIsUploading(false)
                 return
             }
@@ -397,7 +412,7 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                         </div>
 
                         {/* Project Selection */}
-                        <div className="space-y-2">
+                        <div className="space-y-2" ref={projectRef}>
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t.tasks.dialog.assign_project}</label>
 
                             {!isQuickAddProject ? (

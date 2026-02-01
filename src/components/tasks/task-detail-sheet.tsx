@@ -32,6 +32,22 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
 
     const [showArchiveConfirm, setShowArchiveConfirm] = React.useState(false)
 
+    const [mounted, setMounted] = React.useState(false)
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    // Fix: Local state for description to prevent cursor jumping
+    // We must call this before any return statement
+    const [localDescription, setLocalDescription] = React.useState("")
+
+    // Reset local description when switching tasks
+    React.useEffect(() => {
+        if (taskData?.task) {
+            setLocalDescription(taskData.task.description || "")
+        }
+    }, [taskData?.task?.id])
+
     if (!taskId || !taskData) return null
 
     const { task, projectId, projectName } = taskData
@@ -61,10 +77,14 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
 
     const isArchived = task.isArchived
 
-    const [mounted, setMounted] = React.useState(false)
-    React.useEffect(() => {
-        setMounted(true)
-    }, [])
+    // Save description on blur
+    const handleDescriptionSave = () => {
+        if (localDescription !== task.description) {
+            updateTask(projectId, task.id, { description: localDescription })
+        }
+    }
+
+
 
     if (!mounted) return null
 
@@ -257,13 +277,43 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                                 <span className="text-xs font-bold uppercase tracking-wider">Description</span>
                             </div>
                             <textarea
-                                value={task.description || ""}
+                                value={localDescription}
                                 placeholder="Add more details about this task..."
-                                onChange={(e) => updateTask(projectId, task.id, { description: e.target.value })}
+                                onChange={(e) => setLocalDescription(e.target.value)}
+                                onBlur={handleDescriptionSave}
                                 rows={6}
                                 className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm resize-none leading-relaxed"
                             />
                         </div>
+
+                        {/* Images */}
+                        {task.images && task.images.length > 0 && (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Tag className="w-4 h-4" />
+                                    <span className="text-xs font-bold uppercase tracking-wider">Attachments</span>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                    {task.images.map((url, index) => (
+                                        <div key={index} className="aspect-square relative rounded-xl overflow-hidden border border-white/10 group">
+                                            <img
+                                                src={url}
+                                                alt={`Task attachment ${index + 1}`}
+                                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                            />
+                                            <a
+                                                href={url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                                            >
+                                                <ExternalLink className="w-5 h-5" />
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer */}

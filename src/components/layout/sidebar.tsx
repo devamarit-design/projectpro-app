@@ -24,7 +24,8 @@ import {
     Gamepad2,
     Megaphone,
     Newspaper,
-    GanttChartSquare
+    GanttChartSquare,
+    MessageSquare
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -48,6 +49,12 @@ export function Sidebar({ className }: { className?: string }) {
                 { href: "/income", label: t.common.income, icon: FileText, permission: "INCOME_CREATE" },
                 { href: "/expenses", label: t.common.expenses, icon: CreditCard },
                 { href: "/wall", label: "Team Wall", icon: Newspaper },
+            ]
+        },
+        {
+            title: "COMMUNICATION",
+            items: [
+                { href: "http://localhost:3000", label: "Chat Hub (External)", icon: MessageSquare },
             ]
         },
         {
