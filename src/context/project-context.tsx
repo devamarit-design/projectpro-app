@@ -1051,8 +1051,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 // Always set persistence
                 await setPersistence(auth, browserLocalPersistence)
 
-                // User requested to force Popup like normal for consistent experience
-                // Previously had specific logic for iOS PWA, but it was causing issues
+                // PWA/Mobile: Use Redirect directly to avoid popup blocking/hanging issues
+                if (isIOS || isPWA) {
+                    setIsRedirecting(true)
+                    await signInWithRedirect(auth, googleProvider)
+                    return // Redirecting...
+                }
+
+                // Desktop: Try Popup first for better UX
                 try {
                     await signInWithPopup(auth, googleProvider)
                 } catch (error: any) {
