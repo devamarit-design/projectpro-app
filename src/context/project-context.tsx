@@ -1029,14 +1029,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     // SUCCESS: Do NOT clear isRedirecting yet. 
                     // Wait for onAuthStateChanged to set currentUser, then the effect below will clear it.
                 } else {
-                    // No redirect result found (e.g. normal reload)
-                    setIsRedirecting(false)
-                    if (typeof window !== 'undefined') sessionStorage.removeItem('auth_in_progress')
+                    // No redirect result found.
+                    // CRITICAL: On PWA/Mobile, sometimes getRedirectResult returns null even if a redirect happened 
+                    // (race condition or persistence issue).
+                    // We DO NOT clear isRedirecting immediately. We wait a safety buffer (2s)
+                    // to see if onAuthStateChanged picks up the user from persistence.
+                    setTimeout(() => {
+                        setIsRedirecting(false)
+                        if (typeof window !== 'undefined') sessionStorage.removeItem('auth_in_progress')
+                    }, 4000) // 4s timeout to prevent infinite hanging
                 }
             } catch (error: any) {
                 console.warn("Redirect login non-fatal error:", error)
-                setIsRedirecting(false)
-                if (typeof window !== 'undefined') sessionStorage.removeItem('auth_in_progress')
+                // Also wait before clearing on error
+                setTimeout(() => {
+                    setIsRedirecting(false)
+                    if (typeof window !== 'undefined') sessionStorage.removeItem('auth_in_progress')
+                }, 4000)
             }
         }
         handleRedirect()
