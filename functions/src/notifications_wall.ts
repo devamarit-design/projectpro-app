@@ -49,6 +49,21 @@ export const onPostCreated = functions
             // Deduplicate tokens
             const uniqueTokens = [...new Set(tokens)]
 
+            // Create In-App Notification (One doc for everyone)
+            await db.collection('notifications').add({
+                title: `New Post from ${authorName}`,
+                message: post.content ? (post.content.length > 50 ? post.content.substring(0, 50) + '...' : post.content) : 'Shared a photo/video',
+                type: 'info',
+                date: new Date().toISOString(),
+                read: false,
+                link: '/wall',
+                relatedId: context.params.postId,
+                target: 'all',
+                orgId: orgId,
+                creatorId: authorId,
+                creatorName: authorName
+            })
+
             // Batch send (max 500 per batch, simple split)
             const batches = []
             const batchSize = 500
@@ -124,6 +139,20 @@ export const onPostLike = functions
             const tokens = authorDoc.data()?.fcmTokens as string[]
             if (!tokens || tokens.length === 0) return null
 
+            // Create In-App Notification for Author
+            await db.collection('notifications').add({
+                title: `New Like ❤️`,
+                message: `${likerName} liked your post`,
+                type: 'info',
+                date: new Date().toISOString(),
+                read: false,
+                link: '/wall',
+                relatedId: context.params.postId,
+                target: authorId, // Target specific user
+                orgId: context.params.orgId,
+                creatorId: addedLikerId
+            })
+
             const payload: admin.messaging.MulticastMessage = {
                 tokens: tokens,
                 notification: {
@@ -188,6 +217,20 @@ export const onCommentCreated = functions
 
             const tokens = authorDoc.data()?.fcmTokens as string[]
             if (!tokens || tokens.length === 0) return null
+
+            // Create In-App Notification for Author
+            await db.collection('notifications').add({
+                title: `New Comment 💬`,
+                message: `${commenterName} commented: "${comment.text}"`,
+                type: 'info',
+                date: new Date().toISOString(),
+                read: false,
+                link: '/wall',
+                relatedId: postId,
+                target: authorId,
+                orgId: orgId,
+                creatorId: commenterId
+            })
 
             const payload: admin.messaging.MulticastMessage = {
                 tokens: tokens,
