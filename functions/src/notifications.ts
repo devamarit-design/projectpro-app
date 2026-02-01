@@ -69,7 +69,7 @@ export const onTaskAssigned = functions
                     type: 'TASK_ASSIGNED',
                     taskId: context.params.taskId,
                     projectId: newData.projectId || '',
-                    url: `/tasks?projectId=${newData.projectId}` // For click handling
+                    url: `/tasks?taskId=${context.params.taskId}` // For click handling
                 },
                 // Android specific settings
                 android: {
@@ -178,7 +178,7 @@ export const onTaskStatusChanged = functions
                         type: 'TASK_COMPLETED',
                         taskId: context.params.taskId,
                         projectId: newData.projectId || '',
-                        url: `/tasks?projectId=${newData.projectId}`
+                        url: `/tasks?taskId=${context.params.taskId}`
                     },
                     android: { notification: { icon: 'stock_ticker_update', color: '#4caf50' } },
                     apns: { payload: { aps: { badge: 1, sound: 'default' } } }
@@ -263,7 +263,7 @@ export const checkTaskDueDates = functions
                                 type: 'TASK_DUE',
                                 taskId: doc.id,
                                 projectId: task.projectId || '',
-                                url: `/tasks?projectId=${task.projectId}`
+                                url: `/tasks?taskId=${doc.id}`
                             },
                             android: { notification: { icon: 'stock_ticker_update', color: '#ff9800' } },
                             apns: { payload: { aps: { badge: 1, sound: 'default' } } }

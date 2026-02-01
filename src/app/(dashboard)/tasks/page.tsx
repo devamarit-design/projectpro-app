@@ -50,8 +50,17 @@ export default function TasksPage() {
     // Handle action=new from Quick Add menu
     React.useEffect(() => {
         const action = searchParams.get('action')
+        const taskIdParam = searchParams.get('taskId')
+
         if (action === 'new') {
             setShowAddTask(true)
+            router.replace('/tasks')
+        } else if (taskIdParam) {
+            setSelectedTaskId(taskIdParam)
+            // Optional: Clean URL but keep history accessible? 
+            // Better to keep it clean so refresh doesn't reopen if user closed it.
+            // But replacing immediately might prevent user from seeing it in address bar?
+            // Let's replace.
             router.replace('/tasks')
         }
     }, [searchParams, router])
