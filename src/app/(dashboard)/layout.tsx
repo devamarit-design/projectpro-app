@@ -13,7 +13,7 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode
 }) {
-    const { currentUser, isAuthLoading, isOrgLoading, teams } = useProjects()
+    const { currentUser, isAuthLoading, isOrgLoading, teams, isRedirecting } = useProjects()
     const router = useRouter()
 
     // Notification System
@@ -27,20 +27,20 @@ export default function DashboardLayout({
     }, [isAuthLoading, currentUser])
 
     useEffect(() => {
-        if (!isAuthLoading && currentUser === null) {
+        if (!isAuthLoading && !isRedirecting && currentUser === null) {
             router.push("/login")
         }
-    }, [currentUser, isAuthLoading, router])
+    }, [currentUser, isAuthLoading, isRedirecting, router])
 
     useEffect(() => {
         // Wait for BOTH Auth and Org Data to load
-        if (!isAuthLoading && !isOrgLoading && currentUser && teams.length === 0) {
+        if (!isAuthLoading && !isOrgLoading && !isRedirecting && currentUser && teams.length === 0) {
             router.push("/onboarding")
         }
-    }, [isAuthLoading, isOrgLoading, currentUser, teams, router])
+    }, [isAuthLoading, isOrgLoading, isRedirecting, currentUser, teams, router])
 
-    // Wait for Auth
-    if (isAuthLoading || (currentUser && isOrgLoading)) {
+    // Wait for Auth or Redirecting
+    if (isAuthLoading || isRedirecting || (currentUser && isOrgLoading)) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
