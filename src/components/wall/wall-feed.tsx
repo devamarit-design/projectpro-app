@@ -82,7 +82,14 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
             set(CACHE_KEY, finalPosts).catch(err => console.warn("Failed to update wall cache:", err))
 
         }, (err) => {
-            console.error("Error fetching wall posts:", err)
+            const errorMsg = JSON.stringify(err)
+            if (err.code === 'resource-exhausted' || errorMsg.includes('Quota exceeded') || errorMsg.includes('resource-exhausted')) {
+                console.warn("Firestore Quota Exceeded (WallFeed): Switching to cached data.")
+                setQuotaError(true)
+                // Do not clear posts here, so we keep cached data visible
+            } else {
+                console.error("Error fetching wall posts:", err)
+            }
             setIsLoading(false)
         })
 
