@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { formatDistanceToNow } from "date-fns"
 import { Heart, MessageCircle, MoreHorizontal, Share2, Play, X } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -68,9 +68,15 @@ export function PostCard({ post }: PostCardProps) {
     const { currentUser, users } = useProjects()
     const [isLiked, setIsLiked] = useState(post.likes.includes(currentUser?.id || ""))
     const [likesCount, setLikesCount] = useState(post.likes.length)
+    const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0)
     const [showComments, setShowComments] = useState(false)
 
-    // Edit/Delete State
+    // Sync state with props when post updates from Firestore onSnapshot
+    useEffect(() => {
+        setIsLiked(post.likes.includes(currentUser?.id || ""))
+        setLikesCount(post.likes.length)
+        setCommentsCount(post.commentsCount || 0)
+    }, [post.likes, post.commentsCount, currentUser?.id])
     const [isEditing, setIsEditing] = useState(false)
     const [editContent, setEditContent] = useState(post.content)
     const [showDeleteAlert, setShowDeleteAlert] = useState(false)
@@ -335,13 +341,16 @@ export function PostCard({ post }: PostCardProps) {
                             onClick={() => setShowComments(!showComments)}
                         >
                             <MessageCircle className="h-4 w-4" />
-                            <span className="text-xs font-medium">{post.commentsCount || 0}</span>
+                            <span className="text-xs font-medium">{commentsCount}</span>
                         </Button>
                     </div>
                 </div>
 
                 {showComments && (
-                    <CommentSection postId={post.id} />
+                    <CommentSection
+                        postId={post.id}
+                        onCommentAdded={() => setCommentsCount(prev => prev + 1)}
+                    />
                 )}
             </div >
 

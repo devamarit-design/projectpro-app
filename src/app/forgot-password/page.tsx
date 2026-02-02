@@ -18,17 +18,21 @@ export default function ForgotPasswordPage() {
         setIsLoading(true)
 
         try {
-            const { auth } = await import("@/lib/firebase")
-            const { sendPasswordResetEmail } = await import("firebase/auth")
+            // Import the server action
+            const { sendPasswordResetLink } = await import("@/app/actions/auth")
 
-            await sendPasswordResetEmail(auth, email)
-            setIsSent(true)
+            const result = await sendPasswordResetLink(email)
+
+            if (result.success) {
+                setIsSent(true)
+            } else {
+                console.error("Error sending password reset email", result.error)
+                // Even on error, we might want to show success to prevent enumeration, but here we can log it.
+                // For user experience in this specific app context:
+                setIsSent(true)
+            }
         } catch (error) {
             console.error("Error sending password reset email", error)
-            // Optional: Set specific error state if needed, but for security we might not want to reveal too much
-            // For now, let's just show sent to avoid enumeration attacks, or maybe a generic error toast
-            // But to be user friendly let's show success even if email not found (security best practice)
-            // However, for this app level, let's just let it succeed visually.
             setIsSent(true)
         } finally {
             setIsLoading(false)

@@ -199,5 +199,12 @@ service cloud.firestore {
             allow read, write: if isAuthenticated();
         }
     }
+
+    match /integrations/{docId} {
+      allow read: if isAuthenticated() && isOrgMember(resource.data.organizationId);
+      allow create: if isAuthenticated() && isOrgMember(request.resource.data.organizationId);
+      allow update: if isAuthenticated() && isOrgMember(resource.data.organizationId);
+      allow delete: if isAuthenticated() && isOrgMember(resource.data.organizationId);
+    }
   }
 }

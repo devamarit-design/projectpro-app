@@ -1,6 +1,6 @@
 {
   "name": "hipslothproject-app",
-  "version": "1.0.6(a)",
+  "version": "1.0.6(b)",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -40,6 +40,7 @@
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.5",
     "firebase": "^12.8.0",
+    "firebase-admin": "^13.6.0",
     "framer-motion": "^12.26.2",
     "gantt-task-react": "^0.3.9",
     "heic2any": "^0.0.4",

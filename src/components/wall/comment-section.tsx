@@ -25,9 +25,10 @@ interface Comment {
 interface CommentSectionProps {
     postId: string
     onClose?: () => void
+    onCommentAdded?: () => void
 }
 
-export function CommentSection({ postId, onClose }: CommentSectionProps) {
+export function CommentSection({ postId, onClose, onCommentAdded }: CommentSectionProps) {
     const { currentOrg } = useOrganization()
     const { currentUser } = useProjects()
     const [comments, setComments] = useState<Comment[]>([])
@@ -62,29 +63,53 @@ export function CommentSection({ postId, onClose }: CommentSectionProps) {
         e.preventDefault()
         if (!newComment.trim() || !currentUser || !currentOrg) return
 
+        const commentText = newComment.trim()
+        setNewComment("") // Clear input immediately for responsiveness
+
+        // 1. Optimistic Update
+        const optimisticComment: Comment = {
+            id: `temp-${Date.now()}`,
+            content: commentText,
+            author: {
+                id: currentUser.id,
+                name: currentUser.name || "Unknown",
+                avatar: currentUser.avatar
+            },
+            createdAt: new Date().toISOString()
+        }
+
+        // Add to local state immediately
+        setComments(prev => [...prev, optimisticComment])
+
         setIsSubmitting(true)
         try {
-            // 1. Add comment to subcollection
+            // 2. Add to Firestore
             const commentsRef = collection(db, "organizations", currentOrg.id, "posts", postId, "comments")
-            await addDoc(commentsRef, {
-                content: newComment,
-                author: {
-                    id: currentUser.id,
-                    name: currentUser.name || "Unknown",
-                    avatar: currentUser.avatar
-                },
-                createdAt: serverTimestamp()
-            })
-
-            // 2. Increment comment count on post
             const postRef = doc(db, "organizations", currentOrg.id, "posts", postId)
-            await updateDoc(postRef, {
-                commentsCount: increment(1)
-            })
 
-            setNewComment("")
+            // Run in parallel for speed
+            await Promise.all([
+                addDoc(commentsRef, {
+                    content: commentText,
+                    author: {
+                        id: currentUser.id,
+                        name: currentUser.name || "Unknown",
+                        avatar: currentUser.avatar
+                    },
+                    createdAt: serverTimestamp()
+                }),
+                updateDoc(postRef, {
+                    commentsCount: increment(1)
+                })
+            ])
+            // Trigger callback if provided
+            if (onCommentAdded) onCommentAdded()
+
         } catch (error) {
             console.error("Error adding comment:", error)
+            // Rollback optimistic update on error
+            setComments(prev => prev.filter(c => c.id !== optimisticComment.id))
+            setNewComment(commentText) // Restore comment text
         } finally {
             setIsSubmitting(false)
         }

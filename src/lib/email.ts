@@ -6,7 +6,7 @@ interface SendEmailParams {
     html: string;
 }
 
-export async function sendEmail({ to, subject, html }: SendEmailParams) {
+export async function sendEmail({ to, subject, html, from }: SendEmailParams & { from?: string }) {
     if (!process.env.RESEND_API_KEY) {
         console.warn("RESEND_API_KEY is not set. Email sending skipped.");
         return { success: false, error: "Missing API Key" };
@@ -16,7 +16,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
 
     try {
         const data = await resend.emails.send({
-            from: 'ProjectPro <onboarding@resend.dev>', // Default Resend testing domain, user should configure this later
+            from: from || 'Hipsloth <noreply@hipsloth.app>', // Prioritize custom from, fallback to default
             to,
             subject,
             html,
