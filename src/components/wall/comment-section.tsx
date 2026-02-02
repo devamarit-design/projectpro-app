@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { formatDistanceToNow } from "date-fns"
 import { Send, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 interface Comment {
     id: string
@@ -80,33 +81,34 @@ export function CommentSection({ postId, onClose, onCommentAdded }: CommentSecti
 
         // Add to local state immediately
         setComments(prev => [...prev, optimisticComment])
-
         setIsSubmitting(true)
+
         try {
-            // 2. Add to Firestore
             const commentsRef = collection(db, "organizations", currentOrg.id, "posts", postId, "comments")
             const postRef = doc(db, "organizations", currentOrg.id, "posts", postId)
 
-            // Run in parallel for speed
-            await Promise.all([
-                addDoc(commentsRef, {
-                    content: commentText,
-                    author: {
-                        id: currentUser.id,
-                        name: currentUser.name || "Unknown",
-                        avatar: currentUser.avatar
-                    },
-                    createdAt: serverTimestamp()
-                }),
-                updateDoc(postRef, {
-                    commentsCount: increment(1)
-                })
-            ])
+            // 2. Add to Firestore - Primary Action
+            await addDoc(commentsRef, {
+                content: commentText,
+                author: {
+                    id: currentUser.id,
+                    name: currentUser.name || "Unknown",
+                    avatar: currentUser.avatar
+                },
+                createdAt: serverTimestamp()
+            })
+
+            // 3. Update commentsCount - Secondary Action (don't block the UI if possible)
+            updateDoc(postRef, {
+                commentsCount: increment(1)
+            }).catch(err => console.error("Error updating commentsCount:", err))
+
             // Trigger callback if provided
             if (onCommentAdded) onCommentAdded()
 
         } catch (error) {
             console.error("Error adding comment:", error)
+            toast.error("Failed to add comment")
             // Rollback optimistic update on error
             setComments(prev => prev.filter(c => c.id !== optimisticComment.id))
             setNewComment(commentText) // Restore comment text
