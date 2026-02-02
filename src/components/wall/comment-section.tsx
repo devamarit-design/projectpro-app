@@ -87,8 +87,9 @@ export function CommentSection({ postId, onClose, onCommentAdded }: CommentSecti
             const commentsRef = collection(db, "organizations", currentOrg.id, "posts", postId, "comments")
             const postRef = doc(db, "organizations", currentOrg.id, "posts", postId)
 
-            // 2. Add to Firestore - Primary Action
-            await addDoc(commentsRef, {
+            // 2. Add to Firestore with Timeout (Fire and Forget strategy for UI)
+            // If quota is exceeded or offline, addDoc waits forever for sync. We race it against a timeout.
+            const addPromise = addDoc(commentsRef, {
                 content: commentText,
                 author: {
                     id: currentUser.id,
@@ -97,6 +98,12 @@ export function CommentSection({ postId, onClose, onCommentAdded }: CommentSecti
                 },
                 createdAt: serverTimestamp()
             })
+
+            // Wait at most 2 seconds for server confim, otherwise assume success (offline/latched)
+            await Promise.race([
+                addPromise,
+                new Promise(resolve => setTimeout(resolve, 2000))
+            ])
 
             // 3. Update commentsCount - Secondary Action (don't block the UI if possible)
             updateDoc(postRef, {
@@ -108,10 +115,16 @@ export function CommentSection({ postId, onClose, onCommentAdded }: CommentSecti
 
         } catch (error) {
             console.error("Error adding comment:", error)
-            toast.error("Failed to add comment")
-            // Rollback optimistic update on error
-            setComments(prev => prev.filter(c => c.id !== optimisticComment.id))
-            setNewComment(commentText) // Restore comment text
+            // Only show error if it's NOT a timeout/offline assumption
+            // In quota case, we largely want to trust the optimistic update
+            const isQuotaError = JSON.stringify(error).includes("resource-exhausted") || JSON.stringify(error).includes("Quota exceeded")
+
+            if (!isQuotaError) {
+                toast.error("Failed to add comment")
+                // Rollback optimistic update on real error
+                setComments(prev => prev.filter(c => c.id !== optimisticComment.id))
+                setNewComment(commentText) // Restore comment text
+            }
         } finally {
             setIsSubmitting(false)
         }

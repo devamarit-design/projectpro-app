@@ -149,25 +149,6 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
 
     return (
         <div className={variant === 'full' ? "space-y-6 max-w-2xl mx-auto w-full" : "w-full"}>
-            {quotaError && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl flex items-center justify-between gap-4 mb-4 animate-in fade-in slide-in-from-top-2">
-                    <div className="text-sm">
-                        <p className="font-bold flex items-center gap-2">
-                            <X className="w-4 h-4" />
-                            System Overloaded (Quota Exceeded)
-                        </p>
-                        <p className="opacity-90 text-xs mt-1">
-                            Local queue is full or daily limit reached. Resetting data can fix queue issues.
-                        </p>
-                    </div>
-                    <button
-                        onClick={handleReset}
-                        className="bg-red-500 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-red-600 transition-colors whitespace-nowrap"
-                    >
-                        Reset Data
-                    </button>
-                </div>
-            )}
 
             {variant === 'full' && !filterByUser && (
                 <>
