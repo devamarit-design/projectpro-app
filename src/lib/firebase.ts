@@ -48,10 +48,13 @@ if (typeof window !== "undefined") {
         }
         if (JSON.stringify(args).includes("resource-exhausted") || JSON.stringify(args).includes("Quota exceeded")) {
             console.warn("🔥 FIRESTORE QUOTA EXCEEDED DETECTED 🔥");
-            // Dispatch event for UI to pick up
             if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('firestore-quota-exceeded'));
             }
+            return; // Suppress the log from console to reduce noise
+        }
+        if (JSON.stringify(args).includes("maximum backoff delay")) {
+            return; // Suppress backoff warning
         }
         originalError.apply(console, args);
     };
