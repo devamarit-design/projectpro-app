@@ -12,66 +12,102 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { db, storage } from "@/lib/firebase"
 import { toast } from "sonner"
 import Image from "next/image"
+import { cn } from "@/lib/utils"
 
 export function CreatePost() {
     const { currentUser } = useProjects()
     const { currentOrg } = useOrganization()
     const [content, setContent] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [mediaFile, setMediaFile] = useState<File | null>(null)
-    const [mediaPreview, setMediaPreview] = useState<string | null>(null)
+    const [mediaFiles, setMediaFiles] = useState<File[]>([])
+    const [mediaPreviews, setMediaPreviews] = useState<string[]>([])
     const [mediaType, setMediaType] = useState<'image' | 'video'>('image')
 
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
-        const file = e.target.files?.[0]
-        if (!file) return
+        const files = Array.from(e.target.files || [])
+        if (files.length === 0) return
 
-        if (file.size > 20 * 1024 * 1024) { // 20MB limit
-            toast.error("File is too large (Max 20MB)")
+        // If video, only allow one
+        if (type === 'video') {
+            const file = files[0]
+            if (file.size > 50 * 1024 * 1024) { // 50MB limit for video
+                toast.error("Video is too large (Max 50MB)")
+                return
+            }
+            setMediaFiles([file])
+            setMediaType('video')
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                setMediaPreviews([reader.result as string])
+            }
+            reader.readAsDataURL(file)
             return
         }
 
-        setMediaFile(file)
-        setMediaType(type)
+        // For images, allow multiple (up to 10)
+        const newFiles = [...mediaFiles, ...files].slice(0, 10)
+        setMediaFiles(newFiles)
+        setMediaType('image')
 
-        const reader = new FileReader()
-        reader.onloadend = () => {
-            setMediaPreview(reader.result as string)
-        }
-        reader.readAsDataURL(file)
+        const newPreviews: string[] = []
+        let processed = 0
+
+        files.forEach(file => {
+            if (file.size > 20 * 1024 * 1024) {
+                toast.error(`File ${file.name} is too large (Max 20MB)`)
+                return
+            }
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                newPreviews.push(reader.result as string)
+                processed++
+                if (processed === files.length) {
+                    setMediaPreviews(prev => [...prev, ...newPreviews].slice(0, 10))
+                }
+            }
+            reader.readAsDataURL(file)
+        })
+    }
+
+    const removeMedia = (index: number) => {
+        setMediaFiles(prev => prev.filter((_, i) => i !== index))
+        setMediaPreviews(prev => prev.filter((_, i) => i !== index))
     }
 
     const handleSubmit = async () => {
-        if (!content.trim() && !mediaFile) return
+        if (!content.trim() && mediaFiles.length === 0) return
         if (!currentOrg || !currentUser) return
 
         setIsSubmitting(true)
         try {
             let mediaUrls: string[] = []
 
-            if (mediaFile) {
-                let fileToUpload = mediaFile
+            if (mediaFiles.length > 0) {
+                const uploadPromises = mediaFiles.map(async (file) => {
+                    let fileToUpload = file
 
-                // Compress image if it is an image
-                if (mediaFile.type.startsWith('image/')) {
-                    const { compressImage } = await import('@/lib/image-utils');
-                    fileToUpload = await compressImage(mediaFile);
-                }
+                    // Compress image if it is an image
+                    if (file.type.startsWith('image/')) {
+                        const { compressImage } = await import('@/lib/image-utils');
+                        fileToUpload = await compressImage(file);
+                    }
 
-                // Sanitize file name
-                const sanitizedFileName = fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-                const storageRef = ref(storage, `organizations/${currentOrg.id}/posts/${Date.now()}_${sanitizedFileName}`)
-                const snapshot = await uploadBytes(storageRef, fileToUpload)
-                const url = await getDownloadURL(snapshot.ref)
-                mediaUrls.push(url)
+                    // Sanitize file name
+                    const sanitizedFileName = fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const storageRef = ref(storage, `organizations/${currentOrg.id}/posts/${Date.now()}_${sanitizedFileName}`)
+                    const snapshot = await uploadBytes(storageRef, fileToUpload)
+                    return getDownloadURL(snapshot.ref)
+                })
+
+                mediaUrls = await Promise.all(uploadPromises)
             }
 
             await addDoc(collection(db, "organizations", currentOrg.id, "posts"), {
                 content,
                 mediaUrls,
-                mediaType: mediaFile ? mediaType : 'none',
+                mediaType: mediaFiles.length > 0 ? mediaType : 'none',
                 author: {
                     id: currentUser.id,
                     name: currentUser.name || "Unknown",
@@ -79,15 +115,12 @@ export function CreatePost() {
                 },
                 likes: [],
                 commentsCount: 0,
-                createdAt: new Date().toISOString(), // Use ISO string first for immediate local display if needed, but Firestore hook usually handles timestamp
-                // Using serverTimestamp() is better for consistency but might need conversion for local display before fetch
-                // Let's use string for now as defined in interface, or we interact with Timestamp object.
-                // Actually interface says Date string.
+                createdAt: new Date().toISOString(),
             })
 
             setContent("")
-            setMediaFile(null)
-            setMediaPreview(null)
+            setMediaFiles([])
+            setMediaPreviews([])
             toast.success("Post created!")
         } catch (error) {
             console.error("Error creating post:", error)
@@ -112,24 +145,30 @@ export function CreatePost() {
                         onChange={(e) => setContent(e.target.value)}
                     />
 
-                    {mediaPreview && (
-                        <div className="relative rounded-lg overflow-hidden bg-muted max-h-[300px] w-full group">
-                            <Button
-                                size="icon"
-                                variant="destructive"
-                                className="absolute top-2 right-2 h-6 w-6 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => {
-                                    setMediaFile(null)
-                                    setMediaPreview(null)
-                                }}
-                            >
-                                <X className="h-3 w-3" />
-                            </Button>
-                            {mediaType === 'image' ? (
-                                <img src={mediaPreview} alt="Preview" className="w-full h-full object-contain" />
-                            ) : (
-                                <video src={mediaPreview} controls className="w-full h-full max-h-[300px]" />
-                            )}
+                    {mediaPreviews.length > 0 && (
+                        <div className={cn(
+                            "grid gap-2",
+                            mediaPreviews.length === 1 ? "grid-cols-1" :
+                                mediaPreviews.length === 2 ? "grid-cols-2" :
+                                    "grid-cols-3"
+                        )}>
+                            {mediaPreviews.map((preview, index) => (
+                                <div key={index} className="relative rounded-lg overflow-hidden bg-muted aspect-square group border border-border">
+                                    <Button
+                                        size="icon"
+                                        variant="destructive"
+                                        className="absolute top-1 right-1 h-5 w-5 z-10 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-0"
+                                        onClick={() => removeMedia(index)}
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                    {mediaType === 'image' ? (
+                                        <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <video src={preview} className="w-full h-full object-cover" />
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     )}
 
@@ -139,6 +178,7 @@ export function CreatePost() {
                                 type="file"
                                 ref={fileInputRef}
                                 className="hidden"
+                                multiple
                                 accept="image/*,.heic,.heif"
                                 onChange={(e) => handleFileSelect(e, 'image')}
                             />
@@ -170,7 +210,7 @@ export function CreatePost() {
 
                         <Button
                             onClick={handleSubmit}
-                            disabled={(!content.trim() && !mediaFile) || isSubmitting}
+                            disabled={(!content.trim() && mediaFiles.length === 0) || isSubmitting}
                             className="bg-primary hover:bg-primary/90 text-white gap-2"
                         >
                             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

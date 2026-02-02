@@ -206,35 +206,129 @@ export function PostCard({ post }: PostCardProps) {
                                 <p className="text-sm whitespace-pre-wrap leading-relaxed">{post.content}</p>
                             )}
 
-                            {/* Media Grid */}
+                            {/* Media Grid / Album Layout */}
                             {post.mediaUrls && post.mediaUrls.length > 0 && (
-                                <div className={cn(
-                                    "rounded-lg overflow-hidden gap-1",
-                                    post.mediaUrls.length > 1 ? "grid grid-cols-2" : "block",
-                                    post.mediaType === 'video' ? "aspect-video" : ""
-                                )}>
-                                    {post.mediaUrls.map((url, index) => (
-                                        <div key={index} className="relative w-full h-full min-h-[200px] bg-muted">
-                                            {post.mediaType === 'video' ? (
-                                                <video src={url} controls className="w-full h-full object-cover" />
-                                            ) : (
+                                <div className="rounded-xl overflow-hidden bg-muted/30 border border-border/50">
+                                    {post.mediaType === 'video' ? (
+                                        <div className="aspect-video relative bg-black">
+                                            <video src={post.mediaUrls[0]} controls className="w-full h-full object-contain" />
+                                        </div>
+                                    ) : (
+                                        <div className={cn(
+                                            "grid gap-1",
+                                            post.mediaUrls.length === 1 && "grid-cols-1",
+                                            post.mediaUrls.length === 2 && "grid-cols-2 aspect-[16/9]",
+                                            post.mediaUrls.length === 3 && "grid-cols-2 aspect-[4/3]",
+                                            post.mediaUrls.length === 4 && "grid-cols-2 aspect-square",
+                                            post.mediaUrls.length >= 5 && "grid-cols-6 aspect-square"
+                                        )}>
+                                            {post.mediaUrls.length === 1 && (
                                                 <div
-                                                    className="relative w-full h-full aspect-[4/3] cursor-pointer hover:opacity-95 transition-opacity"
+                                                    className="relative w-full cursor-pointer hover:opacity-95 transition-opacity min-h-[300px]"
+                                                    onClick={() => {
+                                                        setLightboxSrc(post.mediaUrls![0])
+                                                        setLightboxOpen(true)
+                                                    }}
+                                                >
+                                                    <img
+                                                        src={post.mediaUrls[0]}
+                                                        alt="Post attachment"
+                                                        className="w-full h-auto max-h-[600px] object-cover"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {post.mediaUrls.length === 2 && post.mediaUrls.map((url, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="relative w-full h-full cursor-pointer hover:opacity-95 transition-all overflow-hidden"
                                                     onClick={() => {
                                                         setLightboxSrc(url)
                                                         setLightboxOpen(true)
                                                     }}
                                                 >
-                                                    <Image
-                                                        src={url}
-                                                        alt={`Post attachment ${index + 1}`}
-                                                        fill
-                                                        className="object-cover"
-                                                    />
+                                                    <Image src={url} alt="" fill className="object-cover" />
                                                 </div>
+                                            ))}
+
+                                            {post.mediaUrls.length === 3 && (
+                                                <>
+                                                    <div
+                                                        className="relative w-full h-full cursor-pointer hover:opacity-95 transition-all row-span-2 overflow-hidden"
+                                                        onClick={() => {
+                                                            setLightboxSrc(post.mediaUrls![0])
+                                                            setLightboxOpen(true)
+                                                        }}
+                                                    >
+                                                        <Image src={post.mediaUrls[0]} alt="" fill className="object-cover" />
+                                                    </div>
+                                                    <div className="grid grid-rows-2 gap-1 h-full">
+                                                        {[1, 2].map((i) => (
+                                                            <div
+                                                                key={i}
+                                                                className="relative w-full h-full cursor-pointer hover:opacity-95 transition-all overflow-hidden"
+                                                                onClick={() => {
+                                                                    setLightboxSrc(post.mediaUrls![i])
+                                                                    setLightboxOpen(true)
+                                                                }}
+                                                            >
+                                                                <Image src={post.mediaUrls![i]} alt="" fill className="object-cover" />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {post.mediaUrls.length === 4 && post.mediaUrls.map((url, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="relative w-full h-full cursor-pointer hover:opacity-95 transition-all overflow-hidden"
+                                                    onClick={() => {
+                                                        setLightboxSrc(url)
+                                                        setLightboxOpen(true)
+                                                    }}
+                                                >
+                                                    <Image src={url} alt="" fill className="object-cover" />
+                                                </div>
+                                            ))}
+
+                                            {post.mediaUrls.length >= 5 && (
+                                                <>
+                                                    {/* Top row: 2 images */}
+                                                    {post.mediaUrls.slice(0, 2).map((url, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className="relative w-full h-full cursor-pointer hover:opacity-95 transition-all col-span-3 row-span-3 overflow-hidden"
+                                                            onClick={() => {
+                                                                setLightboxSrc(url)
+                                                                setLightboxOpen(true)
+                                                            }}
+                                                        >
+                                                            <Image src={url} alt="" fill className="object-cover" />
+                                                        </div>
+                                                    ))}
+                                                    {/* Bottom row: 3 images */}
+                                                    {post.mediaUrls.slice(2, 5).map((url, i) => (
+                                                        <div
+                                                            key={i + 2}
+                                                            className="relative w-full h-full cursor-pointer hover:opacity-95 transition-all col-span-2 row-span-3 overflow-hidden"
+                                                            onClick={() => {
+                                                                setLightboxSrc(url)
+                                                                setLightboxOpen(true)
+                                                            }}
+                                                        >
+                                                            <Image src={url} alt="" fill className="object-cover" />
+                                                            {i === 2 && post.mediaUrls!.length > 5 && (
+                                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-[2px]">
+                                                                    <span className="text-white text-2xl font-bold">+{post.mediaUrls!.length - 5}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </>
                                             )}
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             )}
                         </>
