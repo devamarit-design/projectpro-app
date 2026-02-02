@@ -8,6 +8,7 @@ import { Post, PostCard } from "./post-card"
 import { CreatePost } from "./create-post"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProjects } from "@/context/project-context"
+import { get, set } from "idb-keyval"
 import { Hash, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -32,8 +33,25 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
     useEffect(() => {
         if (!currentOrgId) return
 
-        // Only show loading if we don't have posts for this org yet or org changed
-        setIsLoading(prev => posts.length === 0 || prev)
+        const CACHE_KEY = `wall_posts_${currentOrgId}_${variant}_${filterByUser ? currentUserId : 'all'}`
+
+        // 1. Load from Cache immediately
+        const loadFromCache = async () => {
+            // Only show loading if we really have nothing
+            setIsLoading(prev => posts.length === 0 ? true : prev)
+
+            try {
+                const cachedPosts = await get(CACHE_KEY)
+                if (cachedPosts && Array.isArray(cachedPosts) && cachedPosts.length > 0) {
+                    setPosts(cachedPosts)
+                    setIsLoading(false) // Show cached content immediately
+                }
+            } catch (err) {
+                console.warn("Failed to load wall cache:", err)
+            }
+        }
+
+        loadFromCache()
 
         const postsRef = collection(db, "organizations", currentOrgId, "posts")
 
@@ -52,12 +70,17 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
                 orgId: currentOrgId
             })) as Post[]
 
+            let finalPosts = fetchedPosts
             if (filterByUser && currentUserId) {
-                setPosts(fetchedPosts.filter(p => p.author.id === currentUserId))
-            } else {
-                setPosts(fetchedPosts)
+                finalPosts = fetchedPosts.filter(p => p.author.id === currentUserId)
             }
+
+            setPosts(finalPosts)
             setIsLoading(false)
+
+            // Update Cache
+            set(CACHE_KEY, finalPosts).catch(err => console.warn("Failed to update wall cache:", err))
+
         }, (err) => {
             console.error("Error fetching wall posts:", err)
             setIsLoading(false)
