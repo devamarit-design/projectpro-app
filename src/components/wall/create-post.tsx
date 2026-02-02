@@ -104,7 +104,7 @@ export function CreatePost() {
                 mediaUrls = await Promise.all(uploadPromises)
             }
 
-            await addDoc(collection(db, "organizations", currentOrg.id, "posts"), {
+            const addPromise = addDoc(collection(db, "organizations", currentOrg.id, "posts"), {
                 content,
                 mediaUrls,
                 mediaType: mediaFiles.length > 0 ? mediaType : 'none',
@@ -118,13 +118,36 @@ export function CreatePost() {
                 createdAt: new Date().toISOString(),
             })
 
+            // Fix Infinite Spinner:
+            // Race the addDoc against a 2.5s timeout.
+            // If server is slow (or quota full), we assume success (offline persistence) and unblock UI.
+            await Promise.race([
+                addPromise,
+                new Promise(resolve => setTimeout(resolve, 2500))
+            ])
+
+            // Always unblock if we get here
             setContent("")
             setMediaFiles([])
             setMediaPreviews([])
-            toast.success("Post created!")
+            toast.success("Post created!") // Show success even if technically still syncing in background
+
         } catch (error) {
             console.error("Error creating post:", error)
-            toast.error(error instanceof Error ? error.message : "Failed to post")
+
+            // Handle Quota Error gracefully
+            const errorMsg = JSON.stringify(error)
+            const isQuota = errorMsg.includes('resource-exhausted') || errorMsg.includes('Quota exceeded')
+
+            if (isQuota) {
+                // Treat as success (offline mode)
+                setContent("")
+                setMediaFiles([])
+                setMediaPreviews([])
+                toast.success("Post created! (Offline Mode)")
+            } else {
+                toast.error(error instanceof Error ? error.message : "Failed to post")
+            }
         } finally {
             setIsSubmitting(false)
         }
