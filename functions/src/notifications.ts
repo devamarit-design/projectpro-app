@@ -326,3 +326,62 @@ export const checkTaskDueDates = functions
             return null
         }
     })
+
+/**
+ * Trigger: Schedule daily at 2:00 AM
+ * Goal: Auto-archive tasks that have been 'Done' for more than 1 day
+ */
+export const autoArchiveDoneTasks = functions
+    .region('asia-southeast1')
+    .pubsub.schedule('0 2 * * *') // 2:00 AM daily
+    .timeZone('Asia/Bangkok')
+    .onRun(async (context) => {
+        const db = admin.firestore()
+        console.log('Running auto-archive for done tasks...')
+
+        const now = new Date()
+        const oneDayAgo = new Date(now)
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1)
+
+        try {
+            // Find tasks that are Done
+            const tasksSnap = await db.collection('tasks')
+                .where('status', '==', 'Done')
+                .get()
+
+            const archivePromises: Promise<any>[] = []
+
+            tasksSnap.forEach(docSnap => {
+                const task = docSnap.data()
+                if (task.isArchived) return // Skip already archived
+
+                if (task.doneAt) {
+                    const doneAt = new Date(task.doneAt)
+                    if (doneAt < oneDayAgo) {
+                        archivePromises.push(docSnap.ref.update({
+                            isArchived: true,
+                            archivedAt: now.toISOString(),
+                            updatedAt: now.toISOString()
+                        }))
+                    }
+                } else {
+                    // Fallback: if no doneAt but status is Done, we might want to set doneAt 
+                    // or just use createdAt/updatedAt as fallback? 
+                    // To be safe, let's only archive if we have a clear timestamp.
+                    // (My client side fix ensures doneAt is now set)
+                }
+            })
+
+            if (archivePromises.length > 0) {
+                await Promise.all(archivePromises)
+                console.log(`Auto-archived ${archivePromises.length} tasks`)
+            } else {
+                console.log('No tasks to archive at this time')
+            }
+
+            return null
+        } catch (error) {
+            console.error("Error in autoArchiveDoneTasks:", error)
+            return null
+        }
+    })

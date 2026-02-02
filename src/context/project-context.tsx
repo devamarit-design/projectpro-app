@@ -359,6 +359,7 @@ interface ProjectContextType {
 
     // Sub-project Management (โปรเจคย่อย)
     addSubProject: (projectId: string, subProject: Omit<SubProject, "id">) => void
+    deleteSubProject: (projectId: string, subProjectId: string) => void
 
     // Expense Management
     expenses: Expense[]
@@ -1379,16 +1380,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             setTasks(data)
             set(`tasks_${currentTeam.id}`, data)
 
-            // Auto-archive tasks that have been Done for more than 2 days
-            const twoDaysAgo = new Date()
-            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+            // Auto-archive tasks that have been Done for more than 1 day
+            const oneDayAgo = new Date()
+            oneDayAgo.setDate(oneDayAgo.getDate() - 1)
 
             for (const task of data) {
                 if (
                     task.status === 'Done' &&
                     task.doneAt &&
                     !task.isArchived &&
-                    new Date(task.doneAt) < twoDaysAgo
+                    new Date(task.doneAt) < oneDayAgo
                 ) {
                     try {
                         await updateDoc(doc(db, "tasks", task.id), { isArchived: true })
@@ -1741,6 +1742,22 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
+    const deleteSubProject = async (projectId: string, subProjectId: string) => {
+        const project = projects.find(p => p.id === projectId)
+        if (!project || !project.subProjects) return
+
+        const updatedSubProjects = project.subProjects.filter(sp => sp.id !== subProjectId)
+
+        // Optimistic Update
+        setProjects(prev => prev.map(p => p.id === projectId ? { ...p, subProjects: updatedSubProjects } : p))
+
+        try {
+            await updateDoc(doc(db, "projects", projectId), { subProjects: updatedSubProjects })
+        } catch (e) {
+            console.error("Error deleting sub-project", e)
+        }
+    }
+
     const updateTask = async (projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
         try {
             // Handle doneAt timestamp for auto-archive feature
@@ -1812,7 +1829,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
         const newStatus = task.status === 'Done' ? 'Todo' : 'Done'
         try {
-            await updateDoc(doc(db, "tasks", taskId), { status: newStatus })
+            const updates: any = {
+                status: newStatus,
+                updatedAt: new Date().toISOString()
+            }
+
+            if (newStatus === 'Done') {
+                updates.doneAt = new Date().toISOString()
+            } else {
+                updates.doneAt = null // Clear if moved back to Todo
+            }
+
+            await updateDoc(doc(db, "tasks", taskId), updates)
 
             if (currentTeam && currentUser) {
                 logActivity(db, currentTeam.id, {
@@ -2565,6 +2593,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         deleteWork,
 
         addSubProject,
+        deleteSubProject,
         updateTask,
         deleteTask,
         toggleTask,
@@ -2644,6 +2673,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         addTask,
         tasks,
         addSubProject,
+        deleteSubProject,
         updateTask,
         deleteTask,
         toggleTask,

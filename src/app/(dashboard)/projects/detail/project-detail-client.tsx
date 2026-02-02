@@ -37,6 +37,7 @@ import { IncomeDocument } from "@/context/project-context"
 import Link from "next/link"
 import { ProjectHeader } from "@/components/projects/project-header"
 import { cn } from "@/lib/utils"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 // Components
 import AddExpenseDialog from "@/components/expenses/add-expense-dialog"
 import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
@@ -101,7 +102,7 @@ export default function ProjectDetailClient() {
     const searchParams = useSearchParams()
     const id = searchParams.get("id") || ""
     const { t, locale } = useTranslation()
-    const { getProject, addTask, addSubProject, deleteTask, toggleTask, updateTask, expenses, files, addFile, currentUser, users, incomes, customers, isLoading, currentTeam, addWork, updateWork, deleteWork, updateWorkOrder } = useProjects()
+    const { getProject, addTask, addSubProject, deleteSubProject, deleteTask, toggleTask, updateTask, expenses, files, addFile, currentUser, users, incomes, customers, isLoading, currentTeam, addWork, updateWork, deleteWork, updateWorkOrder } = useProjects()
     const [activeTab, setActiveTab] = useState("overview")
     const project = getProject(id)
 
@@ -130,6 +131,10 @@ export default function ProjectDetailClient() {
     const [userFilter, setUserFilter] = useState<string>("all")
     const [monthFilter, setMonthFilter] = useState<string>("all")
     const [activeFinancialTab, setActiveFinancialTab] = useState<'expenses' | 'incomes'>('expenses')
+    const [deleteSubProjectConfirm, setDeleteSubProjectConfirm] = useState<{ isOpen: boolean; subProjectId: string | null }>({
+        isOpen: false,
+        subProjectId: null
+    })
     const [isClient, setIsClient] = useState(false)
 
     // Income Grouping State
@@ -279,6 +284,22 @@ export default function ProjectDetailClient() {
 
     return (
         <div className="space-y-6 pb-20">
+            <ConfirmDialog
+                isOpen={deleteSubProjectConfirm.isOpen}
+                onClose={() => setDeleteSubProjectConfirm({ isOpen: false, subProjectId: null })}
+                onConfirm={async () => {
+                    if (deleteSubProjectConfirm.subProjectId) {
+                        await deleteSubProject(project.id, deleteSubProjectConfirm.subProjectId)
+                        setDeleteSubProjectConfirm({ isOpen: false, subProjectId: null })
+                        setSelectedSubProjectId(null)
+                    }
+                }}
+                title="ลบโปรเจคย่อย"
+                message="คุณแน่ใจหรือไม่ว่าต้องการลบโปรเจคย่อยนี้? ข้อมูลทั้งหมดที่เกี่ยวข้องจะถูกตัดการเชื่อมต่อ"
+                confirmText="ลบข้อมูล"
+                cancelText="ยกเลิก"
+                variant="danger"
+            />
             <ProjectHeader project={project} totalExpenses={allTimeExpenses} />
 
             {/* Tabs Navigation */}
@@ -1408,6 +1429,12 @@ export default function ProjectDetailClient() {
                                 </div>
 
                                 <div className="flex gap-3 pt-4">
+                                    <button
+                                        onClick={() => setDeleteSubProjectConfirm({ isOpen: true, subProjectId: selectedSP.id })}
+                                        className="px-6 py-3 bg-red-500/10 text-red-500 rounded-xl font-medium hover:bg-red-500/20 transition-colors"
+                                    >
+                                        Delete
+                                    </button>
                                     <button
                                         onClick={() => setSelectedSubProjectId(null)}
                                         className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
