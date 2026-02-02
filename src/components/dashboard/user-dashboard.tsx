@@ -75,9 +75,6 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
 
                     {/* 4. Mood-based Header (Welcome) */}
                     <DashboardHeader />
-
-                    {/* 4.5 Market Overview */}
-                    <MarketOverview />
                 </>
             )}
 

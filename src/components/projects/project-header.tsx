@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n-context"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { exportProjectToExcel } from "@/lib/export-project"
+import { getGoogleMapsUrl } from "@/lib/utils"
 
 interface ProjectHeaderProps {
     project: Project
@@ -208,7 +209,21 @@ export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
                                         {project.name}
                                     </h1>
                                     <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-white/70 text-sm md:text-xl font-medium">
-                                        <span className="flex items-center gap-2"><MapPin className="w-5 h-5 text-primary" /> {project.location}</span>
+                                        <span className="flex items-center gap-2">
+                                            <MapPin className="w-5 h-5 text-primary" />
+                                            {getGoogleMapsUrl(project.location) ? (
+                                                <a
+                                                    href={getGoogleMapsUrl(project.location)!}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="hover:text-primary hover:underline underline-offset-4"
+                                                >
+                                                    {project.location}
+                                                </a>
+                                            ) : (
+                                                project.location
+                                            )}
+                                        </span>
                                         <span className="hidden md:block w-1.5 h-1.5 rounded-full bg-white/20" />
                                         <span className="flex items-center gap-2 font-black text-white uppercase tracking-widest text-xs md:text-base bg-white/10 px-3 py-1 rounded-lg border border-white/5">
                                             {t.projects.detail.header.client}: {project.customer}

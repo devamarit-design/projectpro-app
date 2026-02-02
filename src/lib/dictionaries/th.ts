@@ -21,6 +21,8 @@ export const th = {
         view: "ดู",
         customers: "ลูกค้า",
         profile: "โปรไฟล์",
+        profile_picture: "รูปโปรไฟล์",
+        logo: "โลโก้บริษัท",
         edit_profile: "แก้ไขโปรไฟล์",
         personal_info: "ข้อมูลส่วนตัว",
         account_settings: "ตั้งค่าบัญชี",
@@ -947,7 +949,7 @@ export const th = {
             placeholders: {
                 name: "เช่น รีโนเวทบ้านใหม่",
                 customer: "เช่น คุณสมชาย",
-                location: "เช่น สุขุมวิท 101",
+                location: "Link Google Maps หรือชื่อสถานที่",
                 budget: "เช่น 1000000"
             }
         }

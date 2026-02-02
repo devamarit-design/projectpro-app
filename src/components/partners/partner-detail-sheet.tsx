@@ -1,7 +1,7 @@
 import * as React from "react"
 import { X, Phone, MapPin, Star, User, Building, History, CheckSquare, MessageCircle, MoreHorizontal, Mail, Calendar, DollarSign, Wallet, Check, Edit, Trash2, Archive } from "lucide-react"
 import { useProjects, User as UserType, Vendor as VendorType, Worker as WorkerType, Expense } from "@/context/project-context"
-import { cn } from "@/lib/utils"
+import { cn, getGoogleMapsUrl } from "@/lib/utils"
 // Reuse AddPartnerDialog for editing
 import AddPartnerDialog from "./add-partner-dialog"
 
@@ -112,10 +112,14 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                         {/* Profile Info */}
                         <div className="text-center space-y-2">
                             <div className={cn(
-                                "w-24 h-24 mx-auto rounded-3xl flex items-center justify-center shadow-xl border-4 border-background",
+                                "w-24 h-24 mx-auto rounded-3xl flex items-center justify-center shadow-xl border-4 border-background overflow-hidden relative",
                                 type === 'Vendor' ? "bg-orange-500 text-white" : "bg-blue-500 text-white"
                             )}>
-                                {type === 'Vendor' ? <Building className="w-10 h-10" /> : <User className="w-10 h-10" />}
+                                {partner.avatar ? (
+                                    <img src={partner.avatar} alt={partner.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    type === 'Vendor' ? <Building className="w-10 h-10" /> : <User className="w-10 h-10" />
+                                )}
                             </div>
                             <div>
                                 <h2 className="text-2xl font-bold">{partner.name}</h2>
@@ -193,7 +197,20 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                                 </div>
                                 <div className="flex-1">
                                     <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Location</p>
-                                    <p className="font-medium text-sm">{partner.location || "-"}</p>
+                                    <p className="font-medium text-sm">
+                                        {getGoogleMapsUrl(partner.location) ? (
+                                            <a
+                                                href={getGoogleMapsUrl(partner.location)!}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-primary hover:underline"
+                                            >
+                                                {partner.location || "-"}
+                                            </a>
+                                        ) : (
+                                            partner.location || "-"
+                                        )}
+                                    </p>
                                 </div>
                             </div>
                         </div>

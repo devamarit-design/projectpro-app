@@ -175,7 +175,7 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
                                 value={formData.address || ""}
                                 onChange={handleChange}
                                 className="w-full px-3 py-2.5 rounded-xl border bg-muted/30 focus:bg-background transition-colors outline-none focus:ring-2 focus:ring-primary/50 resize-none text-sm"
-                                placeholder="ที่อยู่ภาษาไทย"
+                                placeholder="ลิงก์ Google Maps หรือที่อยู่ภาษาไทย"
                             />
                         </div>
 
@@ -188,7 +188,7 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
                                 value={formData.addressEn || ""}
                                 onChange={handleChange}
                                 className="w-full px-3 py-2.5 rounded-xl border bg-muted/30 focus:bg-background transition-colors outline-none focus:ring-2 focus:ring-primary/50 resize-none text-sm"
-                                placeholder="Address in English"
+                                placeholder="Google Maps Link or address in English"
                             />
                         </div>
 

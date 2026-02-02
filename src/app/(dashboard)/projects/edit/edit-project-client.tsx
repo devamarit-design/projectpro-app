@@ -181,7 +181,7 @@ export default function EditProjectClient() {
                             <div className="relative">
                                 <input
                                     type="text"
-                                    placeholder={t.projects.edit.placeholders.location}
+                                    placeholder="Link Google Maps หรือชื่อสถานที่"
                                     className="w-full h-12 rounded-xl bg-background/50 border border-white/10 pl-11 pr-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
                                     value={formData.location}
                                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}

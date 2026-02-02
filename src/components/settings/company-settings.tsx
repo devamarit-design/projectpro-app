@@ -8,6 +8,7 @@ import { useState } from "react"
 import EditTeamDialog from "../../app/(dashboard)/team/edit-team-dialog"
 import { hasPermission } from "@/lib/permissions"
 import { useOrganization } from "@/context/organization-context" // Add this import
+import { getGoogleMapsUrl } from "@/lib/utils"
 
 export function CompanySettings() {
     const { t } = useTranslation()
@@ -92,7 +93,18 @@ export function CompanySettings() {
                             {t.settings.company.fields.address} (TH)
                         </label>
                         <div className="p-3 bg-muted/30 rounded-lg border border-border/50 min-h-[60px] whitespace-pre-wrap text-sm">
-                            {displayProfile.address || "-"}
+                            {getGoogleMapsUrl(displayProfile.address) ? (
+                                <a
+                                    href={getGoogleMapsUrl(displayProfile.address)!}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                >
+                                    {displayProfile.address || "-"}
+                                </a>
+                            ) : (
+                                displayProfile.address || "-"
+                            )}
                         </div>
                     </div>
 
@@ -103,7 +115,18 @@ export function CompanySettings() {
                             Company Address (EN)
                         </label>
                         <div className="p-3 bg-muted/30 rounded-lg border border-border/50 min-h-[60px] whitespace-pre-wrap text-sm font-sans">
-                            {displayProfile.addressEn || "-"}
+                            {getGoogleMapsUrl(displayProfile.addressEn) ? (
+                                <a
+                                    href={getGoogleMapsUrl(displayProfile.addressEn)!}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                >
+                                    {displayProfile.addressEn || "-"}
+                                </a>
+                            ) : (
+                                displayProfile.addressEn || "-"
+                            )}
                         </div>
                     </div>
                 </div>

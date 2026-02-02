@@ -21,6 +21,8 @@ export const en = {
         view: "View",
         customers: "Customers",
         profile: "Profile",
+        profile_picture: "Profile Picture",
+        logo: "Company Logo",
         edit_profile: "Edit Profile",
         personal_info: "Personal Information",
         account_settings: "Account Settings",
@@ -949,7 +951,7 @@ export const en = {
             placeholders: {
                 name: "e.g. New House Renovation",
                 customer: "e.g. Mr. Somchai",
-                location: "e.g. Sukhumvit 101",
+                location: "Google Maps Link or address",
                 budget: "e.g. 1000000"
             }
         }

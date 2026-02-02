@@ -196,6 +196,7 @@ export interface Vendor {
     products?: string[]
     status: "Active" | "Inactive"
     orgId?: string
+    avatar?: string
     createdAt?: string
     updatedAt?: string
 }
@@ -213,6 +214,7 @@ export interface Worker {
     status: "Active" | "Inactive"
     joinedDate?: string
     orgId?: string
+    avatar?: string
     createdAt?: string
     updatedAt?: string
 }

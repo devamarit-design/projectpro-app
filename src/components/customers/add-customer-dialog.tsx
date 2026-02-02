@@ -188,7 +188,6 @@ export default function AddCustomerDialog({ isOpen, onClose, initialData }: AddC
                                 />
                             </div>
 
-                            {/* Address */}
                             <div className="space-y-2">
                                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                                     <MapPin className="w-3 h-3" /> Address
@@ -196,7 +195,7 @@ export default function AddCustomerDialog({ isOpen, onClose, initialData }: AddC
                                 <textarea
                                     value={address}
                                     onChange={(e) => setAddress(e.target.value)}
-                                    placeholder="Enter full address..."
+                                    placeholder="Link Google Maps หรือที่อยู่แบบละเอียด..."
                                     className="w-full h-24 p-4 bg-background border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none resize-none"
                                 />
                             </div>

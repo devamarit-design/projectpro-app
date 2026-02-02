@@ -142,7 +142,7 @@ export default function NewProjectPage() {
                             <label className="text-sm font-medium">{t.projects.edit.fields.location}</label>
                             <input
                                 type="text"
-                                placeholder={t.projects.edit.placeholders.location}
+                                placeholder="Link Google Maps หรือชื่อสถานที่"
                                 className="w-full h-11 px-4 rounded-xl bg-background/50 border border-input focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                 value={formData.location}
                                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}

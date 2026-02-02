@@ -5,8 +5,8 @@ import { useProjects } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { createPortal } from "react-dom"
 import { auth, storage } from "@/lib/firebase"
-import { Mail, Phone, Shield, User as UserIcon, Save, X, Camera, LogOut, Check, AlertTriangle, Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Mail, Phone, Shield, User as UserIcon, Save, X, Camera, LogOut, Check, AlertTriangle, Loader2, MapPin } from "lucide-react"
+import { cn, getGoogleMapsUrl } from "@/lib/utils"
 import { compressImage } from "@/lib/image-utils"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 
@@ -18,7 +18,8 @@ export default function ProfilePage() {
     const [formData, setFormData] = React.useState({
         name: "",
         phone: "",
-        email: ""
+        email: "",
+        location: ""
     })
     const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -65,7 +66,8 @@ export default function ProfilePage() {
             setFormData({
                 name: currentUser.name,
                 phone: currentUser.phone || "",
-                email: currentUser.email || ""
+                email: currentUser.email || "",
+                location: currentUser.location || ""
             })
         }
     }, [currentUser])
@@ -76,7 +78,8 @@ export default function ProfilePage() {
         updateUser(currentUser.id, {
             name: formData.name,
             phone: formData.phone,
-            email: formData.email
+            email: formData.email,
+            location: formData.location
         })
         setIsEditing(false)
     }
@@ -86,7 +89,8 @@ export default function ProfilePage() {
             setFormData({
                 name: currentUser.name,
                 phone: currentUser.phone || "",
-                email: currentUser.email || ""
+                email: currentUser.email || "",
+                location: currentUser.location || ""
             })
         }
         setIsEditing(false)
@@ -237,6 +241,37 @@ export default function ProfilePage() {
                         ) : (
                             <div className="p-3 bg-muted/30 rounded-xl font-medium font-mono">
                                 {currentUser.phone || "-"}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            Location
+                        </label>
+                        {isEditing ? (
+                            <input
+                                type="text"
+                                value={formData.location}
+                                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                placeholder="Link Google Maps หรือที่อยู่"
+                                className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
+                            />
+                        ) : (
+                            <div className="p-3 bg-muted/30 rounded-xl font-medium">
+                                {getGoogleMapsUrl(currentUser.location) ? (
+                                    <a
+                                        href={getGoogleMapsUrl(currentUser.location)!}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:underline underline-offset-4"
+                                    >
+                                        {currentUser.location || "-"}
+                                    </a>
+                                ) : (
+                                    currentUser.location || "-"
+                                )}
                             </div>
                         )}
                     </div>

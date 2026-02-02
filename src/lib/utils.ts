@@ -56,3 +56,9 @@ export function generateNextDocumentNumber(
     const next = max + 1
     return `${prefix}-${dateStr}-${next.toString().padStart(3, '0')}`
 }
+
+export function getGoogleMapsUrl(address: string | undefined | null) {
+    if (!address || address === "-" || address === "ไม่มีที่อยู่") return null
+    if (address.startsWith("http://") || address.startsWith("https://")) return address
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+}

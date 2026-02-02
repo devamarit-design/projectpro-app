@@ -36,7 +36,7 @@ import {
 import { IncomeDocument } from "@/context/project-context"
 import Link from "next/link"
 import { ProjectHeader } from "@/components/projects/project-header"
-import { cn } from "@/lib/utils"
+import { cn, getGoogleMapsUrl } from "@/lib/utils"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 // Components
 import AddExpenseDialog from "@/components/expenses/add-expense-dialog"
@@ -411,7 +411,18 @@ export default function ProjectDetailClient() {
                                             <p className="text-xs text-muted-foreground font-medium uppercase">Location</p>
                                             <div className="flex items-center gap-2 font-semibold">
                                                 <MapPin className="w-4 h-4 text-primary" />
-                                                {project.location}
+                                                {getGoogleMapsUrl(project.location) ? (
+                                                    <a
+                                                        href={getGoogleMapsUrl(project.location)!}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-primary hover:underline underline-offset-4"
+                                                    >
+                                                        {project.location}
+                                                    </a>
+                                                ) : (
+                                                    project.location
+                                                )}
                                             </div>
                                         </div>
                                         {hasPermission(currentTeam?.role, "FINANCIAL_VIEW") && (

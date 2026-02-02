@@ -4,7 +4,7 @@ import * as React from "react"
 import { Search, Plus, Store, Wrench, Truck, Phone, MapPin, Star, MoreHorizontal, User, Filter, Building, Archive } from "lucide-react"
 import { useProjects } from "@/context/project-context"
 
-import { cn } from "@/lib/utils"
+import { cn, getGoogleMapsUrl } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
 // Components
 import AddPartnerDialog from "@/components/partners/add-partner-dialog"
@@ -155,10 +155,14 @@ export default function PartnersPage() {
                             <div className="flex items-start justify-between">
                                 <div className="flex gap-4">
                                     <div className={cn(
-                                        "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner",
+                                        "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner overflow-hidden",
                                         partner.type === 'Vendor' ? "bg-orange-500/10 text-orange-500" : "bg-blue-500/10 text-blue-500"
                                     )}>
-                                        {partner.type === 'Vendor' ? <Store className="w-6 h-6" /> : <User className="w-6 h-6" />}
+                                        {partner.avatar ? (
+                                            <img src={partner.avatar} alt={partner.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            partner.type === 'Vendor' ? <Store className="w-6 h-6" /> : <User className="w-6 h-6" />
+                                        )}
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">{partner.name}</h3>
@@ -180,7 +184,19 @@ export default function PartnersPage() {
                                 </div>
                                 <div className="flex items-center gap-3 text-muted-foreground">
                                     <MapPin className="w-4 h-4 shrink-0 opacity-70" />
-                                    <span className="truncate">{partner.location || t.partners.no_location}</span>
+                                    {getGoogleMapsUrl(partner.location) ? (
+                                        <a
+                                            href={getGoogleMapsUrl(partner.location)!}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="truncate hover:text-primary hover:underline underline-offset-4"
+                                        >
+                                            {partner.location || t.partners.no_location}
+                                        </a>
+                                    ) : (
+                                        <span className="truncate">{partner.location || t.partners.no_location}</span>
+                                    )}
                                 </div>
                             </div>
 

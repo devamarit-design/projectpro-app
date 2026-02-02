@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Search, Plus, User, Building, Phone, MapPin, Archive } from "lucide-react"
 import { useProjects } from "@/context/project-context"
-import { cn } from "@/lib/utils"
+import { cn, getGoogleMapsUrl } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
 // Components
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
@@ -145,7 +145,19 @@ export default function CustomersPage() {
                                         <div className="w-6 flex justify-center">
                                             <MapPin className="w-3.5 h-3.5 opacity-50" />
                                         </div>
-                                        <span className="truncate line-clamp-1">{customer.address || "-"}</span>
+                                        {getGoogleMapsUrl(customer.address) ? (
+                                            <a
+                                                href={getGoogleMapsUrl(customer.address)!}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="truncate line-clamp-1 hover:text-primary hover:underline underline-offset-4"
+                                            >
+                                                {customer.address || "-"}
+                                            </a>
+                                        ) : (
+                                            <span className="truncate line-clamp-1">{customer.address || "-"}</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>

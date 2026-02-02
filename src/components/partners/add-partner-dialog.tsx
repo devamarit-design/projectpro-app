@@ -1,10 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { X, User, Building, MapPin, Phone, Star, Tag, Check, Info } from "lucide-react"
+import { X, User, Building, MapPin, Phone, Star, Tag, Check, Info, Camera, Loader2 } from "lucide-react"
 import { useProjects, User as UserType, Vendor as VendorType, Worker as WorkerType } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
+import { uploadImage } from "@/lib/upload"
 
 interface AddPartnerDialogProps {
     isOpen: boolean
@@ -25,6 +26,8 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
     const [lineId, setLineId] = React.useState("")
     const [location, setLocation] = React.useState("")
     const [rating, setRating] = React.useState(5)
+    const [avatar, setAvatar] = React.useState("")
+    const [isUploading, setIsUploading] = React.useState(false)
 
     // Reset/Fill form
     React.useEffect(() => {
@@ -44,6 +47,7 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                 setLineId(initialData.lineId || "")
                 setLocation(initialData.location || "")
                 setRating(initialData.rating || 5)
+                setAvatar(initialData.avatar || "")
             } else {
                 // New Mode
                 setType(defaultType)
@@ -53,15 +57,16 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                 setLineId("")
                 setLocation("")
                 setRating(5)
+                setAvatar("")
             }
         }
     }, [isOpen, defaultType, initialData])
 
     if (!isOpen) return null
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!name) return
+        if (!name || isUploading) return
 
         if (initialData) {
             // Update
@@ -72,7 +77,8 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                     phone,
                     lineId,
                     location,
-                    rating
+                    rating,
+                    avatar
                 })
             } else {
                 updateVendor(initialData.id, {
@@ -81,7 +87,8 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                     phone,
                     lineId,
                     location,
-                    rating
+                    rating,
+                    avatar
                 })
             }
         } else {
@@ -94,7 +101,8 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                     lineId,
                     location,
                     rating,
-                    skills: []
+                    skills: [],
+                    avatar
                 })
             } else {
                 addVendor({
@@ -104,11 +112,28 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                     lineId,
                     location,
                     rating,
-                    products: []
+                    products: [],
+                    avatar
                 })
             }
         }
         onClose()
+    }
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setIsUploading(true)
+        try {
+            const path = type === "Person" ? "partners/workers" : "partners/vendors"
+            const url = await uploadImage(file, path)
+            setAvatar(url)
+        } catch (error) {
+            console.error("Upload failed", error)
+        } finally {
+            setIsUploading(false)
+        }
     }
 
     return (
@@ -163,6 +188,44 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                             </button>
                         </div>
                     )}
+
+                    {/* Avatar Upload */}
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                        <div className="relative group">
+                            <div className={cn(
+                                "w-24 h-24 rounded-3xl overflow-hidden border-4 border-background shadow-xl flex items-center justify-center bg-muted/50 transition-all group-hover:opacity-80",
+                                type === "Business" ? "bg-orange-500/10 text-orange-500" : "bg-blue-500/10 text-blue-500"
+                            )}>
+                                {avatar ? (
+                                    <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    type === "Business" ? <Building className="w-10 h-10" /> : <User className="w-10 h-10" />
+                                )}
+                            </div>
+                            <label className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-xl shadow-lg cursor-pointer hover:scale-110 active:scale-95 transition-all">
+                                {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    disabled={isUploading}
+                                />
+                            </label>
+                            {avatar && (
+                                <button
+                                    type="button"
+                                    onClick={() => setAvatar("")}
+                                    className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            )}
+                        </div>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                            {type === "Person" ? t.common?.profile_picture || "Profile Picture" : t.common?.logo || "Business Logo"}
+                        </p>
+                    </div>
 
                     <div className="space-y-4">
                         {/* Name */}
@@ -232,7 +295,6 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                             </div>
                         </div>
 
-                        {/* Location */}
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                                 <MapPin className="w-3 h-3" /> {t.dialogs.add_project.location}
@@ -240,7 +302,7 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                             <input
                                 value={location}
                                 onChange={(e) => setLocation(e.target.value)}
-                                placeholder="e.g. Bangkok, Ratchada"
+                                placeholder="Link Google Maps หรือชื่อสถานที่"
                                 className="w-full h-11 px-4 bg-background border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none"
                             />
                         </div>
@@ -281,9 +343,10 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                            disabled={isUploading}
+                            className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                            <Check className="w-4 h-4" /> {initialData ? t.dialogs.add_partner.update : t.dialogs.add_partner.save}
+                            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {initialData ? t.dialogs.add_partner.update : t.dialogs.add_partner.save}
                         </button>
                     </div>
                 </form>

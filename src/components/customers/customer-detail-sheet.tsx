@@ -3,7 +3,7 @@
 import * as React from "react"
 import { X, Phone, MapPin, User, Building, Mail, Edit, Trash2, ArrowRight, Archive } from "lucide-react"
 import { useProjects, Customer } from "@/context/project-context"
-import { cn } from "@/lib/utils"
+import { cn, getGoogleMapsUrl } from "@/lib/utils"
 import Link from "next/link"
 import AddCustomerDialog from "./add-customer-dialog"
 
@@ -154,7 +154,20 @@ export default function CustomerDetailSheet({ customerId, onClose }: CustomerDet
                                 </div>
                                 <div className="flex-1">
                                     <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Address</p>
-                                    <p className="font-medium text-sm">{customer.address || "-"}</p>
+                                    <p className="font-medium text-sm">
+                                        {getGoogleMapsUrl(customer.address) ? (
+                                            <a
+                                                href={getGoogleMapsUrl(customer.address)!}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-primary hover:underline"
+                                            >
+                                                {customer.address || "-"}
+                                            </a>
+                                        ) : (
+                                            customer.address || "-"
+                                        )}
+                                    </p>
                                 </div>
                             </div>
                         </div>
