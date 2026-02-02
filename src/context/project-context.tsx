@@ -1377,29 +1377,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
         // 8. Tasks
         const qTasks = query(collection(db, "tasks"), where("orgId", "==", currentTeam.id))
-        const unsubTasks = onSnapshot(qTasks, async (snap) => {
+        const unsubTasks = onSnapshot(qTasks, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask))
             setTasks(data)
             set(`tasks_${currentTeam.id}`, data)
-
-            // Auto-archive tasks that have been Done for more than 1 day
-            const oneDayAgo = new Date()
-            oneDayAgo.setDate(oneDayAgo.getDate() - 1)
-
-            for (const task of data) {
-                if (
-                    task.status === 'Done' &&
-                    task.doneAt &&
-                    !task.isArchived &&
-                    new Date(task.doneAt) < oneDayAgo
-                ) {
-                    try {
-                        await updateDoc(doc(db, "tasks", task.id), { isArchived: true })
-                    } catch (e) {
-                        console.error("Error auto-archiving task:", e)
-                    }
-                }
-            }
         }, (error) => console.error("Task sync error:", error))
 
         // 9. Works (Schedule)
@@ -1457,6 +1438,43 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             unsubFiles()
         }
     }, [currentTeam?.id])
+
+    const [hasCheckedAutoArchive, setHasCheckedAutoArchive] = useState<string | null>(null)
+
+    // Safe Auto-archive: Runs only once when tasks are first loaded for an organization
+    useEffect(() => {
+        if (!currentTeam?.id || tasks.length === 0 || hasCheckedAutoArchive === currentTeam.id) return
+
+        const performAutoArchive = async () => {
+            const oneDayAgo = new Date()
+            oneDayAgo.setDate(oneDayAgo.getDate() - 1)
+
+            const tasksToArchive = tasks.filter(task =>
+                task.status === 'Done' &&
+                task.doneAt &&
+                !task.isArchived &&
+                new Date(task.doneAt) < oneDayAgo
+            )
+
+            if (tasksToArchive.length > 0) {
+                console.log(`[AutoArchive] Found ${tasksToArchive.length} tasks to archive for org ${currentTeam.id}`)
+                setHasCheckedAutoArchive(currentTeam.id)
+
+                // Sequence updates to avoid hammering the connection
+                for (const task of tasksToArchive) {
+                    try {
+                        await updateDoc(doc(db, "tasks", task.id), { isArchived: true })
+                    } catch (e) {
+                        console.error("[AutoArchive] Failed to archive task:", task.id, e)
+                    }
+                }
+            } else {
+                setHasCheckedAutoArchive(currentTeam.id)
+            }
+        }
+
+        performAutoArchive()
+    }, [currentTeam?.id, tasks.length, hasCheckedAutoArchive])
 
     const seedData = async () => {
         if (!currentTeam || !currentUser) return
