@@ -46,8 +46,33 @@ if (typeof window !== "undefined") {
             console.warn("Detected Firestore CA9 error. Attempting to recover...");
             // Optionally: window.location.reload(); or clear indexedDB
         }
+        if (JSON.stringify(args).includes("resource-exhausted") || JSON.stringify(args).includes("Quota exceeded")) {
+            console.warn("🔥 FIRESTORE QUOTA EXCEEDED DETECTED 🔥");
+            // Dispatch event for UI to pick up
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('firestore-quota-exceeded'));
+            }
+        }
         originalError.apply(console, args);
     };
+}
+
+// Emergency Reset Utility
+if (typeof window !== "undefined") {
+    (window as any).resetFirestore = async () => {
+        try {
+            const { terminate, clearIndexedDbPersistence } = await import("firebase/firestore");
+            console.log("Terminating Firestore...");
+            await terminate(firestoreInstance);
+            console.log("Clearing Persistence...");
+            await clearIndexedDbPersistence(firestoreInstance);
+            console.log("Done! Reloading...");
+            window.location.reload();
+        } catch (e) {
+            console.error("Failed to reset firestore:", e);
+        }
+    };
+    console.log("💡 Developer Tip: Run `resetFirestore()` in console if you encounter quota or sync issues.");
 }
 
 export const db = firestoreInstance;
