@@ -21,19 +21,26 @@ export default function SSOAuthorizePage() {
 
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                setStatus("Authenticated. Generating token...");
+                setStatus("Authenticated. Generating secure token...");
                 try {
-                    // Force refresh to get a fresh token
-                    const token = await user.getIdToken(true);
+                    // Use Cloud Function to get a Custom Token (required for signInWithCustomToken on target app)
+                    // Dynamic import to avoid SSR issues if strictly client side, though here we are client only
+                    const { getChatHubToken } = await import("@/lib/functions-client");
+
+                    const result = await getChatHubToken();
+
+                    if (!result.token) {
+                        throw new Error(result.error || "Failed to generate token");
+                    }
 
                     // Redirect back to consumer
                     const callbackUrl = new URL(redirectUri);
-                    callbackUrl.searchParams.set("token", token);
+                    callbackUrl.searchParams.set("token", result.token);
 
                     window.location.href = callbackUrl.toString();
                 } catch (error) {
                     console.error("Token generation failed:", error);
-                    setStatus("Error generating token");
+                    setStatus("Error generating token: " + (error instanceof Error ? error.message : String(error)));
                 }
             } else {
                 // Not logged in, redirect to login page with return URL

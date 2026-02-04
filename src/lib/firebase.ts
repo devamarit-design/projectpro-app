@@ -42,9 +42,28 @@ try {
 if (typeof window !== "undefined") {
     const originalError = console.error;
     console.error = (...args) => {
-        if (args[0]?.includes?.("ca9")) {
+        if (args[0]?.includes?.("ca9") || JSON.stringify(args).includes("ca9")) {
             console.warn("Detected Firestore CA9 error. Attempting to recover...");
-            // Optionally: window.location.reload(); or clear indexedDB
+            if (typeof window !== "undefined" && !(window as any)._isRecoveringFromFirestore) {
+                (window as any)._isRecoveringFromFirestore = true;
+                // Add a small delay to prevent instant loops
+                setTimeout(() => {
+                    const indexedDB = window.indexedDB || (window as any).mozIndexedDB || (window as any).webkitIndexedDB || (window as any).msIndexedDB;
+                    if (indexedDB) {
+                        try {
+                            // Try to delete the specific database if name known, or just rely on reload to hopefully fix it
+                            // Actually, for ca9, often a reload is enough if it's transient. 
+                            // But if persistent, we might need to nuke the DB.
+                            console.log("Reloading to recover from Firestore error...");
+                            window.location.reload();
+                        } catch (e) {
+                            window.location.reload();
+                        }
+                    } else {
+                        window.location.reload();
+                    }
+                }, 1000);
+            }
         }
         if (JSON.stringify(args).includes("resource-exhausted") || JSON.stringify(args).includes("Quota exceeded")) {
             console.warn("🔥 FIRESTORE QUOTA EXCEEDED DETECTED 🔥");

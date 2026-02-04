@@ -636,3 +636,34 @@ export const removeUserFromOrg = functions
             )
         }
     })
+
+/**
+ * Generate custom token for Chat Hub (SSO)
+ */
+export const getChatHubToken = functions
+    .region(region)
+    .https.onCall(async (data, context) => {
+        // Verify authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError(
+                'unauthenticated',
+                'User must be authenticated'
+            )
+        }
+
+        const uid = context.auth.uid
+
+        try {
+            // Create a custom token for the user
+            // Note: Cloud Functions service account automatically has permissions to mint tokens
+            const customToken = await admin.auth().createCustomToken(uid)
+
+            return { token: customToken }
+        } catch (error) {
+            console.error('Error generating custom token:', error)
+            throw new functions.https.HttpsError(
+                'internal',
+                'Failed to generate token'
+            )
+        }
+    })

@@ -9,7 +9,13 @@ import { useProjects } from "@/context/project-context"
 import { TeamOnboarding } from "@/components/team/team-onboarding"
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration"
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+    children,
+    variant = "default"
+}: {
+    children: React.ReactNode
+    variant?: "default" | "fullscreen"
+}) {
     const { teams } = useProjects()
 
     // Enable scroll position restoration for iOS back navigation
@@ -18,6 +24,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     // Guard: Force Team Creation
     if (teams.length === 0) {
         return <TeamOnboarding />
+    }
+
+    if (variant === "fullscreen") {
+        return (
+            <div className="h-screen w-full bg-background overflow-hidden flex flex-col">
+                <div id="main-scroll-container" className="flex-1 overflow-y-auto overflow-x-hidden">
+                    <main className="min-h-full pb-24">
+                        {children}
+                    </main>
+                </div>
+            </div>
+        )
     }
 
     return (

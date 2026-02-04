@@ -54,7 +54,7 @@ export function Sidebar({ className }: { className?: string }) {
         {
             title: "COMMUNICATION",
             items: [
-                { href: "http://localhost:3000", label: "Chat Hub (External)", icon: MessageSquare },
+                { href: "https://chat.hipsloth.app", label: "Chat Hub (External)", icon: MessageSquare },
             ]
         },
         {
@@ -132,6 +132,52 @@ export function Sidebar({ className }: { className?: string }) {
                                 }
 
                                 const isActive = pathname === item.href || (pathname !== "/" && pathname?.startsWith(item.href))
+
+                                // Special handling for Chat Hub (External)
+                                if (item.label === "Chat Hub (External)") {
+                                    return (
+                                        <button
+                                            key={item.href}
+                                            onClick={async (e) => {
+                                                e.preventDefault();
+                                                try {
+                                                    // Dynamic import to avoid SSR issues if any, or just to keep it clean
+                                                    const { getChatHubToken } = await import("@/lib/functions-client");
+                                                    // Check if toast is available, if not, native alert or just proceed? 
+                                                    // Assuming no toast in this component context easily without hook.
+                                                    // We'll just change window location. 
+
+                                                    // Show some visual feedback? Simple cursor wait for now.
+                                                    document.body.style.cursor = 'wait';
+
+                                                    const result = await getChatHubToken();
+
+                                                    document.body.style.cursor = 'default';
+
+                                                    if (result.token) {
+                                                        window.location.href = `https://chat.hipsloth.app/login?token=${result.token}`;
+                                                    } else {
+                                                        console.error("Failed to get token", result.error);
+                                                        // Fallback
+                                                        window.open("https://chat.hipsloth.app", "_blank");
+                                                    }
+                                                } catch (err) {
+                                                    console.error("Error navigating to chat hub", err);
+                                                    document.body.style.cursor = 'default';
+                                                    window.open("https://chat.hipsloth.app", "_blank");
+                                                }
+                                            }}
+                                            className={cn(
+                                                "flex w-full items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group text-left",
+                                                "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                                            )}
+                                        >
+                                            <item.icon className={cn("w-4 h-4 transition-colors", "group-hover:text-sidebar-primary")} />
+                                            <span className="text-sm">{item.label}</span>
+                                        </button>
+                                    )
+                                }
+
                                 return (
                                     <Link
                                         key={item.href}

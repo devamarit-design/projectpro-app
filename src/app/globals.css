@@ -186,6 +186,19 @@
   .glass-card {
     @apply bg-card/40 backdrop-blur-md border-none shadow-md hover:bg-card/50 transition-all duration-300 dark:bg-card/30 dark:shadow-none;
   }
+
+  .glass-dark {
+    @apply bg-background/80 backdrop-blur-xl border-t border-white/10 dark:bg-black/70;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* Gradient/Rainbow Theme Styles */

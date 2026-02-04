@@ -304,7 +304,7 @@ export function MobileNav() {
             {/* Bottom Nav - 5 Items: Home, Project, Add, Finance, More */}
             <nav
                 className={cn(
-                    "fixed bottom-4 left-4 right-4 z-40 bg-background/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl md:hidden block pb-2 pt-2 transition-transform duration-300",
+                    "fixed bottom-4 left-4 right-4 z-40 bg-background/80 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl md:hidden block pb-2 pt-2 transition-transform duration-300",
                     scrollDirection === "down" ? "translate-y-24" : "translate-y-0"
                 )}
             >

@@ -86,7 +86,7 @@ export function QuickActionsGrid() {
                         href={action.href}
                         className="flex flex-col items-center gap-2 group"
                     >
-                        <div className={`p-4 rounded-2xl ${action.bg} ${action.color} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                        <div className={`p-4 rounded-2xl ${action.bg} ${action.color} shadow-sm group-hover:shadow-md group-hover:brightness-105 transition-all duration-300`}>
                             <Icon className="w-6 h-6" />
                         </div>
                         <span className="text-[10px] sm:text-xs font-bold text-muted-foreground text-center line-clamp-2 leading-tight group-hover:text-foreground transition-colors">

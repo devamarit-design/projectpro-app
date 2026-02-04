@@ -87,10 +87,10 @@ export function ThemeSettings() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Mock Card 1 */}
-                    <div className="p-4 rounded-xl border border-border bg-card shadow-sm space-y-3 relative overflow-hidden group">
+                    <div className="p-4 rounded-xl border border-border bg-card shadow-sm space-y-3 relative overflow-hidden group hover:shadow-lg transition-all duration-300">
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="flex items-center gap-3 relative">
-                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
                                 <span className="font-bold">A</span>
                             </div>
                             <div>
@@ -99,7 +99,7 @@ export function ThemeSettings() {
                             </div>
                         </div>
                         <div className="flex gap-2 relative">
-                            <button className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/20">
+                            <button className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/20 hover:brightness-110 transition-all">
                                 Primary Action
                             </button>
                             <button className="px-3 py-1.5 rounded-lg border border-border hover:bg-muted text-sm font-medium transition-colors">
@@ -325,7 +325,7 @@ export function ThemeSettings() {
                     <input
                         type="range"
                         min="0"
-                        max="1"
+                        max="2"
                         step="0.25"
                         value={draftTheme.radius}
                         onChange={(e) => handleChange('radius', parseFloat(e.target.value))}

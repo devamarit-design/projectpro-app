@@ -3,6 +3,8 @@
 import { useTranslation } from "@/lib/i18n-context"
 import { Info, ShieldCheck, Github, Globe, Mail } from "lucide-react"
 
+import packageJson from '../../../../../package.json'
+
 export default function AboutPage() {
     const { t } = useTranslation()
 
@@ -21,7 +23,7 @@ export default function AboutPage() {
             <div className="glass-card p-8 rounded-3xl border border-white/5 space-y-6">
                 <div>
                     <h2 className="text-xl font-bold mb-2">{t.about.version}</h2>
-                    <p className="text-muted-foreground">1.0.6(c)</p>
+                    <p className="text-muted-foreground">{packageJson.version}</p>
                 </div>
 
                 <div className="h-px bg-white/5" />

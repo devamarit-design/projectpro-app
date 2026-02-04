@@ -54,7 +54,7 @@ export function Header({ }: HeaderProps) {
                                 }
                             }
                         }}
-                        className="w-full max-w-sm pl-8 pr-4 py-1.5 text-sm bg-muted/50 border-none rounded-md focus:ring-1 focus:ring-primary focus:bg-background transition-all min-w-[150px]"
+                        className="w-full max-w-sm pl-8 pr-4 py-1.5 text-sm bg-muted/50 border-none rounded-full focus:ring-1 focus:ring-primary focus:bg-background transition-all min-w-[150px]"
                     />
                 </div>
                 <div className="flex items-center gap-x-4 lg:gap-x-6">

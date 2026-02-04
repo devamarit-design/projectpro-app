@@ -52,7 +52,7 @@ export function ProjectCard({ project, columns = 1, priority = false }: ProjectC
 
     return (
         <Link href={`/projects/detail?id=${project.id}`} className="group block h-full">
-            <div className="relative flex flex-col h-full bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden hover:shadow-xl transition-all duration-300">
+            <div className="relative flex flex-col h-full bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden hover:shadow-md hover:border-border transition-all duration-300">
                 {/* Full Background Image */}
                 <div className="absolute inset-0 z-0">
                     <Image

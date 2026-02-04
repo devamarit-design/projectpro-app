@@ -134,3 +134,20 @@ export const testDailyTaskSummary = async (
         return { success: false, error: errorMessage }
     }
 }
+
+/**
+ * Get Chat Hub SSO token
+ */
+export const getChatHubToken = async (): Promise<{ token?: string, error?: string }> => {
+    try {
+        const callable = httpsCallable<void, { token: string }>(
+            functions,
+            'getChatHubToken'
+        )
+        const result = await callable()
+        return result.data
+    } catch (error: any) {
+        console.error('Error calling getChatHubToken:', error)
+        return { error: String(error) }
+    }
+}
