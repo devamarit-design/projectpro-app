@@ -12,7 +12,12 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   },
 });
 
+import packageJson from "./package.json";
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_APP_VERSION: packageJson.version,
+  },
   // @ts-ignore
   turbopack: {},
   eslint: {
