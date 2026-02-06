@@ -31,22 +31,60 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
     }, [projects, tasks, archivedTasks, taskId])
 
     const [showArchiveConfirm, setShowArchiveConfirm] = React.useState(false)
+    const [isSaving, setIsSaving] = React.useState(false)
 
     const [mounted, setMounted] = React.useState(false)
     React.useEffect(() => {
         setMounted(true)
     }, [])
 
-    // Fix: Local state for description to prevent cursor jumping
-    // We must call this before any return statement
-    const [localDescription, setLocalDescription] = React.useState("")
+    // Local State for all editable fields
+    const [localTask, setLocalTask] = React.useState<{
+        title: string;
+        description: string;
+        status: TaskStatus;
+        priority: Priority;
+        assignedTo: string[];
+        startDate?: string;
+        endDate?: string;
+    }>({
+        title: "",
+        description: "",
+        status: "Todo",
+        priority: "Medium",
+        assignedTo: []
+    })
 
-    // Reset local description when switching tasks
+    // Reset local state when task changes
     React.useEffect(() => {
         if (taskData?.task) {
-            setLocalDescription(taskData.task.description || "")
+            const t = taskData.task
+            setLocalTask({
+                title: t.title || "",
+                description: t.description || "",
+                status: t.status || "Todo",
+                priority: t.priority || "Medium",
+                assignedTo: Array.isArray(t.assignedTo) ? t.assignedTo : (t.assignedTo ? [t.assignedTo] : []),
+                startDate: t.startDate || undefined,
+                endDate: t.endDate || undefined
+            })
         }
     }, [taskData?.task?.id])
+
+    const hasChanges = React.useMemo(() => {
+        if (!taskData?.task) return false
+        const t = taskData.task
+        const originalAssigned = Array.isArray(t.assignedTo) ? t.assignedTo : (t.assignedTo ? [t.assignedTo] : [])
+        return (
+            localTask.title !== t.title ||
+            localTask.description !== (t.description || "") ||
+            localTask.status !== t.status ||
+            localTask.priority !== t.priority ||
+            JSON.stringify(localTask.assignedTo) !== JSON.stringify(originalAssigned) ||
+            localTask.startDate !== t.startDate ||
+            localTask.endDate !== t.endDate
+        )
+    }, [localTask, taskData?.task])
 
     if (!taskId || !taskData) return null
 
@@ -65,8 +103,36 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
         } else {
             archiveTask(projectId, taskId)
         }
-        // Close immediately for better UX
         onClose()
+    }
+
+    const handleSave = async () => {
+        setIsSaving(true)
+        try {
+            await updateTask(projectId, task.id, {
+                title: localTask.title,
+                description: localTask.description,
+                status: localTask.status,
+                priority: localTask.priority as any,
+                assignedTo: localTask.assignedTo,
+                startDate: localTask.startDate,
+                endDate: localTask.endDate,
+                // Ensure dueDate is synced with endDate if it changed
+                dueDate: localTask.endDate || task.dueDate
+            })
+            setIsSaving(false)
+            onClose() // Close after save for better workflow
+        } catch (error) {
+            console.error("Failed to save task:", error)
+            alert("Failed to save. Please try again.")
+            setIsSaving(false)
+        }
+    }
+
+    const statusColors: Record<TaskStatus, string> = {
+        "Todo": "bg-slate-500/10 text-slate-500 border-slate-500/20",
+        "In Progress": "bg-blue-500/10 text-blue-500 border-blue-500/20",
+        "Done": "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
     }
 
     const priorityColors: Record<Priority, string> = {
@@ -76,15 +142,6 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
     }
 
     const isArchived = task.isArchived
-
-    // Save description on blur
-    const handleDescriptionSave = () => {
-        if (localDescription !== task.description) {
-            updateTask(projectId, task.id, { description: localDescription })
-        }
-    }
-
-
 
     if (!mounted) return null
 
@@ -140,35 +197,46 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-8 space-y-10">
-                        {/* Status & Priority */}
-                        <div className="flex flex-wrap gap-4">
-                            <div className="space-y-2 flex-1 min-w-[200px]">
+                    <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+                        {/* Status & Priority - Upgraded UI */}
+                        <div className="flex flex-wrap gap-6">
+                            <div className="space-y-3 flex-1 min-w-[200px]">
                                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Status</label>
-                                <select
-                                    value={task.status}
-                                    onChange={(e) => updateTask(projectId, task.id, { status: e.target.value as TaskStatus })}
-                                    className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold appearance-none text-sm"
-                                >
-                                    <option value="Todo">Todo</option>
-                                    <option value="In Progress">In Progress</option>
-                                    <option value="Done">Done</option>
-                                </select>
+                                <div className="flex gap-1 bg-background/50 p-1 rounded-xl border border-white/5">
+                                    {(["Todo", "In Progress", "Done"] as TaskStatus[]).map(s => (
+                                        <button
+                                            key={s}
+                                            onClick={() => setLocalTask(prev => ({ ...prev, status: s }))}
+                                            className={cn(
+                                                "flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all",
+                                                localTask.status === s
+                                                    ? statusColors[s] + " shadow-lg shadow-black/20 scale-105 z-10"
+                                                    : "text-muted-foreground hover:bg-white/5"
+                                            )}
+                                        >
+                                            {s}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="space-y-2 flex-1 min-w-[200px]">
+                            <div className="space-y-3 flex-1 min-w-[200px]">
                                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Priority</label>
-                                <select
-                                    value={task.priority}
-                                    onChange={(e) => updateTask(projectId, task.id, { priority: e.target.value as Priority })}
-                                    className={cn(
-                                        "w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold appearance-none text-sm",
-                                        priorityColors[task.priority]
-                                    )}
-                                >
-                                    <option value="High">High</option>
-                                    <option value="Medium">Medium</option>
-                                    <option value="Low">Low</option>
-                                </select>
+                                <div className="flex gap-1 bg-background/50 p-1 rounded-xl border border-white/5">
+                                    {(["Low", "Medium", "High"] as Priority[]).map(p => (
+                                        <button
+                                            key={p}
+                                            onClick={() => setLocalTask(prev => ({ ...prev, priority: p }))}
+                                            className={cn(
+                                                "flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all",
+                                                localTask.priority === p
+                                                    ? priorityColors[p] + " shadow-lg shadow-black/20 scale-105 z-10"
+                                                    : "text-muted-foreground hover:bg-white/5"
+                                            )}
+                                        >
+                                            {p}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
@@ -179,8 +247,8 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                             </div>
                             <input
                                 type="text"
-                                value={task.title}
-                                onChange={(e) => updateTask(projectId, task.id, { title: e.target.value })}
+                                value={localTask.title}
+                                onChange={(e) => setLocalTask(prev => ({ ...prev, title: e.target.value }))}
                                 className="w-full bg-transparent border-none p-0 text-3xl font-bold tracking-tight focus:ring-0 outline-none leading-tight placeholder:text-muted-foreground/30"
                             />
                         </div>
@@ -190,25 +258,71 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <User className="w-4 h-4" />
-                                    <span className="text-xs font-bold uppercase tracking-wider">Assignee</span>
+                                    <span className="text-xs font-bold uppercase tracking-wider">Assignees</span>
                                 </div>
-                                <div className="relative">
-                                    <select
-                                        value={task.assignedTo || ""}
-                                        onChange={(e) => updateTask(projectId, task.id, { assignedTo: e.target.value })}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
-                                    >
-                                        <option value="">Unassigned</option>
-                                        {currentUser && (
-                                            <option value={currentUser.id} className="font-bold text-primary">
-                                                Assign to Me ({currentUser.name})
-                                            </option>
-                                        )}
-                                        {users.map(user => (
-                                            <option key={user.id} value={user.id}>{user.name}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                <div className="flex items-center gap-2 flex-wrap mb-2">
+                                    {localTask.assignedTo.length > 0 ? (
+                                        <div className="flex -space-x-2">
+                                            {localTask.assignedTo.slice(0, 5).map((userId) => {
+                                                const user = users.find(u => u.id === userId) || currentUser
+                                                return (
+                                                    <div
+                                                        key={userId}
+                                                        className="w-8 h-8 rounded-full bg-primary/20 border-2 border-card flex items-center justify-center text-xs font-bold text-primary"
+                                                        title={user?.name || userId}
+                                                    >
+                                                        {(user?.name || "?").charAt(0).toUpperCase()}
+                                                    </div>
+                                                )
+                                            })}
+                                            {localTask.assignedTo.length > 5 && (
+                                                <div className="w-8 h-8 rounded-full bg-muted border-2 border-card flex items-center justify-center text-xs font-bold text-muted-foreground">
+                                                    +{localTask.assignedTo.length - 5}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <span className="text-sm text-muted-foreground">Unassigned</span>
+                                    )}
+                                </div>
+                                {/* Multi-select dropdown - Optimization: instant local update */}
+                                <div className="space-y-1 max-h-48 overflow-y-auto bg-background/50 border border-white/10 rounded-xl p-3 custom-scrollbar">
+                                    {currentUser && (
+                                        <label className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors group">
+                                            <div className="relative flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={localTask.assignedTo.includes(currentUser.id)}
+                                                    onChange={(e) => {
+                                                        const updated = e.target.checked
+                                                            ? [...localTask.assignedTo, currentUser.id]
+                                                            : localTask.assignedTo.filter(id => id !== currentUser.id)
+                                                        setLocalTask(prev => ({ ...prev, assignedTo: updated }))
+                                                    }}
+                                                    className="w-4 h-4 rounded border-white/20 bg-background/50 text-primary focus:ring-primary/50 transition-all cursor-pointer"
+                                                />
+                                            </div>
+                                            <span className="text-sm font-semibold text-primary group-hover:translate-x-0.5 transition-transform">Me ({currentUser.name})</span>
+                                        </label>
+                                    )}
+                                    {users.filter(u => u.id !== currentUser?.id).map(user => (
+                                        <label key={user.id} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors group">
+                                            <div className="relative flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={localTask.assignedTo.includes(user.id)}
+                                                    onChange={(e) => {
+                                                        const updated = e.target.checked
+                                                            ? [...localTask.assignedTo, user.id]
+                                                            : localTask.assignedTo.filter(id => id !== user.id)
+                                                        setLocalTask(prev => ({ ...prev, assignedTo: updated }))
+                                                    }}
+                                                    className="w-4 h-4 rounded border-white/20 bg-background/50 text-foreground/70 focus:ring-primary/50 transition-all cursor-pointer"
+                                                />
+                                            </div>
+                                            <span className="text-sm font-medium group-hover:translate-x-0.5 transition-transform">{user.name}</span>
+                                        </label>
+                                    ))}
                                 </div>
                             </div>
                             <div className="space-y-3">
@@ -223,7 +337,7 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                                             type="datetime-local"
                                             value={(() => {
                                                 try {
-                                                    const d = task.startDate || (task.dueDate && task.dueDate.includes('T') ? task.dueDate : null)
+                                                    const d = localTask.startDate || (task.dueDate && task.dueDate.includes('T') ? task.dueDate : null)
                                                     if (!d) return ""
                                                     const date = new Date(d)
                                                     if (isNaN(date.getTime())) return ""
@@ -236,7 +350,7 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                                             onChange={(e) => {
                                                 const date = new Date(e.target.value)
                                                 if (!isNaN(date.getTime())) {
-                                                    updateTask(projectId, task.id, { startDate: date.toISOString() })
+                                                    setLocalTask(prev => ({ ...prev, startDate: date.toISOString() }))
                                                 }
                                             }}
                                             className="w-full bg-background/50 border border-white/10 rounded-xl px-2 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all font-medium text-xs"
@@ -248,8 +362,8 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                                             type="datetime-local"
                                             value={(() => {
                                                 try {
-                                                    if (!task.endDate) return ""
-                                                    const date = new Date(task.endDate)
+                                                    if (!localTask.endDate) return ""
+                                                    const date = new Date(localTask.endDate)
                                                     if (isNaN(date.getTime())) return ""
                                                     const offset = date.getTimezoneOffset()
                                                     return new Date(date.getTime() - (offset * 60 * 1000)).toISOString().slice(0, 16)
@@ -260,7 +374,7 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                                             onChange={(e) => {
                                                 const date = new Date(e.target.value)
                                                 if (!isNaN(date.getTime())) {
-                                                    updateTask(projectId, task.id, { endDate: date.toISOString(), dueDate: date.toISOString() })
+                                                    setLocalTask(prev => ({ ...prev, endDate: date.toISOString() }))
                                                 }
                                             }}
                                             className="w-full bg-background/50 border border-white/10 rounded-xl px-2 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all font-medium text-xs"
@@ -277,12 +391,11 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                                 <span className="text-xs font-bold uppercase tracking-wider">Description</span>
                             </div>
                             <textarea
-                                value={localDescription}
+                                value={localTask.description}
                                 placeholder="Add more details about this task..."
-                                onChange={(e) => setLocalDescription(e.target.value)}
-                                onBlur={handleDescriptionSave}
+                                onChange={(e) => setLocalTask(prev => ({ ...prev, description: e.target.value }))}
                                 rows={6}
-                                className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm resize-none leading-relaxed"
+                                className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm resize-none leading-relaxed custom-scrollbar"
                             />
                         </div>
 
@@ -316,15 +429,40 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                         )}
                     </div>
 
-                    {/* Footer */}
-                    <div className="p-8 border-t border-white/5 bg-muted/20 shrink-0">
+                    {/* Improved Footer with Save Button */}
+                    <div className="p-8 border-t border-white/5 bg-muted/20 shrink-0 flex flex-col gap-3">
+                        {hasChanges && (
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle2 className="w-5 h-5" />
+                                        Save Changes
+                                    </>
+                                )}
+                            </button>
+                        )}
                         <button
                             onClick={onClose}
-                            className="w-full bg-background/50 hover:bg-background/80 text-foreground py-4 rounded-xl font-bold uppercase tracking-wider border border-white/10 transition-all active:scale-[0.98]"
+                            className={cn(
+                                "w-full py-4 rounded-xl font-bold uppercase tracking-wider transition-all active:scale-[0.98]",
+                                hasChanges
+                                    ? "bg-transparent hover:bg-white/5 text-muted-foreground text-sm"
+                                    : "bg-background/50 hover:bg-background/80 text-foreground border border-white/10"
+                            )}
                         >
-                            Close Detail
+                            {hasChanges ? "Cancel Changes" : "Close Detail"}
                         </button>
                     </div>
+
                 </div>
             </div>
         </>,

@@ -281,7 +281,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 if (task.status === 'Done') return
 
                 // Check if current user is related to this task (creator or assignee)
-                const isAssignedToMe = task.assignedTo === currentUser?.name
+                const assignees = Array.isArray(task.assignedTo) ? task.assignedTo : (task.assignedTo ? [task.assignedTo] : [])
+                const isAssignedToMe = assignees.includes(currentUser?.id || '') || assignees.includes(currentUser?.name || '')
 
                 // Task assignment notifications - only for the assigned user
                 if (notificationSettings.notifyOnTaskAssignment && isAssignedToMe && !readStatus[generateAlertId('assign', task.id)]) {
@@ -427,8 +428,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const allNotifications = [...realtimeNotifications, ...newNotifications]
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
+        // DEDUPLICATE: Remove duplicate notifications by ID
+        const uniqueNotifications = Array.from(
+            new Map(allNotifications.map(n => [n.id, n])).values()
+        )
+
         // Filter by Role/Target
-        const filtered = allNotifications.filter(n => {
+        const filtered = uniqueNotifications.filter(n => {
             // 1. Targeted specifically to me
             if (n.target === currentUser?.id) return true
 

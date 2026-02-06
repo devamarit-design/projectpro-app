@@ -17,11 +17,19 @@ export function SortableTaskCard({ task, status, onSelect }: SortableTaskCardPro
     const { t } = useTranslation()
     const { users } = useProjects()
 
-    // Resolve assignee name if it's an ID
+    // Resolve assignee names (supports multi-assign array)
     const assigneeName = React.useMemo(() => {
-        if (!task.assignedTo) return t.tasks.unassigned
-        const user = users.find((u: UserType) => u.id === task.assignedTo)
-        return user ? user.name : task.assignedTo
+        if (!task.assignedTo || (Array.isArray(task.assignedTo) && task.assignedTo.length === 0)) {
+            return t.tasks.unassigned
+        }
+        const assignees = Array.isArray(task.assignedTo) ? task.assignedTo : [task.assignedTo]
+        const names = assignees.map((id: string) => {
+            const user = users.find((u: UserType) => u.id === id)
+            return user ? user.name : id
+        })
+        if (names.length === 1) return names[0]
+        if (names.length === 2) return names.join(", ")
+        return `${names[0]} +${names.length - 1}`
     }, [task.assignedTo, users, t])
 
     const formattedDate = React.useMemo(() => {

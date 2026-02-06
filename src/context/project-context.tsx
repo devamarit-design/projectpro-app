@@ -19,7 +19,7 @@ export interface ProjectTask {
     title: string
     status: TaskStatus
     priority: Priority
-    assignedTo?: string
+    assignedTo?: string[] // Array of user IDs for multi-assign
     dueDate?: string
     startDate?: string // New: Start of range
     endDate?: string // New: End of range
@@ -1683,7 +1683,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     name: currentUser?.name || "Unknown",
                     role: currentUser?.role || "Staff"
                 },
-                relatedUserIds: task.assignedTo ? [task.assignedTo] : []
+                relatedUserIds: task.assignedTo || []
             })
 
         } catch (e) {
@@ -1811,7 +1811,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                         name: currentUser.name,
                         role: currentUser.role
                     },
-                    relatedUserIds: t?.assignedTo ? [t.assignedTo] : []
+                    relatedUserIds: t?.assignedTo || []
                 })
             }
         } catch (e) {
@@ -1874,7 +1874,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                         name: currentUser.name,
                         role: currentUser.role
                     },
-                    relatedUserIds: task.assignedTo ? [task.assignedTo] : []
+                    relatedUserIds: task.assignedTo || []
                 })
             }
         } catch (e) {

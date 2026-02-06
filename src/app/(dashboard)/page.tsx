@@ -98,8 +98,8 @@ function AdminDashboard() {
 }
 
 export default function DashboardPage() {
-  const { currentUser } = useProjects()
-  const isAdmin = currentUser?.role === 'Owner' || currentUser?.role === 'Admin'
+  const { currentUser, currentTeam } = useProjects()
+  const isAdmin = currentTeam?.role === 'Owner' || currentTeam?.role === 'Admin'
 
   return isAdmin ? <AdminDashboard /> : <UserDashboard />
 }

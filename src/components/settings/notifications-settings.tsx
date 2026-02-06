@@ -13,9 +13,9 @@ export function NotificationSettings() {
     const { t } = useTranslation()
     const { notificationSettings, updateNotificationSettings } = useSettings()
     const { requestPushPermission, permissionStatus, isPushEnabled } = useNotifications()
-    const { currentUser } = useProjects()
+    const { currentUser, currentTeam } = useProjects()
 
-    const canEdit = currentUser?.role === 'Owner' || currentUser?.role === 'Admin'
+    const canEdit = currentTeam?.role === 'Owner' || currentTeam?.role === 'Admin'
 
     // Local state for manual save
     const [localSettings, setLocalSettings] = useState<NotificationSettingsType>(notificationSettings)

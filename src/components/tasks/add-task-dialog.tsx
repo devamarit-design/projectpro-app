@@ -23,7 +23,7 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
     const [selectedSubProjectId, setSelectedSubProjectId] = React.useState("")
     const [priority, setPriority] = React.useState<Priority>("Medium")
     const [status, setStatus] = React.useState<TaskStatus>("Todo")
-    const [assignedTo, setAssignedTo] = React.useState("")
+    const [assignedTo, setAssignedTo] = React.useState<string[]>([])
 
     // Date states
     const [startDate, setStartDate] = React.useState("")
@@ -80,7 +80,7 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
 
             const data = await response.json()
             if (data.assigneeId) {
-                setAssignedTo(data.assigneeId)
+                setAssignedTo([data.assigneeId])
                 setAiReason(data.reason)
             }
         } catch (error) {
@@ -100,7 +100,9 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                 setSelectedSubProjectId(taskToEdit.subProjectId || "")
                 setPriority(taskToEdit.priority)
                 setStatus(taskToEdit.status)
-                setAssignedTo(taskToEdit.assignedTo || "")
+                setAssignedTo(Array.isArray(taskToEdit.assignedTo)
+                    ? taskToEdit.assignedTo
+                    : (taskToEdit.assignedTo ? [taskToEdit.assignedTo] : []))
 
                 // transform UTC to local for input
                 setStartDate(toLocalISOString(taskToEdit.startDate || taskToEdit.dueDate))
@@ -117,7 +119,7 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                 setSelectedSubProjectId("")
                 setPriority("Medium")
                 setStatus("Todo")
-                setAssignedTo("")
+                setAssignedTo([])
 
                 // Set default start date to NOW (Local)
                 const now = new Date()
@@ -567,28 +569,71 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                             </div>
                         </div>
 
-                        {/* Assignee */}
+                        {/* Assignees Multi-Select */}
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t.tasks.dialog.assignee}</label>
-                            <div className="relative">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary z-10" />
-                                <div className="pl-11">
-                                    <SearchableCombobox
-                                        options={[
-                                            ...(currentUser ? [{ value: currentUser.id, label: `Assign to Me (${currentUser.name})`, description: "มอบหมายให้ฉัน" }] : []),
-                                            ...users
-                                                .filter(u => u.id !== currentUser?.id)
-                                                .sort((a, b) => a.name.localeCompare(b.name, 'th'))
-                                                .map(u => ({ value: u.id, label: u.name, description: u.role }))
-                                        ]}
-                                        value={assignedTo}
-                                        onChange={(val) => setAssignedTo(val)}
-                                        placeholder={t.tasks.dialog.unassigned}
-                                        searchPlaceholder="Search User..."
-                                        className="border-none p-0"
-                                        dropdownPosition="top"
-                                    />
-                                </div>
+                            {/* Show selected assignees */}
+                            <div className="flex items-center gap-2 flex-wrap mb-2">
+                                {assignedTo.length > 0 ? (
+                                    <div className="flex -space-x-2">
+                                        {assignedTo.slice(0, 5).map((userId) => {
+                                            const user = users.find(u => u.id === userId) || currentUser
+                                            return (
+                                                <div
+                                                    key={userId}
+                                                    className="w-7 h-7 rounded-full bg-primary/20 border-2 border-card flex items-center justify-center text-xs font-bold text-primary"
+                                                    title={user?.name || userId}
+                                                >
+                                                    {(user?.name || "?").charAt(0).toUpperCase()}
+                                                </div>
+                                            )
+                                        })}
+                                        {assignedTo.length > 5 && (
+                                            <div className="w-7 h-7 rounded-full bg-muted border-2 border-card flex items-center justify-center text-xs font-bold text-muted-foreground">
+                                                +{assignedTo.length - 5}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <span className="text-sm text-muted-foreground">{t.tasks.dialog.unassigned}</span>
+                                )}
+                            </div>
+                            {/* Multi-select checkbox list */}
+                            <div className="space-y-1 max-h-32 overflow-y-auto bg-background/50 border border-white/10 rounded-xl p-2">
+                                {currentUser && (
+                                    <label className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={assignedTo.includes(currentUser.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setAssignedTo([...assignedTo, currentUser.id])
+                                                } else {
+                                                    setAssignedTo(assignedTo.filter(id => id !== currentUser.id))
+                                                }
+                                            }}
+                                            className="rounded border-white/20 bg-background/50 text-primary focus:ring-primary/50"
+                                        />
+                                        <span className="text-sm font-medium text-primary">Me ({currentUser.name})</span>
+                                    </label>
+                                )}
+                                {users.filter(u => u.id !== currentUser?.id).map(user => (
+                                    <label key={user.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={assignedTo.includes(user.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setAssignedTo([...assignedTo, user.id])
+                                                } else {
+                                                    setAssignedTo(assignedTo.filter(id => id !== user.id))
+                                                }
+                                            }}
+                                            className="rounded border-white/20 bg-background/50 text-primary focus:ring-primary/50"
+                                        />
+                                        <span className="text-sm">{user.name}</span>
+                                    </label>
+                                ))}
                             </div>
 
                             {/* AI Suggest Button */}

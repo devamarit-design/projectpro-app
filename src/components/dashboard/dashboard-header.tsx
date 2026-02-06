@@ -14,11 +14,12 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
     const { moodThresholds } = useSettings()
     const { t, locale } = useTranslation()
 
-    // Count pending tasks (not done) assigned to user
-    const pendingTasksCount = tasks.filter(task =>
-        (task.assignedTo === currentUser?.id || task.assignedTo === currentUser?.name) &&
-        task.status !== 'Done'
-    ).length
+    // Count pending tasks (not done) assigned to user (supports multi-assign)
+    const pendingTasksCount = tasks.filter(task => {
+        const assignees = Array.isArray(task.assignedTo) ? task.assignedTo : (task.assignedTo ? [task.assignedTo] : [])
+        return (assignees.includes(currentUser?.id || '') || assignees.includes(currentUser?.name || '')) &&
+            task.status !== 'Done'
+    }).length
 
     // Time based greeting
     const hour = new Date().getHours()
@@ -153,7 +154,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                     {/* Actions */}
                     <div className="flex items-center gap-2">
                         {/* Download button - Admin/Owner only */}
-                        {onDownload && (currentUser?.role === 'Admin' || currentUser?.role === 'Owner') && (
+                        {onDownload && (currentTeam?.role === 'Admin' || currentTeam?.role === 'Owner') && (
                             <button
                                 onClick={onDownload}
                                 className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 backdrop-blur-md px-3 py-2 rounded-xl transition-all text-sm font-medium border border-white/20 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 group"

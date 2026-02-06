@@ -139,7 +139,7 @@ export function CalendarView() {
                     projectName: project?.name,
                     priority: task.priority,
                     status: task.status,
-                    assignedTo: task.assignedTo,
+                    assignedTo: Array.isArray(task.assignedTo) ? task.assignedTo.join(',') : task.assignedTo,
                     description: task.description, // Pass description
                 },
             })
@@ -477,20 +477,27 @@ export function CalendarView() {
                             const isList = view.type.startsWith('list')
 
                             if (isList) {
-                                const assigneeName = event.extendedProps.assignedTo
-                                    ? (users.find(u => u.id === event.extendedProps.assignedTo)?.name || event.extendedProps.assignedTo)
-                                    : null
+                                // Support multi-assign array
+                                const assignedIds = Array.isArray(event.extendedProps.assignedTo)
+                                    ? event.extendedProps.assignedTo
+                                    : (event.extendedProps.assignedTo ? [event.extendedProps.assignedTo] : [])
+                                const assigneeNames = assignedIds
+                                    .map(id => users.find(u => u.id === id)?.name || id)
+                                    .filter(Boolean)
+                                const assigneeDisplay = assigneeNames.length > 2
+                                    ? `${assigneeNames[0]} +${assigneeNames.length - 1}`
+                                    : assigneeNames.join(", ")
 
                                 return (
                                     <div className="flex flex-col py-0.5">
                                         <div className="font-semibold">{event.title}</div>
                                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                             <span>{event.extendedProps.projectName}</span>
-                                            {assigneeName && (
+                                            {assigneeDisplay && (
                                                 <>
                                                     <span className="w-1 h-1 rounded-full bg-current opacity-50" />
                                                     <span className="text-primary/80">
-                                                        👤 {assigneeName}
+                                                        👤 {assigneeDisplay}
                                                     </span>
                                                 </>
                                             )}

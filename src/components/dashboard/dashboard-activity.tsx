@@ -20,7 +20,7 @@ interface DashboardActivityProps {
 
 export function DashboardActivity({ className, limit, showViewAll = false }: DashboardActivityProps) {
     const router = useRouter()
-    const { expenses, incomes, projects, users, currentUser } = useProjects()
+    const { expenses, incomes, projects, users, currentUser, currentTeam } = useProjects()
     const { t } = useTranslation()
 
     // Filters
@@ -32,7 +32,7 @@ export function DashboardActivity({ className, limit, showViewAll = false }: Das
     const [selectedExpenseId, setSelectedExpenseId] = React.useState<string | null>(null)
     const [selectedIncomeId, setSelectedIncomeId] = React.useState<string | null>(null)
 
-    const isAdmin = currentUser?.role === 'Owner' || currentUser?.role === 'Admin'
+    const isAdmin = currentTeam?.role === 'Owner' || currentTeam?.role === 'Admin'
 
     const processedActivities = React.useMemo(() => {
         // 1. Map Expenses -> Activity

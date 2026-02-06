@@ -16,11 +16,11 @@ import { TelegramSettings } from "@/components/settings/telegram-settings"
 
 export default function SettingsPage() {
     const { t } = useTranslation()
-    const { currentUser } = useProjects()
+    const { currentUser, currentTeam } = useProjects()
     const searchParams = useSearchParams()
     const [activeSection, setActiveSection] = useState("company")
-    const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Owner'
-    const isOwner = currentUser?.role === 'Owner'
+    const isAdmin = currentTeam?.role === 'Admin' || currentTeam?.role === 'Owner'
+    const isOwner = currentTeam?.role === 'Owner'
 
     useEffect(() => {
         const tab = searchParams.get("tab")

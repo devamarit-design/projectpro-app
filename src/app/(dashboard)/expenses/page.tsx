@@ -19,7 +19,7 @@ import { useSettings } from "@/context/settings-context"
 const FINANCIAL_TARGETS_KEY = "financial-targets" // Keep for legacy cleanup or remove if not needed, but safe to keep constant
 
 function ExpensesContent() {
-    const { expenses, archivedExpenses, projects, users, currentUser, updateExpense } = useProjects()
+    const { expenses, archivedExpenses, projects, users, currentUser, currentTeam, updateExpense } = useProjects()
     const { financialTargets } = useSettings() // Use global settings
     const { t } = useTranslation()
     const searchParams = useSearchParams()
@@ -564,7 +564,7 @@ function ExpensesContent() {
                                 </div>
 
                                 {/* Admin Actions for Status Change */}
-                                {(currentUser?.role === 'Admin' || currentUser?.role === 'Owner') &&
+                                {(currentTeam?.role === 'Admin' || currentTeam?.role === 'Owner') &&
                                     (expense.status === 'Pending' || expense.status === 'Credit' || expense.status === 'Advanced') && (
                                         <div className="flex items-center gap-2 mt-2 sm:mt-0">
                                             <button

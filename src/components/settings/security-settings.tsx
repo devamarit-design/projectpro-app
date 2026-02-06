@@ -10,9 +10,9 @@ import { useTranslation } from "@/lib/i18n-context"
 export function SecuritySettings() {
     const { t } = useTranslation()
     const { hasPin, setPin, removePin, verifyPin } = useSecurity()
-    const { currentUser } = useProjects()
+    const { currentUser, currentTeam } = useProjects()
 
-    const isAdminOrOwner = currentUser?.role === 'Admin' || currentUser?.role === 'Owner'
+    const isAdminOrOwner = currentTeam?.role === 'Admin' || currentTeam?.role === 'Owner'
 
     const [mode, setMode] = useState<"view" | "set" | "change" | "disable">("view")
     const [inputPin, setInputPin] = useState("")

@@ -5,8 +5,8 @@ import { FileBarChart, Trophy, ArrowRight } from "lucide-react"
 import { useProjects } from "@/context/project-context"
 
 export function PromoCards() {
-    const { currentUser } = useProjects()
-    const isAdmin = currentUser?.role === 'Owner' || currentUser?.role === 'Admin'
+    const { currentUser, currentTeam } = useProjects()
+    const isAdmin = currentTeam?.role === 'Owner' || currentTeam?.role === 'Admin'
 
     if (!isAdmin) return null
 

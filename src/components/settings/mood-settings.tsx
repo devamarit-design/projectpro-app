@@ -8,7 +8,7 @@ import { Smile, Coffee, Flame, Zap, PartyPopper, Save, RotateCcw } from "lucide-
 import { useSettings, MoodThresholds } from "@/context/settings-context"
 
 export function MoodSettings() {
-    const { currentUser } = useProjects()
+    const { currentUser, currentTeam } = useProjects()
     const { t } = useTranslation()
     const { moodThresholds, updateMoodThresholds } = useSettings()
 
@@ -20,7 +20,7 @@ export function MoodSettings() {
         setThresholds(moodThresholds)
     }, [moodThresholds])
 
-    const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Owner'
+    const isAdmin = currentTeam?.role === 'Admin' || currentTeam?.role === 'Owner'
 
     const handleSave = async () => {
         await updateMoodThresholds(thresholds)

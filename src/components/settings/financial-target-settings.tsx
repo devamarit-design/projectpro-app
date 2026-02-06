@@ -8,7 +8,7 @@ import { Target, TrendingUp, TrendingDown, Save, RotateCcw } from "lucide-react"
 import { useSettings, FinancialTargets } from "@/context/settings-context"
 
 export function FinancialTargetSettings() {
-    const { currentUser } = useProjects()
+    const { currentUser, currentTeam } = useProjects()
     const { t } = useTranslation()
     const { financialTargets, updateFinancialTargets } = useSettings()
 
@@ -25,7 +25,7 @@ export function FinancialTargetSettings() {
         setTargets(financialTargets)
     }, [financialTargets])
 
-    const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Owner'
+    const isAdmin = currentTeam?.role === 'Admin' || currentTeam?.role === 'Owner'
 
     const handleSave = async () => {
         await updateFinancialTargets(targets)

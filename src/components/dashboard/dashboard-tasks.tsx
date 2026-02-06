@@ -16,7 +16,11 @@ export function DashboardTasks() {
         if (!currentUser) return []
 
         return tasks
-            .filter(task => (task.assignedTo === currentUser.id || task.assignedTo === currentUser.name) && task.status !== 'Done')
+            .filter(task => {
+                // Support multi-assign array
+                const assignees = Array.isArray(task.assignedTo) ? task.assignedTo : (task.assignedTo ? [task.assignedTo] : [])
+                return (assignees.includes(currentUser.id) || assignees.includes(currentUser.name)) && task.status !== 'Done'
+            })
             .map(task => ({
                 ...task,
                 projectName: projects.find(p => p.id === task.projectId)?.name || (t.dashboard.unknown_project || "Unknown Project")

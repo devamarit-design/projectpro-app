@@ -30,7 +30,7 @@ import { toast } from "sonner"
 
 export function TelegramSettings() {
     const { t } = useTranslation()
-    const { currentUser } = useProjects()
+    const { currentUser, currentTeam } = useProjects()
     const { currentOrg } = useOrganization()
     const { telegramSettings, updateTelegramSettings } = useSettings()
 
@@ -57,7 +57,7 @@ export function TelegramSettings() {
     }, [telegramSettings])
 
     // Check if user is owner
-    const isOwner = currentUser?.role === 'Owner'
+    const isOwner = currentTeam?.role === 'Owner'
 
     // REMOVED: Access Denied Block
 

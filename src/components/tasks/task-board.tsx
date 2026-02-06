@@ -110,14 +110,30 @@ function TaskCard({ task, projectUsers, t, onDelete, onToggle, onSelect, isOverl
 
             <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
                 <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10">
-                        <span className="text-[10px] font-bold text-primary">
-                            {(projectUsers.find(u => u.name === task.assignedTo || u.id === task.assignedTo)?.name || task.assignedTo || "U").charAt(0)}
-                        </span>
-                    </div>
-                    <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px]">
-                        {projectUsers.find(u => u.name === task.assignedTo || u.id === task.assignedTo)?.name || task.assignedTo || "Unassigned"}
-                    </span>
+                    {/* Multi-Assignee Avatar Stack */}
+                    {(task.assignedTo && task.assignedTo.length > 0) ? (
+                        <div className="flex -space-x-1.5">
+                            {(Array.isArray(task.assignedTo) ? task.assignedTo : [task.assignedTo]).slice(0, 3).map((userId, idx) => {
+                                const user = projectUsers.find(u => u.id === userId || u.name === userId)
+                                return (
+                                    <div
+                                        key={userId}
+                                        className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center border border-card text-[9px] font-bold text-primary"
+                                        title={user?.name || userId}
+                                    >
+                                        {(user?.name || userId || "U").charAt(0).toUpperCase()}
+                                    </div>
+                                )
+                            })}
+                            {Array.isArray(task.assignedTo) && task.assignedTo.length > 3 && (
+                                <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center border border-card text-[8px] font-bold text-muted-foreground">
+                                    +{task.assignedTo.length - 3}
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <span className="text-[11px] font-medium text-muted-foreground">Unassigned</span>
+                    )}
                 </div>
                 {(task.startDate || task.dueDate) && (
                     <div className={cn(
@@ -276,10 +292,12 @@ export function TaskBoard({
         })
     )
 
-    // Filter logic
+    // Filter logic (supports multi-assign array)
     const filteredTasks = localTasks.filter(task => {
         if (userFilter !== "all") {
-            return task.assignedTo === userFilter
+            // Support both array and legacy string
+            const assignees = Array.isArray(task.assignedTo) ? task.assignedTo : (task.assignedTo ? [task.assignedTo] : [])
+            return assignees.includes(userFilter)
         }
         return true
     })
