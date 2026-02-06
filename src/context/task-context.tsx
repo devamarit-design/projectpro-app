@@ -30,88 +30,46 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
     const [works, setWorks] = useState<WorkItem[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
-    // 1. Legacy Data Patcher (Ensures all tasks have isArchived field)
-    useEffect(() => {
-        if (!currentTeam?.id || !currentUser) return
-
-        const patchLegacyTasks = async () => {
-            try {
-                const q = query(collection(db, "tasks"), where("orgId", "==", currentTeam.id))
-                const snap = await getDocs(q)
-                const legacy = snap.docs.filter((d: any) => d.data().isArchived === undefined)
-                if (legacy.length > 0) {
-                    console.log(`[DataFix] Patching ${legacy.length} legacy tasks...`)
-                    for (const d of legacy) {
-                        await updateDoc(d.ref, { isArchived: false })
-                    }
-                }
-            } catch (err) {
-                console.error("Failed to patch legacy tasks:", err)
-            }
-        }
-        patchLegacyTasks()
-    }, [currentTeam?.id, currentUser])
-
-    // 2. Optimized Task Listeners (Active & Archived)
+    // 1. Unified Task Listener (Active & Archived) - Handles Legacy Data
     useEffect(() => {
         if (!currentTeam?.id) return
         setIsLoading(true)
 
-        // Listener 1: Active Tasks
-        const qActive = query(
+        const q = query(
             collection(db, "tasks"),
-            where("orgId", "==", currentTeam.id),
-            where("isArchived", "==", false)
+            where("orgId", "==", currentTeam.id)
         )
 
-        const unsubActive = onSnapshot(qActive, (snapshot) => {
-            setTasks(prev => {
-                let updated = [...prev]
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setTasks(prevTasks => {
+                let updatedTasks = [...prevTasks]
+
                 snapshot.docChanges().forEach((change) => {
                     const data = { ...change.doc.data(), id: change.doc.id } as ProjectTask
                     if (change.type === "added" || change.type === "modified") {
-                        const index = updated.findIndex(t => t.id === data.id || (t.id.startsWith("temp-") && t.title === data.title))
-                        if (index > -1) updated[index] = data
-                        else updated.unshift(data)
+                        // Support optimistic replacement: check by ID or (temp-ID and title match)
+                        const index = updatedTasks.findIndex(t => t.id === data.id || (t.id.startsWith("temp-") && t.title === data.title))
+                        if (index > -1) updatedTasks[index] = data
+                        else updatedTasks.unshift(data)
                     }
                     if (change.type === "removed") {
-                        updated = updated.filter(t => t.id !== data.id)
+                        updatedTasks = updatedTasks.filter(t => t.id !== data.id)
                     }
                 })
-                return updated.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+
+                // FILTER IN MEMORY: Legacy tasks (no isArchived field) are treated as NOT archived
+                const active = updatedTasks.filter(t => t.isArchived !== true)
+                const archived = updatedTasks.filter(t => t.isArchived === true)
+
+                // Update archived tasks state (indirectly via dedicated state or just derive)
+                setArchivedTasks(archived.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
+
+                return active.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
             })
             setIsLoading(false)
         })
 
-        // Listener 2: Archived Tasks
-        const qArchived = query(
-            collection(db, "tasks"),
-            where("orgId", "==", currentTeam.id),
-            where("isArchived", "==", true)
-        )
-
-        const unsubArchived = onSnapshot(qArchived, (snapshot) => {
-            setArchivedTasks(prev => {
-                let updated = [...prev]
-                snapshot.docChanges().forEach((change) => {
-                    const data = { ...change.doc.data(), id: change.doc.id } as ProjectTask
-                    if (change.type === "added" || change.type === "modified") {
-                        const index = updated.findIndex(t => t.id === data.id)
-                        if (index > -1) updated[index] = data
-                        else updated.unshift(data)
-                    }
-                    if (change.type === "removed") {
-                        updated = updated.filter(t => t.id !== data.id)
-                    }
-                })
-                return updated.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-            })
-        })
-
-        return () => {
-            unsubActive()
-            unsubArchived()
-        }
+        return () => unsubscribe()
     }, [currentTeam?.id])
 
     // 3. Work Listener (Gantt)

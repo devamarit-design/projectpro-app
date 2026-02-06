@@ -1014,35 +1014,32 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const handleRedirect = async () => {
             const { isIOS, isPWA } = getEnvironment()
-            // If we are on mobile/PWA, we expect a redirect result
-            if (isIOS || isPWA) {
+            const authInProgress = typeof window !== 'undefined' && sessionStorage.getItem('auth_in_progress') === 'true'
+
+            // Only show redirecting state if we actually expect a redirect
+            if ((isIOS || isPWA) && authInProgress) {
                 setIsRedirecting(true)
+            } else {
+                // If not in a known redirect flow, ensure it's false
+                setIsRedirecting(false)
+                return
             }
 
             try {
                 const result = await getRedirectResult(auth)
                 if (result) {
                     console.log("Logged in via redirect", result.user.email)
-                    // SUCCESS: Do NOT clear isRedirecting yet. 
-                    // Wait for onAuthStateChanged to set currentUser, then the effect below will clear it.
                 } else {
-                    // No redirect result found.
-                    // CRITICAL: On PWA/Mobile, sometimes getRedirectResult returns null even if a redirect happened 
-                    // (race condition or persistence issue).
-                    // We DO NOT clear isRedirecting immediately. We wait a safety buffer (2s)
-                    // to see if onAuthStateChanged picks up the user from persistence.
+                    // Timeout safety
                     setTimeout(() => {
                         setIsRedirecting(false)
                         if (typeof window !== 'undefined') sessionStorage.removeItem('auth_in_progress')
-                    }, 4000) // 4s timeout to prevent infinite hanging
+                    }, 2000)
                 }
             } catch (error: any) {
                 console.warn("Redirect login non-fatal error:", error)
-                // Also wait before clearing on error
-                setTimeout(() => {
-                    setIsRedirecting(false)
-                    if (typeof window !== 'undefined') sessionStorage.removeItem('auth_in_progress')
-                }, 4000)
+                setIsRedirecting(false)
+                if (typeof window !== 'undefined') sessionStorage.removeItem('auth_in_progress')
             }
         }
         handleRedirect()
