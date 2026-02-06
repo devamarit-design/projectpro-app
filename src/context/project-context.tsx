@@ -2094,6 +2094,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                         m.userId === id ? { ...m, role: updates.role } : m
                     )
                     await updateDoc(orgRef, { members: updatedMembers })
+
+                    // 4. Refresh org context to update currentOrg with new role
+                    refreshOrgs()
                 }
             }
         } catch (e) {
