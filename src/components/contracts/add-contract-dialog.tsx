@@ -91,7 +91,8 @@ export function AddContractDialog({ isOpen, onClose, initialData }: AddContractD
             setInstallments([{ description: "1st Installment", amount: 0, dueDate: "", status: "Pending", paymentDetails: "" }])
             setNotes("")
         }
-    }, [isOpen, initialData, projects, workers])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, initialData])
 
     const totalAmount = installments.reduce((sum, inst) => sum + (inst.amount || 0), 0)
 

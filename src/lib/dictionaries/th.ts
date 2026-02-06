@@ -28,6 +28,7 @@ export const th = {
         account_settings: "ตั้งค่าบัญชี",
         log_out: "ออกจากระบบ",
         confirm_logout: "คุณแน่ใจหรือไม่ที่จะออกจากระบบ?",
+        confirm_delete: "คุณแน่ใจหรือไม่ที่จะลบรายการนี้?",
         loading: "กำลังโหลด...",
         member: "สมาชิก",
         quotation: "ใบเสนอราคา",

@@ -30,6 +30,7 @@ export const en = {
         partners: "Partners",
         log_out: "Log Out",
         confirm_logout: "Are you sure you want to log out?",
+        confirm_delete: "Are you sure you want to delete this?",
         loading: "Loading...",
         member: "Member",
         quotation: "Quotation",
