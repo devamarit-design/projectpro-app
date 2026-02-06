@@ -165,6 +165,28 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
                 setUserOrgs(orgList)
 
+                // Auto-Migration: Ensure 'memberIds' legacy backfill
+                // Only run this if we have organizations and the user might be an owner/admin of some
+                for (const org of orgList) {
+                    if (!org.memberIds && org.members && org.members.length > 0) {
+                        try {
+                            // Check if current user is an admin/owner to perform the migration, or if its just open
+                            // Simplest is just to attempt the write if we are an owner/admin
+                            const currentUserRole = org.members.find(m => m.userId === firebaseUser.uid)?.role
+                            if (currentUserRole === 'Owner' || currentUserRole === 'Admin') {
+                                const extractedMemberIds = Array.from(new Set(org.members.map(m => m.userId)))
+                                const orgRef = doc(db, "organizations", org.id)
+                                // We don't await this to avoid blocking the UI
+                                setDoc(orgRef, { memberIds: extractedMemberIds }, { merge: true })
+                                    .then(() => console.log(`Migrated memberIds for org ${org.id}`))
+                                    .catch(e => console.warn(`Migration failed for org ${org.id}`, e))
+                            }
+                        } catch (e) {
+                            console.warn("Migration check error", e)
+                        }
+                    }
+                }
+
                 // Update currentOrg if it exists in the new list (refresh content)
                 // or set default if none selected
                 if (orgList.length > 0) {
