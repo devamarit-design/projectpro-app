@@ -11,11 +11,11 @@ interface SortableTaskCardProps {
     task: ProjectTask & { projectName?: string }
     status: TaskStatus
     onSelect: (taskId: string) => void
+    users: UserType[] // Pass users as prop to avoid redundant context lookups in cards
 }
 
-export function SortableTaskCard({ task, status, onSelect }: SortableTaskCardProps) {
+export const SortableTaskCard = React.memo(({ task, status, onSelect, users }: SortableTaskCardProps) => {
     const { t } = useTranslation()
-    const { users } = useProjects()
 
     // Resolve assignee names (supports multi-assign array)
     const assigneeName = React.useMemo(() => {
@@ -107,4 +107,4 @@ export function SortableTaskCard({ task, status, onSelect }: SortableTaskCardPro
             </div>
         </div>
     )
-}
+})

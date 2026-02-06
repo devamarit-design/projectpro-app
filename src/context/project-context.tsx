@@ -823,6 +823,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     // Task Management Logic (Refactored to Top-level Collection)
     const [tasks, setTasks] = useState<ProjectTask[]>([])
+    const [archivedTasks, setArchivedTasks] = useState<ProjectTask[]>([])
     const [works, setWorks] = useState<WorkItem[]>([])
 
     // Contracts Logic
@@ -1396,14 +1397,30 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             // set(`contracts_${currentTeam.id}`, data) // REMOVED
         }, (error) => console.error(`[ProjectContext] Contracts sync error for org ${currentTeam.id}:`, error.code, error.message))
 
-        // 8. Tasks
-        const qTasks = query(collection(db, "tasks"), where("orgId", "==", currentTeam.id))
+        // 8. Tasks (Active)
+        const qTasks = query(
+            collection(db, "tasks"),
+            where("orgId", "==", currentTeam.id),
+            where("isArchived", "==", false),
+            orderBy("createdAt", "desc")
+        )
         const unsubTasks = onSnapshot(qTasks, (snap) => {
             snapshotLoaded.tasks = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask))
             setTasks(data)
-            // set(`tasks_${currentTeam.id}`, data) // REMOVED: Conflict
-        }, (error) => console.error(`[ProjectContext] Tasks sync error for org ${currentTeam.id}:`, error.code, error.message))
+        }, (error) => console.error(`[ProjectContext] Active Tasks sync error:`, error.code, error.message))
+
+        // 8.5 Tasks (Archived) - Separate listener to reduce primary payload
+        const qArchivedTasks = query(
+            collection(db, "tasks"),
+            where("orgId", "==", currentTeam.id),
+            where("isArchived", "==", true),
+            orderBy("createdAt", "desc")
+        )
+        const unsubArchivedTasks = onSnapshot(qArchivedTasks, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask))
+            setArchivedTasks(data)
+        }, (error) => console.error(`[ProjectContext] Archived Tasks sync error:`, error.code, error.message))
 
         // 9. Works (Schedule)
         const qWorks = query(collection(db, "works"), where("orgId", "==", currentTeam.id))
@@ -1466,6 +1483,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             unsubIncomes()
             unsubContracts()
             unsubTasks()
+            unsubArchivedTasks()
             unsubWorks()
             unsubUsersOrgIds()
             unsubUsersTeamIds()
@@ -1705,8 +1723,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
             const docRef = await addDoc(collection(db, "tasks"), payload)
 
-            // Log Activity
-            await logActivity(db, currentTeam.id, {
+            // Log Activity (Asynchronous)
+            logActivity(db, currentTeam.id, {
                 action: "CREATE",
                 entityType: "TASK",
                 entityId: docRef.id,
@@ -2756,7 +2774,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         unarchiveIncome,
         // Archived data for Archive page
         archivedProjects: projects.filter(p => p.isArchived === true),
-        archivedTasks: tasks.filter(t => t.isArchived === true),
+        archivedTasks,
         archivedExpenses: expenses.filter(e => e.isArchived === true),
         archivedIncomes: incomes.filter(i => i.isArchived === true),
         isRedirecting,
@@ -2840,7 +2858,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         unarchiveIncome,
         projects,
         isRedirecting,
-        getEnvironment
+        getEnvironment,
+        archivedTasks
     ])
 
     return (

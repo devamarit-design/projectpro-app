@@ -1,6 +1,6 @@
 import { useDroppable } from "@dnd-kit/core"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
-import { TaskStatus, ProjectTask } from "@/context/project-context"
+import { TaskStatus, ProjectTask, User } from "@/context/project-context"
 import { SortableTaskCard } from "@/components/tasks/sortable-task-card"
 import { cn } from "@/lib/utils"
 import { Plus } from "lucide-react"
@@ -14,9 +14,10 @@ interface TasksColumnProps {
     onAddTask: () => void
     onSelectTask: (id: string) => void
     t: any
+    users: User[]
 }
 
-export function TasksColumn({ status, title, tasks, statusColor, onAddTask, onSelectTask, t }: TasksColumnProps) {
+export function TasksColumn({ status, title, tasks, statusColor, onAddTask, onSelectTask, t, users }: TasksColumnProps) {
     const { setNodeRef } = useDroppable({
         id: status,
     })
@@ -49,6 +50,7 @@ export function TasksColumn({ status, title, tasks, statusColor, onAddTask, onSe
                             task={task}
                             status={status}
                             onSelect={onSelectTask}
+                            users={users}
                         />
                     ))}
                 </SortableContext>

@@ -278,6 +278,7 @@ export default function TasksPage() {
                                     onAddTask={() => setShowAddTask(true)}
                                     onSelectTask={setSelectedTaskId}
                                     t={t}
+                                    users={users}
                                 />
                             )
                         })}
@@ -290,6 +291,7 @@ export default function TasksPage() {
                             task={activeTask}
                             status={activeTask.status}
                             onSelect={() => { }} // No-op during drag
+                            users={users}
                         />
                     ) : null}
                 </DragOverlay>
