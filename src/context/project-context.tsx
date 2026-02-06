@@ -10,6 +10,11 @@ import { seedDatabase } from "@/lib/seed-data"
 import { useOrganization } from "@/context/organization-context"
 import { logActivity } from "@/lib/activity-logger"
 
+// Domain Providers
+import { TaskProvider, useTasks } from "./task-context"
+import { FinanceProvider, useFinance } from "./finance-context"
+import { SocialProvider, useSocial } from "./social-context"
+
 export type ProjectStatus = "Planning" | "In Progress" | "On Hold" | "Completed"
 export type TaskStatus = "Todo" | "In Progress" | "Done"
 export type Priority = "High" | "Medium" | "Low"
@@ -332,7 +337,7 @@ export interface Team extends CompanyProfile {
     role: "Owner" | "Admin" | "Manager" | "Accountant" | "Staff"
 }
 
-interface ProjectContextType {
+interface CoreProjectContextType {
     projects: Project[]
     addProject: (project: Omit<Project, "id" | "createdAt">) => void
     updateProject: (id: string, updates: Partial<Project>) => void
@@ -345,58 +350,13 @@ interface ProjectContextType {
     switchTeam: (teamId: string) => void
     addTeam: (name: string) => Promise<string>
 
-    // Task Management
-    tasks: ProjectTask[] // Exposed global tasks
-    addTask: (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "orgId" | "createdAt">) => void
-    updateTask: (projectId: string, taskId: string, updates: Partial<ProjectTask>) => void
-    deleteTask: (projectId: string, taskId: string) => void
-    toggleTask: (projectId: string, taskId: string) => void
-
-    // Work Management (Schedule/Gantt)
-    works: WorkItem[]
-    addWork: (projectId: string, work: Omit<WorkItem, "id" | "projectId" | "orgId" | "createdAt">) => void
-    updateWork: (projectId: string, workId: string, updates: Partial<WorkItem>) => void
-    updateWorkOrder: (workOrders: { id: string, sortOrder: number }[]) => Promise<void>
-    deleteWork: (projectId: string, workId: string) => void
-
     // Sub-project Management (โปรเจคย่อย)
     addSubProject: (projectId: string, subProject: Omit<SubProject, "id">) => void
     deleteSubProject: (projectId: string, subProjectId: string) => void
 
-    // Expense Management
-    expenses: Expense[]
-    addExpense: (expense: Omit<Expense, "id" | "createdAt">) => void
-    updateExpense: (id: string, updates: Partial<Expense>) => void
-    deleteExpense: (id: string) => void
-
     // Master Data
     users: User[]
-    vendors: Vendor[]
-    addUser: (user: Omit<User, "id" | "joinedDate" | "status" | "orgIds">) => void
-    updateUser: (id: string, updates: Partial<User>) => Promise<void>
-    deleteUser: (id: string) => void
 
-    workers: Worker[]
-    addWorker: (worker: Omit<Worker, "id" | "status">) => void
-    updateWorker: (id: string, updates: Partial<Worker>) => void
-    deleteWorker: (id: string) => void
-
-    addVendor: (vendor: Omit<Vendor, "id" | "status">) => void
-    updateVendor: (id: string, updates: Partial<Vendor>) => void
-    deleteVendor: (id: string) => void
-
-    // Customer Management
-    customers: Customer[]
-    addCustomer: (customer: Omit<Customer, "id" | "status" | "totalValue">) => void
-    updateCustomer: (id: string, updates: Partial<Customer>) => void
-    deleteCustomer: (id: string) => void
-
-    // Income
-    incomes: IncomeDocument[]
-    incomesLoading: boolean
-    addIncome: (income: Omit<IncomeDocument, "id">) => void
-    updateIncome: (id: string, updates: Partial<IncomeDocument>) => void
-    deleteIncome: (id: string) => void
     // File Management
     files: ProjectFile[]
     addFile: (file: Omit<ProjectFile, "id" | "uploadedAt">) => void
@@ -406,13 +366,6 @@ interface ProjectContextType {
     companyProfile: CompanyProfile
     updateCompanyProfile: (updates: Partial<CompanyProfile>) => Promise<void>
 
-    // Contracts
-    contracts: Contract[]
-    addContract: (contract: Omit<Contract, "id" | "createdAt" | "status">) => void
-    payInstallment: (contractId: string, installmentId: string) => void
-    deleteContract: (id: string) => void
-    updateContract: (id: string, updates: Partial<Contract>) => void
-
     currentUser: User | null
     setCurrentUser: (user: User | null) => void
     login: (provider: string, credentials?: { email?: string, password?: string }) => Promise<void>
@@ -421,37 +374,97 @@ interface ProjectContextType {
     logout: () => void
     deleteAccount: (password?: string) => Promise<void>
     isAuthLoading: boolean
+
     // Backup & Restore
     restoreData: (data: Record<string, unknown>) => Promise<boolean>
     seedData: () => Promise<void>
     isOrgLoading: boolean
     isLoading: boolean // Global Data Loading State
 
-    // Archive System
+    // Archive System (Projects only)
     archiveProject: (id: string) => Promise<void>
     unarchiveProject: (id: string) => Promise<void>
-    archiveTask: (projectId: string, taskId: string) => Promise<void>
-    unarchiveTask: (projectId: string, taskId: string) => Promise<void>
-    archiveExpense: (id: string) => Promise<void>
-    unarchiveExpense: (id: string) => Promise<void>
-    archiveIncome: (id: string) => Promise<void>
-    unarchiveIncome: (id: string) => Promise<void>
+
     // Archived data for Archive page
     archivedProjects: Project[]
-    archivedTasks: ProjectTask[]
-    archivedExpenses: Expense[]
-    archivedIncomes: IncomeDocument[]
 
     // Environment & System
     isRedirecting: boolean
     getEnvironment: () => { isIOS: boolean; isPWA: boolean; isRestricted: boolean }
 }
 
+export interface ProjectContextType extends CoreProjectContextType {
+    // Task Management (Aggregated)
+    tasks: ProjectTask[]
+    addTask: (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "orgId">) => Promise<string | undefined>
+    updateTask: (id: string, updates: Partial<ProjectTask>) => Promise<void>
+    deleteTask: (id: string) => Promise<void>
+    toggleTask: (taskId: string) => Promise<void>
+    setTasks: React.Dispatch<React.SetStateAction<ProjectTask[]>>
+
+    // Work Management (Aggregated)
+    works: WorkItem[]
+    // ... work actions are currently simplified or handled as partials in TaskContext
+
+    // Expense Management (Aggregated)
+    expenses: Expense[]
+    addExpense: (expense: Omit<Expense, "id" | "createdAt" | "orgId">) => Promise<string | undefined>
+    updateExpense: (id: string, updates: Partial<Expense>) => Promise<void>
+    deleteExpense: (id: string) => Promise<void>
+
+    // Income (Aggregated)
+    incomes: IncomeDocument[]
+    addIncome: (income: Omit<IncomeDocument, "id" | "createdAt" | "orgId">) => Promise<string | undefined>
+    updateIncome: (id: string, updates: Partial<IncomeDocument>) => Promise<void>
+    deleteIncome: (id: string) => Promise<void>
+
+    // Finance Master Data (Aggregated)
+    vendors: Vendor[]
+    workers: Worker[]
+    customers: Customer[]
+    contracts: Contract[]
+    addVendor: (vendor: Omit<Vendor, "id" | "status">) => Promise<void>
+    updateVendor: (id: string, updates: Partial<Vendor>) => Promise<void>
+    deleteVendor: (id: string) => Promise<void>
+    addWorker: (worker: Omit<Worker, "id" | "status">) => Promise<void>
+    updateWorker: (id: string, updates: Partial<Worker>) => Promise<void>
+    deleteWorker: (id: string) => Promise<void>
+    addCustomer: (customer: Omit<Customer, "id" | "status" | "totalValue">) => Promise<void>
+    updateCustomer: (id: string, updates: Partial<Customer>) => Promise<void>
+    deleteCustomer: (id: string) => Promise<void>
+    addContract: (contract: Omit<Contract, "id" | "createdAt" | "status">) => Promise<void>
+    updateContract: (id: string, updates: Partial<Contract>) => Promise<void>
+    deleteContract: (id: string) => Promise<void>
+    payInstallment: (contractId: string, installmentId: string) => Promise<void>
+
+    // Archive System (Aggregated)
+    archiveTask: (id: string) => Promise<void>
+    unarchiveTask: (id: string) => Promise<void>
+    archiveExpense: (id: string) => Promise<void>
+    unarchiveExpense: (id: string) => Promise<void>
+    archiveIncome: (id: string) => Promise<void>
+    unarchiveIncome: (id: string) => Promise<void>
+
+    // Archived data (Aggregated)
+    archivedTasks: ProjectTask[]
+
+    // Social (Aggregated)
+    posts: any[]
+    addPost: (content: string, images?: string[]) => Promise<void>
+    updatePost: (id: string, updates: Partial<any>) => Promise<void>
+    deletePost: (id: string) => Promise<void>
+    toggleLike: (postId: string) => Promise<void>
+
+    isTasksLoading: boolean
+    isFinanceLoading: boolean
+    isSocialLoading: boolean
+}
+
 
 
 import { INITIAL_PROJECTS } from "@/lib/initial-data"
 
-const ProjectContext = createContext<ProjectContextType | undefined>(undefined)
+const ProjectContext = createContext<CoreProjectContextType | undefined>(undefined)
 
 
 // Initial Mock Expenses
@@ -801,37 +814,17 @@ export const INITIAL_COMPANY_PROFILE: CompanyProfile = {
     secondaryColor: "#ffffff",
 }
 
-export function ProjectProvider({ children }: { children: React.ReactNode }) {
+function CoreProjectProvider({ children }: { children: React.ReactNode }) {
     // --- Team / Workspace State (Refactored to SaaS Adapter) ---
 
 
     // Mock Projects
     // Real Data State (Initially Empty)
     const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS as Project[])
-    const [expenses, setExpenses] = useState<Expense[]>([])
     const [files, setFiles] = useState<ProjectFile[]>([])
     // Users are managed by filtering all users (or fetching team users - optimized later)
     // For now, let's keep mock users until we replace them with real user fetch
     const [users, setUsers] = useState<User[]>([])
-    const [workers, setWorkers] = useState<Worker[]>([])
-    const [vendors, setVendors] = useState<Vendor[]>([])
-    const [customers, setCustomers] = useState<Customer[]>([])
-
-    // Mock Incomes -> Real Incomes
-    const [incomes, setIncomes] = useState<IncomeDocument[]>([])
-    const [incomesLoading, setIncomesLoading] = useState(true)
-
-    // Task Management Logic (Refactored to Top-level Collection)
-    const [tasks, setTasks] = useState<ProjectTask[]>([])
-    const [archivedTasks, setArchivedTasks] = useState<ProjectTask[]>([])
-    const [works, setWorks] = useState<WorkItem[]>([])
-
-    // Contracts Logic
-    const [contracts, setContracts] = useState<Contract[]>([])
-
-
-
-
 
     const [currentUser, setCurrentUser] = useState<User | null>(null)
     const [isAuthLoading, setIsAuthLoading] = useState(true)
@@ -1232,14 +1225,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         if (!currentTeam?.id) {
             // If no team, clear everything
             setProjects([])
-            setExpenses([])
-            setWorkers([])
-            setVendors([])
-            setCustomers([])
-            setIncomes([])
-            setIncomesLoading(false)
-            setContracts([])
-            setTasks([])
             setUsers([])
             setFiles([])
             setIsLoading(false)
@@ -1250,27 +1235,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
         // ORG ISOLATION: Clear current data state to prevent leaks while loading next org
         setProjects([])
-        setExpenses([])
-        setWorkers([])
-        setVendors([])
-        setCustomers([])
-        setIncomes([])
-        setContracts([])
-        setTasks([])
         setUsers([])
         setFiles([])
 
         // Create tracking flags to prevent race conditions where cache overwrites fresh snapshot data
         const snapshotLoaded = {
             projects: false,
-            expenses: false,
-            workers: false,
-            vendors: false,
-            customers: false,
-            incomes: false,
-            contracts: false,
-            tasks: false,
-            works: false,
             users: false,
             files: false
         }
@@ -1339,97 +1309,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             setIsLoading(false)
         })
 
-        // 2. Expenses
-        const qExpenses = query(collection(db, "expenses"), where("orgId", "==", currentTeam.id))
-        const unsubExpenses = onSnapshot(qExpenses, (snap) => {
-            snapshotLoaded.expenses = true
-            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
-            setExpenses(data)
-            // set(`expenses_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error(`[ProjectContext] Expenses sync error for org ${currentTeam.id}:`, error.code, error.message))
-
-        // 3. Workers
-        const qWorkers = query(collection(db, "workers"), where("orgId", "==", currentTeam.id))
-        const unsubWorkers = onSnapshot(qWorkers, (snap) => {
-            snapshotLoaded.workers = true
-            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Worker))
-            setWorkers(data)
-            // set(`workers_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error(`[ProjectContext] Workers sync error for org ${currentTeam.id}:`, error.code, error.message))
-
-        // 4. Vendors
-        const qVendors = query(collection(db, "vendors"), where("orgId", "==", currentTeam.id))
-        const unsubVendors = onSnapshot(qVendors, (snap) => {
-            snapshotLoaded.vendors = true
-            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Vendor))
-            setVendors(data)
-            // set(`vendors_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error(`[ProjectContext] Vendors sync error for org ${currentTeam.id}:`, error.code, error.message))
-
-        // 5. Customers
-        const qCustomers = query(collection(db, "customers"), where("orgId", "==", currentTeam.id))
-        const unsubCustomers = onSnapshot(qCustomers, (snap) => {
-            snapshotLoaded.customers = true
-            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer))
-            setCustomers(data)
-            // set(`customers_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error(`[ProjectContext] Customers sync error for org ${currentTeam.id}:`, error.code, error.message))
-
-        // 6. Incomes
-        const qIncomes = query(collection(db, "incomes"), where("orgId", "==", currentTeam.id))
-        const unsubIncomes = onSnapshot(qIncomes, (snap) => {
-            snapshotLoaded.incomes = true
-            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
-            setIncomes(data)
-            // set(`incomes_${currentTeam.id}`, data) // REMOVED
-            setIncomesLoading(false)
-        }, (error) => {
-            console.error(`[ProjectContext] Incomes sync error for org ${currentTeam.id}:`, error.code, error.message)
-            setIncomesLoading(false)
-        })
-
-        // 7. Contracts
-        const qContracts = query(collection(db, "contracts"), where("orgId", "==", currentTeam.id))
-        const unsubContracts = onSnapshot(qContracts, (snap) => {
-            snapshotLoaded.contracts = true
-            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract))
-            setContracts(data)
-            // set(`contracts_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error(`[ProjectContext] Contracts sync error for org ${currentTeam.id}:`, error.code, error.message))
-
-        // 8. Tasks (Active)
-        const qTasks = query(
-            collection(db, "tasks"),
-            where("orgId", "==", currentTeam.id),
-            where("isArchived", "==", false),
-            orderBy("createdAt", "desc")
-        )
-        const unsubTasks = onSnapshot(qTasks, (snap) => {
-            snapshotLoaded.tasks = true
-            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask))
-            setTasks(data)
-        }, (error) => console.error(`[ProjectContext] Active Tasks sync error:`, error.code, error.message))
-
-        // 8.5 Tasks (Archived) - Separate listener to reduce primary payload
-        const qArchivedTasks = query(
-            collection(db, "tasks"),
-            where("orgId", "==", currentTeam.id),
-            where("isArchived", "==", true),
-            orderBy("createdAt", "desc")
-        )
-        const unsubArchivedTasks = onSnapshot(qArchivedTasks, (snap) => {
-            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask))
-            setArchivedTasks(data)
-        }, (error) => console.error(`[ProjectContext] Archived Tasks sync error:`, error.code, error.message))
-
-        // 9. Works (Schedule)
-        const qWorks = query(collection(db, "works"), where("orgId", "==", currentTeam.id))
-        const unsubWorks = onSnapshot(qWorks, (snap) => {
-            snapshotLoaded.works = true
-            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as WorkItem))
-            setWorks(data)
-            // set(`works_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error(`[ProjectContext] Works sync error for org ${currentTeam.id}:`, error.code, error.message))
+        // 2-9 (Migrated to Task/Finance/Social Contexts)
 
         // 9. Team Members (Merged from OrgIds and TeamIds)
         const qUsersOrgIds = query(collection(db, "users"), where("orgIds", "array-contains", currentTeam.id))
@@ -1476,57 +1356,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
         return () => {
             unsubProjects()
-            unsubExpenses()
-            unsubWorkers()
-            unsubVendors()
-            unsubCustomers()
-            unsubIncomes()
-            unsubContracts()
-            unsubTasks()
-            unsubArchivedTasks()
-            unsubWorks()
             unsubUsersOrgIds()
             unsubUsersTeamIds()
             unsubFiles()
         }
     }, [currentTeam?.id])
 
-    const [hasCheckedAutoArchive, setHasCheckedAutoArchive] = useState<string | null>(null)
-
-    // Safe Auto-archive: Runs only once when tasks are first loaded for an organization
-    useEffect(() => {
-        if (!currentTeam?.id || tasks.length === 0 || hasCheckedAutoArchive === currentTeam.id) return
-
-        const performAutoArchive = async () => {
-            const oneDayAgo = new Date()
-            oneDayAgo.setDate(oneDayAgo.getDate() - 1)
-
-            const tasksToArchive = tasks.filter(task =>
-                task.status === 'Done' &&
-                task.doneAt &&
-                !task.isArchived &&
-                new Date(task.doneAt) < oneDayAgo
-            )
-
-            if (tasksToArchive.length > 0) {
-                console.log(`[AutoArchive] Found ${tasksToArchive.length} tasks to archive for org ${currentTeam.id}`)
-                setHasCheckedAutoArchive(currentTeam.id)
-
-                // Sequence updates to avoid hammering the connection
-                for (const task of tasksToArchive) {
-                    try {
-                        await updateDoc(doc(db, "tasks", task.id), { isArchived: true })
-                    } catch (e) {
-                        console.error("[AutoArchive] Failed to archive task:", task.id, e)
-                    }
-                }
-            } else {
-                setHasCheckedAutoArchive(currentTeam.id)
-            }
-        }
-
-        performAutoArchive()
-    }, [currentTeam?.id, tasks.length, hasCheckedAutoArchive])
 
     const seedData = async () => {
         if (!currentTeam || !currentUser) return
@@ -1624,6 +1459,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
 
     // ========== ARCHIVE SYSTEM ==========
+    // ========== ARCHIVE SYSTEM (Projects) ==========
     const archiveProject = async (id: string) => {
         try {
             await updateDoc(doc(db, "projects", id), { isArchived: true })
@@ -1640,161 +1476,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    const archiveTask = async (projectId: string, taskId: string) => {
-        try {
-            await updateDoc(doc(db, "tasks", taskId), { isArchived: true })
-        } catch (e) {
-            console.error("Error archiving task", e)
-        }
-    }
-
-    const unarchiveTask = async (projectId: string, taskId: string) => {
-        try {
-            await updateDoc(doc(db, "tasks", taskId), { isArchived: false })
-        } catch (e) {
-            console.error("Error unarchiving task", e)
-        }
-    }
-
-    const archiveExpense = async (id: string) => {
-        try {
-            await updateDoc(doc(db, "expenses", id), { isArchived: true })
-        } catch (e) {
-            console.error("Error archiving expense", e)
-        }
-    }
-
-    const unarchiveExpense = async (id: string) => {
-        try {
-            await updateDoc(doc(db, "expenses", id), { isArchived: false })
-        } catch (e) {
-            console.error("Error unarchiving expense", e)
-        }
-    }
-
-    const archiveIncome = async (id: string) => {
-        try {
-            await updateDoc(doc(db, "incomes", id), { isArchived: true })
-        } catch (e) {
-            console.error("Error archiving income", e)
-        }
-    }
-
-    const unarchiveIncome = async (id: string) => {
-        try {
-            await updateDoc(doc(db, "incomes", id), { isArchived: false })
-        } catch (e) {
-            console.error("Error unarchiving income", e)
-        }
-    }
-
     const getProject = (id: string) => {
-        // use raw state arrays which contain both active and archived items
         const project = projects.find(p => p.id === id)
-        if (!project) return undefined
-
-        // Merge tasks and works from global state
-        const projectTasks = tasks.filter(t => t.projectId === id)
-        const projectWorks = works.filter(w => w.projectId === id)
-        return { ...project, tasks: projectTasks, works: projectWorks }
+        return project
     }
 
-    // Task Management Logic (Refactored to Top-level Collection)
-
-
-    const addTask = async (projectId: string, task: Omit<ProjectTask, "id" | "projectId" | "orgId">) => {
-        if (!currentTeam) return
-
-        try {
-            // Clean undefined values
-            const payload = {
-                ...Object.fromEntries(
-                    Object.entries({
-                        ...task,
-                        projectId,
-                        orgId: currentTeam.id,
-                        status: task.status || "Todo",
-                        priority: task.priority || "Medium"
-                    }).filter(([_, v]) => v !== undefined)
-                ),
-                createdBy: currentUser?.id || "unknown",
-                createdAt: new Date().toISOString()
-            }
-
-            const docRef = await addDoc(collection(db, "tasks"), payload)
-
-            // Log Activity (Asynchronous)
-            logActivity(db, currentTeam.id, {
-                action: "CREATE",
-                entityType: "TASK",
-                entityId: docRef.id,
-                entityTitle: task.title,
-                details: `Created new task in project`,
-                performedBy: {
-                    uid: currentUser?.id || "unknown",
-                    name: currentUser?.name || "Unknown",
-                    role: currentUser?.role || "Staff"
-                },
-                relatedUserIds: task.assignedTo || []
-            })
-
-        } catch (e) {
-            console.error("Error adding task", e)
-        }
-    }
-
-    // Work Management (Schedule/Gantt)
-    const addWork = async (projectId: string, work: Omit<WorkItem, "id" | "projectId" | "orgId" | "createdAt">) => {
-        if (!currentTeam) return
-        try {
-            // Find current max sortOrder for this project
-            const projectWorks = works.filter(w => w.projectId === projectId)
-            const maxOrder = projectWorks.length > 0
-                ? Math.max(...projectWorks.map(w => w.sortOrder || 0))
-                : -1
-
-            const payload = {
-                ...work,
-                projectId,
-                orgId: currentTeam.id,
-                sortOrder: maxOrder + 1,
-                createdAt: new Date().toISOString()
-            }
-            await addDoc(collection(db, "works"), payload)
-        } catch (e) {
-            console.error("Error adding work", e)
-        }
-    }
-
-    const updateWork = async (projectId: string, workId: string, updates: Partial<WorkItem>) => {
-        try {
-            await updateDoc(doc(db, "works", workId), { ...updates, updatedAt: new Date().toISOString() })
-        } catch (e) {
-            console.error("Error updating work", e)
-        }
-    }
-
-    const updateWorkOrder = async (workOrders: { id: string, sortOrder: number }[]) => {
-        try {
-            const batchPromises = workOrders.map(wo =>
-                updateDoc(doc(db, "works", wo.id), {
-                    sortOrder: wo.sortOrder,
-                    updatedAt: new Date().toISOString()
-                })
-            )
-            await Promise.all(batchPromises)
-        } catch (e) {
-            console.error("Error updating work order", e)
-        }
-    }
-
-    const deleteWork = async (projectId: string, workId: string) => {
-        try {
-            await deleteDoc(doc(db, "works", workId))
-        } catch (e) {
-            console.error("Error deleting work", e)
-        }
-    }
+    // Work actions migrated to TaskContext
 
     // Add Sub-project (โปรเจคย่อย)
     const addSubProject = async (projectId: string, subProject: Omit<SubProject, "id">) => {
@@ -1830,175 +1517,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    const updateTask = async (projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
-        try {
-            // Handle doneAt timestamp for auto-archive feature
-            const currentTask = tasks.find(t => t.id === taskId)
-            const finalUpdates: Partial<ProjectTask> & { updatedAt: string } = {
-                ...updates,
-                updatedAt: new Date().toISOString()
-            }
-
-            // If status is changing to Done, set doneAt
-            if (updates.status === 'Done' && currentTask?.status !== 'Done') {
-                finalUpdates.doneAt = new Date().toISOString()
-            }
-            // If status is changing from Done to something else, clear doneAt
-            else if (updates.status && updates.status !== 'Done' && currentTask?.status === 'Done') {
-                finalUpdates.doneAt = null as any // Clear the field
-            }
-
-            await updateDoc(doc(db, "tasks", taskId), finalUpdates)
-
-            if (currentTeam && currentUser) {
-                const t = tasks.find(t => t.id === taskId)
-                logActivity(db, currentTeam.id, {
-                    action: "UPDATE",
-                    entityType: "TASK",
-                    entityId: taskId,
-                    entityTitle: t?.title || "Task",
-                    details: `Updated task`,
-                    performedBy: {
-                        uid: currentUser.id,
-                        name: currentUser.name,
-                        role: currentUser.role
-                    },
-                    relatedUserIds: t?.assignedTo || []
-                })
-            }
-        } catch (e) {
-            console.error("Error updating task", e)
-        }
-    }
-
-    const deleteTask = async (projectId: string, taskId: string) => {
-        try {
-            await deleteDoc(doc(db, "tasks", taskId))
-
-            if (currentTeam && currentUser) {
-                logActivity(db, currentTeam.id, {
-                    action: "DELETE",
-                    entityType: "TASK",
-                    entityId: taskId,
-                    entityTitle: "Deleted Task",
-                    details: `Deleted task`,
-                    performedBy: {
-                        uid: currentUser.id,
-                        name: currentUser.name,
-                        role: currentUser.role
-                    },
-                    relatedUserIds: []
-                })
-            }
-        } catch (e) {
-            console.error("Error deleting task", e)
-        }
-    }
-
-    const toggleTask = async (projectId: string, taskId: string) => {
-        const task = tasks.find(t => t.id === taskId)
-        if (!task) return
-
-        const newStatus = task.status === 'Done' ? 'Todo' : 'Done'
-        try {
-            const updates: any = {
-                status: newStatus,
-                updatedAt: new Date().toISOString()
-            }
-
-            if (newStatus === 'Done') {
-                updates.doneAt = new Date().toISOString()
-            } else {
-                updates.doneAt = null // Clear if moved back to Todo
-            }
-
-            await updateDoc(doc(db, "tasks", taskId), updates)
-
-            if (currentTeam && currentUser) {
-                logActivity(db, currentTeam.id, {
-                    action: "UPDATE",
-                    entityType: "TASK",
-                    entityId: taskId,
-                    entityTitle: task.title,
-                    details: `Changed status to ${newStatus} `,
-                    performedBy: {
-                        uid: currentUser.id,
-                        name: currentUser.name,
-                        role: currentUser.role
-                    },
-                    relatedUserIds: task.assignedTo || []
-                })
-            }
-        } catch (e) {
-            console.error("Error toggling task", e)
-        }
-    }
-
-    const payInstallment = async (contractId: string, installmentId: string) => {
-        if (!currentTeam) return
-        const contract = contracts.find(c => c.id === contractId)
-        if (!contract) return
-
-
-        const installment = contract.installments.find(i => i.id === installmentId)
-        if (!installment || installment.status === 'Paid') return
-
-        try {
-            // 1. Create Expense in Firestore
-            const worker = workers.find(w => w.id === contract.workerId)
-            const expenseRef = await addDoc(collection(db, "expenses"), {
-                title: `Installment Payment(${installment.description})`,
-                amount: `฿${installment.amount.toLocaleString()} `,
-                totalValue: installment.amount,
-                date: new Date().toISOString().split('T')[0],
-                category: "Labor",
-                payee: worker ? worker.name : "Worker",
-                status: "Paid",
-                projectId: contract.projectId,
-                orgId: currentTeam.id,
-                items: [
-                    {
-                        id: Math.random().toString(),
-                        description: `Installment: ${installment.description} `,
-                        amount: installment.amount,
-                        category: "Labor",
-                        projectId: contract.projectId
-                    }
-                ]
-            })
-
-            // 2. Update Contract Installment Status in Firestore
-            const updatedInstallments = contract.installments.map(i =>
-                i.id === installmentId ? {
-                    ...i,
-                    status: "Paid",
-                    paidAt: new Date().toISOString(),
-                    expenseId: expenseRef.id
-                } : i
-            )
-            await updateDoc(doc(db, "contracts", contractId), {
-                installments: updatedInstallments
-            })
-        } catch (e) {
-            console.error("Error paying installment", e)
-        }
-    }
-
-    const updateContract = async (id: string, updates: Partial<Contract>) => {
-        try {
-            await updateDoc(doc(db, "contracts", id), { ...updates, updatedAt: new Date().toISOString() })
-        } catch (e) {
-            console.error("Error updating contract", e)
-        }
-    }
-
-    const deleteContract = async (id: string) => {
-        try {
-            await deleteDoc(doc(db, "contracts", id))
-        } catch (e) {
-            console.error("Error deleting contract", e)
-        }
-    }
+    // Finance actions migrated to FinanceContext
 
 
     // User CRUD
@@ -2226,123 +1745,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    // Vendor CRUD
-    // Vendor CRUD
-    const addVendor = async (vendorData: Omit<Vendor, "id" | "status">) => {
-        if (!currentTeam) return
-        try {
-            await addDoc(collection(db, "vendors"), {
-                ...vendorData,
-                status: "Active",
-                orgId: currentTeam.id,
-                createdAt: new Date().toISOString()
-            })
-        } catch (e) {
-            console.error("Error adding vendor", e)
-        }
+    // Customer/Vendor/Worker CRUD migrated to FinanceContext
 
-        if (currentTeam && currentUser) {
-            logActivity(db, currentTeam.id, {
-                action: "CREATE",
-                entityType: "USER", // Vendor as User/Entity
-                entityId: "",
-                entityTitle: vendorData.name,
-                details: `Added new vendor: ${vendorData.category} `,
-                performedBy: {
-                    uid: currentUser.id,
-                    name: currentUser.name,
-                    role: currentUser.role
-                },
-                relatedUserIds: []
-            })
-        }
-    }
-
-    const updateVendor = async (id: string, updates: Partial<Vendor>) => {
-        try {
-            await updateDoc(doc(db, "vendors", id), { ...updates, updatedAt: new Date().toISOString() })
-        } catch (e) {
-            console.error("Error updating vendor", e)
-        }
-    }
-
-    const deleteVendor = async (id: string) => {
-        try {
-            await deleteDoc(doc(db, "vendors", id))
-        } catch (e) {
-            console.error("Error deleting vendor", e)
-        }
-    }
-
-    // Worker CRUD
-    const addWorker = async (workerData: Omit<Worker, "id" | "status">) => {
-        if (!currentTeam) return
-        try {
-            await addDoc(collection(db, "workers"), {
-                ...workerData,
-                status: "Active",
-                joinedDate: new Date().toISOString().split('T')[0],
-                orgId: currentTeam.id,
-                createdAt: new Date().toISOString()
-            })
-        } catch (e) {
-            console.error("Error adding worker", e)
-        }
-
-        if (currentTeam && currentUser) {
-            logActivity(db, currentTeam.id, {
-                action: "CREATE",
-                entityType: "USER", // Or OTHER if no worker type
-                entityId: "",
-                entityTitle: workerData.name,
-                details: `Added new worker: ${workerData.role} `,
-                performedBy: {
-                    uid: currentUser.id,
-                    name: currentUser.name,
-                    role: currentUser.role
-                },
-                relatedUserIds: []
-            })
-        }
-    }
-
-    const updateWorker = async (id: string, updates: Partial<Worker>) => {
-        try {
-            await updateDoc(doc(db, "workers", id), { ...updates, updatedAt: new Date().toISOString() })
-        } catch (e) {
-            console.error("Error updating worker", e)
-        }
-    }
-
-    const deleteWorker = async (id: string) => {
-        try {
-            await deleteDoc(doc(db, "workers", id))
-        } catch (e) {
-            console.error("Error deleting worker", e)
-        }
-    }
-
-    // Customer CRUD
-    const addCustomer = async (customer: Omit<Customer, "id" | "status" | "totalValue">) => {
-        if (!currentTeam) return
-        try {
-            await addDoc(collection(db, "customers"), {
-                ...customer,
-                orgId: currentTeam.id,
-                status: "Active",
-                totalValue: 0,
-                createdAt: new Date().toISOString()
-            })
-        } catch (e) { console.error(e) }
-    }
-    const updateCustomer = async (id: string, updates: Partial<Customer>) => {
-        try { await updateDoc(doc(db, "customers", id), { ...updates, updatedAt: new Date().toISOString() }) } catch (e) { console.error(e) }
-    }
-    const deleteCustomer = async (id: string) => {
-        try { await deleteDoc(doc(db, "customers", id)) } catch (e) { console.error(e) }
-    }
-
-    // File CRUD
     // 3. Files
     const addFile = async (file: Omit<ProjectFile, "id" | "uploadedAt">) => {
         if (!currentTeam) return
@@ -2378,205 +1782,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             await deleteDoc(doc(db, "files", id))
         } catch (e) {
             console.error("Error deleting file", e)
-        }
-    }
-
-    // 2. Expenses
-    const addExpense = async (expense: Omit<Expense, "id">) => {
-        if (!currentTeam || !currentUser) {
-            console.error("Missing currentTeam or currentUser", { currentTeam, currentUser })
-            throw new Error("Cannot add expense: Missing organization context or user session.")
-        }
-
-        try {
-            // Helper to recursively remove undefined values for Firestore
-            const sanitize = (data: any): any => {
-                if (data === null || data === undefined) return undefined
-                if (Array.isArray(data)) {
-                    return data.map(sanitize).filter(v => v !== undefined)
-                }
-                if (typeof data === 'object' && !(data instanceof Date)) {
-                    const cleaned: any = {}
-                    Object.entries(data).forEach(([key, value]) => {
-                        const sanitized = sanitize(value)
-                        if (sanitized !== undefined) {
-                            cleaned[key] = sanitized
-                        }
-                    })
-                    return Object.keys(cleaned).length > 0 ? cleaned : undefined
-                }
-                return data
-            }
-
-            const sanitizedExpense = sanitize(expense)
-            if (!sanitizedExpense) {
-                throw new Error("Cannot add expense: Expense data is empty after sanitization.")
-            }
-
-            // Ensure teamId is attached
-            const docRef = await addDoc(collection(db, "expenses"), {
-                ...sanitizedExpense,
-                orgId: currentTeam.id,
-                createdAt: new Date().toISOString(),
-                createdBy: currentUser.id
-            })
-
-            // Notification: Everyone gets notified for every payment
-            await addDoc(collection(db, "notifications"), {
-                title: `${expense.title} `,
-                message: `New expense added by ${currentUser?.name || 'Unknown'} `,
-                type: 'info',
-                date: new Date().toISOString(),
-                read: false,
-                link: `/ expenses ? id = ${docRef.id} `,
-                relatedId: docRef.id,
-                target: 'all',
-                orgId: currentTeam.id,
-                creatorId: currentUser?.id
-            })
-
-            // Log Activity
-            if (currentTeam && currentUser) {
-                // Ensure logActivity is imported or defined. Assumed available since used in updateExpense.
-                // If logActivity is not imported, we might need to add it, but context usually has it.
-                // Checking updateExpense usage in same file suggests it's available.
-                await logActivity(db, currentTeam.id, {
-                    action: "CREATE",
-                    entityType: "EXPENSE",
-                    entityId: docRef.id,
-                    entityTitle: expense.title,
-                    details: `Expense created by ${currentUser.name} `,
-                    performedBy: {
-                        uid: currentUser.id,
-                        name: currentUser.name,
-                        role: currentUser.role
-                    },
-                    relatedUserIds: [currentUser.id],
-                    metadata: {
-                        amount: expense.totalValue,
-                        status: expense.status
-                    }
-                })
-            }
-        } catch (e) {
-            console.error("Error adding expense", e)
-            throw e
-        }
-    }
-
-    const updateExpense = async (id: string, updates: Partial<Expense>) => {
-        if (!currentTeam) return
-        try {
-            await updateDoc(doc(db, "expenses", id), { ...updates, updatedAt: new Date().toISOString() })
-
-            // Notification: Status Change (Advanced/Credit -> Paid)
-            // We only notify Admin/Owner on status changes to 'Paid'
-            if (updates.status === 'Paid') {
-                await addDoc(collection(db, "notifications"), {
-                    title: `Expense Paid`,
-                    message: `Expense has been marked as PAID (previously Pending / Advanced / Credit)`,
-                    type: 'success',
-                    date: new Date().toISOString(),
-                    read: false,
-                    link: '/expenses',
-                    relatedId: id,
-                    target: 'admin',
-                    orgId: currentTeam.id
-                })
-            }
-
-            if (currentTeam && currentUser) {
-                const exp = expenses.find(e => e.id === id)
-                logActivity(db, currentTeam.id, {
-                    action: "UPDATE",
-                    entityType: "EXPENSE",
-                    entityId: id,
-                    entityTitle: exp?.title || "Expense",
-                    details: `Updated expense`,
-                    performedBy: {
-                        uid: currentUser.id,
-                        name: currentUser.name,
-                        role: currentUser.role
-                    },
-                    relatedUserIds: []
-                })
-            }
-        } catch (e) {
-            console.error("Error updating expense", e)
-        }
-    }
-
-    const deleteExpense = async (id: string) => {
-        try {
-            await deleteDoc(doc(db, "expenses", id))
-        } catch (e) {
-            console.error("Error deleting expense", e)
-        }
-    }
-
-    // Income Actions (Firestore)
-    const addIncome = async (income: Omit<IncomeDocument, "id">) => {
-        if (!currentTeam) return
-        try {
-            // Clean undefined values - Firestore doesn't accept undefined
-            const cleanedData = Object.fromEntries(
-                Object.entries({
-                    ...income,
-                    orgId: currentTeam.id,
-                    items: income.items || [],
-                    sections: income.sections || undefined,
-                    createdAt: new Date().toISOString()
-                }).filter(([_, v]) => v !== undefined)
-            )
-            await addDoc(collection(db, "incomes"), cleanedData)
-
-            // Notification: Admin gets notified for Customer Withdrawals (Income)
-            await addDoc(collection(db, "notifications"), {
-                title: `New Income / Withdrawal`,
-                message: `New withdrawal recorded by ${currentUser?.name} `,
-                type: 'info', // or success
-                date: new Date().toISOString(),
-                read: false,
-                link: '/incomes',
-                relatedId: 'income-new',
-                target: 'admin',
-                orgId: currentTeam.id,
-                creatorId: currentUser?.id
-            })
-
-            // Log Activity
-            await logActivity(db, currentTeam.id, {
-                action: "CREATE",
-                entityType: "INCOME",
-                entityId: "", // ID not easily available in void return but harmless
-                entityTitle: `${income.type} ${income.documentNumber} `,
-                details: `Created ${income.type}: ${income.total} `,
-                performedBy: {
-                    uid: currentUser?.id || "unknown",
-                    name: currentUser?.name || "Unknown",
-                    role: currentUser?.role || "Staff"
-                },
-                relatedUserIds: [income.customerId]
-            })
-
-        } catch (e) {
-            console.error("Error adding income", e)
-        }
-    }
-
-    const updateIncome = async (id: string, updates: Partial<IncomeDocument>) => {
-        try {
-            await updateDoc(doc(db, "incomes", id), { ...updates, updatedAt: new Date().toISOString() })
-        } catch (e) {
-            console.error("Error updating income", e)
-        }
-    }
-
-    const deleteIncome = async (id: string) => {
-        try {
-            await deleteDoc(doc(db, "incomes", id))
-        } catch (e) {
-            console.error("Error deleting income", e)
         }
     }
 
@@ -2617,27 +1822,15 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const restoreData = async (data: Record<string, unknown>) => {
         try {
             if (data.projects) setProjects(data.projects as Project[])
-            if (data.expenses) setExpenses(data.expenses as Expense[])
             if (data.files) setFiles(data.files as ProjectFile[])
             if (data.users) setUsers(data.users as User[])
-            if (data.workers) setWorkers(data.workers as Worker[])
-            if (data.vendors) setVendors(data.vendors as Vendor[])
-            if (data.customers) setCustomers(data.customers as Customer[])
-            if (data.incomes) setIncomes(data.incomes as IncomeDocument[])
-            if (data.contracts) setContracts(data.contracts as Contract[])
 
             // Force save to disk immediately to be safe
             await Promise.all([
                 set("projects_v2", data.projects || []),
-                set("expenses_v2", data.expenses || []),
                 set("files_v2", data.files || []),
                 set("users_v2", data.users || []),
-                set("workers_v2", data.workers || []),
-                set("vendors_v2", data.vendors || []),
-                set("customers_v2", data.customers || []),
-                set("incomes_v2", data.incomes || []),
                 set("companyProfile_v2", data.companyProfile || INITIAL_COMPANY_PROFILE),
-                set("contracts_v2", data.contracts || []),
             ])
             return true
         } catch (e) {
@@ -2654,37 +1847,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         new Set(filteredProjects.map(p => p.id)),
         [filteredProjects])
 
-    // Missing Functions Implementation
-    const addContract = async (contract: Omit<Contract, "id" | "createdAt" | "status">) => {
-        if (!currentTeam) return
-        try {
-            await addDoc(collection(db, "contracts"), {
-                ...contract,
-                createdAt: new Date().toISOString(),
-                status: "Active",
-                orgId: currentTeam.id
-            })
-
-
-            // Log Activity
-            await logActivity(db, currentTeam.id, {
-                action: "CREATE",
-                entityType: "CONTRACT",
-                entityId: "",
-                entityTitle: contract.title,
-                details: `Created contract with total amount: ${contract.totalAmount} `,
-                performedBy: {
-                    uid: currentUser?.id || "unknown",
-                    name: currentUser?.name || "Unknown",
-                    role: currentUser?.role || "Staff"
-                },
-                relatedUserIds: [contract.workerId]
-            })
-
-        } catch (e) {
-            console.error("Error adding contract", e)
-        }
-    }
+    // Contracts migrated to FinanceContext
 
     const value = React.useMemo(() => ({
         projects: filteredProjects.filter(p => !p.isArchived),
@@ -2701,46 +1864,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             return await createOrganization(name)
         },
 
-        addTask,
-        tasks: tasks.filter(t => !t.isArchived),
-
-        // Work
-        works,
-        addWork,
-        updateWork,
-        updateWorkOrder,
-        deleteWork,
-
         addSubProject,
         deleteSubProject,
-        updateTask,
-        deleteTask,
-        toggleTask,
-        expenses: expenses.filter(e => (!e.projectId || filteredProjectIds.has(e.projectId)) && !e.isArchived),
-        addExpense,
-        updateExpense,
-        deleteExpense,
+
         users: users.filter(u => u.orgIds?.includes(currentTeam?.id || '')),
-        workers,
-        addUser,
-        updateUser,
-        deleteUser,
-        addWorker,
-        updateWorker,
-        deleteWorker,
-        vendors,
-        addVendor,
-        updateVendor,
-        deleteVendor,
-        customers,
-        addCustomer,
-        updateCustomer,
-        deleteCustomer,
-        incomes: incomes.filter(i => filteredProjectIds.has(i.projectId) && !i.isArchived),
-        incomesLoading,
-        addIncome,
-        updateIncome,
-        deleteIncome,
+
         companyProfile,
         updateCompanyProfile,
         currentUser,
@@ -2758,25 +1886,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         files: files.filter(f => !f.projectId || filteredProjectIds.has(f.projectId)),
         addFile,
         deleteFile,
-        contracts: contracts.filter(c => filteredProjectIds.has(c.projectId)),
-        addContract,
-        payInstallment,
-        updateContract,
-        deleteContract,
+
         // Archive System
         archiveProject,
         unarchiveProject,
-        archiveTask,
-        unarchiveTask,
-        archiveExpense,
-        unarchiveExpense,
-        archiveIncome,
-        unarchiveIncome,
+
         // Archived data for Archive page
         archivedProjects: projects.filter(p => p.isArchived === true),
-        archivedTasks,
-        archivedExpenses: expenses.filter(e => e.isArchived === true),
-        archivedIncomes: incomes.filter(i => i.isArchived === true),
         isRedirecting,
         getEnvironment
     }), [
@@ -2789,43 +1905,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         currentTeam,
         switchTeam,
         createOrganization,
-        addTask,
-        tasks,
         addSubProject,
         deleteSubProject,
-        updateTask,
-        deleteTask,
-        toggleTask,
-        works,
-        addWork,
-        updateWork,
-        updateWorkOrder,
-        expenses,
-        filteredProjectIds,
-        addExpense,
-        updateExpense,
-        deleteExpense,
-        users,
-        workers,
-        addUser,
-        updateUser,
-        deleteUser,
-        addWorker,
-        updateWorker,
-        deleteWorker,
-        vendors,
-        addVendor,
-        updateVendor,
-        deleteVendor,
-        customers,
-        addCustomer,
-        updateCustomer,
-        deleteCustomer,
-        incomes,
-        incomesLoading,
-        addIncome,
-        updateIncome,
-        deleteIncome,
         companyProfile,
         updateCompanyProfile,
         currentUser,
@@ -2843,23 +1924,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         files,
         addFile,
         deleteFile,
-        contracts,
-        addContract,
-        payInstallment,
-        updateContract,
-        deleteContract,
         archiveProject,
         unarchiveProject,
-        archiveTask,
-        unarchiveTask,
-        archiveExpense,
-        unarchiveExpense,
-        archiveIncome,
-        unarchiveIncome,
         projects,
         isRedirecting,
         getEnvironment,
-        archivedTasks
+        filteredProjectIds,
+        users
     ])
 
     return (
@@ -2869,10 +1940,102 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     )
 }
 
+/**
+ * High-performance domain provider wrapper
+ * We move the providers OUTSIDE of the main ProjectProvider 
+ * so that useProjects can safely consume them within its aggregator logic.
+ */
+export function ProjectProvider({ children }: { children: React.ReactNode }) {
+    return (
+        <CoreProjectProvider>
+            <DomainProvidersBridge>
+                {children}
+            </DomainProvidersBridge>
+        </CoreProjectProvider>
+    )
+}
+
+function DomainProvidersBridge({ children }: { children: React.ReactNode }) {
+    const { currentUser } = useContext(ProjectContext)!
+    return (
+        <TaskProvider currentUser={currentUser}>
+            <FinanceProvider currentUser={currentUser}>
+                <SocialProvider currentUser={currentUser}>
+                    {children}
+                </SocialProvider>
+            </FinanceProvider>
+        </TaskProvider>
+    )
+}
+
 export function useProjects() {
     const context = useContext(ProjectContext)
     if (context === undefined) {
         throw new Error("useProjects must be used within a ProjectProvider")
     }
-    return context
+
+    // AGGREGATE DOMAIN CONTEXTS
+    // This allows existing components to keep using useProjects() 
+    // while benefiting from the split context performance.
+    const taskCtx = useTasks()
+    const financeCtx = useFinance()
+    const socialCtx = useSocial()
+
+    return {
+        ...context,
+        // Tasks
+        tasks: taskCtx.tasks,
+        archivedTasks: taskCtx.archivedTasks,
+        works: taskCtx.works,
+        addTask: taskCtx.addTask,
+        updateTask: taskCtx.updateTask,
+        deleteTask: taskCtx.deleteTask,
+        toggleTask: taskCtx.toggleTask,
+        archiveTask: taskCtx.archiveTask,
+        unarchiveTask: taskCtx.unarchiveTask,
+        setTasks: taskCtx.setTasks,
+
+        // Finance
+        expenses: financeCtx.expenses,
+        incomes: financeCtx.incomes,
+        vendors: financeCtx.vendors,
+        customers: financeCtx.customers,
+        workers: financeCtx.workers,
+        contracts: financeCtx.contracts,
+        addExpense: financeCtx.addExpense,
+        updateExpense: financeCtx.updateExpense,
+        deleteExpense: financeCtx.deleteExpense,
+        addIncome: financeCtx.addIncome,
+        updateIncome: financeCtx.updateIncome,
+        deleteIncome: financeCtx.deleteIncome,
+        addVendor: financeCtx.addVendor,
+        updateVendor: financeCtx.updateVendor,
+        deleteVendor: financeCtx.deleteVendor,
+        addWorker: financeCtx.addWorker,
+        updateWorker: financeCtx.updateWorker,
+        deleteWorker: financeCtx.deleteWorker,
+        addCustomer: financeCtx.addCustomer,
+        updateCustomer: financeCtx.updateCustomer,
+        deleteCustomer: financeCtx.deleteCustomer,
+        addContract: financeCtx.addContract,
+        updateContract: financeCtx.updateContract,
+        deleteContract: financeCtx.deleteContract,
+        payInstallment: financeCtx.payInstallment,
+        archiveExpense: financeCtx.archiveExpense,
+        unarchiveExpense: financeCtx.unarchiveExpense,
+        archiveIncome: financeCtx.archiveIncome,
+        unarchiveIncome: financeCtx.unarchiveIncome,
+
+        // Social
+        posts: socialCtx.posts,
+        addPost: socialCtx.addPost,
+        updatePost: socialCtx.updatePost,
+        deletePost: socialCtx.deletePost,
+        toggleLike: socialCtx.toggleLike,
+
+        // Loading states
+        isTasksLoading: taskCtx.isLoading,
+        isFinanceLoading: financeCtx.isLoading,
+        isSocialLoading: socialCtx.isLoading
+    }
 }
