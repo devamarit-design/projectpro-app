@@ -59,6 +59,7 @@ export function PaymentVoucherDialog({ isOpen, onClose, contract, installment, i
         companyName: orgProfile?.name || 'ชื่อบริษัท',
         companyAddress: orgProfile?.address || '',
         companyPhone: orgProfile?.phone || '',
+        companyLogo: orgProfile?.logo || '',
         signatures: {
             requester: { name: '', label: 'ผู้เบิกจ่าย' },
             inspector: { name: orgProfile?.name || '', label: 'ผู้ตรวจสอบ' },
@@ -93,10 +94,11 @@ export function PaymentVoucherDialog({ isOpen, onClose, contract, installment, i
                 companyName: orgProfile?.name || 'ชื่อบริษัท',
                 companyAddress: orgProfile?.address || '',
                 companyPhone: orgProfile?.phone || '',
+                companyLogo: orgProfile?.logo || '',
             }))
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, contract.id, installment.id])
+    }, [isOpen, contract.id, installment.id, orgProfile])
 
     const handlePrint = () => {
         const printWindow = window.open('', '_blank')
@@ -160,20 +162,21 @@ export function PaymentVoucherDialog({ isOpen, onClose, contract, installment, i
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>ใบสำคัญจ่าย (PAYMENT VOUCHER)</h1>
-        </div>
-
-        <div class="company-info">
-            <strong>${formData.companyName}</strong><br>
-            ${formData.companyAddress}<br>
-            ${formData.companyPhone ? `โทร. ${formData.companyPhone}` : ''}
-        </div>
-
-        <div class="doc-info">
-            <div>เลขที่เอกสาร: <u>${formData.docNumber}</u></div>
-            <div>วันที่แจ้งเบิก: <u>${formData.requestDate}</u></div>
-            <div>วันที่จ่ายเงิน: <u>${formData.paymentDate || '___/___/___'}</u></div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <div style="flex: 1;">
+                ${formData.companyLogo ? `<img src="${formData.companyLogo}" style="max-height: 80px; max-width: 200px; margin-bottom: 10px; display: block;" />` : ''}
+                <div style="font-weight: bold; font-size: 16px;">${formData.companyName}</div>
+                <div style="font-size: 12px; margin-top: 4px; color: #333;">${formData.companyAddress}</div>
+                <div style="font-size: 12px; color: #333;">${formData.companyPhone ? `โทร. ${formData.companyPhone}` : ''}</div>
+            </div>
+            <div style="text-align: right; flex: 1;">
+                <h1 style="margin: 0 0 15px 0; font-size: 20px;">ใบสำคัญจ่าย (PAYMENT VOUCHER)</h1>
+                <div style="font-size: 14px;">
+                    <div>เลขที่เอกสาร: <u>${formData.docNumber}</u></div>
+                    <div style="margin-top: 5px;">วันที่แจ้งเบิก: <u>${formData.requestDate}</u></div>
+                    <div style="margin-top: 5px;">วันที่จ่ายเงิน: <u>${formData.paymentDate || '___/___/___'}</u></div>
+                </div>
+            </div>
         </div>
 
         <table class="info-table">
@@ -312,38 +315,39 @@ export function PaymentVoucherDialog({ isOpen, onClose, contract, installment, i
                             padding: '15mm'
                         }}
                     >
-                        {/* Header */}
-                        <div className="text-center mb-6">
-                            <h1 className="text-xl font-bold">ใบสำคัญจ่าย (PAYMENT VOUCHER)</h1>
-                        </div>
-
-                        {/* Company Info */}
-                        <div className="mb-4">
-                            <input
-                                value={formData.companyName}
-                                onChange={e => setFormData({ ...formData, companyName: e.target.value })}
-                                className="font-bold bg-transparent focus:outline-none focus:bg-yellow-50 px-1 w-full"
-                                placeholder="ชื่อบริษัท"
-                            />
-                            <input
-                                value={formData.companyAddress}
-                                onChange={e => setFormData({ ...formData, companyAddress: e.target.value })}
-                                className="bg-transparent focus:outline-none focus:bg-yellow-50 px-1 w-full text-sm"
-                                placeholder="ที่อยู่"
-                            />
-                            <input
-                                value={formData.companyPhone}
-                                onChange={e => setFormData({ ...formData, companyPhone: e.target.value })}
-                                className="bg-transparent focus:outline-none focus:bg-yellow-50 px-1 w-full text-sm"
-                                placeholder="โทร."
-                            />
-                        </div>
-
-                        {/* Doc Info */}
-                        <div className="text-right mb-4 space-y-1">
-                            <div>เลขที่เอกสาร: <input value={formData.docNumber} onChange={e => setFormData({ ...formData, docNumber: e.target.value })} className="border-b border-black bg-transparent focus:outline-none focus:bg-yellow-50 px-1 w-40 text-center" /></div>
-                            <div>วันที่แจ้งเบิก: <input value={formData.requestDate} onChange={e => setFormData({ ...formData, requestDate: e.target.value })} className="border-b border-black bg-transparent focus:outline-none focus:bg-yellow-50 px-1 w-40 text-center" /></div>
-                            <div>วันที่จ่ายเงิน: <input value={formData.paymentDate} onChange={e => setFormData({ ...formData, paymentDate: e.target.value })} className="border-b border-black bg-transparent focus:outline-none focus:bg-yellow-50 px-1 w-40 text-center" placeholder="___/___/___" /></div>
+                        {/* Header & Company Info */}
+                        <div className="flex justify-between items-start mb-6">
+                            <div className="flex-1">
+                                {formData.companyLogo && (
+                                    <img src={formData.companyLogo} alt="Logo" className="max-h-16 max-w-[200px] mb-2" />
+                                )}
+                                <input
+                                    value={formData.companyName}
+                                    onChange={e => setFormData({ ...formData, companyName: e.target.value })}
+                                    className="font-bold bg-transparent focus:outline-none focus:bg-yellow-50 px-1 w-full"
+                                    placeholder="ชื่อบริษัท"
+                                />
+                                <input
+                                    value={formData.companyAddress}
+                                    onChange={e => setFormData({ ...formData, companyAddress: e.target.value })}
+                                    className="bg-transparent focus:outline-none focus:bg-yellow-50 px-1 w-full text-sm"
+                                    placeholder="ที่อยู่"
+                                />
+                                <input
+                                    value={formData.companyPhone}
+                                    onChange={e => setFormData({ ...formData, companyPhone: e.target.value })}
+                                    className="bg-transparent focus:outline-none focus:bg-yellow-50 px-1 w-full text-sm"
+                                    placeholder="โทร."
+                                />
+                            </div>
+                            <div className="text-right flex-1 flex flex-col items-end">
+                                <h1 className="text-xl font-bold mb-4">ใบสำคัญจ่าย (PAYMENT VOUCHER)</h1>
+                                <div className="space-y-1 text-sm">
+                                    <div>เลขที่เอกสาร: <input value={formData.docNumber} onChange={e => setFormData({ ...formData, docNumber: e.target.value })} className="border-b border-black bg-transparent focus:outline-none focus:bg-yellow-50 px-1 w-32 text-center" /></div>
+                                    <div>วันที่แจ้งเบิก: <input value={formData.requestDate} onChange={e => setFormData({ ...formData, requestDate: e.target.value })} className="border-b border-black bg-transparent focus:outline-none focus:bg-yellow-50 px-1 w-32 text-center" /></div>
+                                    <div>วันที่จ่ายเงิน: <input value={formData.paymentDate} onChange={e => setFormData({ ...formData, paymentDate: e.target.value })} className="border-b border-black bg-transparent focus:outline-none focus:bg-yellow-50 px-1 w-32 text-center" placeholder="___/___/___" /></div>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Worker Info */}

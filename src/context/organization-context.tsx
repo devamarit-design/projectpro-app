@@ -15,6 +15,7 @@ export interface Organization {
     ownerId: string
     subscriptionPlan: SubscriptionPlan
     createdAt: string
+    memberIds?: string[]
     settings: {
         currency: string
         locale: string
@@ -212,6 +213,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
             ownerId: firebaseUser.uid,
             subscriptionPlan: "Free",
             createdAt: new Date().toISOString(),
+            memberIds: [firebaseUser.uid],
             settings: {
                 currency: "THB",
                 locale: "th",
@@ -296,7 +298,11 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
             joinedAt: new Date().toISOString()
         }
         const updatedMembers = [...(orgData.members || []), newMember]
-        await setDoc(orgRef, { members: updatedMembers }, { merge: true })
+        const updatedMemberIds = Array.from(new Set([...(orgData.memberIds || []), firebaseUser.uid]))
+        await setDoc(orgRef, {
+            members: updatedMembers,
+            memberIds: updatedMemberIds
+        }, { merge: true })
 
 
         // 4. Update User Profile
