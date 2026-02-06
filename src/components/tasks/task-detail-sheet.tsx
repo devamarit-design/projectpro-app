@@ -109,17 +109,22 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
     const handleSave = async () => {
         setIsSaving(true)
         try {
-            await updateTask(projectId, task.id, {
+            const updates: Partial<ProjectTask> = {
                 title: localTask.title,
                 description: localTask.description,
                 status: localTask.status,
                 priority: localTask.priority as any,
                 assignedTo: localTask.assignedTo,
-                startDate: localTask.startDate,
-                endDate: localTask.endDate,
-                // Ensure dueDate is synced with endDate if it changed
-                dueDate: localTask.endDate || task.dueDate
-            })
+            }
+
+            // Only include dates if they are not undefined
+            if (localTask.startDate !== undefined) updates.startDate = localTask.startDate;
+            if (localTask.endDate !== undefined) {
+                updates.endDate = localTask.endDate;
+                updates.dueDate = localTask.endDate; // Keep dueDate in sync
+            }
+
+            await updateTask(projectId, task.id, updates)
             setIsSaving(false)
             onClose() // Close after save for better workflow
         } catch (error) {
