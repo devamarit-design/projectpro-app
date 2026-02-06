@@ -19,14 +19,17 @@ service cloud.firestore {
     }
 
     function isOrgMember(orgId) {
-      let data = getUserData();
+      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
       let orgPath = /databases/$(database)/documents/organizations/$(orgId);
+      
       return isAuthenticated() && (
-        (data != null && (
-          ('orgIds' in data && orgId in data.orgIds) ||
-          ('teamIds' in data && orgId in data.teamIds)
-        )) || 
-        // Robust Fallback: Check Org document's memberIds list
+        // 1. Check User Profile (Optimized for most reads)
+        (exists(userPath) && (
+          orgId in get(userPath).data.orgIds || 
+          orgId in get(userPath).data.teamIds ||
+          orgId in get(userPath).data.organizationIds
+        )) ||
+        // 2. Check Organization Doc (Robust fallback for joining)
         (exists(orgPath) && 'memberIds' in get(orgPath).data && request.auth.uid in get(orgPath).data.memberIds)
       );
     }

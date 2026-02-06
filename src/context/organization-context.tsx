@@ -319,8 +319,11 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
             role: "Staff",
             joinedAt: new Date().toISOString()
         }
+
+        // Sync arrays for security rules
         const updatedMembers = [...(orgData.members || []), newMember]
         const updatedMemberIds = Array.from(new Set([...(orgData.memberIds || []), firebaseUser.uid]))
+
         await setDoc(orgRef, {
             members: updatedMembers,
             memberIds: updatedMemberIds
@@ -333,12 +336,15 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         const userData = userSnap.data()
         const existingOrgs = userData?.organizations || []
 
-        // Avoid duplicates in user profile too
+        // Avoid duplicates in user profile
         if (!existingOrgs.some((o: any) => o.orgId === orgId)) {
             const orgIds = userData?.orgIds || []
+            const teamIds = userData?.teamIds || [] // Legacy rules support
+
             await setDoc(userRef, {
                 organizations: [...existingOrgs, { orgId: orgId, role: "Staff" }],
-                orgIds: Array.from(new Set([...orgIds, orgId])) // Legacy compatibility
+                orgIds: Array.from(new Set([...orgIds, orgId])),
+                teamIds: Array.from(new Set([...teamIds, orgId])) // Sync for rules
             }, { merge: true })
         }
 
