@@ -13,37 +13,24 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    function getUserData() {
-      return (isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid))) 
-        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data 
-        : {};
-    }
-
     function isOrgMember(orgId) {
-      return isAuthenticated() && orgId != null && orgId != "" && (
-        // 1. Check User Profile (Optimized for most reads)
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-          ('orgIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgIds) || 
-          ('teamIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamIds) ||
-          ('organizationIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.organizationIds)
+      let userId = request.auth.uid;
+      let userPath = /databases/$(database)/documents/users/$(userId);
+      let orgPath = /databases/$(database)/documents/organizations/$(orgId);
+      
+      return isAuthenticated() && (
+        (exists(userPath) && (
+          orgId in get(userPath).data.get('orgIds', []) || 
+          orgId in get(userPath).data.get('teamIds', []) ||
+          orgId in get(userPath).data.get('organizationIds', [])
         )) ||
-        // 2. Check Organization Doc (Robust fallback for joining)
-        (exists(/databases/$(database)/documents/organizations/$(orgId)) && 
-         'memberIds' in get(/databases/$(database)/documents/organizations/$(orgId)).data && 
-         request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.memberIds)
+        (exists(orgPath) && request.auth.uid in get(orgPath).data.get('memberIds', []))
       );
     }
     
     function isOrgOwner(orgId) {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/organizations/$(orgId)) && 
-             'ownerId' in get(/databases/$(database)/documents/organizations/$(orgId)).data && 
-             get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid;
-    }
-
-    function isOrgAdminOrOwner(orgId) {
-      // Simplified for now: Owner or Admin (global role fallback)
-      return isOrgOwner(orgId) || (isOrgMember(orgId) && 'role' in getUserData() && getUserData().role == 'Admin');
+      let orgPath = /databases/$(database)/documents/organizations/$(orgId);
+      return isAuthenticated() && exists(orgPath) && get(orgPath).data.get('ownerId', '') == request.auth.uid;
     }
 
     function resourceBelongsToUserOrg() {
