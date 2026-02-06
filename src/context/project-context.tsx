@@ -2125,10 +2125,29 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 if (userSnap.exists()) {
                     const userData = userSnap.data()
                     const organizations = userData.organizations || []
-                    const updatedOrgs = organizations.map((org: any) =>
-                        org.orgId === currentTeam.id ? { ...org, role: role } : org
+                    // Robust check: Find and replace or Add if missing
+                    const existingIndex = organizations.findIndex((org: any) =>
+                        (typeof org === 'string' ? org : org.orgId) === currentTeam.id
                     )
-                    await updateDoc(userRef, { organizations: updatedOrgs })
+
+                    let updatedOrgs
+                    if (existingIndex >= 0) {
+                        updatedOrgs = [...organizations]
+                        const existingOrg = organizations[existingIndex]
+                        updatedOrgs[existingIndex] = typeof existingOrg === 'string'
+                            ? { orgId: existingOrg, role: role }
+                            : { ...existingOrg, role: role }
+                    } else {
+                        updatedOrgs = [...organizations, { orgId: currentTeam.id, role: role }]
+                    }
+
+                    await updateDoc(userRef, {
+                        organizations: updatedOrgs,
+                        // Ensure mirror IDs are present too
+                        orgIds: Array.from(new Set([...(userData.orgIds || []), currentTeam.id])),
+                        teamIds: Array.from(new Set([...(userData.teamIds || []), currentTeam.id])),
+                        organizationIds: Array.from(new Set([...(userData.organizationIds || []), currentTeam.id]))
+                    })
                 }
 
                 // 3. Synchronize Organization Document members list
@@ -2137,10 +2156,22 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 if (orgSnap.exists()) {
                     const orgData = orgSnap.data()
                     const members = orgData.members || []
-                    const updatedMembers = members.map((m: any) =>
-                        m.userId === id ? { ...m, role: updates.role } : m
-                    )
-                    await updateDoc(orgRef, { members: updatedMembers })
+                    // Robust check: Find and replace or Add if missing
+                    const memberIndex = members.findIndex((m: any) => m.userId === id)
+
+                    let updatedMembers
+                    if (memberIndex >= 0) {
+                        updatedMembers = [...members]
+                        updatedMembers[memberIndex] = { ...members[memberIndex], role: role }
+                    } else {
+                        updatedMembers = [...members, { userId: id, role: role, joinedAt: new Date().toISOString() }]
+                    }
+
+                    await updateDoc(orgRef, {
+                        members: updatedMembers,
+                        // Ensure memberIds is in sync
+                        memberIds: Array.from(new Set([...(orgData.memberIds || []), id]))
+                    })
 
                     // 4. Refresh org context to update currentOrg with new role
                     refreshOrgs()
