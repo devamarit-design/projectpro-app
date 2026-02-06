@@ -15,19 +15,20 @@ service cloud.firestore {
     
     function getUserData() {
       let path = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isAuthenticated() && exists(path) ? get(path).data : null;
+      return (isAuthenticated() && exists(path)) ? get(path).data : {};
     }
 
     function isOrgMember(orgId) {
+      if (orgId == null || orgId == "") { return false; }
       let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
       let orgPath = /databases/$(database)/documents/organizations/$(orgId);
       
       return isAuthenticated() && (
         // 1. Check User Profile (Optimized for most reads)
         (exists(userPath) && (
-          orgId in get(userPath).data.orgIds || 
-          orgId in get(userPath).data.teamIds ||
-          orgId in get(userPath).data.organizationIds
+          ('orgIds' in get(userPath).data && orgId in get(userPath).data.orgIds) || 
+          ('teamIds' in get(userPath).data && orgId in get(userPath).data.teamIds) ||
+          ('organizationIds' in get(userPath).data && orgId in get(userPath).data.organizationIds)
         )) ||
         // 2. Check Organization Doc (Robust fallback for joining)
         (exists(orgPath) && 'memberIds' in get(orgPath).data && request.auth.uid in get(orgPath).data.memberIds)
@@ -36,13 +37,12 @@ service cloud.firestore {
     
     function isOrgOwner(orgId) {
       let path = /databases/$(database)/documents/organizations/$(orgId);
-      return isAuthenticated() && exists(path) && get(path).data.ownerId == request.auth.uid;
+      return isAuthenticated() && exists(path) && 'ownerId' in get(path).data && get(path).data.ownerId == request.auth.uid;
     }
 
     function isOrgAdminOrOwner(orgId) {
-      // Temporary: Treat all members as Admin/Owner for unblocking if needed, 
-      // but OrgOwner is safer. Let's stick to simple member check for creation/read.
-      return isOrgOwner(orgId); 
+      // Simplified for now: Owner or Admin (global role fallback)
+      return isOrgOwner(orgId) || (isOrgMember(orgId) && 'role' in getUserData() && getUserData().role == 'Admin');
     }
 
     function resourceBelongsToUserOrg() {

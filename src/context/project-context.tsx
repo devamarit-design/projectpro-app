@@ -1334,7 +1334,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             // set(`projects_${currentTeam.id}`, data) // REMOVED
             setIsLoading(false)
         }, (error) => {
-            console.error("Project sync error:", error)
+            console.error(`[ProjectContext] Projects sync error for org ${currentTeam.id}:`, error.code, error.message)
             setIsLoading(false)
         })
 
@@ -1345,7 +1345,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
             setExpenses(data)
             // set(`expenses_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error("Expense sync error:", error))
+        }, (error) => console.error(`[ProjectContext] Expenses sync error for org ${currentTeam.id}:`, error.code, error.message))
 
         // 3. Workers
         const qWorkers = query(collection(db, "workers"), where("orgId", "==", currentTeam.id))
@@ -1354,7 +1354,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Worker))
             setWorkers(data)
             // set(`workers_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error("Worker sync error:", error))
+        }, (error) => console.error(`[ProjectContext] Workers sync error for org ${currentTeam.id}:`, error.code, error.message))
 
         // 4. Vendors
         const qVendors = query(collection(db, "vendors"), where("orgId", "==", currentTeam.id))
@@ -1363,7 +1363,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Vendor))
             setVendors(data)
             // set(`vendors_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error("Vendor sync error:", error))
+        }, (error) => console.error(`[ProjectContext] Vendors sync error for org ${currentTeam.id}:`, error.code, error.message))
 
         // 5. Customers
         const qCustomers = query(collection(db, "customers"), where("orgId", "==", currentTeam.id))
@@ -1372,7 +1372,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer))
             setCustomers(data)
             // set(`customers_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error("Customer sync error:", error))
+        }, (error) => console.error(`[ProjectContext] Customers sync error for org ${currentTeam.id}:`, error.code, error.message))
 
         // 6. Incomes
         const qIncomes = query(collection(db, "incomes"), where("orgId", "==", currentTeam.id))
@@ -1383,7 +1383,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             // set(`incomes_${currentTeam.id}`, data) // REMOVED
             setIncomesLoading(false)
         }, (error) => {
-            console.error("Income sync error:", error)
+            console.error(`[ProjectContext] Incomes sync error for org ${currentTeam.id}:`, error.code, error.message)
             setIncomesLoading(false)
         })
 
@@ -1394,7 +1394,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract))
             setContracts(data)
             // set(`contracts_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error("Contract sync error:", error))
+        }, (error) => console.error(`[ProjectContext] Contracts sync error for org ${currentTeam.id}:`, error.code, error.message))
 
         // 8. Tasks
         const qTasks = query(collection(db, "tasks"), where("orgId", "==", currentTeam.id))
@@ -1403,7 +1403,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask))
             setTasks(data)
             // set(`tasks_${currentTeam.id}`, data) // REMOVED: Conflict
-        }, (error) => console.error("Task sync error:", error))
+        }, (error) => console.error(`[ProjectContext] Tasks sync error for org ${currentTeam.id}:`, error.code, error.message))
 
         // 9. Works (Schedule)
         const qWorks = query(collection(db, "works"), where("orgId", "==", currentTeam.id))
@@ -1412,7 +1412,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as WorkItem))
             setWorks(data)
             // set(`works_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error("Work sync error:", error))
+        }, (error) => console.error(`[ProjectContext] Works sync error for org ${currentTeam.id}:`, error.code, error.message))
 
         // 9. Team Members (Merged from OrgIds and TeamIds)
         const qUsersOrgIds = query(collection(db, "users"), where("orgIds", "array-contains", currentTeam.id))
@@ -1432,12 +1432,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const unsubUsersOrgIds = onSnapshot(qUsersOrgIds, (snap) => {
             usersFromOrgIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
             mergeUsers()
-        }, (error) => console.error("User Org sync error:", error))
+        }, (error) => console.error(`[ProjectContext] User Org sync error for org ${currentTeam.id}:`, error.code, error.message))
 
         const unsubUsersTeamIds = onSnapshot(qUsersTeamIds, (snap) => {
             usersFromTeamIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
             mergeUsers()
-        }, (error) => console.error("User Team sync error:", error))
+        }, (error) => console.error(`[ProjectContext] User Team sync error for org ${currentTeam.id}:`, error.code, error.message))
 
         // 10. Files
 
@@ -1448,7 +1448,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectFile))
             setFiles(data)
             // set(`files_${currentTeam.id}`, data) // REMOVED
-        }, (error) => console.error("File sync error:", error))
+        }, (error) => console.error(`[ProjectContext] Files sync error for org ${currentTeam.id}:`, error.code, error.message))
 
         return () => {
             unsubProjects()

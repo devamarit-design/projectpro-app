@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { User as FirebaseUser } from "firebase/auth"
-import { doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "firebase/firestore"
+import { doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, writeBatch } from "firebase/firestore"
 import { db, auth } from "@/lib/firebase"
 
 
@@ -324,29 +324,36 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         const updatedMembers = [...(orgData.members || []), newMember]
         const updatedMemberIds = Array.from(new Set([...(orgData.memberIds || []), firebaseUser.uid]))
 
-        await setDoc(orgRef, {
-            members: updatedMembers,
-            memberIds: updatedMemberIds
-        }, { merge: true })
-
-
         // 4. Update User Profile
         const userRef = doc(db, "users", firebaseUser.uid)
         const userSnap = await getDoc(userRef)
         const userData = userSnap.data()
         const existingOrgs = userData?.organizations || []
 
-        // Avoid duplicates in user profile
+        // ATOMIC UPDATE: Use WriteBatch to ensure both docs sync at once
+        const batch = writeBatch(db)
+
+        // Update Org
+        batch.set(orgRef, {
+            members: updatedMembers,
+            memberIds: updatedMemberIds
+        }, { merge: true })
+
+        // Update User
         if (!existingOrgs.some((o: any) => o.orgId === orgId)) {
             const orgIds = userData?.orgIds || []
             const teamIds = userData?.teamIds || [] // Legacy rules support
+            const organizationIds = userData?.organizationIds || [] // Robustness check
 
-            await setDoc(userRef, {
+            batch.set(userRef, {
                 organizations: [...existingOrgs, { orgId: orgId, role: "Staff" }],
                 orgIds: Array.from(new Set([...orgIds, orgId])),
-                teamIds: Array.from(new Set([...teamIds, orgId])) // Sync for rules
+                teamIds: Array.from(new Set([...teamIds, orgId])),
+                organizationIds: Array.from(new Set([...organizationIds, orgId])) // Add for extra safety
             }, { merge: true })
         }
+
+        await batch.commit()
 
         // 5. Update Local State
         const joinedOrg = { ...orgData, id: orgSnap.id, members: updatedMembers }
