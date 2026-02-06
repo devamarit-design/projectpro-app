@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Contract, useProjects } from "@/context/project-context"
 import { useSettings } from "@/context/settings-context"
-import { Printer, Edit, X, FileText } from "lucide-react"
+import { Printer, Edit, X, FileText, ZoomIn, ZoomOut } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
 
 interface ContractPreviewDialogProps {
@@ -21,144 +21,136 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
     const project = projects.find(p => p.id === contract.projectId)
     const worker = workers.find(w => w.id === contract.workerId)
 
-    const formatCurrency = (amt: number) => amt.toLocaleString('th-TH', { minimumFractionDigits: 2 })
-    const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) : '-'
+    // Zoom state
+    const [zoom, setZoom] = useState(1)
+    const [inkColor, setInkColor] = useState<'black' | 'blue'>('black')
+    const containerRef = useRef<HTMLDivElement>(null)
 
-    // Generate print-ready HTML
-    const contractHtml = useMemo(() => {
-        const installmentRows = contract.installments.map((inst, i) => `
-            <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${i + 1}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${inst.description}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${formatDate(inst.dueDate)}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">฿${formatCurrency(inst.amount)}</td>
-            </tr>
-        `).join('')
+    // Editing State
+    const [formData, setFormData] = useState({
+        contractNumber: contract.id,
+        date: new Date().toISOString(),
+        projectName: project?.name || '',
+        workerName: worker?.name || '',
+        scope: contract.scope,
+        contractValue: contract.totalAmount,
+        installments: contract.installments.map(inst => ({
+            name: inst.description,
+            amount: inst.amount,
+            dueDate: inst.dueDate,
+            status: inst.status
+        })),
+        companyName: orgProfile?.name || 'Company Name',
+        companyAddress: orgProfile?.address || '',
+        terms: "",
+        contractType: 'labor' as 'labor' | 'material',
+        extraRows: Math.max(0, 10 - contract.installments.length),
+        // Signature fields
+        signatures: {
+            requester: { name: '', date: '' },
+            supervisor: { name: '', date: '' },
+            inspector: { name: orgProfile?.name || '', date: '' },
+            payer: { name: 'นายวิสูตร์ ปักปิ่น', date: '' }
+        },
+        paymentNotes: `2. คุณภาพของงาน ต่ำกว่ามาตรฐานการทำงาน หรือต่ำกว่าที่ตกลงไว้ในแบบก่อสร้าง
+3. มีพฤติกรรมสร้างความเดือดร้อน รำคาญ หรือผิดกฎระเบียบภายในไซค์งาน
+4. หากงานล่าช้ากว่าที่กำหนด ผู้รับจ้างตกลงให้ปรับเป็นเงินรายวัน วันละ 500 บาท จนกว่างานจะแล้วเสร็จ`,
+        paymentSummary: "บริษัทฯ จะดำเนินการจ่ายเงินภายใน 5 วันทำการ หลังจากได้รับการรับมอบงานและตรวจความเรียบร้อยครบถ้วน"
+    })
 
-        return `
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <title>สัญญาจ้าง - ${contract.id}</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Sarabun', 'TH Sarabun New', sans-serif; font-size: 14px; color: #1f2937; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
-        @media print { 
-            body { padding: 20px; } 
-            .no-print { display: none !important; }
+    // Update state when initial data changes - Only on open or unique contract change
+    useEffect(() => {
+        if (isOpen) {
+            setFormData({
+                contractNumber: contract.id,
+                date: new Date().toISOString(),
+                projectName: project?.name || '',
+                workerName: worker?.name || '',
+                scope: contract.scope,
+                contractValue: contract.totalAmount,
+                installments: contract.installments.map(inst => ({
+                    name: inst.description,
+                    amount: inst.amount,
+                    dueDate: inst.dueDate,
+                    status: inst.status
+                })),
+                companyName: orgProfile?.name || 'Company Name',
+                companyAddress: orgProfile?.address || '',
+                terms: "",
+                contractType: 'labor',
+                extraRows: Math.max(0, 10 - contract.installments.length),
+                signatures: {
+                    requester: { name: '', date: '' },
+                    supervisor: { name: '', date: '' },
+                    inspector: { name: orgProfile?.name || '', date: '' },
+                    payer: { name: 'นายวิสูตร์ ปักปิ่น', date: '' }
+                },
+                paymentNotes: `2. คุณภาพของงาน ต่ำกว่ามาตรฐานการทำงาน หรือต่ำกว่าที่ตกลงไว้ในแบบก่อสร้าง
+3. มีพฤติกรรมสร้างความเดือดร้อน รำคาญ หรือผิดกฎระเบียบภายในไซค์งาน
+4. หากงานล่าช้ากว่าที่กำหนด ผู้รับจ้างตกลงให้ปรับเป็นเงินรายวัน วันละ 500 บาท จนกว่างานจะแล้วเสร็จ`,
+                paymentSummary: "บริษัทฯ จะดำเนินการจ่ายเงินภายใน 5 วันทำการ หลังจากได้รับการรับมอบงานและตรวจความเรียบร้อยครบถ้วน"
+            })
+
+            // Generate Contract Format: CT-yymmdd-no
+            const date = new Date()
+            const yymmdd = date.toISOString().slice(2, 10).replace(/-/g, '')
+            if (contract.id.length > 20) { // Assuming long ID means UUID
+                setFormData(prev => ({ ...prev, contractNumber: `CT-${yymmdd}-01` }))
+            }
+
+            // Auto scale on open
+            handleAutoSize()
         }
-        h1 { font-size: 24px; color: #1f2937; text-align: center; margin-bottom: 8px; }
-        .subtitle { text-align: center; color: #6b7280; margin-bottom: 24px; }
-        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #3b82f6; padding-bottom: 16px; margin-bottom: 24px; }
-        .section { margin-bottom: 20px; }
-        .section-title { font-size: 16px; font-weight: 700; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 12px; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .info-item { display: flex; gap: 8px; }
-        .info-label { font-weight: 600; color: #6b7280; min-width: 100px; }
-        .scope-box { background: #f9fafb; border-left: 4px solid #3b82f6; padding: 16px; margin: 12px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th { text-align: left; padding: 10px; background: #f9fafb; border-bottom: 2px solid #e5e7eb; font-size: 12px; text-transform: uppercase; color: #6b7280; }
-        .total-row { font-weight: 700; background: #f0f9ff; }
-        .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 60px; text-align: center; }
-        .sig-line { border-top: 1px solid #333; margin-top: 60px; padding-top: 8px; }
-        .footer { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
-        .close-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-family: 'Sarabun', sans-serif;
-            font-weight: bold;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            z-index: 9999;
+    }, [isOpen, contract.id]) // Only reset when dialog opens or contract changes
+
+    // Auto resize handler
+    const handleAutoSize = () => {
+        if (containerRef.current) {
+            const containerWidth = containerRef.current.clientWidth
+            // A4 width in pixels at 96 DPI is approx 794px + padding
+            const targetWidth = 850
+            const newScale = Math.min(1, (containerWidth - 32) / targetWidth)
+            setZoom(newScale)
         }
-        .close-btn:hover { background: #dc2626; }
-    </style>
-</head>
-<body>
-    <button onclick="window.close()" class="close-btn no-print">✕ ปิดหน้าต่าง</button>
-    <h1>สัญญาจ้างงาน</h1>
-    <p class="subtitle">เลขที่สัญญา: ${contract.id}</p>
+    }
 
-    <div class="section">
-        <div class="section-title">ข้อมูลคู่สัญญา</div>
-        <div class="info-grid">
-            <div class="info-item"><span class="info-label">ผู้ว่าจ้าง:</span> <span>${orgProfile?.name || 'Company'}</span></div>
-            <div class="info-item"><span class="info-label">ที่อยู่:</span> <span>${orgProfile?.address || '-'}</span></div>
-            <div class="info-item"><span class="info-label">ผู้รับจ้าง:</span> <span>${worker?.name || 'Unknown'}</span></div>
-            <div class="info-item"><span class="info-label">โครงการ:</span> <span>${project?.name || 'Unknown Project'}</span></div>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">ขอบเขตงาน</div>
-        <div class="scope-box">${contract.scope || 'ไม่ระบุ'}</div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">ระยะเวลา</div>
-        <div class="info-grid">
-            <div class="info-item"><span class="info-label">วันเริ่มต้น:</span> <span>${formatDate(contract.startDate)}</span></div>
-            <div class="info-item"><span class="info-label">วันสิ้นสุด:</span> <span>${formatDate(contract.endDate)}</span></div>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">งวดการชำระเงิน</div>
-        <table>
-            <thead>
-                <tr><th>งวดที่</th><th>รายละเอียด</th><th>กำหนดชำระ</th><th style="text-align: right;">จำนวนเงิน</th></tr>
-            </thead>
-            <tbody>
-                ${installmentRows}
-                <tr class="total-row">
-                    <td colspan="3" style="padding: 10px; text-align: right; font-weight: 700;">รวมทั้งหมด</td>
-                    <td style="padding: 10px; text-align: right;">฿${formatCurrency(contract.totalAmount)}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="signatures">
-        <div>
-            <div class="sig-line">ผู้ว่าจ้าง</div>
-            <p style="margin-top: 8px; color: #6b7280;">(${orgProfile?.name || 'Company'})</p>
-        </div>
-        <div>
-            <div class="sig-line">ผู้รับจ้าง</div>
-            <p style="margin-top: 8px; color: #6b7280;">(${worker?.name || 'Worker'})</p>
-        </div>
-    </div>
-
-    <div class="footer">
-        Generated by HipslothProject • ${new Date().toLocaleString('th-TH')}
-    </div>
-
-    <script>
-        // Auto print but allow closing
-        window.onload = function() { 
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        }
-    </script>
-</body>
-</html>
-        `
-    }, [contract, project, worker, orgProfile])
+    // Window resize listener
+    useEffect(() => {
+        window.addEventListener('resize', handleAutoSize)
+        return () => window.removeEventListener('resize', handleAutoSize)
+    }, [])
 
     const handlePrint = () => {
+        // Dynamic import to avoid SSR issues
+        const { generateContractHTML } = require('@/lib/server-pdf')
+
+        const contractHtml = generateContractHTML({
+            contractNumber: formData.contractNumber,
+            date: formData.date,
+            projectName: formData.projectName,
+            workerName: formData.workerName,
+            companyName: formData.companyName,
+            companyAddress: formData.companyAddress,
+            title: contract.title,
+            scope: formData.scope,
+            startDate: contract.startDate,
+            endDate: contract.endDate,
+            contractValue: formData.contractValue,
+            installments: formData.installments,
+            terms: formData.terms,
+            contractType: formData.contractType,
+            signatures: formData.signatures,
+            paymentNotes: formData.paymentNotes,
+            paymentSummary: formData.paymentSummary
+        })
+
         const printWindow = window.open('', '_blank')
         if (printWindow) {
             printWindow.document.write(contractHtml)
             printWindow.document.close()
+            setTimeout(() => {
+                printWindow.print()
+            }, 500)
         } else {
             alert('กรุณาอนุญาต Popup เพื่อเปิดหน้าพิมพ์')
         }
@@ -166,96 +158,421 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
 
     if (!isOpen) return null
 
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-background w-full max-w-4xl h-[90vh] rounded-xl border border-border shadow-2xl flex flex-col overflow-hidden">
+    // A4 CSS Style used for both pages
+    const pageStyle = {
+        width: '210mm',
+        minHeight: '297mm',
+        padding: '60px 40px',
+        fontFamily: "'Sarabun', sans-serif",
+        fontSize: '14px',
+        lineHeight: '1.5',
+        boxSizing: 'border-box' as const,
+        backgroundColor: 'white',
+        boxShadow: '0 10px 30px -5px rgba(0,0,0,0.3)',
+        position: 'absolute' as const, // Use absolute instead of fixed
+        top: 0,
+        left: '50%',
+        transform: `scale(${zoom}) translateX(-50%)`,
+        transformOrigin: 'top left', // Change origin for easier centering
+        color: inkColor === 'black' ? '#000000' : '#1e3a8a',
+    }
 
-                {/* Header */}
-                <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20">
+    const pageWrapperStyle = {
+        width: '100%',
+        height: `calc(297mm * ${zoom})`,
+        position: 'relative' as const,
+        marginBottom: '40px',
+        flexShrink: 0
+    }
+
+    // Helper for header rendering (reused on page 2)
+    const renderHeader = (isPage2 = false) => {
+        if (isPage2) return <div className="h-[10px]"></div> // Minimal spacer for Page 2
+
+        return (
+            <div className="relative mb-8 text-center">
+                {/* Header Title - Only shown on Page 1 - Forced Black */}
+                {!isPage2 && (
+                    <h1
+                        className="text-2xl font-bold mb-4"
+                        style={{ color: 'black' }}
+                    >
+                        เอกสารจ้างงาน
+                    </h1>
+                )}
+
+                <div className="absolute top-0 right-2 text-left text-[10px] text-gray-500 bg-white/90">
+                    <table className="border-collapse">
+                        <tbody>
+                            <tr>
+                                <td className="pr-2">เลขที่เอกสาร</td>
+                                <td>
+                                    <input
+                                        value={formData.contractNumber}
+                                        onChange={e => setFormData({ ...formData, contractNumber: e.target.value })}
+                                        className="w-[120px] border-b border-dotted border-gray-400 focus:outline-none text-right bg-transparent"
+                                    />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="pr-2">วันที่สร้าง</td>
+                                <td className="text-right">{new Date(formData.date).toLocaleDateString('th-TH')}</td>
+                            </tr>
+                            <tr>
+                                <td className="pr-2">หน้าที่</td>
+                                <td className="border-b border-dotted border-gray-400 w-[120px] text-right">{isPage2 ? '2 / 2' : '1 / 2'}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-background w-full max-w-7xl h-[95vh] rounded-xl border border-border shadow-2xl flex flex-col overflow-hidden">
+
+                {/* Header Control Bar */}
+                <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20 flex-wrap gap-4">
                     <h2 className="text-xl font-bold flex items-center gap-2">
                         <FileText className="w-5 h-5 text-primary" />
-                        ดูตัวอย่างสัญญา
+                        ดูตัวอย่าง / แก้ไขสัญญา
                     </h2>
-                    <div className="flex items-center gap-2">
+
+                    {/* Zoom Controls */}
+                    <div className="flex items-center gap-2 bg-background rounded-lg border px-2 py-1 shadow-sm">
+                        <button onClick={() => setZoom(Math.max(0.3, zoom - 0.1))} className="p-1 hover:bg-muted rounded transition-colors" title="Zoom Out"><ZoomOut className="w-4 h-4" /></button>
+                        <span className="text-xs font-mono w-14 text-center select-none">{Math.round(zoom * 100)}%</span>
+                        <button onClick={() => setZoom(Math.min(2, zoom + 0.1))} className="p-1 hover:bg-muted rounded transition-colors" title="Zoom In"><ZoomIn className="w-4 h-4" /></button>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground mr-2 hidden lg:inline-block">
+                            * คลิกแก้ไขข้อความในเอกสารได้โดยตรง
+                        </span>
                         <button
                             onClick={() => { onClose(); onEdit(); }}
-                            className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 rounded-lg text-sm font-bold transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 rounded-lg text-sm font-bold transition-all shadow-sm active:scale-95"
                         >
-                            <Edit className="w-4 h-4" /> แก้ไข
+                            <Edit className="w-4 h-4" /> {t.common.edit}
                         </button>
                         <button
                             onClick={handlePrint}
-                            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition-colors"
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-full transition-all text-sm font-bold shadow-lg active:scale-95"
                         >
-                            <Printer className="w-4 h-4" /> พิมพ์ / บันทึก PDF
-                        </button>
-                        <button onClick={onClose} className="p-2 hover:bg-muted rounded-full">
-                            <X className="w-5 h-5" />
+                            <Printer className="w-4 h-4" />
+                            <span>พิมพ์ / ตัวอย่าง</span>
                         </button>
                     </div>
+
+                    <div className="flex items-center gap-3 px-4 border-l border-border">
+                        <span className="text-muted-foreground text-xs font-medium">สีหมึก:</span>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setInkColor('black')}
+                                className={`w-6 h-6 rounded-full bg-black border-2 transition-all ${inkColor === 'black' ? 'border-white ring-2 ring-primary shadow-lg scale-110' : 'border-transparent opacity-40 hover:opacity-100 uppercase'}`}
+                                title="หมึกดำ"
+                            />
+                            <button
+                                onClick={() => setInkColor('blue')}
+                                className={`w-6 h-6 rounded-full bg-blue-900 border-2 transition-all ${inkColor === 'blue' ? 'border-white ring-2 ring-primary shadow-lg scale-110' : 'border-transparent opacity-40 hover:opacity-100'}`}
+                                title="หมึกน้ำเงิน"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground transition-all ml-2"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
 
-                {/* Content - Live HTML Preview */}
-                <div className="flex-1 bg-gray-100 dark:bg-gray-900 p-6 overflow-auto">
-                    <div className="bg-white text-black rounded-lg shadow-xl mx-auto" style={{ width: '210mm', minHeight: '297mm', padding: '40px' }}>
-                        {/* Simple preview - mirrors the print version */}
-                        <h1 className="text-2xl font-bold text-center mb-2">สัญญาจ้างงาน</h1>
-                        <p className="text-center text-gray-500 mb-6">เลขที่สัญญา: {contract.id}</p>
+                {/* Content - Scrollable Area */}
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 bg-muted/30 scroll-smooth custom-scrollbar" ref={containerRef}>
+                    <div className="flex flex-col items-center min-w-fit">
+                        {/* PAGE 1 Wrapper */}
+                        <div style={pageWrapperStyle}>
+                            <div style={pageStyle} className="bg-white">
+                                {renderHeader(false)}
 
-                        <div className="mb-6">
-                            <h3 className="font-bold border-b pb-2 mb-3">ข้อมูลคู่สัญญา</h3>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div><span className="font-medium text-gray-600">ผู้ว่าจ้าง:</span> {orgProfile?.name || 'Company'}</div>
-                                <div><span className="font-medium text-gray-600">ที่อยู่:</span> {orgProfile?.address || '-'}</div>
-                                <div><span className="font-medium text-gray-600">ผู้รับจ้าง:</span> {worker?.name || 'Unknown'}</div>
-                                <div><span className="font-medium text-gray-600">โครงการ:</span> {project?.name || 'Unknown'}</div>
+                                {/* Project Info */}
+                                <div className="space-y-3 mb-8 text-sm">
+                                    <div className="flex items-center">
+                                        <span className="font-bold w-[100px] text-gray-700 shrink-0">โครงการ :</span>
+                                        <input
+                                            value={formData.projectName}
+                                            onChange={e => setFormData({ ...formData, projectName: e.target.value })}
+                                            className="flex-1 border-b border-dotted border-gray-400 focus:outline-none bg-transparent hover:bg-gray-50 focus:bg-white transition-colors"
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-6">
+                                        <span className="font-bold text-gray-700">หมวดหมู่ :</span>
+                                        <div className="flex gap-4">
+                                            <label className="flex items-center gap-2 cursor-pointer group">
+                                                <div className="w-4 h-4 border-2 border-black rounded-sm flex items-center justify-center transition-colors group-hover:bg-gray-50">
+                                                    {formData.contractType === 'labor' && <div className="w-2.5 h-2.5 bg-black"></div>}
+                                                </div>
+                                                <span
+                                                    className={`text-sm ${formData.contractType === 'labor' ? 'font-bold' : ''}`}
+                                                    onClick={() => setFormData({ ...formData, contractType: 'labor' })}
+                                                >
+                                                    ค่าแรง
+                                                </span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer group">
+                                                <div className="w-4 h-4 border-2 border-black rounded-sm flex items-center justify-center transition-colors group-hover:bg-gray-50">
+                                                    {formData.contractType === 'material' && <div className="w-2.5 h-2.5 bg-black"></div>}
+                                                </div>
+                                                <span
+                                                    className={`text-sm ${formData.contractType === 'material' ? 'font-bold' : ''}`}
+                                                    onClick={() => setFormData({ ...formData, contractType: 'material' })}
+                                                >
+                                                    ค่าแรงและค่าวัสดุ
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <span className="font-bold w-[100px] text-gray-700 shrink-0">หัวข้อ :</span>
+                                        <input
+                                            value={contract.title || ''}
+                                            className="flex-1 border-b border-dotted border-gray-400 focus:outline-none bg-transparent text-sm"
+                                            readOnly
+                                        />
+                                    </div>
+                                    <div className="flex items-center">
+                                        <span className="font-bold w-[100px] text-gray-700 shrink-0">ช่างผู้รับงาน :</span>
+                                        <input
+                                            value={formData.workerName}
+                                            onChange={e => setFormData({ ...formData, workerName: e.target.value })}
+                                            className="flex-1 border-b border-dotted border-gray-400 focus:outline-none bg-transparent"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Work Table */}
+                                <div className="mb-6">
+                                    <div className="text-center font-bold text-lg mb-4 text-black underline decoration-2 underline-offset-4">ตารางผลงาน</div>
+                                    <table className="w-full border-collapse border-2 border-black text-sm">
+                                        <thead>
+                                            <tr className="bg-gray-50">
+                                                <th className="border-2 border-black p-3 w-[60px]">ลำดับ</th>
+                                                <th className="border-2 border-black p-3">รายการ</th>
+                                                <th className="border-2 border-black p-3 w-[100px]">ราคา</th>
+                                                <th className="border-2 border-black p-3 w-[70px]">หน่วย</th>
+                                                <th className="border-2 border-black p-3 w-[100px]">รวม</th>
+                                                <th className="border-2 border-black p-3 w-[120px]">หมายเหตุ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td className="border-2 border-black p-3 text-center align-top font-bold">1</td>
+                                                <td className="border-2 border-black p-3 align-top">
+                                                    <textarea
+                                                        value={formData.scope}
+                                                        onChange={e => setFormData({ ...formData, scope: e.target.value })}
+                                                        className="w-full bg-transparent resize-none focus:outline-none min-h-[400px] leading-relaxed"
+                                                    />
+                                                </td>
+                                                <td className="border-2 border-black p-3 text-right align-top">{formData.contractValue.toLocaleString()}</td>
+                                                <td className="border-2 border-black p-3 text-center align-top">เหมา</td>
+                                                <td className="border-2 border-black p-3 text-right align-top font-bold">{formData.contractValue.toLocaleString()}</td>
+                                                <td className="border-2 border-black p-3 align-top"></td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-gray-50 font-bold">
+                                                <td colSpan={4} className="border-2 border-black p-3 text-right">รวมเงินค่าจ้างทั้งสิ้น</td>
+                                                <td className="border-2 border-black p-3 text-right text-lg">{formData.contractValue.toLocaleString()}</td>
+                                                <td className="border-2 border-black p-3 text-center">บาท</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                {/* Notes Part 1 */}
+                                <div className="text-[11px] mt-auto border-t border-gray-200 pt-4 text-gray-600">
+                                    <strong className="text-black">หมายเหตุ (ต่อหน้า 2):</strong><br />
+                                    1. หากผู้รับจ้างไม่เข้าปฏิบัติงานเกินกว่า 15 วัน หรือทิ้งงาน บริษัทฯ ขอสงวนสิทธิ์ในการยกเลิกสัญญาจ้างทันที
+                                </div>
                             </div>
                         </div>
 
-                        <div className="mb-6">
-                            <h3 className="font-bold border-b pb-2 mb-3">ขอบเขตงาน</h3>
-                            <div className="bg-gray-50 border-l-4 border-blue-500 p-4 text-sm">{contract.scope || 'ไม่ระบุ'}</div>
-                        </div>
+                        {/* PAGE 2 Wrapper */}
+                        <div style={pageWrapperStyle}>
+                            <div style={pageStyle}>
+                                {renderHeader(true)}
 
-                        <div className="mb-6">
-                            <h3 className="font-bold border-b pb-2 mb-3">ระยะเวลา</h3>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div><span className="font-medium text-gray-600">วันเริ่มต้น:</span> {formatDate(contract.startDate)}</div>
-                                <div><span className="font-medium text-gray-600">วันสิ้นสุด:</span> {formatDate(contract.endDate)}</div>
+                                {/* Payment Table */}
+                                <div className="mb-8 mt-4">
+                                    <div className="text-center font-bold text-lg mb-4 text-black underline decoration-2 underline-offset-4">ตารางการจ่ายเงินแบ่งตามงวดงาน</div>
+                                    <div className="relative">
+                                        <div className="absolute -right-16 top-0 flex flex-col gap-3 no-print">
+                                            <button
+                                                onClick={() => {
+                                                    const newInst = [...formData.installments, { name: '', amount: 0, dueDate: '', status: 'Pending' as const }]
+                                                    setFormData({ ...formData, installments: newInst })
+                                                }}
+                                                className="w-10 h-10 bg-white hover:bg-primary hover:text-white rounded-full shadow-lg text-primary border border-primary/20 flex items-center justify-center transition-all active:scale-90 text-2xl"
+                                                title="เพิ่มแถว"
+                                            >+</button>
+                                            <button
+                                                onClick={() => {
+                                                    if (formData.installments.length > 0) {
+                                                        const newInst = [...formData.installments]
+                                                        newInst.pop()
+                                                        setFormData({ ...formData, installments: newInst })
+                                                    }
+                                                }}
+                                                className="w-10 h-10 bg-white hover:bg-red-500 hover:text-white rounded-full shadow-lg text-red-500 border border-red-200 flex items-center justify-center transition-all active:scale-90 text-2xl"
+                                                title="ลบแถว"
+                                            >-</button>
+                                        </div>
+                                        <table className="w-full border-collapse border-2 border-black text-sm">
+                                            <thead>
+                                                <tr className="bg-gray-50">
+                                                    <th className="border-2 border-black p-3 w-[60px]">งวดที่</th>
+                                                    <th className="border-2 border-black p-3">รายละเอียดผลงานที่แล้วเสร็จ</th>
+                                                    <th className="border-2 border-black p-3 w-[100px]">จำนวนเงิน</th>
+                                                    <th className="border-2 border-black p-3 w-[120px]">วันที่นัดจ่าย</th>
+                                                    <th className="border-2 border-black p-3 w-[100px]">ยอดคงเหลือ</th>
+                                                    <th className="border-2 border-black p-3 w-[120px]">หมายเหตุ</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {formData.installments.map((inst, i) => (
+                                                    <tr key={i}>
+                                                        <td className="border-2 border-black p-3 text-center font-bold">{i + 1}</td>
+                                                        <td className="border-2 border-black p-3">
+                                                            <input
+                                                                value={inst.name}
+                                                                onChange={e => {
+                                                                    const newInst = [...formData.installments]
+                                                                    newInst[i].name = e.target.value
+                                                                    setFormData({ ...formData, installments: newInst })
+                                                                }}
+                                                                className="w-full bg-transparent focus:outline-none hover:bg-gray-50 focus:bg-white"
+                                                            />
+                                                        </td>
+                                                        <td className="border-2 border-black p-3">
+                                                            <input
+                                                                type="number"
+                                                                value={inst.amount}
+                                                                onChange={e => {
+                                                                    const newInst = [...formData.installments]
+                                                                    newInst[i].amount = parseFloat(e.target.value) || 0
+                                                                    setFormData({ ...formData, installments: newInst })
+                                                                }}
+                                                                className="w-full text-right bg-transparent focus:outline-none font-medium"
+                                                            />
+                                                        </td>
+                                                        <td className="border-2 border-black p-3">
+                                                            <input
+                                                                value={inst.dueDate ? (inst.dueDate.includes('T') ? new Date(inst.dueDate).toLocaleDateString('th-TH') : inst.dueDate) : ''}
+                                                                onChange={e => {
+                                                                    const newInst = [...formData.installments]
+                                                                    newInst[i].dueDate = e.target.value
+                                                                    setFormData({ ...formData, installments: newInst })
+                                                                }}
+                                                                className="w-full text-center bg-transparent focus:outline-none text-[10px] text-gray-500"
+                                                                placeholder="ว/ด/ป"
+                                                            />
+                                                        </td>
+                                                        <td className="border-2 border-black p-3"></td>
+                                                        <td className="border-2 border-black p-3 text-xs text-gray-400 text-center italic">
+                                                            {inst.status === 'Paid' ? 'ชำระแล้ว' : ''}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {formData.installments.length < 10 && Array(10 - formData.installments.length).fill(0).map((_, i) => (
+                                                    <tr key={`empty-p2-${i}`}>
+                                                        <td className="border-2 border-black p-3 text-center text-gray-300 font-bold">{formData.installments.length + i + 1}</td>
+                                                        <td className="border-2 border-black p-3"></td>
+                                                        <td className="border-2 border-black p-3"></td>
+                                                        <td className="border-2 border-black p-3"></td>
+                                                        <td className="border-2 border-black p-3"></td>
+                                                        <td className="border-2 border-black p-3"></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div className="text-[11px] mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                    <strong className="text-black mb-1 block">เงื่อนไขการเลิกจ้างและชำระเงิน :</strong>
+                                    <textarea
+                                        value={formData.paymentNotes}
+                                        onChange={e => setFormData({ ...formData, paymentNotes: e.target.value })}
+                                        className="w-full bg-transparent resize-none focus:outline-none leading-relaxed min-h-[60px]"
+                                    />
+                                    <strong className="text-black mt-1 block">การจ่ายเงิน:</strong>
+                                    <textarea
+                                        value={formData.paymentSummary}
+                                        onChange={e => setFormData({ ...formData, paymentSummary: e.target.value })}
+                                        className="w-full bg-transparent resize-none focus:outline-none leading-relaxed"
+                                    />
+                                </div>
+
+                                {/* Signatures */}
+                                <div className="grid grid-cols-2 gap-x-12 gap-y-2 mt-auto pb-2">
+                                    {renderSignatureBlock("requester", "ผู้เบิกจ่าย")}
+                                    {renderSignatureBlock("supervisor", "ผู้ควบคุมงาน")}
+                                    {renderSignatureBlock("inspector", "ผู้ตรวจสอบ", false, "( ผู้มีอำนาจลงนาม )")}
+                                    {renderSignatureBlock("payer", "ผู้จ่ายเงิน", false, "( เจ้าของโครงการ/ตัวแทน )")}
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="mb-6">
-                            <h3 className="font-bold border-b pb-2 mb-3">งวดการชำระเงิน</h3>
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-gray-100">
-                                        <th className="p-2 text-left">งวดที่</th>
-                                        <th className="p-2 text-left">รายละเอียด</th>
-                                        <th className="p-2 text-left">กำหนดชำระ</th>
-                                        <th className="p-2 text-right">จำนวนเงิน</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {contract.installments.map((inst, i) => (
-                                        <tr key={i} className="border-b">
-                                            <td className="p-2">{i + 1}</td>
-                                            <td className="p-2">{inst.description}</td>
-                                            <td className="p-2">{formatDate(inst.dueDate)}</td>
-                                            <td className="p-2 text-right">฿{formatCurrency(inst.amount)}</td>
-                                        </tr>
-                                    ))}
-                                    <tr className="bg-blue-50 font-bold">
-                                        <td colSpan={3} className="p-2 text-right">รวมทั้งหมด</td>
-                                        <td className="p-2 text-right">฿{formatCurrency(contract.totalAmount)}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     )
-}
 
+    function renderSignatureBlock(key: keyof typeof formData.signatures, role: string, isRight = false, subText = "") {
+        const sig = formData.signatures[key]
+        return (
+            <div className="space-y-2">
+                <div className="flex items-end gap-2">
+                    <span className="text-[11px] shrink-0 pb-1">ลงชื่อ</span>
+                    <div className="flex-1 border-b border-black h-8 flex items-end justify-center px-2">
+                        <input
+                            value={sig.name}
+                            onChange={e => setFormData({
+                                ...formData,
+                                signatures: {
+                                    ...formData.signatures,
+                                    [key]: { ...sig, name: e.target.value }
+                                }
+                            })}
+                            className="w-full text-center bg-transparent focus:outline-none text-xs font-bold"
+                            placeholder="..."
+                        />
+                    </div>
+                    <span className="text-[11px] shrink-0 pb-1 w-[60px]">{role}</span>
+                </div>
+                <div className="text-center text-[10px] text-gray-400 h-4">
+                    {subText ? subText : (sig.name ? `( ${sig.name} )` : `( ........................................................... )`)}
+                </div>
+                <div className="flex items-center text-[11px] pl-8">
+                    <span className="shrink-0 mr-2">วันที่</span>
+                    <input
+                        value={sig.date}
+                        onChange={e => setFormData({
+                            ...formData,
+                            signatures: {
+                                ...formData.signatures,
+                                [key]: { ...sig, date: e.target.value }
+                            }
+                        })}
+                        className="flex-1 border-b border-dotted border-gray-400 bg-transparent focus:outline-none text-center"
+                        placeholder="......... / ......... / ..............."
+                    />
+                </div>
+            </div>
+        )
+    }
+}

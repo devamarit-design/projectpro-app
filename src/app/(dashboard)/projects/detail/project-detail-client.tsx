@@ -49,6 +49,7 @@ import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
 
 import { useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
+import { toast } from "sonner"
 
 const ProjectGantt = dynamic(() => import('@/components/projects/project-gantt').then(mod => mod.ProjectGantt), { ssr: false })
 
@@ -686,19 +687,28 @@ export default function ProjectDetailClient() {
                                             {isClient && (
                                                 <button
                                                     onClick={async () => {
-                                                        const { generateServerPDF, generateExpenseReportHTML } = await import('@/lib/server-pdf')
-                                                        const html = generateExpenseReportHTML(
-                                                            project?.name || 'Project',
-                                                            projectExpenses.map(e => ({
-                                                                date: e.date,
-                                                                category: e.category,
-                                                                title: e.title,
-                                                                status: e.status,
-                                                                amount: e.amount,
-                                                                totalValue: e.totalValue
-                                                            }))
-                                                        )
-                                                        await generateServerPDF(html, `${project?.name || 'Project'}_Expense_Report.pdf`)
+                                                        const toastId = toast.loading("Generating PDF...")
+                                                        try {
+                                                            const { generateServerPDF, generateExpenseReportHTML } = await import('@/lib/server-pdf')
+                                                            const html = generateExpenseReportHTML(
+                                                                project?.name || 'Project',
+                                                                projectExpenses.map(e => ({
+                                                                    date: e.date,
+                                                                    category: e.category,
+                                                                    title: e.title,
+                                                                    status: e.status,
+                                                                    amount: e.amount,
+                                                                    totalValue: e.totalValue
+                                                                }))
+                                                            )
+                                                            await generateServerPDF(html, `${project?.name || 'Project'}_Expense_Report.pdf`)
+                                                            toast.dismiss(toastId)
+                                                            toast.success("PDF Downloaded")
+                                                        } catch (error) {
+                                                            console.error("PDF Generate Error", error)
+                                                            toast.dismiss(toastId)
+                                                            toast.error("Failed to generate PDF")
+                                                        }
                                                     }}
                                                     className="w-9 h-9 flex items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
                                                     title="Export PDF"

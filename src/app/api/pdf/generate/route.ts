@@ -5,10 +5,10 @@ import puppeteer from 'puppeteer'
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { url, filename = 'document.pdf' } = body
+        const { url, html, filename = 'document.pdf' } = body
 
-        if (!url) {
-            return NextResponse.json({ error: 'URL is required' }, { status: 400 })
+        if (!url && !html) {
+            return NextResponse.json({ error: 'URL or HTML is required' }, { status: 400 })
         }
 
         // Launch Puppeteer with full Chrome
@@ -32,13 +32,20 @@ export async function POST(request: NextRequest) {
             deviceScaleFactor: 2 // High quality
         })
 
-        // Navigate to the preview page with print mode (hides toolbars)
-        const printUrl = url.includes('?') ? `${url}&print=true` : `${url}?print=true`
+        if (url) {
+            // Navigate to the preview page with print mode (hides toolbars)
+            const printUrl = url.includes('?') ? `${url}&print=true` : `${url}?print=true`
 
-        await page.goto(printUrl, {
-            waitUntil: 'networkidle0',
-            timeout: 30000
-        })
+            await page.goto(printUrl, {
+                waitUntil: 'networkidle0',
+                timeout: 30000
+            })
+        } else if (html) {
+            await page.setContent(html, {
+                waitUntil: 'networkidle0',
+                timeout: 30000
+            })
+        }
 
         // Wait for content to be ready
         try {

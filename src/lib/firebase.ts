@@ -29,9 +29,10 @@ let firestoreInstance;
 try {
     firestoreInstance = initializeFirestore(app, {
         localCache: persistentLocalCache({
-            tabManager: persistentMultipleTabManager()
+            tabManager: persistentMultipleTabManager(),
+            cacheSizeBytes: 40 * 1024 * 1024 // Limit to 40MB (Standard is 40MB, but let's be explicit or smaller if needed)
         }),
-        experimentalForceLongPolling: true, // Known workaround for some stream-related assertion failures
+        experimentalForceLongPolling: true,
     });
 } catch (e) {
     console.error("Firestore initialization failed, falling back to getFirestore", e);
@@ -65,7 +66,12 @@ if (typeof window !== "undefined") {
                 }, 1000);
             }
         }
-        if (JSON.stringify(args).includes("resource-exhausted") || JSON.stringify(args).includes("Quota exceeded")) {
+        const combinedStr = args.map(a =>
+            a instanceof Error ? (a.message || "") + (a.stack || "") :
+                typeof a === 'object' ? JSON.stringify(a, Object.getOwnPropertyNames(a)) : String(a)
+        ).join(" ");
+
+        if (combinedStr.includes("resource-exhausted") || combinedStr.includes("Quota exceeded") || combinedStr.includes("QuotaExceededError") || combinedStr.includes("exceeded the quota")) {
             console.warn("🔥 FIRESTORE QUOTA EXCEEDED DETECTED 🔥");
             if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('firestore-quota-exceeded'));
@@ -83,15 +89,42 @@ if (typeof window !== "undefined") {
 if (typeof window !== "undefined") {
     (window as any).resetFirestore = async () => {
         try {
+            console.log("🚨 Emergency Reset Started...");
+
+            // 1. Clear Web Storage immediately
+            localStorage.clear();
+            sessionStorage.clear();
+            console.log("✅ Local and Session Storage cleared.");
+
             const { terminate, clearIndexedDbPersistence } = await import("firebase/firestore");
-            console.log("Terminating Firestore...");
-            await terminate(firestoreInstance);
-            console.log("Clearing Persistence...");
-            await clearIndexedDbPersistence(firestoreInstance);
-            console.log("Done! Reloading...");
-            window.location.reload();
+
+            // 2. Try to terminate gracefully if possible
+            if (firestoreInstance) {
+                try {
+                    console.log("Terminating Firestore...");
+                    await terminate(firestoreInstance);
+                } catch (e) {
+                    console.warn("Termination failed (ignoring):", e);
+                }
+            }
+
+            // 3. Clear Persistence
+            try {
+                console.log("Clearing IndexedDB Persistence...");
+                await clearIndexedDbPersistence(firestoreInstance);
+            } catch (e) {
+                console.warn("Clear persistence failed (ignoring):", e);
+            }
+
+            console.log("🚀 Done! Hard reloading in 1 second...");
+            setTimeout(() => {
+                window.location.href = window.location.origin + '?reset=' + Date.now();
+            }, 1000);
         } catch (e) {
-            console.error("Failed to reset firestore:", e);
+            console.error("Fatal Reset Error:", e);
+            localStorage.clear();
+            alert("Reset failed. Please clear your browser cache manually (Shift+Cmd+Delete).");
+            window.location.reload();
         }
     };
     console.log("💡 Developer Tip: Run `resetFirestore()` in console if you encounter quota or sync issues.");

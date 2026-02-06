@@ -42,7 +42,9 @@ export const onTaskAssigned = functions
             }
 
             const userData = userDoc.data()
-            const tokens = userData?.fcmTokens as string[]
+            const rawTokens = userData?.fcmTokens as string[]
+            const tokens = [...new Set(rawTokens || [])]
+
 
             if (!tokens || tokens.length === 0) {
                 console.log('No FCM tokens registered for user', newAssigneeId)
@@ -171,7 +173,8 @@ export const onTaskStatusChanged = functions
                 if (!userDoc.exists) return null
 
                 const userData = userDoc.data()
-                const tokens = userData?.fcmTokens as string[]
+                const rawTokens = userData?.fcmTokens as string[]
+                const tokens = [...new Set(rawTokens || [])]
 
                 if (!tokens || tokens.length === 0) return null
 
@@ -272,7 +275,8 @@ export const checkTaskDueDates = functions
                         const userDoc = await db.collection('users').doc(task.assignedTo).get()
                         if (!userDoc.exists) return
 
-                        const tokens = userDoc.data()?.fcmTokens as string[]
+                        const rawTokens = userDoc.data()?.fcmTokens as string[]
+                        const tokens = [...new Set(rawTokens || [])]
                         if (!tokens?.length) return
 
                         // Get Project Name
