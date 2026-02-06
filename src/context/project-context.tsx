@@ -1297,7 +1297,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     get(`customers_${currentTeam.id}`),
                     get(`incomes_${currentTeam.id}`),
                     get(`contracts_${currentTeam.id}`),
-                    get(`tasks_${currentTeam.id}`),
+                    Promise.resolve(null), // Placeholder for removed tasks cache
                     get(`users_${currentTeam.id}`),
                     get(`files_${currentTeam.id}`)
                 ])
@@ -1313,7 +1313,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     setIncomesLoading(false)
                 }
                 if (cachedContracts && !snapshotLoaded.contracts) setContracts(cachedContracts)
-                if (cachedTasks && !snapshotLoaded.tasks) setTasks(cachedTasks)
+                // if (cachedTasks && !snapshotLoaded.tasks) setTasks(cachedTasks) // REMOVED: Conflict with Firestore Persistence
                 if (cachedUsers && !snapshotLoaded.users) setUsers(cachedUsers)
                 if (cachedFiles && !snapshotLoaded.files) setFiles(cachedFiles)
 
@@ -1401,7 +1401,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             snapshotLoaded.tasks = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask))
             setTasks(data)
-            set(`tasks_${currentTeam.id}`, data)
+            // set(`tasks_${currentTeam.id}`, data) // REMOVED: Conflict
         }, (error) => console.error("Task sync error:", error))
 
         // 9. Works (Schedule)
