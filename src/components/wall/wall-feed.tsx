@@ -8,7 +8,6 @@ import { Post, PostCard } from "./post-card"
 import { CreatePost } from "./create-post"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProjects } from "@/context/project-context"
-import { get, set } from "idb-keyval"
 import { Hash, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -30,38 +29,20 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
     // Unified Hashtag Regex (Thai support)
     const hashtagRegex = /#[\wก-๙]+/g
 
+    const [error, setError] = useState<string | null>(null)
+
     useEffect(() => {
         if (!currentOrgId) return
 
-        const CACHE_KEY = `wall_posts_${currentOrgId}_${variant}_${filterByUser ? currentUserId : 'all'}`
-
-        // 1. Load from Cache immediately
-        const loadFromCache = async () => {
-            // Only show loading if we really have nothing
-            setIsLoading(prev => posts.length === 0 ? true : prev)
-
-            try {
-                const cachedPosts = await get(CACHE_KEY)
-                if (cachedPosts && Array.isArray(cachedPosts) && cachedPosts.length > 0) {
-                    setPosts(cachedPosts)
-                    setIsLoading(false) // Show cached content immediately
-                }
-            } catch (err) {
-                console.warn("Failed to load wall cache:", err)
-            }
-        }
-
-        loadFromCache()
+        setIsLoading(true)
+        setError(null)
 
         const postsRef = collection(db, "organizations", currentOrgId, "posts")
 
-        // Base constraints
-        const constraints: QueryConstraint[] = [
-            orderBy("createdAt", "desc"),
-            limit(variant === 'widget' ? 8 : 50) // Increased limit for better filtering context
-        ]
-
-        const q = query(postsRef, ...constraints)
+        // CLIENT-SIDE SORTING FIX:
+        // We remove server-side orderBy/limit to avoid index issues or missing fields hiding posts.
+        // We fetch "all" (or a safe large batch) and sort in memory.
+        const q = query(postsRef, limit(100))
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedPosts = snapshot.docs.map(doc => ({
@@ -70,27 +51,34 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
                 orgId: currentOrgId
             })) as Post[]
 
+            // Sort by createdAt desc (Newest first)
+            fetchedPosts.sort((a, b) => {
+                const dateA = new Date(a.createdAt).getTime()
+                const dateB = new Date(b.createdAt).getTime()
+                return dateB - dateA
+            })
+
             let finalPosts = fetchedPosts
             if (filterByUser && currentUserId) {
-                finalPosts = fetchedPosts.filter(p => p.author.id === currentUserId)
+                finalPosts = finalPosts.filter(p => p.author.id === currentUserId)
             }
+
+            // Apply logic limit
+            const maxPosts = variant === 'widget' ? 8 : 50
+            finalPosts = finalPosts.slice(0, maxPosts)
 
             setPosts(finalPosts)
             setIsLoading(false)
 
-            // Update Cache
-            set(CACHE_KEY, finalPosts).catch(err => console.warn("Failed to update wall cache:", err))
-
         }, (err) => {
-            const errorMsg = JSON.stringify(err)
-            if (err.code === 'resource-exhausted' || errorMsg.includes('Quota exceeded') || errorMsg.includes('resource-exhausted')) {
-                console.warn("Firestore Quota Exceeded (WallFeed): Switching to cached data.")
-                setQuotaError(true)
-                // Do not clear posts here, so we keep cached data visible
-            } else {
-                console.error("Error fetching wall posts:", err)
-            }
+            console.error("Error fetching wall posts:", err)
+            setError(err.message)
             setIsLoading(false)
+
+            const errorMsg = JSON.stringify(err)
+            if (err.code === 'resource-exhausted' || errorMsg.includes('Quota exceeded')) {
+                setQuotaError(true)
+            }
         })
 
         return () => unsubscribe()
@@ -143,6 +131,15 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
                 {variant === 'full' && <Skeleton className="h-[140px] w-full rounded-xl" />}
                 <Skeleton className="h-[200px] w-full rounded-xl" />
                 <Skeleton className="h-[200px] w-full rounded-xl" />
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm">
+                <p className="font-bold">Failed to load posts</p>
+                <p>{error}</p>
             </div>
         )
     }
