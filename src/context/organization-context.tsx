@@ -306,22 +306,25 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
             throw new Error("Organization not found")
         }
 
-        // 2. Check if already a member
+        // 2. Check if already a member in the organization document
         const orgData = orgSnap.data() as Organization
-        const isMember = orgData.members?.some(m => m.userId === firebaseUser.uid)
-        if (isMember) {
-            throw new Error("You are already a member of this organization")
-        }
+        const isAlreadyInOrgList = orgData.members?.some(m => m.userId === firebaseUser.uid)
 
-        // 3. Add User to Org Members
+        // If they are already in the list, we don't 'throw', we 'heal' 
+        // by making sure their user profile is correctly linked below.
+
+        // 3. Prepare User to Org Members update
         const newMember: OrgMember = {
             userId: firebaseUser.uid,
             role: "Staff",
             joinedAt: new Date().toISOString()
         }
 
-        // Sync arrays for security rules
-        const updatedMembers = [...(orgData.members || []), newMember]
+        // Only add if not already present
+        const updatedMembers = isAlreadyInOrgList
+            ? (orgData.members || [])
+            : [...(orgData.members || []), newMember]
+
         const updatedMemberIds = Array.from(new Set([...(orgData.memberIds || []), firebaseUser.uid]))
 
         // 4. Update User Profile
