@@ -20,10 +20,6 @@ const nextConfig: NextConfig = {
   },
   // @ts-ignore
   turbopack: {},
-  // @ts-ignore
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -39,6 +35,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  outputFileTracingRoot: process.cwd(),
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',

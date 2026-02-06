@@ -62,15 +62,14 @@ service cloud.firestore {
     // --- Public Access Rules (Preview & Onboarding) ---
     
     match /invites/{inviteId} {
-       allow get: if true; 
-       allow list: if false; 
+       allow read: if isAuthenticated(); 
        allow create, update: if isAuthenticated();
     }
 
     match /organizations/{orgId} {
       allow get: if true; 
       allow list, create: if isAuthenticated();
-      allow update: if isAuthenticated() && (isOrgMember(orgId) || isOrgOwner(orgId) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']));
+      allow update: if isAuthenticated() && (isOrgMember(orgId) || isOrgOwner(orgId) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberIds']));
       allow delete: if isAuthenticated() && isOrgOwner(orgId);
 
       match /settings/{settingDoc} {
@@ -100,7 +99,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated(); 
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['organizations', 'orgIds']));
+      allow update: if isOwner(userId) || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['organizations', 'orgIds', 'teamIds', 'organizationIds']));
       allow delete: if isOwner(userId);
 
       match /orgSettings/{orgId} {
