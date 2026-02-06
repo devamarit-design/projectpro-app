@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react"
 import { get, set } from "idb-keyval"
 import { auth, googleProvider, db } from "@/lib/firebase"
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseUser, setPersistence, browserLocalPersistence, updatePassword, deleteUser as deleteAuthUser, reauthenticateWithPopup, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth"
@@ -1981,7 +1981,7 @@ export function useProjects() {
     const financeCtx = useFinance()
     const socialCtx = useSocial()
 
-    return {
+    return useMemo(() => ({
         ...context,
         // Tasks
         tasks: taskCtx.tasks,
@@ -2002,6 +2002,9 @@ export function useProjects() {
         customers: financeCtx.customers,
         workers: financeCtx.workers,
         contracts: financeCtx.contracts,
+        addProject: context.addProject,
+        updateProject: context.updateProject,
+        deleteProject: context.deleteProject,
         addExpense: financeCtx.addExpense,
         updateExpense: financeCtx.updateExpense,
         deleteExpense: financeCtx.deleteExpense,
@@ -2037,5 +2040,5 @@ export function useProjects() {
         isTasksLoading: taskCtx.isLoading,
         isFinanceLoading: financeCtx.isLoading,
         isSocialLoading: socialCtx.isLoading
-    }
+    }), [context, taskCtx, financeCtx, socialCtx])
 }

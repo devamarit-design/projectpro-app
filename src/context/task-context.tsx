@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react"
 import { db } from "@/lib/firebase"
-import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, Timestamp } from "firebase/firestore"
+import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, Timestamp, getDocs } from "firebase/firestore"
 import { useOrganization } from "@/context/organization-context"
 import { logActivity } from "@/lib/activity-logger"
 import { ProjectTask, TaskStatus, Priority, WorkItem } from "./project-context"
@@ -30,57 +30,88 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
     const [works, setWorks] = useState<WorkItem[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
-    // 1. Unified Task Listener (Active & Archived) - Legacy Support
-    const [isInitialLoad, setIsInitialLoad] = useState(true)
+    // 1. Legacy Data Patcher (Ensures all tasks have isArchived field)
     useEffect(() => {
-        if (!currentTeam?.id) return
-        setIsInitialLoad(true)
+        if (!currentTeam?.id || !currentUser) return
 
-        const q = query(
-            collection(db, "tasks"),
-            where("orgId", "==", currentTeam.id)
-        )
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            // On initial load, do a full replacement
-            if (isInitialLoad) {
-                const allTasks = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ProjectTask))
-                setTasks(allTasks.filter(t => t.isArchived !== true).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
-                setArchivedTasks(allTasks.filter(t => t.isArchived === true).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
-                setIsInitialLoad(false)
-                setIsLoading(false)
-                return
-            }
-
-            // Incremental updates after initial load
-            snapshot.docChanges().forEach((change) => {
-                const data = { ...change.doc.data(), id: change.doc.id } as ProjectTask
-                const isArchived = data.isArchived === true
-
-                if (change.type === "added" || change.type === "modified") {
-                    if (isArchived) {
-                        setArchivedTasks(prev => {
-                            const filtered = prev.filter(t => t.id !== data.id)
-                            return [...filtered, data].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-                        })
-                        setTasks(prev => prev.filter(t => t.id !== data.id && !t.id.startsWith("temp-")))
-                    } else {
-                        setTasks(prev => {
-                            // Remove temp task if it matches
-                            const filtered = prev.filter(t => t.id !== data.id && !(t.id.startsWith("temp-") && t.title === data.title))
-                            return [...filtered, data].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-                        })
-                        setArchivedTasks(prev => prev.filter(t => t.id !== data.id))
+        const patchLegacyTasks = async () => {
+            try {
+                const q = query(collection(db, "tasks"), where("orgId", "==", currentTeam.id))
+                const snap = await getDocs(q)
+                const legacy = snap.docs.filter((d: any) => d.data().isArchived === undefined)
+                if (legacy.length > 0) {
+                    console.log(`[DataFix] Patching ${legacy.length} legacy tasks...`)
+                    for (const d of legacy) {
+                        await updateDoc(d.ref, { isArchived: false })
                     }
                 }
-                if (change.type === "removed") {
-                    setTasks(prev => prev.filter(t => t.id !== data.id))
-                    setArchivedTasks(prev => prev.filter(t => t.id !== data.id))
-                }
+            } catch (err) {
+                console.error("Failed to patch legacy tasks:", err)
+            }
+        }
+        patchLegacyTasks()
+    }, [currentTeam?.id, currentUser])
+
+    // 2. Optimized Task Listeners (Active & Archived)
+    useEffect(() => {
+        if (!currentTeam?.id) return
+        setIsLoading(true)
+
+        // Listener 1: Active Tasks
+        const qActive = query(
+            collection(db, "tasks"),
+            where("orgId", "==", currentTeam.id),
+            where("isArchived", "==", false)
+        )
+
+        const unsubActive = onSnapshot(qActive, (snapshot) => {
+            setTasks(prev => {
+                let updated = [...prev]
+                snapshot.docChanges().forEach((change) => {
+                    const data = { ...change.doc.data(), id: change.doc.id } as ProjectTask
+                    if (change.type === "added" || change.type === "modified") {
+                        const index = updated.findIndex(t => t.id === data.id || (t.id.startsWith("temp-") && t.title === data.title))
+                        if (index > -1) updated[index] = data
+                        else updated.unshift(data)
+                    }
+                    if (change.type === "removed") {
+                        updated = updated.filter(t => t.id !== data.id)
+                    }
+                })
+                return updated.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+            })
+            setIsLoading(false)
+        })
+
+        // Listener 2: Archived Tasks
+        const qArchived = query(
+            collection(db, "tasks"),
+            where("orgId", "==", currentTeam.id),
+            where("isArchived", "==", true)
+        )
+
+        const unsubArchived = onSnapshot(qArchived, (snapshot) => {
+            setArchivedTasks(prev => {
+                let updated = [...prev]
+                snapshot.docChanges().forEach((change) => {
+                    const data = { ...change.doc.data(), id: change.doc.id } as ProjectTask
+                    if (change.type === "added" || change.type === "modified") {
+                        const index = updated.findIndex(t => t.id === data.id)
+                        if (index > -1) updated[index] = data
+                        else updated.unshift(data)
+                    }
+                    if (change.type === "removed") {
+                        updated = updated.filter(t => t.id !== data.id)
+                    }
+                })
+                return updated.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
             })
         })
 
-        return () => unsubscribe()
+        return () => {
+            unsubActive()
+            unsubArchived()
+        }
     }, [currentTeam?.id])
 
     // 3. Work Listener (Gantt)
@@ -107,7 +138,8 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
             status: taskData.status || "Todo",
             priority: taskData.priority || "Medium",
             createdAt: new Date().toISOString(),
-            createdBy: currentUser?.id || "unknown"
+            createdBy: currentUser?.id || "unknown",
+            isArchived: false
         }
 
         // OPTIMISTIC UPDATE
@@ -116,6 +148,10 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
         try {
             const payload = { ...newTask }
             delete (payload as any).id // Let Firestore generate ID
+            // Remove undefined fields (Firestore doesn't accept undefined)
+            Object.keys(payload).forEach(key => {
+                if ((payload as any)[key] === undefined) delete (payload as any)[key]
+            })
             const docRef = await addDoc(collection(db, "tasks"), payload)
 
             // Asynchronous logging
