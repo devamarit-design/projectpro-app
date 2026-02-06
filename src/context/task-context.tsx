@@ -31,8 +31,10 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
     const [isLoading, setIsLoading] = useState(true)
 
     // 1. Unified Task Listener (Active & Archived) - Legacy Support
+    const [isInitialLoad, setIsInitialLoad] = useState(true)
     useEffect(() => {
         if (!currentTeam?.id) return
+        setIsInitialLoad(true)
 
         const q = query(
             collection(db, "tasks"),
@@ -40,30 +42,34 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
         )
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            // On initial load, do a full replacement
+            if (isInitialLoad) {
+                const allTasks = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ProjectTask))
+                setTasks(allTasks.filter(t => t.isArchived !== true).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
+                setArchivedTasks(allTasks.filter(t => t.isArchived === true).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
+                setIsInitialLoad(false)
+                setIsLoading(false)
+                return
+            }
+
+            // Incremental updates after initial load
             snapshot.docChanges().forEach((change) => {
                 const data = { ...change.doc.data(), id: change.doc.id } as ProjectTask
-                const isArchived = data.isArchived === true // Explicit true check, missing/null/false = active
+                const isArchived = data.isArchived === true
 
                 if (change.type === "added" || change.type === "modified") {
                     if (isArchived) {
                         setArchivedTasks(prev => {
-                            const index = prev.findIndex(t => t.id === data.id)
-                            let updated = [...prev]
-                            if (index > -1) updated[index] = data
-                            else updated.unshift(data)
-                            return updated.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+                            const filtered = prev.filter(t => t.id !== data.id)
+                            return [...filtered, data].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
                         })
-                        // Remove from active if it was there
-                        setTasks(prev => prev.filter(t => t.id !== data.id))
+                        setTasks(prev => prev.filter(t => t.id !== data.id && !t.id.startsWith("temp-")))
                     } else {
                         setTasks(prev => {
-                            const index = prev.findIndex(t => t.id === data.id || (t.id.startsWith("temp-") && t.title === data.title))
-                            let updated = [...prev]
-                            if (index > -1) updated[index] = data
-                            else updated.unshift(data)
-                            return updated.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+                            // Remove temp task if it matches
+                            const filtered = prev.filter(t => t.id !== data.id && !(t.id.startsWith("temp-") && t.title === data.title))
+                            return [...filtered, data].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
                         })
-                        // Remove from archived if it was there
                         setArchivedTasks(prev => prev.filter(t => t.id !== data.id))
                     }
                 }
@@ -72,7 +78,6 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
                     setArchivedTasks(prev => prev.filter(t => t.id !== data.id))
                 }
             })
-            setIsLoading(false)
         })
 
         return () => unsubscribe()
