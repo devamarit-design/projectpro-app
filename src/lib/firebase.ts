@@ -23,14 +23,14 @@ export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 // Initialize Firestore with Offline Persistence and Robustness Settings
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 
 let firestoreInstance;
 try {
     firestoreInstance = initializeFirestore(app, {
         localCache: persistentLocalCache({
             tabManager: persistentMultipleTabManager(),
-            cacheSizeBytes: 40 * 1024 * 1024 // Limit to 40MB (Standard is 40MB, but let's be explicit or smaller if needed)
+            cacheSizeBytes: CACHE_SIZE_UNLIMITED
         }),
         experimentalForceLongPolling: true,
     });
