@@ -1424,9 +1424,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const mergeUsers = () => {
             snapshotLoaded.users = true
             const allUsers = [...usersFromOrgIds, ...usersFromTeamIds]
-            const uniqueUsers = Array.from(new Map(allUsers.map(u => [u.id, u])).values())
+            const uniqueUsers = Array.from(new Map(allUsers.map(u => [u.id, u])).values()).map(u => {
+                // ORG-SPECIFIC ROLE SYNC:
+                // Use the role from the organizations array specifically for this team
+                const orgMembership = u.organizations?.find(o => o.orgId === currentTeam.id)
+                return {
+                    ...u,
+                    role: orgMembership?.role || u.role || "Staff"
+                }
+            })
             setUsers(uniqueUsers)
-            // set(`users_${currentTeam.id}`, uniqueUsers) // REMOVED
         }
 
         const unsubUsersOrgIds = onSnapshot(qUsersOrgIds, (snap) => {
@@ -2093,25 +2100,33 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
 
     const updateUser = async (id: string, updates: Partial<User>) => {
+        const isSelf = currentUser?.id === id
+        const { role, ...otherUpdates } = updates
+
         // Optimistic Update
         setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u))
-        if (currentUser && currentUser.id === id) {
+        if (isSelf) {
             setCurrentUser(prev => (prev ? { ...prev, ...updates } : null))
         }
 
         try {
             // 1. Update User Document
-            await updateDoc(doc(db, "users", id), updates)
+            // IMPORTANT: If updating someone else, we MUST NOT touch top-level 'role' 
+            // as it is protected. Instead, we update the organization-specific role below.
+            const updatesToApply = isSelf ? updates : otherUpdates
+            if (Object.keys(updatesToApply).length > 0) {
+                await updateDoc(doc(db, "users", id), updatesToApply)
+            }
 
             // 2. Synchronize Organizations array in User Document if role changed
-            if (updates.role && currentTeam) {
+            if (role && currentTeam) {
                 const userRef = doc(db, "users", id)
                 const userSnap = await getDoc(userRef)
                 if (userSnap.exists()) {
                     const userData = userSnap.data()
                     const organizations = userData.organizations || []
                     const updatedOrgs = organizations.map((org: any) =>
-                        org.orgId === currentTeam.id ? { ...org, role: updates.role } : org
+                        org.orgId === currentTeam.id ? { ...org, role: role } : org
                     )
                     await updateDoc(userRef, { organizations: updatedOrgs })
                 }
