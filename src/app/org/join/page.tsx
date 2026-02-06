@@ -65,12 +65,12 @@ function JoinContent() {
                 setOrgPreview(preview)
                 setIsPreviewing(true)
             } else {
-                setError(t.dialogs.join_org.placeholder) // Use generic error
+                setError("Organization not found")
                 setIsPreviewing(false)
             }
         } catch (err) {
             console.error(err)
-            setError("Invalid invite code")
+            setError(err instanceof Error ? err.message : "Invalid invite code")
             setIsPreviewing(false)
         } finally {
             setIsLoading(false)
@@ -98,7 +98,7 @@ function JoinContent() {
 
     const handleSubmitCode = async (e: React.FormEvent) => {
         e.preventDefault()
-        handleFetchPreview(inviteCode)
+        handleFetchPreview(inviteCode.trim())
     }
 
     // Auto-fetch preview if code is in URL

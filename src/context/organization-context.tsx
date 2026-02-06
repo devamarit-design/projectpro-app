@@ -351,10 +351,11 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     const joinOrganizationByCode = React.useCallback(async (code: string): Promise<string> => {
         if (!firebaseUser) throw new Error("Not authenticated")
 
+        const trimmedCode = code.trim()
         let targetOrgId = ""
 
         // 1. Try Find Invite
-        const q = query(collection(db, "invites"), where("code", "==", code))
+        const q = query(collection(db, "invites"), where("code", "==", trimmedCode))
         const snap = await getDocs(q)
 
         if (!snap.empty) {
@@ -362,11 +363,11 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
             targetOrgId = inviteData.teamId
         } else {
             // 2. FALLBACK: Try checking if code is a valid Org ID directly
-            const possibleOrgRef = doc(db, "organizations", code)
+            const possibleOrgRef = doc(db, "organizations", trimmedCode)
             const possibleOrgSnap = await getDoc(possibleOrgRef)
 
             if (possibleOrgSnap.exists()) {
-                targetOrgId = code
+                targetOrgId = trimmedCode
             } else {
                 throw new Error("Invalid or expired invite code")
             }
@@ -395,16 +396,17 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     }, [currentOrg])
 
     const getOrganizationPreview = React.useCallback(async (code: string): Promise<{ id: string, name: string, memberCount: number } | null> => {
+        const trimmedCode = code.trim()
         let targetOrgId = ""
 
         // 1. Try Find Invite
-        const q = query(collection(db, "invites"), where("code", "==", code))
+        const q = query(collection(db, "invites"), where("code", "==", trimmedCode))
         const snap = await getDocs(q)
 
         if (!snap.empty) {
             targetOrgId = snap.docs[0].data().teamId
         } else {
-            targetOrgId = code
+            targetOrgId = trimmedCode
         }
 
         // 2. Fetch Org Data
