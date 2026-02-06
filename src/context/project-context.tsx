@@ -1259,6 +1259,21 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         setUsers([])
         setFiles([])
 
+        // Create tracking flags to prevent race conditions where cache overwrites fresh snapshot data
+        const snapshotLoaded = {
+            projects: false,
+            expenses: false,
+            workers: false,
+            vendors: false,
+            customers: false,
+            incomes: false,
+            contracts: false,
+            tasks: false,
+            works: false,
+            users: false,
+            files: false
+        }
+
         // 0. Cache Hydration (Load from IndexedDB immediately)
         const hydrateFromCache = async () => {
             try {
@@ -1287,22 +1302,20 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     get(`files_${currentTeam.id}`)
                 ])
 
-                if (cachedProjects) setProjects(cachedProjects)
-                if (cachedExpenses) setExpenses(cachedExpenses)
-                if (cachedWorkers) setWorkers(cachedWorkers)
-                if (cachedVendors) setVendors(cachedVendors)
-                if (cachedCustomers) setCustomers(cachedCustomers)
-                if (cachedIncomes) {
+                // Only set state if snapshot hasn't loaded yet
+                if (cachedProjects && !snapshotLoaded.projects) { setProjects(cachedProjects); if (cachedProjects.length > 0) setIsLoading(false); }
+                if (cachedExpenses && !snapshotLoaded.expenses) setExpenses(cachedExpenses)
+                if (cachedWorkers && !snapshotLoaded.workers) setWorkers(cachedWorkers)
+                if (cachedVendors && !snapshotLoaded.vendors) setVendors(cachedVendors)
+                if (cachedCustomers && !snapshotLoaded.customers) setCustomers(cachedCustomers)
+                if (cachedIncomes && !snapshotLoaded.incomes) {
                     setIncomes(cachedIncomes)
                     setIncomesLoading(false)
                 }
-                if (cachedContracts) setContracts(cachedContracts)
-                if (cachedTasks) setTasks(cachedTasks)
-                if (cachedUsers) setUsers(cachedUsers)
-                if (cachedFiles) setFiles(cachedFiles)
-
-                // If we found projects, we can assume initial loading is "done" visually
-                if (cachedProjects) setIsLoading(false)
+                if (cachedContracts && !snapshotLoaded.contracts) setContracts(cachedContracts)
+                if (cachedTasks && !snapshotLoaded.tasks) setTasks(cachedTasks)
+                if (cachedUsers && !snapshotLoaded.users) setUsers(cachedUsers)
+                if (cachedFiles && !snapshotLoaded.files) setFiles(cachedFiles)
 
             } catch (error) {
                 console.warn("Cache hydration failed:", error)
@@ -1314,18 +1327,20 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         // 1. Projects
         const qProjects = query(collection(db, "projects"), where("orgId", "==", currentTeam.id))
         const unsubProjects = onSnapshot(qProjects, (snap) => {
+            snapshotLoaded.projects = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Project))
             setProjects(data)
             set(`projects_${currentTeam.id}`, data)
             setIsLoading(false)
         }, (error) => {
             console.error("Project sync error:", error)
-            setIsLoading(false) // Clear loading state even on error to prevent stuck UI
+            setIsLoading(false)
         })
 
         // 2. Expenses
         const qExpenses = query(collection(db, "expenses"), where("orgId", "==", currentTeam.id))
         const unsubExpenses = onSnapshot(qExpenses, (snap) => {
+            snapshotLoaded.expenses = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
             setExpenses(data)
             set(`expenses_${currentTeam.id}`, data)
@@ -1334,6 +1349,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         // 3. Workers
         const qWorkers = query(collection(db, "workers"), where("orgId", "==", currentTeam.id))
         const unsubWorkers = onSnapshot(qWorkers, (snap) => {
+            snapshotLoaded.workers = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Worker))
             setWorkers(data)
             set(`workers_${currentTeam.id}`, data)
@@ -1342,6 +1358,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         // 4. Vendors
         const qVendors = query(collection(db, "vendors"), where("orgId", "==", currentTeam.id))
         const unsubVendors = onSnapshot(qVendors, (snap) => {
+            snapshotLoaded.vendors = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Vendor))
             setVendors(data)
             set(`vendors_${currentTeam.id}`, data)
@@ -1350,6 +1367,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         // 5. Customers
         const qCustomers = query(collection(db, "customers"), where("orgId", "==", currentTeam.id))
         const unsubCustomers = onSnapshot(qCustomers, (snap) => {
+            snapshotLoaded.customers = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer))
             setCustomers(data)
             set(`customers_${currentTeam.id}`, data)
@@ -1358,6 +1376,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         // 6. Incomes
         const qIncomes = query(collection(db, "incomes"), where("orgId", "==", currentTeam.id))
         const unsubIncomes = onSnapshot(qIncomes, (snap) => {
+            snapshotLoaded.incomes = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
             setIncomes(data)
             set(`incomes_${currentTeam.id}`, data)
@@ -1370,6 +1389,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         // 7. Contracts
         const qContracts = query(collection(db, "contracts"), where("orgId", "==", currentTeam.id))
         const unsubContracts = onSnapshot(qContracts, (snap) => {
+            snapshotLoaded.contracts = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract))
             setContracts(data)
             set(`contracts_${currentTeam.id}`, data)
@@ -1378,6 +1398,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         // 8. Tasks
         const qTasks = query(collection(db, "tasks"), where("orgId", "==", currentTeam.id))
         const unsubTasks = onSnapshot(qTasks, (snap) => {
+            snapshotLoaded.tasks = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectTask))
             setTasks(data)
             set(`tasks_${currentTeam.id}`, data)
@@ -1386,12 +1407,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         // 9. Works (Schedule)
         const qWorks = query(collection(db, "works"), where("orgId", "==", currentTeam.id))
         const unsubWorks = onSnapshot(qWorks, (snap) => {
+            snapshotLoaded.works = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as WorkItem))
             setWorks(data)
             set(`works_${currentTeam.id}`, data)
         }, (error) => console.error("Work sync error:", error))
 
-        // 9. Team Members
+        // 9. Team Members (Merged from OrgIds and TeamIds)
         const qUsersOrgIds = query(collection(db, "users"), where("orgIds", "array-contains", currentTeam.id))
         const qUsersTeamIds = query(collection(db, "users"), where("teamIds", "array-contains", currentTeam.id))
 
@@ -1399,29 +1421,33 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         let usersFromTeamIds: User[] = []
 
         const mergeUsers = () => {
-            const userMap = new Map<string, User>()
-            usersFromOrgIds.forEach(u => userMap.set(u.id, u))
-            usersFromTeamIds.forEach(u => userMap.set(u.id, u))
-            setUsers(Array.from(userMap.values()))
+            snapshotLoaded.users = true
+            const allUsers = [...usersFromOrgIds, ...usersFromTeamIds]
+            const uniqueUsers = Array.from(new Map(allUsers.map(u => [u.id, u])).values())
+            setUsers(uniqueUsers)
+            set(`users_${currentTeam.id}`, uniqueUsers)
         }
 
         const unsubUsersOrgIds = onSnapshot(qUsersOrgIds, (snap) => {
             usersFromOrgIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
             mergeUsers()
-        }, (error) => console.error("Users (orgIds) sync error:", error))
+        }, (error) => console.error("User Org sync error:", error))
 
         const unsubUsersTeamIds = onSnapshot(qUsersTeamIds, (snap) => {
             usersFromTeamIds = snap.docs.map(d => ({ ...d.data(), id: d.id } as User))
             mergeUsers()
-        }, (error) => console.error("Users (teamIds) sync error:", error))
+        }, (error) => console.error("User Team sync error:", error))
 
         // 10. Files
+
+
         const qFiles = query(collection(db, "files"), where("orgId", "==", currentTeam.id))
         const unsubFiles = onSnapshot(qFiles, (snap) => {
+            snapshotLoaded.files = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectFile))
             setFiles(data)
             set(`files_${currentTeam.id}`, data)
-        }, (error) => console.error("Files sync error:", error))
+        }, (error) => console.error("File sync error:", error))
 
         return () => {
             unsubProjects()
