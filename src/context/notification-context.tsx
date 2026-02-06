@@ -109,12 +109,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     // Load read status from local storage
     const [readStatus, setReadStatus] = useState<Record<string, boolean>>({})
+    const [clearedIds, setClearedIds] = useState<Set<string>>(new Set())
     const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>('default')
 
     useEffect(() => {
         const storedReadStatus = localStorage.getItem("pp_notifications_read")
         if (storedReadStatus) {
             setTimeout(() => setReadStatus(JSON.parse(storedReadStatus)), 0)
+        }
+
+        const storedClearedIds = localStorage.getItem("pp_notifications_cleared")
+        if (storedClearedIds) {
+            setTimeout(() => setClearedIds(new Set(JSON.parse(storedClearedIds))), 0)
         }
 
         // Check permission status on mount
@@ -128,6 +134,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             localStorage.setItem("pp_notifications_read", JSON.stringify(readStatus))
         }
     }, [readStatus])
+
+    useEffect(() => {
+        if (clearedIds.size > 0) {
+            localStorage.setItem("pp_notifications_cleared", JSON.stringify(Array.from(clearedIds)))
+        }
+    }, [clearedIds])
 
     const [realtimeNotifications, setRealtimeNotifications] = useState<Notification[]>([])
 
@@ -435,6 +447,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         // Filter by Role/Target
         const filtered = uniqueNotifications.filter(n => {
+            // Skip if cleared
+            if (clearedIds.has(n.id)) return false
+
             // 1. Targeted specifically to me
             if (n.target === currentUser?.id) return true
 
@@ -451,7 +466,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         })
 
         setNotifications(filtered)
-    }, [projects, expenses, contracts, notificationSettings, readStatus, currentUser, t, currentTeam, realtimeNotifications])
+    }, [projects, expenses, contracts, notificationSettings, readStatus, clearedIds, currentUser, t, currentTeam, realtimeNotifications])
 
 
     const unreadCount = notifications.filter(n => !n.read).length
@@ -473,8 +488,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
 
     const clearAll = () => {
-        // Ideally just mark all as read or 'archived'
-        // For now, clearing from view
+        // Add all current notification IDs to cleared set
+        const newClearedIds = new Set(clearedIds)
+        notifications.forEach(n => newClearedIds.add(n.id))
+        setClearedIds(newClearedIds)
         setNotifications([])
     }
 

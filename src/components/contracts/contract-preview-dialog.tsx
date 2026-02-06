@@ -38,7 +38,10 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
             name: inst.description,
             amount: inst.amount,
             dueDate: inst.dueDate,
-            status: inst.status
+            status: inst.status,
+            paymentDetails: inst.paymentDetails,
+            balance: undefined as number | undefined,
+            notes: ''
         })),
         companyName: orgProfile?.name || 'Company Name',
         companyAddress: orgProfile?.address || '',
@@ -72,7 +75,10 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                     name: inst.description,
                     amount: inst.amount,
                     dueDate: inst.dueDate,
-                    status: inst.status
+                    status: inst.status,
+                    paymentDetails: inst.paymentDetails,
+                    balance: undefined as number | undefined,
+                    notes: ''
                 })),
                 companyName: orgProfile?.name || 'Company Name',
                 companyAddress: orgProfile?.address || '',
@@ -413,7 +419,7 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                                         <div className="absolute -right-16 top-0 flex flex-col gap-3 no-print">
                                             <button
                                                 onClick={() => {
-                                                    const newInst = [...formData.installments, { name: '', amount: 0, dueDate: '', status: 'Pending' as const }]
+                                                    const newInst = [...formData.installments, { name: '', amount: 0, dueDate: '', status: 'Pending' as const, paymentDetails: '', balance: undefined as number | undefined, notes: '' }]
                                                     setFormData({ ...formData, installments: newInst })
                                                 }}
                                                 className="w-10 h-10 bg-white hover:bg-primary hover:text-white rounded-full shadow-lg text-primary border border-primary/20 flex items-center justify-center transition-all active:scale-90 text-2xl"
@@ -481,9 +487,30 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                                                                 placeholder="ว/ด/ป"
                                                             />
                                                         </td>
-                                                        <td className="border-2 border-black p-3"></td>
-                                                        <td className="border-2 border-black p-3 text-xs text-gray-400 text-center italic">
-                                                            {inst.status === 'Paid' ? 'ชำระแล้ว' : ''}
+                                                        <td className="border-2 border-black p-3">
+                                                            <input
+                                                                type="number"
+                                                                value={inst.balance ?? ''}
+                                                                onChange={e => {
+                                                                    const newInst = [...formData.installments]
+                                                                    newInst[i].balance = e.target.value ? parseFloat(e.target.value) : undefined
+                                                                    setFormData({ ...formData, installments: newInst })
+                                                                }}
+                                                                className="w-full text-right bg-transparent focus:outline-none text-sm"
+                                                                placeholder=""
+                                                            />
+                                                        </td>
+                                                        <td className="border-2 border-black p-3">
+                                                            <input
+                                                                value={inst.notes || ''}
+                                                                onChange={e => {
+                                                                    const newInst = [...formData.installments]
+                                                                    newInst[i].notes = e.target.value
+                                                                    setFormData({ ...formData, installments: newInst })
+                                                                }}
+                                                                className="w-full text-center bg-transparent focus:outline-none text-xs"
+                                                                placeholder=""
+                                                            />
                                                         </td>
                                                     </tr>
                                                 ))}

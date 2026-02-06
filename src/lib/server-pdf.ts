@@ -581,7 +581,7 @@ export function generateContractHTML(
         startDate?: string
         endDate?: string
         contractValue: number
-        installments: Array<{ name: string; amount: number; dueDate?: string; status?: string }>
+        installments: Array<{ name: string; amount: number; dueDate?: string; status?: string; paymentDetails?: string; balance?: number; notes?: string }>
         terms?: string
         contractType?: 'labor' | 'material'
         signatures?: {
@@ -597,13 +597,25 @@ export function generateContractHTML(
     const installmentRows = data.installments.map((inst, i) => `
         <tr>
             <td style="text-align: center;">${i + 1}</td>
-            <td>${inst.name}</td>
+            <td style="word-wrap: break-word; max-width: 180px;">
+                <div>${inst.name}</div>
+                ${inst.paymentDetails ? `<div style="font-size: 11px; color: #666; margin-top: 2px;">${inst.paymentDetails}</div>` : ''}
+            </td>
             <td style="text-align: right;">${inst.amount.toLocaleString()}</td>
             <td style="text-align: center;">${inst.dueDate ? new Date(inst.dueDate).toLocaleDateString('th-TH') : ''}</td>
-            <td style="text-align: right;"></td>
-            <td style="text-align: center; font-size: 10px; color: #666;">${inst.status === 'Paid' ? 'ชำระแล้ว' : ''}</td>
+            <td style="text-align: right;">${inst.balance !== undefined ? inst.balance.toLocaleString() : ''}</td>
+            <td style="text-align: center; font-size: 10px; word-wrap: break-word; max-width: 80px;">${inst.notes || (inst.status === 'Paid' ? 'ชำระแล้ว' : '')}</td>
         </tr>
     `).join('')
+
+    // Format scope as numbered list if it looks like list format (e.g., "1. item\n2. item")
+    let formattedScope = data.scope || 'ตามเอกสารแนบ'
+    if (formattedScope.includes('\n') && /^\d+\./.test(formattedScope)) {
+        // Already numbered
+    } else if (formattedScope.includes('\n')) {
+        // Convert to numbered list
+        formattedScope = formattedScope.split('\n').filter(line => line.trim()).map((line, i) => `${i + 1}. ${line.replace(/^\d+\.\s*/, '')}`).join('\n')
+    }
 
     // Fill empty rows to make the table look full (optional, maybe 10 rows total)
     const emptyRowsCount = Math.max(0, 10 - data.installments.length)
@@ -832,7 +844,7 @@ export function generateContractHTML(
                         <tr>
                             <td style="text-align: center; vertical-align: top;">1</td>
                             <td style="vertical-align: top; white-space: pre-wrap;">
-                                <div style="min-height: 400px;">${data.scope || 'ตามเอกสารแนบ'}</div>
+                                <div style="min-height: 400px;">${formattedScope}</div>
                             </td>
                             <td style="text-align: right; vertical-align: top;">${data.contractValue.toLocaleString()}</td>
                             <td style="text-align: center; vertical-align: top;">เหมา</td>

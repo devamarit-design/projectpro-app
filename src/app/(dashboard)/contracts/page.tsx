@@ -4,7 +4,8 @@ import { useState } from "react"
 import { useProjects, Contract } from "@/context/project-context"
 import { AddContractDialog } from "@/components/contracts/add-contract-dialog"
 import { ContractPreviewDialog } from "@/components/contracts/contract-preview-dialog"
-import { FileText, Printer, CheckCircle, Plus, ChevronDown, ChevronUp, Edit, Trash2 } from "lucide-react"
+import { PaymentVoucherDialog } from "@/components/contracts/payment-voucher-dialog"
+import { FileText, Printer, CheckCircle, Plus, ChevronDown, ChevronUp, Edit, Trash2, Receipt } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
 
 export default function ContractsPage() {
@@ -15,6 +16,7 @@ export default function ContractsPage() {
     const [editingContract, setEditingContract] = useState<Contract | undefined>(undefined)
     const [expandedContract, setExpandedContract] = useState<string | null>(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+    const [voucherData, setVoucherData] = useState<{ contract: Contract; installment: any; index: number } | null>(null)
 
     const toggleExpand = (id: string) => {
         setExpandedContract(expandedContract === id ? null : id)
@@ -44,6 +46,16 @@ export default function ContractsPage() {
                     contract={previewContract}
                     onClose={() => setPreviewContract(null)}
                     onEdit={() => handleEdit(previewContract)}
+                />
+            )}
+
+            {voucherData && (
+                <PaymentVoucherDialog
+                    isOpen={!!voucherData}
+                    onClose={() => setVoucherData(null)}
+                    contract={voucherData.contract}
+                    installment={voucherData.installment}
+                    installmentIndex={voucherData.index}
                 />
             )}
 
@@ -183,8 +195,18 @@ export default function ContractsPage() {
                                                         )}
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-2">
                                                     <span className="font-bold text-sm">฿{inst.amount.toLocaleString()}</span>
+
+                                                    {/* Payment Voucher Button */}
+                                                    <button
+                                                        onClick={() => setVoucherData({ contract, installment: inst, index: idx })}
+                                                        className="p-1.5 bg-muted text-muted-foreground rounded-md hover:bg-muted/80 transition-opacity"
+                                                        title="ใบสำคัญจ่าย"
+                                                    >
+                                                        <Receipt className="w-4 h-4" />
+                                                    </button>
+
                                                     {inst.status === 'Paid' ? (
                                                         <span className="p-1 bg-green-500/10 text-green-500 rounded-full border border-green-500/20" title="Paid">
                                                             <CheckCircle className="w-4 h-4" />
