@@ -87,7 +87,8 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                 setIncludeVat(true)
             }
         }
-    }, [open, initialData, defaultType, incomes])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, initialData, defaultType]) // Removed 'incomes' to prevent form reset on context updates
 
     // Auto-generate document number when type or date changes (only in Add mode)
     useEffect(() => {
