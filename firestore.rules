@@ -14,15 +14,17 @@ service cloud.firestore {
     }
     
     function isOrgMember(orgId) {
-      // Reverted to verbose, explicit checks for maximum safety
-      return isAuthenticated() && (
-        // 1. Check User Profile
+      return isAuthenticated() && orgId != null && (
+        // 1. Check if user is the Owner of the organization
+        (exists(/databases/$(database)/documents/organizations/$(orgId)) && 
+         get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid) ||
+        // 2. Check User Profile for membership (cached/fast)
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
           ('orgIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgIds) || 
           ('teamIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamIds) ||
           ('organizationIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.organizationIds)
         )) ||
-        // 2. Check Organization Doc
+        // 3. Check Organization doc for membership (fallback/robust)
         (exists(/databases/$(database)/documents/organizations/$(orgId)) && 
          'memberIds' in get(/databases/$(database)/documents/organizations/$(orgId)).data && 
          request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.memberIds)
@@ -30,16 +32,27 @@ service cloud.firestore {
     }
     
     function isOrgOwner(orgId) {
-      let orgPath = /databases/$(database)/documents/organizations/$(orgId);
-      return isAuthenticated() && exists(orgPath) && get(orgPath).data.get('ownerId', '') == request.auth.uid;
+      return isAuthenticated() && orgId != null &&
+             exists(/databases/$(database)/documents/organizations/$(orgId)) && 
+             get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid;
     }
 
     function resourceBelongsToUserOrg() {
-      return isAuthenticated() && isOrgMember(resource.data.orgId || resource.data.organizationId);
+      // CEL FIX: Use proper existence checks instead of || on strings
+      return isAuthenticated() && (
+        ('orgId' in resource.data && isOrgMember(resource.data.orgId)) ||
+        ('organizationId' in resource.data && isOrgMember(resource.data.organizationId)) ||
+        ('orgID' in resource.data && isOrgMember(resource.data.orgID))
+      );
     }
 
     function requestBelongsToUserOrg() {
-      return isAuthenticated() && isOrgMember(request.resource.data.orgId || request.resource.data.organizationId);
+      // CEL FIX: Same for request data
+      return isAuthenticated() && (
+        ('orgId' in request.resource.data && isOrgMember(request.resource.data.orgId)) ||
+        ('organizationId' in request.resource.data && isOrgMember(request.resource.data.organizationId)) ||
+        ('orgID' in request.resource.data && isOrgMember(request.resource.data.orgID))
+      );
     }
 
     // --- Public Access Rules (Preview & Onboarding) ---
