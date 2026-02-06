@@ -1291,19 +1291,20 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     cachedFiles
                 ] = await Promise.all([
                     get(`projects_${currentTeam.id}`),
-                    get(`expenses_${currentTeam.id}`),
-                    get(`workers_${currentTeam.id}`),
-                    get(`vendors_${currentTeam.id}`),
-                    get(`customers_${currentTeam.id}`),
-                    get(`incomes_${currentTeam.id}`),
-                    get(`contracts_${currentTeam.id}`),
-                    Promise.resolve(null), // Placeholder for removed tasks cache
-                    get(`users_${currentTeam.id}`),
-                    get(`files_${currentTeam.id}`)
+                    Promise.resolve(null), // expenses
+                    Promise.resolve(null), // workers
+                    Promise.resolve(null), // vendors
+                    Promise.resolve(null), // customers
+                    Promise.resolve(null), // incomes
+                    Promise.resolve(null), // contracts
+                    Promise.resolve(null), // tasks
+                    Promise.resolve(null), // users
+                    Promise.resolve(null)  // files
                 ])
 
                 // Only set state if snapshot hasn't loaded yet
                 if (cachedProjects && !snapshotLoaded.projects) { setProjects(cachedProjects); if (cachedProjects.length > 0) setIsLoading(false); }
+                /** MANUAL CACHE REMOVED FOR SYSTEM-WIDE CONSISTENCY
                 if (cachedExpenses && !snapshotLoaded.expenses) setExpenses(cachedExpenses)
                 if (cachedWorkers && !snapshotLoaded.workers) setWorkers(cachedWorkers)
                 if (cachedVendors && !snapshotLoaded.vendors) setVendors(cachedVendors)
@@ -1313,9 +1314,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                     setIncomesLoading(false)
                 }
                 if (cachedContracts && !snapshotLoaded.contracts) setContracts(cachedContracts)
-                // if (cachedTasks && !snapshotLoaded.tasks) setTasks(cachedTasks) // REMOVED: Conflict with Firestore Persistence
                 if (cachedUsers && !snapshotLoaded.users) setUsers(cachedUsers)
                 if (cachedFiles && !snapshotLoaded.files) setFiles(cachedFiles)
+                */
 
             } catch (error) {
                 console.warn("Cache hydration failed:", error)
@@ -1330,7 +1331,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             snapshotLoaded.projects = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Project))
             setProjects(data)
-            set(`projects_${currentTeam.id}`, data)
+            // set(`projects_${currentTeam.id}`, data) // REMOVED
             setIsLoading(false)
         }, (error) => {
             console.error("Project sync error:", error)
@@ -1343,7 +1344,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             snapshotLoaded.expenses = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
             setExpenses(data)
-            set(`expenses_${currentTeam.id}`, data)
+            // set(`expenses_${currentTeam.id}`, data) // REMOVED
         }, (error) => console.error("Expense sync error:", error))
 
         // 3. Workers
@@ -1352,7 +1353,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             snapshotLoaded.workers = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Worker))
             setWorkers(data)
-            set(`workers_${currentTeam.id}`, data)
+            // set(`workers_${currentTeam.id}`, data) // REMOVED
         }, (error) => console.error("Worker sync error:", error))
 
         // 4. Vendors
@@ -1361,7 +1362,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             snapshotLoaded.vendors = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Vendor))
             setVendors(data)
-            set(`vendors_${currentTeam.id}`, data)
+            // set(`vendors_${currentTeam.id}`, data) // REMOVED
         }, (error) => console.error("Vendor sync error:", error))
 
         // 5. Customers
@@ -1370,7 +1371,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             snapshotLoaded.customers = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer))
             setCustomers(data)
-            set(`customers_${currentTeam.id}`, data)
+            // set(`customers_${currentTeam.id}`, data) // REMOVED
         }, (error) => console.error("Customer sync error:", error))
 
         // 6. Incomes
@@ -1379,7 +1380,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             snapshotLoaded.incomes = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
             setIncomes(data)
-            set(`incomes_${currentTeam.id}`, data)
+            // set(`incomes_${currentTeam.id}`, data) // REMOVED
             setIncomesLoading(false)
         }, (error) => {
             console.error("Income sync error:", error)
@@ -1392,7 +1393,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             snapshotLoaded.contracts = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract))
             setContracts(data)
-            set(`contracts_${currentTeam.id}`, data)
+            // set(`contracts_${currentTeam.id}`, data) // REMOVED
         }, (error) => console.error("Contract sync error:", error))
 
         // 8. Tasks
@@ -1410,7 +1411,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             snapshotLoaded.works = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as WorkItem))
             setWorks(data)
-            set(`works_${currentTeam.id}`, data)
+            // set(`works_${currentTeam.id}`, data) // REMOVED
         }, (error) => console.error("Work sync error:", error))
 
         // 9. Team Members (Merged from OrgIds and TeamIds)
@@ -1425,7 +1426,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const allUsers = [...usersFromOrgIds, ...usersFromTeamIds]
             const uniqueUsers = Array.from(new Map(allUsers.map(u => [u.id, u])).values())
             setUsers(uniqueUsers)
-            set(`users_${currentTeam.id}`, uniqueUsers)
+            // set(`users_${currentTeam.id}`, uniqueUsers) // REMOVED
         }
 
         const unsubUsersOrgIds = onSnapshot(qUsersOrgIds, (snap) => {
@@ -1446,7 +1447,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             snapshotLoaded.files = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectFile))
             setFiles(data)
-            set(`files_${currentTeam.id}`, data)
+            // set(`files_${currentTeam.id}`, data) // REMOVED
         }, (error) => console.error("File sync error:", error))
 
         return () => {
