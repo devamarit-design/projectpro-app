@@ -942,7 +942,7 @@ export default function ProjectDetailClient() {
                                         >
                                             <option value="all">{t.projects.detail.tasks.all_users}</option>
                                             {users.map(u => (
-                                                <option key={u.id} value={u.name}>{u.name}</option>
+                                                <option key={u.id} value={u.id}>{u.name}</option>
                                             ))}
                                         </select>
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">

@@ -101,7 +101,8 @@ export default function TasksPage() {
             // User Filter (Optional for all roles now)
             let matchesUser = true
             if (userFilter !== "all") {
-                matchesUser = task.assignedTo === userFilter
+                const assignees = Array.isArray(task.assignedTo) ? task.assignedTo : (task.assignedTo ? [task.assignedTo] : [])
+                matchesUser = assignees.includes(userFilter)
             }
 
             return matchesSearch && matchesProject && matchesUser
