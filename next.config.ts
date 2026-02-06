@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
   },
   // @ts-ignore
   turbopack: {},
+  // @ts-ignore
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -43,7 +44,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
     scrollRestoration: true, // Enable scroll position restoration on iOS back/swipe
-    // optimizePackageImports: ['lucide-react', 'date-fns'], // Optional: Improve tree-shaking
+    optimizePackageImports: ['lucide-react', 'date-fns', 'lodash', 'recharts'], // Optional: Improve tree-shaking
   },
 };
 

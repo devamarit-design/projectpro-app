@@ -1,8 +1,40 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read, write: if request.auth != null;
+    
+    // --- Helper Functions ---
+    
+    function isAuthenticated() {
+      return request.auth != null;
     }
+    
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isOrgMember(orgId) {
+      return isAuthenticated() && 
+             firestore.exists(/databases/(default)/documents/organizations/$(orgId)/members/$(request.auth.uid)) ||
+             (
+               // Fallback to checking user doc if member list isn't subcollection
+               firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.orgIds[orgId] == true ||
+               orgId in firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.orgIds
+             );
+    }
+    
+    // --- Rules ---
+
+    // 1. Organization Files
+    match /organizations/{orgId}/{allPaths=**} {
+      allow read, write: if isOrgMember(orgId);
+    }
+    
+    // 2. User Profile Pictures
+    match /profile_pictures/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated(); // Allow all auth users to see avatars
+      allow write: if isUser(userId);   // Only owner can upload
+    }
+    
+    // 3. Default deny all others
   }
 }

@@ -71,7 +71,14 @@ if (typeof window !== "undefined") {
                 typeof a === 'object' ? JSON.stringify(a, Object.getOwnPropertyNames(a)) : String(a)
         ).join(" ");
 
-        if (combinedStr.includes("resource-exhausted") || combinedStr.includes("Quota exceeded") || combinedStr.includes("QuotaExceededError") || combinedStr.includes("exceeded the quota")) {
+        // Only trigger for Firestore-specific quota errors, not generic browser storage errors
+        const isFirestoreQuotaError = (
+            combinedStr.includes("resource-exhausted") ||
+            (combinedStr.includes("Quota exceeded") && combinedStr.includes("firestore")) ||
+            (combinedStr.includes("QuotaExceededError") && combinedStr.includes("firebaseLocalStorage"))
+        );
+
+        if (isFirestoreQuotaError) {
             console.warn("🔥 FIRESTORE QUOTA EXCEEDED DETECTED 🔥");
             if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('firestore-quota-exceeded'));

@@ -20,7 +20,10 @@ service cloud.firestore {
 
     function isOrgMember(orgId) {
       let data = getUserData();
-      return data != null && 'orgIds' in data && orgId in data.orgIds;
+      return data != null && (
+        ('orgIds' in data && orgId in data.orgIds) ||
+        ('teamIds' in data && orgId in data.teamIds)
+      );
     }
     
     function isOrgOwner(orgId) {
@@ -47,7 +50,8 @@ service cloud.firestore {
     // --- Public Access Rules (Preview & Onboarding) ---
     
     match /invites/{inviteId} {
-       allow get, list: if true; 
+       allow get: if true; 
+       allow list: if false; // Enumeration protection
        allow create, update: if isAuthenticated() && isOrgAdminOrOwner(request.resource.data.orgId || resource.data.orgId);
     }
 
@@ -193,10 +197,14 @@ service cloud.firestore {
     }
 
     match /chat_threads/{threadId} {
-        allow read, write: if isAuthenticated();
+        allow read: if isAuthenticated() && (request.auth.uid in resource.data.participants);
+        allow create: if isAuthenticated();
+        allow update: if isAuthenticated() && (request.auth.uid in resource.data.participants);
         
         match /messages/{messageId} {
-            allow read, write: if isAuthenticated();
+            allow read, write: if isAuthenticated() && (
+               request.auth.uid in get(/databases/$(database)/documents/chat_threads/$(threadId)).data.participants
+            );
         }
     }
 
