@@ -608,6 +608,7 @@ export const removeUserFromOrg = functions
             const userData = userDoc.data()
             const updates: any = {}
 
+            // 2. Remove orgId from target user's records
             // Remove from legacy orgIds
             if (userData?.orgIds) {
                 updates.orgIds = admin.firestore.FieldValue.arrayRemove(orgId)
@@ -621,8 +622,42 @@ export const removeUserFromOrg = functions
                 }
             }
 
+            // Remove from robust mirror fields
+            if (userData?.teamIds) {
+                updates.teamIds = admin.firestore.FieldValue.arrayRemove(orgId)
+            }
+            if (userData?.organizationIds) {
+                updates.organizationIds = admin.firestore.FieldValue.arrayRemove(orgId)
+            }
+
             if (Object.keys(updates).length > 0) {
                 await userRef.update(updates)
+            }
+
+            // 3. Remove user from organization's records
+            const orgRef = db.collection('organizations').doc(orgId)
+            const orgSnap = await orgRef.get()
+
+            if (orgSnap.exists) {
+                const orgData = orgSnap.data()
+                const orgUpdates: any = {}
+
+                // Remove from memberIds (simple IDs)
+                if (orgData?.memberIds) {
+                    orgUpdates.memberIds = admin.firestore.FieldValue.arrayRemove(userId)
+                }
+
+                // Remove from members array (objects)
+                if (orgData?.members) {
+                    const newMembers = orgData.members.filter((m: any) => m.userId !== userId)
+                    if (newMembers.length !== orgData.members.length) {
+                        orgUpdates.members = newMembers
+                    }
+                }
+
+                if (Object.keys(orgUpdates).length > 0) {
+                    await orgRef.update(orgUpdates)
+                }
             }
 
             return { success: true }
