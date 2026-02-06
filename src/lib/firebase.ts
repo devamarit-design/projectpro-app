@@ -29,6 +29,7 @@ let firestoreInstance;
 try {
     firestoreInstance = initializeFirestore(app, {
         localCache: memoryLocalCache(),
+        experimentalForceLongPolling: true,
     });
 } catch (e) {
     console.error("Firestore initialization failed, falling back to getFirestore", e);

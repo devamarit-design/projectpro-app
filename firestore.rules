@@ -13,18 +13,22 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     function isOrgMember(orgId) {
       return isAuthenticated() && orgId != null && (
-        // 1. Check if user is the Owner of the organization
+        // 1. Check if user is the Owner of the organization (Direct check in Org doc)
         (exists(/databases/$(database)/documents/organizations/$(orgId)) && 
          get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid) ||
-        // 2. Check User Profile for membership (cached/fast)
+        // 2. Check User Profile (OrgIds, TeamIds, OrganizationIds)
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-          ('orgIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgIds) || 
-          ('teamIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamIds) ||
-          ('organizationIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.organizationIds)
+          orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('orgIds', []) ||
+          orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('teamIds', []) ||
+          orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('organizationIds', [])
         )) ||
-        // 3. Check Organization doc for membership (fallback/robust)
+        // 3. Fallback: Check Org doc memberIds
         (exists(/databases/$(database)/documents/organizations/$(orgId)) && 
          'memberIds' in get(/databases/$(database)/documents/organizations/$(orgId)).data && 
          request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.memberIds)

@@ -2013,13 +2013,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 if (orgSnap.exists()) {
                     const orgData = orgSnap.data()
                     const members = orgData.members || []
+                    const memberIds = orgData.memberIds || []
+
                     if (!members.find((m: any) => m.userId === existingUserDoc.id)) {
                         await updateDoc(orgRef, {
                             members: [...members, {
                                 userId: existingUserDoc.id,
                                 role: userData.role || "Staff",
                                 joinedAt: new Date().toISOString()
-                            }]
+                            }],
+                            memberIds: Array.from(new Set([...memberIds, existingUserDoc.id]))
                         })
                     }
                 }
@@ -2058,12 +2061,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 if (orgSnap.exists()) {
                     const orgData = orgSnap.data()
                     const members = orgData.members || []
+                    const memberIds = orgData.memberIds || []
                     await updateDoc(orgRef, {
                         members: [...members, {
                             userId: docRef.id,
                             role: userData.role || "Staff",
                             joinedAt: new Date().toISOString()
-                        }]
+                        }],
+                        memberIds: Array.from(new Set([...memberIds, docRef.id]))
                     })
                 }
 
