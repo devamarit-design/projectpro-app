@@ -14,17 +14,18 @@ service cloud.firestore {
     }
     
     function isOrgMember(orgId) {
-      let userId = request.auth.uid;
-      let userPath = /databases/$(database)/documents/users/$(userId);
-      let orgPath = /databases/$(database)/documents/organizations/$(orgId);
-      
+      // Reverted to verbose, explicit checks for maximum safety
       return isAuthenticated() && (
-        (exists(userPath) && (
-          orgId in get(userPath).data.get('orgIds', []) || 
-          orgId in get(userPath).data.get('teamIds', []) ||
-          orgId in get(userPath).data.get('organizationIds', [])
+        // 1. Check User Profile
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+          ('orgIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgIds) || 
+          ('teamIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamIds) ||
+          ('organizationIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data && orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.organizationIds)
         )) ||
-        (exists(orgPath) && request.auth.uid in get(orgPath).data.get('memberIds', []))
+        // 2. Check Organization Doc
+        (exists(/databases/$(database)/documents/organizations/$(orgId)) && 
+         'memberIds' in get(/databases/$(database)/documents/organizations/$(orgId)).data && 
+         request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.memberIds)
       );
     }
     
