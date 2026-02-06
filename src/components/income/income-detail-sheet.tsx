@@ -314,7 +314,7 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
 
             {/* Delete Confirmation Dialog */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center">
                     <div
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         onClick={() => setShowDeleteConfirm(false)}

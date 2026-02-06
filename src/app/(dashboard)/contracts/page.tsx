@@ -4,16 +4,17 @@ import { useState } from "react"
 import { useProjects, Contract } from "@/context/project-context"
 import { AddContractDialog } from "@/components/contracts/add-contract-dialog"
 import { ContractPreviewDialog } from "@/components/contracts/contract-preview-dialog"
-import { FileText, Printer, CheckCircle, Plus, ChevronDown, ChevronUp, Edit } from "lucide-react"
+import { FileText, Printer, CheckCircle, Plus, ChevronDown, ChevronUp, Edit, Trash2 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
 
 export default function ContractsPage() {
-    const { contracts, projects, workers, payInstallment } = useProjects()
+    const { contracts, projects, workers, payInstallment, deleteContract } = useProjects()
     const { t } = useTranslation()
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [previewContract, setPreviewContract] = useState<Contract | null>(null)
     const [editingContract, setEditingContract] = useState<Contract | undefined>(undefined)
     const [expandedContract, setExpandedContract] = useState<string | null>(null)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
 
     const toggleExpand = (id: string) => {
         setExpandedContract(expandedContract === id ? null : id)
@@ -44,6 +45,43 @@ export default function ContractsPage() {
                     onClose={() => setPreviewContract(null)}
                     onEdit={() => handleEdit(previewContract)}
                 />
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(null)} />
+                    <div className="relative bg-card border border-border p-6 rounded-2xl w-full max-w-sm space-y-4 shadow-2xl animate-in zoom-in-95">
+                        <div className="text-center space-y-2">
+                            <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <Trash2 className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-lg font-bold">{t.common?.delete || "Delete"}?</h3>
+                            <p className="text-muted-foreground text-sm">
+                                {t.common?.confirm_delete || "Are you sure you want to delete this contract?"}
+                            </p>
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => setShowDeleteConfirm(null)}
+                                className="flex-1 py-2.5 rounded-xl font-medium hover:bg-muted transition-colors"
+                            >
+                                {t.common?.cancel || "Cancel"}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (showDeleteConfirm) {
+                                        deleteContract(showDeleteConfirm)
+                                        setShowDeleteConfirm(null)
+                                    }
+                                }}
+                                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-500/20"
+                            >
+                                {t.common?.remove || "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             <div className="flex items-center justify-between">
@@ -99,6 +137,13 @@ export default function ContractsPage() {
                                         title={t.contracts.print_preview}
                                     >
                                         <Printer className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(contract.id) }}
+                                        className="p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-full transition-colors"
+                                        title={t.common?.delete || "Delete"}
+                                    >
+                                        <Trash2 className="w-4 h-4" />
                                     </button>
                                     {isExpanded ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
                                 </div>
