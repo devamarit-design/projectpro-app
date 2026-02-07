@@ -7,6 +7,7 @@ import { useTranslation } from "@/lib/i18n-context"
 import { useProjects } from "@/context/project-context"
 import { format } from "date-fns"
 import { th } from "date-fns/locale"
+import { toast } from "sonner"
 
 interface CalendarEvent {
     id: string
@@ -23,7 +24,7 @@ interface CalendarEvent {
         projectName?: string
         priority?: string
         status?: string
-        assignedTo?: string
+        assignedTo?: string | string[]
         amount?: number
         contractTitle?: string
         workerId?: string
@@ -34,15 +35,17 @@ interface CalendarEvent {
 interface CalendarEventSheetProps {
     event: CalendarEvent | null
     onClose: () => void
-    onEdit?: (task: any) => void
+    onEdit: (task: any) => void
 }
 
 export function CalendarEventSheet({ event, onClose, onEdit }: CalendarEventSheetProps) {
     const { t, locale } = useTranslation()
-    const { users, workers, deleteTask, updateTask } = useProjects()
+    const { projects, users, workers, deleteProject, deleteTask, updateTask, deleteContract, payInstallment } = useProjects()
 
     // Local state for immediate UI update
     const [localStatus, setLocalStatus] = React.useState(event?.extendedProps?.status || "Todo")
+    const [isDeleting, setIsDeleting] = React.useState(false)
+    const [isPaying, setIsPaying] = React.useState(false)
 
     // Sync local state when event changes
     React.useEffect(() => {
@@ -53,11 +56,14 @@ export function CalendarEventSheet({ event, onClose, onEdit }: CalendarEventShee
 
     if (!event) return null
 
-    // ... (keep existing helper functions)
-    const getAssigneeName = (assignedTo?: string) => {
+    // Helper to get assignee names
+    const getAssigneeName = (assignedTo?: string | string[]) => {
         if (!assignedTo) return locale === "th" ? "ไม่ได้มอบหมาย" : "Unassigned"
-        const user = users.find(u => u.id === assignedTo)
-        return user?.name || assignedTo
+
+        const ids = Array.isArray(assignedTo) ? assignedTo : [assignedTo]
+        const names = ids.map(id => users.find(u => u.id === id)?.name || id)
+
+        return names.join(", ")
     }
 
     const getWorkerName = (workerId?: string) => {
@@ -85,7 +91,7 @@ export function CalendarEventSheet({ event, onClose, onEdit }: CalendarEventShee
 
         const taskId = event.id.replace("task-", "")
         if (confirm("Are you sure you want to delete this task?")) {
-            deleteTask(event.extendedProps.projectId, taskId)
+            deleteTask(taskId)
             onClose()
         }
     }
@@ -207,7 +213,7 @@ export function CalendarEventSheet({ event, onClose, onEdit }: CalendarEventShee
                                         setLocalStatus(newStatus) // Update UI immediately
                                         const taskId = event.id.replace("task-", "")
                                         if (event.extendedProps.projectId) {
-                                            updateTask(event.extendedProps.projectId, taskId, { status: newStatus as any })
+                                            updateTask(taskId, { status: newStatus as any })
                                         }
                                     }}
                                     className={cn(

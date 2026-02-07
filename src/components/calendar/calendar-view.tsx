@@ -33,7 +33,7 @@ interface CalendarEvent {
         projectName?: string
         priority?: string
         status?: string
-        assignedTo?: string
+        assignedTo?: string | string[]
         amount?: number
         contractTitle?: string
         workerId?: string
@@ -47,7 +47,7 @@ export function CalendarView() {
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
     const [projectFilter, setProjectFilter] = useState<string>("all")
     const [typeFilter, setTypeFilter] = useState<string>("all")
-    const [groupBy, setGroupBy] = useState<"project" | "type" | "assignee">("project")
+    const [groupBy, setGroupBy] = useState<"project" | "type" | "assignee">("type")
     const calendarRef = useRef<FullCalendar>(null)
     const [isMobile, setIsMobile] = useState(false)
     const [isFiltersOpen, setIsFiltersOpen] = useState(true)
@@ -82,7 +82,13 @@ export function CalendarView() {
             return type === 'task' ? '#3b82f6' : '#f59e0b' // Blue for Task, Amber for Installment
         }
         if (groupBy === 'assignee') {
-            const assigneeId = type === 'task' ? item.assignedTo : item.workerId
+            let assigneeId = type === 'task' ? item.assignedTo : item.workerId
+
+            // Handle array assignees (take first one)
+            if (Array.isArray(assigneeId)) {
+                assigneeId = assigneeId[0]
+            }
+
             if (!assigneeId) return '#9ca3af' // Gray for unassigned
             // Generate distinct color from ID string
             let hash = 0;
@@ -139,7 +145,7 @@ export function CalendarView() {
                     projectName: project?.name,
                     priority: task.priority,
                     status: task.status,
-                    assignedTo: Array.isArray(task.assignedTo) ? task.assignedTo.join(',') : task.assignedTo,
+                    assignedTo: task.assignedTo, // Pass raw (string | string[])
                     description: task.description, // Pass description
                 },
             })
