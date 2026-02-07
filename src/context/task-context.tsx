@@ -49,6 +49,9 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
 
                 snapshot.docChanges().forEach((change) => {
                     const data = { ...change.doc.data(), id: change.doc.id } as ProjectTask
+                    if (change.type === "added") {
+                        console.log(`[TaskContext] ➕ Task Added via Snapshot: ${data.id} (${data.title})`)
+                    }
                     if (change.type === "added" || change.type === "modified") {
                         // Support optimistic replacement: check by ID or (temp-ID and title match)
                         const index = updatedTasks.findIndex(t => t.id === data.id || (t.id.startsWith("temp-") && t.title === data.title))
@@ -116,7 +119,10 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
             Object.keys(payload).forEach(key => {
                 if ((payload as any)[key] === undefined) delete (payload as any)[key]
             })
+
+            console.log(`[TaskContext] 🚀 Attempting to add task to Firestore:`, payload)
             const docRef = await addDoc(collection(db, "tasks"), payload)
+            console.log(`[TaskContext] ✅ Task written to Firestore with ID: ${docRef.id}`)
 
             // Asynchronous logging
             logActivity(db, currentTeam.id, {
@@ -134,7 +140,7 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
             })
             return docRef.id
         } catch (e) {
-            console.error("Error adding task", e)
+            console.error("[TaskContext] ❌ Error adding task to Firestore:", e)
             setTasks(prev => prev.filter(t => t.id !== tempId)) // Rollback
             return undefined
         }
