@@ -7,6 +7,12 @@ export function VersionUpdater() {
     useEffect(() => {
         const checkVersion = async () => {
             try {
+                // 0. Skip in development
+                if (process.env.NODE_ENV === 'development') {
+                    console.log("[VersionCheck] Skipped in development mode")
+                    return
+                }
+
                 // 1. Get client version (from build time env)
                 const clientVersion = process.env.NEXT_PUBLIC_APP_VERSION
 
