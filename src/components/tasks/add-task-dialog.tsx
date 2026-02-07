@@ -210,6 +210,8 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
         let finalProjectId = selectedProjectId
         let finalSubProjectId = selectedSubProjectId
 
+        console.log("[AddTaskDialog] 🟢 Submit clicked. Data:", { title, selectedProjectId, isQuickAddProject })
+
         try {
             // 1. Handle Quick Add Project
             if (isQuickAddProject && newProjectName) {
@@ -291,13 +293,16 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                     images: finalImages
                 }
 
+                console.log("[AddTaskDialog] 🚀 Calling addTask/updateTask...", commonData)
+
                 if (taskToEdit) {
                     updateTask(taskToEdit.projectId, taskToEdit.id, {
                         ...commonData,
                         projectId: finalProjectId || taskToEdit.projectId,
                     })
                 } else {
-                    addTask(finalProjectId, commonData)
+                    const result = await addTask(finalProjectId, commonData)
+                    console.log("[AddTaskDialog] ✅ addTask returned:", result)
                 }
             }
 
