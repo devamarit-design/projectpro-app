@@ -34,12 +34,23 @@ function UserDetailContent() {
     // Tabs
     const [activeTab, setActiveTab] = useState<'overview' | 'timeline'>('overview')
 
-    // 1. Find User
+    // 1. Find User & Inject Context-Aware Role
     const user = useMemo(() => {
         if (!userId) return null
-        if (currentUser?.id === userId) return currentUser
-        return users.find(u => u.id === userId)
-    }, [userId, users, currentUser])
+        let foundUser = currentUser?.id === userId ? currentUser : users.find(u => u.id === userId)
+
+        if (foundUser && currentTeam) {
+            // Derive Role from Organization Data
+            const orgData = foundUser.organizations?.find(o => (typeof o === 'string' ? o : o.orgId) === currentTeam.id)
+            const contextRole = orgData && typeof orgData !== 'string' ? orgData.role : null
+
+            // Override role if we found a specific one for this team
+            if (contextRole) {
+                return { ...foundUser, role: contextRole }
+            }
+        }
+        return foundUser
+    }, [userId, users, currentUser, currentTeam])
 
     // 2. Permission Check (Optional - redirect if not allowed)
     useEffect(() => {
@@ -114,7 +125,12 @@ function UserDetailContent() {
     const stats = useMemo(() => {
         if (!user) return { completedTasks: 0, activeProjects: 0, totalExpenses: "฿0" }
 
-        const userTasks = tasks.filter(t => t.assignedTo === user.id || t.assignedTo === user.name)
+        const userTasks = tasks.filter(t => {
+            if (Array.isArray(t.assignedTo)) {
+                return t.assignedTo.includes(user.id)
+            }
+            return t.assignedTo === user.id
+        })
         const completed = userTasks.filter(t => t.status === 'Done').length
 
         const userExpenses = expenses.filter(e => e.paidBy === user.name || e.paidBy === user.id)

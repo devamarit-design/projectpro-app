@@ -356,6 +356,9 @@ interface CoreProjectContextType {
 
     // Master Data
     users: User[]
+    addUser: (userData: Omit<User, "id" | "joinedDate" | "status" | "orgIds">) => Promise<void>
+    updateUser: (id: string, updates: Partial<User>) => Promise<void>
+    deleteUser: (id: string) => Promise<void>
 
     // File Management
     files: ProjectFile[]
@@ -854,8 +857,12 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
     const currentTeam: Team | null = React.useMemo(() => {
         if (!currentOrg || !currentUser) return null
 
+        // Prioritize role from real-time user profile
+        const userOrgData = currentUser.organizations?.find(o => (typeof o === 'string' ? o : o.orgId) === currentOrg.id)
+        const userRole = userOrgData && typeof userOrgData !== 'string' ? userOrgData.role : null
+
         const member = currentOrg.members?.find(m => m.userId === currentUser.id)
-        const role = currentOrg.ownerId === currentUser.id ? "Owner" : (member?.role || "Staff")
+        const role = (currentOrg.ownerId === currentUser.id ? "Owner" : (userRole || member?.role || "Staff")) as "Owner" | "Admin" | "Manager" | "Accountant" | "Staff"
 
         return {
             id: currentOrg.id,
@@ -878,8 +885,12 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
     const teams: Team[] = React.useMemo(() => {
         if (!currentUser) return []
         return userOrgs.map(org => {
+            // Prioritize role from real-time user profile
+            const userOrgData = currentUser.organizations?.find(o => (typeof o === 'string' ? o : o.orgId) === org.id)
+            const userRole = userOrgData && typeof userOrgData !== 'string' ? userOrgData.role : null
+
             const member = org.members?.find(m => m.userId === currentUser.id)
-            const role = org.ownerId === currentUser.id ? "Owner" : (member?.role || "Staff")
+            const role = (org.ownerId === currentUser.id ? "Owner" : (userRole || member?.role || "Staff")) as "Owner" | "Admin" | "Manager" | "Accountant" | "Staff"
 
             return {
                 id: org.id,
@@ -1801,6 +1812,9 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
         deleteSubProject,
 
         users: users.filter(u => u.orgIds?.includes(currentTeam?.id || '')),
+        addUser,
+        updateUser,
+        deleteUser,
 
         companyProfile,
         updateCompanyProfile,
