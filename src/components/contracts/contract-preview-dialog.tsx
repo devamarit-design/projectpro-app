@@ -28,7 +28,7 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
 
     // Editing State
     const [formData, setFormData] = useState({
-        contractNumber: contract.id,
+        contractNumber: contract.documentNumber || contract.id,
         date: new Date().toISOString(),
         projectName: project?.name || '',
         workerName: worker?.name || '',
@@ -65,7 +65,7 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
     useEffect(() => {
         if (isOpen) {
             setFormData({
-                contractNumber: contract.id,
+                contractNumber: contract.documentNumber || contract.id,
                 date: new Date().toISOString(),
                 projectName: project?.name || '',
                 workerName: worker?.name || '',
@@ -96,13 +96,6 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
 4. หากงานล่าช้ากว่าที่กำหนด ผู้รับจ้างตกลงให้ปรับเป็นเงินรายวัน วันละ 500 บาท จนกว่างานจะแล้วเสร็จ`,
                 paymentSummary: "บริษัทฯ จะดำเนินการจ่ายเงินภายใน 5 วันทำการ หลังจากได้รับการรับมอบงานและตรวจความเรียบร้อยครบถ้วน"
             })
-
-            // Generate Contract Format: CT-yymmdd-no
-            const date = new Date()
-            const yymmdd = date.toISOString().slice(2, 10).replace(/-/g, '')
-            if (contract.id.length > 20) { // Assuming long ID means UUID
-                setFormData(prev => ({ ...prev, contractNumber: `CT-${yymmdd}-01` }))
-            }
 
             // Auto scale on open
             handleAutoSize()

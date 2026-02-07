@@ -267,8 +267,31 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
     const addContract = useCallback(async (contract: Omit<Contract, "id" | "createdAt" | "status">) => {
         if (!currentTeam) return
         try {
+            // Generate Document Number: CD-yymmdd-seq
+            // Use Thai timezone (UTC+7)
+            const now = new Date()
+            const thaiDate = new Date(now.getTime() + (7 * 60 * 60 * 1000))
+            const yymmdd = thaiDate.toISOString().slice(2, 10).replace(/-/g, '')
+
+            // Find existing contracts from today to determine sequence
+            const todaysContracts = contracts.filter(c =>
+                c.documentNumber && c.documentNumber.startsWith(`CD-${yymmdd}-`)
+            )
+
+            let seq = 1
+            if (todaysContracts.length > 0) {
+                const lastSeq = Math.max(...todaysContracts.map(c => {
+                    const parts = c.documentNumber?.split('-')
+                    return parts ? parseInt(parts[2]) : 0
+                }))
+                seq = lastSeq + 1
+            }
+
+            const documentNumber = `CD-${yymmdd}-${seq.toString().padStart(2, '0')}`
+
             const docRef = await addDoc(collection(db, "contracts"), {
                 ...contract,
+                documentNumber,
                 createdAt: new Date().toISOString(),
                 status: "Active",
                 orgId: currentTeam.id
@@ -278,8 +301,8 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
                 action: "CREATE",
                 entityType: "CONTRACT",
                 entityId: docRef.id,
-                entityTitle: contract.title,
-                details: `Created contract with total amount: ${contract.totalAmount}`,
+                entityTitle: `${documentNumber} - ${contract.title}`,
+                details: `Created contract ${documentNumber} with total amount: ${contract.totalAmount}`,
                 performedBy: {
                     uid: currentUser?.id || "unknown",
                     name: currentUser?.name || "Unknown",
@@ -288,7 +311,7 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
                 relatedUserIds: [contract.workerId]
             })
         } catch (e) { console.error(e) }
-    }, [currentTeam, currentUser])
+    }, [currentTeam, currentUser, contracts])
 
     const updateContract = useCallback(async (id: string, updates: Partial<Contract>) => {
         try { await updateDoc(doc(db, "contracts", id), { ...updates, updatedAt: new Date().toISOString() }) } catch (e) { console.error(e) }

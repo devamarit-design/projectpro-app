@@ -314,6 +314,7 @@ export interface ContractInstallment {
 
 export interface Contract {
     id: string
+    documentNumber?: string
     projectId: string
     workerId: string
     title: string
