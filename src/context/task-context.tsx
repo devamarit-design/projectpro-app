@@ -30,52 +30,50 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
     const [works, setWorks] = useState<WorkItem[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
-    // 1. Unified Task Listener (Active & Archived) - Handles Legacy Data
+    // 1. Active Tasks Listener
     useEffect(() => {
         if (!currentTeam?.id) return
         setIsLoading(true)
 
-        console.log(`[TaskContext] 🟢 Initializing Task Listener for Org: ${currentTeam.id}`)
+        console.log(`[TaskContext] 🟢 Initializing ACTIVE Listener for Org: ${currentTeam.id}`)
 
         const q = query(
             collection(db, "tasks"),
-            where("orgId", "==", currentTeam.id)
+            where("orgId", "==", currentTeam.id),
+            where("isArchived", "==", false)
         )
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            console.log(`[TaskContext] 📦 Snapshot received. Docs: ${snapshot.docs.length}. FromCache: ${snapshot.metadata.fromCache}`)
-            setTasks(prevTasks => {
-                let updatedTasks = [...prevTasks]
+            console.log(`[TaskContext] 📦 ACTIVE Snapshot. Docs: ${snapshot.docs.length}. FromCache: ${snapshot.metadata.fromCache}`)
 
-                snapshot.docChanges().forEach((change) => {
-                    const data = { ...change.doc.data(), id: change.doc.id } as ProjectTask
-                    if (change.type === "added") {
-                        console.log(`[TaskContext] ➕ Task Added via Snapshot: ${data.id} (${data.title})`)
-                    }
-                    if (change.type === "added" || change.type === "modified") {
-                        // Support optimistic replacement: check by ID or (temp-ID and title match)
-                        const index = updatedTasks.findIndex(t => t.id === data.id || (t.id.startsWith("temp-") && t.title === data.title))
-                        if (index > -1) updatedTasks[index] = data
-                        else updatedTasks.unshift(data)
-                    }
-                    if (change.type === "removed") {
-                        updatedTasks = updatedTasks.filter(t => t.id !== data.id)
-                    }
-                })
+            const activeTasks = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ProjectTask))
 
-                // FILTER IN MEMORY: Legacy tasks (no isArchived field) are treated as NOT archived
-                const active = updatedTasks.filter(t => t.isArchived !== true)
-                const archived = updatedTasks.filter(t => t.isArchived === true)
-
-                // Update archived tasks state (indirectly via dedicated state or just derive)
-                setArchivedTasks(archived.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
-
-                return active.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-            })
+            // Sort by createdAt desc
+            setTasks(activeTasks.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
             setIsLoading(false)
         }, (error) => {
-            console.error(`[TaskContext] 🔴 Snapshot Error for org ${currentTeam.id}:`, error)
+            console.error(`[TaskContext] 🔴 ACTIVE Snapshot Error:`, error)
             setIsLoading(false)
+        })
+
+        return () => unsubscribe()
+    }, [currentTeam?.id])
+
+    // 2. Archived Tasks Listener
+    useEffect(() => {
+        if (!currentTeam?.id) return
+
+        const q = query(
+            collection(db, "tasks"),
+            where("orgId", "==", currentTeam.id),
+            where("isArchived", "==", true)
+        )
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const archived = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ProjectTask))
+            setArchivedTasks(archived.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
+        }, (error) => {
+            console.error(`[TaskContext] 🔴 ARCHIVED Snapshot Error:`, error)
         })
 
         return () => unsubscribe()
