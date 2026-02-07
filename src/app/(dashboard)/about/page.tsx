@@ -2,9 +2,18 @@
 
 import { useTranslation } from "@/lib/i18n-context"
 import { Info, ShieldCheck, Github, Globe, Mail } from "lucide-react"
+import { useState, useEffect } from "react"
 
 export default function AboutPage() {
     const { t } = useTranslation()
+    const [version, setVersion] = useState("1.0.9(a)")
+
+    useEffect(() => {
+        fetch('/api/system/version')
+            .then(res => res.json())
+            .then(data => setVersion(data.version))
+            .catch(err => console.error("Failed to fetch version:", err))
+    }, [])
 
     return (
         <div className="max-w-3xl mx-auto space-y-8 pb-20">
@@ -21,7 +30,7 @@ export default function AboutPage() {
             <div className="glass-card p-8 rounded-3xl border border-white/5 space-y-6">
                 <div>
                     <h2 className="text-xl font-bold mb-2">{t.about.version}</h2>
-                    <p className="text-muted-foreground">1.0.9(a)</p>
+                    <p className="text-muted-foreground">{version}</p>
                 </div>
 
                 <div className="h-px bg-white/5" />

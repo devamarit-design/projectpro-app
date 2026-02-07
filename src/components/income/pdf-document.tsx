@@ -148,6 +148,7 @@ interface PDFDocumentProps {
     orgProfile?: OrgProfile
     template?: 'modern' | 'classic' | 'minimal'
     showLogo?: boolean
+    receiptType?: 'receipt' | 'tax'
 }
 
 // Helper to ensure color is valid hex
@@ -211,11 +212,20 @@ const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3b82f6', lang = 'th', manualPageBreaks = [], columns, orgProfile, template = 'modern', showLogo = true }: PDFDocumentProps) => {
+export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3b82f6', lang = 'th', manualPageBreaks = [], columns, orgProfile, template = 'modern', showLogo = true, receiptType = 'receipt' }: PDFDocumentProps) => {
     const labels = LABELS[lang]
     // Map document type to label key safely
     const docTypeLower = doc.type.toLowerCase() as keyof typeof labels
-    const docTitle = labels[docTypeLower] || doc.type.toUpperCase()
+    let docTitle = labels[docTypeLower] || doc.type.toUpperCase()
+
+    // Override Receipt title if needed
+    if (doc.type.toLowerCase() === 'receipt') {
+        if (receiptType === 'tax') {
+            docTitle = lang === 'th' ? "ใบเสร็จรับเงิน / ใบกำกับภาษี" : "TAX INVOICE / RECEIPT"
+        } else {
+            docTitle = lang === 'th' ? "ใบเสร็จรับเงิน" : "RECEIPT"
+        }
+    }
 
     const subtotal = doc.subtotal
     const vat = doc.tax

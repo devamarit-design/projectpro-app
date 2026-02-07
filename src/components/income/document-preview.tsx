@@ -34,6 +34,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
     const [isCutMode, setIsCutMode] = useState(false)
     const [isEditMode, setIsEditMode] = useState(false)
     const [template, setTemplate] = useState<"modern" | "classic" | "minimal">(document.template || "modern")
+    const [receiptType, setReceiptType] = useState<'receipt' | 'tax'>(document.tax > 0 ? 'tax' : 'receipt')
 
     // Auto-adjust zoom for mobile screens
     useEffect(() => {
@@ -107,7 +108,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
             docTypes: {
                 Quotation: "QUOTATION",
                 Invoice: "INVOICE",
-                Receipt: "RECEIPT"
+                Receipt: receiptType === 'tax' ? "TAX INVOICE / RECEIPT" : "RECEIPT"
             },
             cont: "Cont.",
             download: "Download",
@@ -137,7 +138,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
             docTypes: {
                 Quotation: "ใบเสนอราคา",
                 Invoice: "ใบวางบิล",
-                Receipt: "ใบเสร็จรับเงิน"
+                Receipt: receiptType === 'tax' ? "ใบเสร็จรับเงิน / ใบกำกับภาษี" : "ใบเสร็จรับเงิน"
             },
             cont: "ต่อ",
             download: "ดาวน์โหลด",
@@ -356,7 +357,8 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                 orgProfile: processedOrgProfile,
                 columns: visibleColumns,
                 template: template,
-                showLogo: showLogo
+                showLogo: showLogo,
+                receiptType: receiptType
             })
 
         } catch (error) {
@@ -616,6 +618,25 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                 EN
                             </button>
                         </div>
+
+                        {/* Receipt Type Toggle (Only for Receipts) */}
+                        {document.type.toLowerCase() === 'receipt' && (
+                            <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg">
+                                <button
+                                    onClick={() => setReceiptType('receipt')}
+                                    className={cn("px-2 py-1 text-xs font-medium rounded-md transition-all", receiptType === 'receipt' ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    {lang === 'th' ? "ใบเสร็จ" : "Receipt"}
+                                </button>
+                                <div className="h-4 w-px bg-white/10" />
+                                <button
+                                    onClick={() => setReceiptType('tax')}
+                                    className={cn("px-2 py-1 text-xs font-medium rounded-md transition-all", receiptType === 'tax' ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground")}
+                                >
+                                    {lang === 'th' ? "ใบกำกับภาษี" : "Tax Invoice"}
+                                </button>
+                            </div>
+                        )}
 
                         {/* Theme Colors */}
                         <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg">
