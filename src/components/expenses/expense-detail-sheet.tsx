@@ -13,12 +13,12 @@ interface ExpenseDetailSheetProps {
 }
 
 export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetailSheetProps) {
-    const { expenses, archivedExpenses, updateExpense, deleteExpense, projects, users, vendors, archiveExpense, unarchiveExpense } = useProjects()
+    const { expenses, updateExpense, deleteExpense, projects, users, vendors, archiveExpense, unarchiveExpense } = useProjects()
 
     // Find the expense
     const expense = React.useMemo(() =>
-        expenses.find(e => e.id === expenseId) || archivedExpenses.find(e => e.id === expenseId),
-        [expenses, archivedExpenses, expenseId])
+        expenses.find(e => e.id === expenseId),
+        [expenses, expenseId])
 
     const [isEditing, setIsEditing] = React.useState(false)
     const [isImageOpen, setIsImageOpen] = React.useState(false)
