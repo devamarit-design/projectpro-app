@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase"
 import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, Timestamp, getDocs } from "firebase/firestore"
 import { useOrganization } from "@/context/organization-context"
 import { logActivity } from "@/lib/activity-logger"
-import { ProjectTask, TaskStatus, Priority, WorkItem } from "./project-context"
+import { ProjectTask, TaskStatus, Priority, WorkItem, User } from "./project-context"
 
 interface TaskContextType {
     tasks: ProjectTask[]
@@ -23,7 +23,10 @@ interface TaskContextType {
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
 
-export function TaskProvider({ children, currentUser }: { children: React.ReactNode, currentUser: any }) {
+export function TaskProvider({ children, currentUser }: { children: React.ReactNode, currentUser: User | null }) {
+    console.log("[TaskContext] 🟢 DOMAIN MOUNTED - Version 1.0.8(d)")
+
+    // 0. State
     const { currentOrg: currentTeam } = useOrganization()
     const [tasks, setTasks] = useState<ProjectTask[]>([])
     const [archivedTasks, setArchivedTasks] = useState<ProjectTask[]>([])

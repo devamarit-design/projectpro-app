@@ -81,6 +81,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  console.log("[System] Current Version: 1.0.8(d) - RootLayout Mounted")
   return (
     <html lang="th" suppressHydrationWarning>
       <body className={`${kanit.variable} font-sans antialiased overflow-x-hidden`} suppressHydrationWarning>
