@@ -43,6 +43,37 @@ const nextConfig: NextConfig = {
     scrollRestoration: true, // Enable scroll position restoration on iOS back/swipe
     optimizePackageImports: ['lucide-react', 'date-fns', 'lodash', 'recharts'], // Optional: Improve tree-shaking
   },
+  async headers() {
+    return [
+      {
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+      {
+        source: '/workbox-:hash.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+      {
+        source: '/manifest.json',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          }
+        ]
+      }
+    ]
+  },
 };
 
 export default withPWA(nextConfig);
