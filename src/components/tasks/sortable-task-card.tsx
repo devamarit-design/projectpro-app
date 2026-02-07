@@ -3,7 +3,7 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useProjects, ProjectTask, Priority, TaskStatus, User as UserType } from "@/context/project-context"
 import { cn } from "@/lib/utils"
-import { User, Clock } from "lucide-react"
+import { User, Clock, Check } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
 import { format } from "date-fns"
 
@@ -16,6 +16,7 @@ interface SortableTaskCardProps {
 
 export const SortableTaskCard = React.memo(({ task, status, onSelect, users }: SortableTaskCardProps) => {
     const { t } = useTranslation()
+    const { toggleTask } = useProjects()
 
     // Resolve assignee names (supports multi-assign array)
     const assigneeName = React.useMemo(() => {
@@ -68,7 +69,10 @@ export const SortableTaskCard = React.memo(({ task, status, onSelect, users }: S
             style={style}
             {...attributes}
             {...listeners}
-            onClick={() => onSelect(task.id)}
+            onClick={(e) => {
+                if ((e.target as HTMLElement).closest('button')) return
+                onSelect(task.id)
+            }}
             className={cn(
                 "w-full p-4 rounded-xl border border-white/10 hover:border-primary/50 bg-card/50 backdrop-blur-sm cursor-grab active:cursor-grabbing transition-all group relative overflow-hidden mb-3 shadow-sm touch-none",
                 task.isArchived && "opacity-60 grayscale bg-gray-500/5 hover:bg-gray-500/10 border-gray-500/20"
@@ -81,6 +85,21 @@ export const SortableTaskCard = React.memo(({ task, status, onSelect, users }: S
                 )}>
                     {task.priority || "Low"}
                 </span>
+                <div className="flex items-center gap-1">
+                    <button
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            toggleTask(task.id)
+                        }}
+                        className={cn(
+                            "w-5 h-5 rounded-full border flex items-center justify-center transition-all cursor-pointer z-10",
+                            task.status === 'Done' ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground/30 hover:border-primary"
+                        )}
+                    >
+                        {task.status === 'Done' && <Check className="w-3 h-3" />}
+                    </button>
+                </div>
                 {task.projectName && (
                     <span className="text-[10px] text-muted-foreground/70 truncate max-w-[100px] ml-2">
                         {task.projectName}

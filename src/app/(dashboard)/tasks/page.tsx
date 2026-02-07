@@ -70,7 +70,7 @@ export default function TasksPage() {
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
-            activationConstraint: { opacity: 0.1, distance: 5 }
+            activationConstraint: { distance: 5 }
         }),
         useSensor(TouchSensor, {
             activationConstraint: { delay: 100, tolerance: 5 }
@@ -151,7 +151,7 @@ export default function TasksPage() {
 
         if (activeTask && newStatus && activeTask.status !== newStatus) {
             // Update Task Status in Database
-            updateTask(activeTask.projectId, activeTaskId, { status: newStatus })
+            updateTask(activeTaskId, { status: newStatus })
         }
 
         setActiveId(null)
