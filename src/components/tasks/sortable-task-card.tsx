@@ -80,12 +80,18 @@ export const SortableTaskCard = React.memo(({ task, status, onSelect, users }: S
         >
             <div className="flex justify-between items-start mb-3">
                 <span className={cn(
-                    "text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide border",
+                    "text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide border shrink-0",
                     priorityColors[task.priority]
                 )}>
                     {task.priority || "Low"}
                 </span>
-                <div className="flex items-center gap-1">
+
+                <div className="flex items-center gap-2 overflow-hidden ml-2">
+                    {task.projectName && (
+                        <span className="text-[10px] text-muted-foreground/70 truncate max-w-[120px]">
+                            {task.projectName}
+                        </span>
+                    )}
                     <button
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
@@ -93,18 +99,13 @@ export const SortableTaskCard = React.memo(({ task, status, onSelect, users }: S
                             toggleTask(task.id)
                         }}
                         className={cn(
-                            "w-5 h-5 rounded-full border flex items-center justify-center transition-all cursor-pointer z-10",
+                            "w-5 h-5 rounded-full border flex items-center justify-center transition-all cursor-pointer z-10 shrink-0",
                             task.status === 'Done' ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground/30 hover:border-primary"
                         )}
                     >
                         {task.status === 'Done' && <Check className="w-3 h-3" />}
                     </button>
                 </div>
-                {task.projectName && (
-                    <span className="text-[10px] text-muted-foreground/70 truncate max-w-[100px] ml-2">
-                        {task.projectName}
-                    </span>
-                )}
             </div>
 
             <h4 className="font-semibold text-sm mb-2 group-hover:text-primary transition-colors leading-snug">{task.title}</h4>
