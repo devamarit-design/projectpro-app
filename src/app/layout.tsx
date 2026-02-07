@@ -10,6 +10,7 @@ import { SecurityProvider } from "@/context/security-context";
 import { LockScreen } from "@/components/auth/lock-screen";
 import { OrganizationProvider } from "@/context/organization-context"; // New Import
 import { ThemeSync } from "@/components/theme-sync";
+import { VersionUpdater } from "@/components/system/version-updater";
 import { FirestoreRecoverToast } from "@/components/firestore-recover-toast";
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -137,6 +138,7 @@ export default function RootLayout({
                       />
                       <LockScreen />
                       <ThemeSync />
+                      <VersionUpdater />
                       {/* <FirestoreRecoverToast /> */}
                       <Toaster
                         position="bottom-center"
