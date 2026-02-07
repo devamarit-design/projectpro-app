@@ -1,7 +1,6 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from "react"
-import { get, set } from "idb-keyval"
 import { auth, googleProvider, db } from "@/lib/firebase"
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseUser, setPersistence, browserLocalPersistence, updatePassword, deleteUser as deleteAuthUser, reauthenticateWithPopup, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth"
 import { getFunctions, httpsCallable } from "firebase/functions"
@@ -1217,7 +1216,7 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
     // Load User's Teams (Real-time) - REMOVED (Handled by OrganizationContext)
 
 
-    // --- Real-time Data Sync with Cache-First Strategy ---
+    // --- Real-time Data Sync ---
     useEffect(() => {
         if (!currentTeam?.id) {
             // If no team, clear everything
@@ -1235,63 +1234,12 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
         setUsers([])
         setFiles([])
 
-        // Create tracking flags to prevent race conditions where cache overwrites fresh snapshot data
+        // Create tracking flags to prevent update flashes
         const snapshotLoaded = {
             projects: false,
             users: false,
             files: false
         }
-
-        // 0. Cache Hydration (Load from IndexedDB immediately)
-        const hydrateFromCache = async () => {
-            try {
-                // Parallel fetch from local store
-                const [
-                    cachedProjects,
-                    cachedExpenses,
-                    cachedWorkers,
-                    cachedVendors,
-                    cachedCustomers,
-                    cachedIncomes,
-                    cachedContracts,
-                    cachedTasks,
-                    cachedUsers,
-                    cachedFiles
-                ] = await Promise.all([
-                    get(`projects_${currentTeam.id}`),
-                    Promise.resolve(null), // expenses
-                    Promise.resolve(null), // workers
-                    Promise.resolve(null), // vendors
-                    Promise.resolve(null), // customers
-                    Promise.resolve(null), // incomes
-                    Promise.resolve(null), // contracts
-                    Promise.resolve(null), // tasks
-                    Promise.resolve(null), // users
-                    Promise.resolve(null)  // files
-                ])
-
-                // Only set state if snapshot hasn't loaded yet
-                if (cachedProjects && !snapshotLoaded.projects) { setProjects(cachedProjects); if (cachedProjects.length > 0) setIsLoading(false); }
-                /** MANUAL CACHE REMOVED FOR SYSTEM-WIDE CONSISTENCY
-                if (cachedExpenses && !snapshotLoaded.expenses) setExpenses(cachedExpenses)
-                if (cachedWorkers && !snapshotLoaded.workers) setWorkers(cachedWorkers)
-                if (cachedVendors && !snapshotLoaded.vendors) setVendors(cachedVendors)
-                if (cachedCustomers && !snapshotLoaded.customers) setCustomers(cachedCustomers)
-                if (cachedIncomes && !snapshotLoaded.incomes) {
-                    setIncomes(cachedIncomes)
-                    setIncomesLoading(false)
-                }
-                if (cachedContracts && !snapshotLoaded.contracts) setContracts(cachedContracts)
-                if (cachedUsers && !snapshotLoaded.users) setUsers(cachedUsers)
-                if (cachedFiles && !snapshotLoaded.files) setFiles(cachedFiles)
-                */
-
-            } catch (error) {
-                console.warn("Cache hydration failed:", error)
-            }
-        }
-
-        hydrateFromCache()
 
         // 1. Projects
         const qProjects = query(collection(db, "projects"), where("orgId", "==", currentTeam.id))
@@ -1299,14 +1247,11 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
             snapshotLoaded.projects = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Project))
             setProjects(data)
-            // set(`projects_${currentTeam.id}`, data) // REMOVED
             setIsLoading(false)
         }, (error) => {
             console.error(`[ProjectContext] Projects sync error for org ${currentTeam.id}:`, error.code, error.message)
             setIsLoading(false)
         })
-
-        // 2-9 (Migrated to Task/Finance/Social Contexts)
 
         // 9. Team Members (Merged from OrgIds and TeamIds)
         const qUsersOrgIds = query(collection(db, "users"), where("orgIds", "array-contains", currentTeam.id))
@@ -1341,14 +1286,11 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
         }, (error) => console.error(`[ProjectContext] User Team sync error for org ${currentTeam.id}:`, error.code, error.message))
 
         // 10. Files
-
-
         const qFiles = query(collection(db, "files"), where("orgId", "==", currentTeam.id))
         const unsubFiles = onSnapshot(qFiles, (snap) => {
             snapshotLoaded.files = true
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as ProjectFile))
             setFiles(data)
-            // set(`files_${currentTeam.id}`, data) // REMOVED
         }, (error) => console.error(`[ProjectContext] Files sync error for org ${currentTeam.id}:`, error.code, error.message))
 
         return () => {
@@ -1822,13 +1764,6 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
             if (data.files) setFiles(data.files as ProjectFile[])
             if (data.users) setUsers(data.users as User[])
 
-            // Force save to disk immediately to be safe
-            await Promise.all([
-                set("projects_v2", data.projects || []),
-                set("files_v2", data.files || []),
-                set("users_v2", data.users || []),
-                set("companyProfile_v2", data.companyProfile || INITIAL_COMPANY_PROFILE),
-            ])
             return true
         } catch (e) {
             console.error("Restore failed", e)
