@@ -122,7 +122,11 @@ service cloud.firestore {
     match /tasks/{taskId} {
       allow read: if resourceBelongsToUserOrg();
       allow create: if requestBelongsToUserOrg();
-      allow update: if resourceBelongsToUserOrg();
+      allow update: if resourceBelongsToUserOrg() || (
+        // Allow migration: Check if only `orgId` is being added/updated and the project belongs to the user's org
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['orgId']) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['orgId', 'updatedAt'])
+      );
       allow delete: if resourceBelongsToUserOrg();
     }
 

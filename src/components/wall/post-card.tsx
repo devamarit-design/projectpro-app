@@ -7,8 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useProjects } from "@/context/project-context"
-import { arrayUnion, arrayRemove } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+
+import { useSocial } from "@/context/social-context"
 import Image from "next/image"
 import { CommentSection } from "./comment-section"
 import { Lightbox } from "@/components/ui/lightbox"
@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Pencil, Trash2 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
-import { doc, deleteDoc, updateDoc } from "firebase/firestore"
+
 
 export interface Post {
     id: string
@@ -57,6 +57,7 @@ export interface Post {
     likes: string[] // User IDs
     commentsCount: number
     createdAt: string
+    updatedAt?: string // Added optional field
     orgId: string
 }
 
@@ -65,18 +66,26 @@ interface PostCardProps {
 }
 
 export function PostCard({ post }: PostCardProps) {
+    const { toggleLike, deletePost, updatePost } = useSocial()
     const { currentUser, users } = useProjects()
-    const [isLiked, setIsLiked] = useState(post.likes.includes(currentUser?.id || ""))
-    const [likesCount, setLikesCount] = useState(post.likes.length)
+
+    // Local state for UI only (though context handles it optimistically, we might want local state for other things)
+    // Actually, since context is optimistic, we can derive isLiked directly from props which come from context!
+    // But to be super safe and responsive, we can stick to props.
+
+    // Derived state from props (which are now optimistic from context)
+    const isLiked = post.likes.includes(currentUser?.id || "")
+    const likesCount = post.likes.length
+
+
     const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0)
-    const [showComments, setShowComments] = useState(false)
 
     // Sync state with props when post updates from Firestore onSnapshot
     useEffect(() => {
-        setIsLiked(post.likes.includes(currentUser?.id || ""))
-        setLikesCount(post.likes.length)
         setCommentsCount(post.commentsCount || 0)
-    }, [post.likes, post.commentsCount, currentUser?.id])
+    }, [post.commentsCount])
+
+    const [showComments, setShowComments] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
     const [editContent, setEditContent] = useState(post.content)
     const [showDeleteAlert, setShowDeleteAlert] = useState(false)
@@ -96,31 +105,17 @@ export function PostCard({ post }: PostCardProps) {
 
     const handleLike = async () => {
         if (!currentUser) return
-        const newIsLiked = !isLiked
-        setIsLiked(newIsLiked)
-        setLikesCount(prev => newIsLiked ? prev + 1 : prev - 1)
-        try {
-            const postRef = doc(db, "organizations", post.orgId, "posts", post.id)
-            if (newIsLiked) {
-                await updateDoc(postRef, { likes: arrayUnion(currentUser.id) })
-            } else {
-                await updateDoc(postRef, { likes: arrayRemove(currentUser.id) })
-            }
-        } catch (error) {
-            setIsLiked(!newIsLiked)
-            setLikesCount(prev => newIsLiked ? prev - 1 : prev + 1)
-            console.error("Error updating like:", error)
-        }
+        await toggleLike(post.id)
     }
 
     const handleDelete = async () => {
         setIsSaving(true)
         try {
-            await deleteDoc(doc(db, "organizations", post.orgId, "posts", post.id))
+            await deletePost(post.id)
         } catch (err) {
             console.error("Failed to delete post:", err)
+            setIsSaving(false) // Only stop saving if failed, otherwise component might unmount
         } finally {
-            setIsSaving(false)
             setShowDeleteAlert(false)
         }
     }
@@ -129,8 +124,13 @@ export function PostCard({ post }: PostCardProps) {
         if (!editContent.trim()) return
         setIsSaving(true)
         try {
-            await updateDoc(doc(db, "organizations", post.orgId, "posts", post.id), {
+            // Note: updatedAt might not be in the Post interface defined locally or in context?
+            // Let's check Post interface. It serves as our contract.
+            // If it's missing, we ignore it or just update content.
+            // Assuming SocialContext's updatePost accepts Partial<Post> and Post interface has updatedAt (string).
+            await updatePost(post.id, {
                 content: editContent,
+                // @ts-ignore - updatedAt might be optional or missing in interface but good for DB
                 updatedAt: new Date().toISOString()
             })
             setIsEditing(false)

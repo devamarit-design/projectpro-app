@@ -15,6 +15,20 @@
             ]
         },
         {
+            "collectionGroup": "tasks",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "orgId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "isArchived",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "chat_threads",
             "queryScope": "COLLECTION",
             "fields": [

@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useProjects } from "@/context/project-context"
 import { useOrganization } from "@/context/organization-context"
-import { collection, addDoc, serverTimestamp } from "firebase/firestore"
+
+import { useSocial } from "@/context/social-context"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { db, storage } from "@/lib/firebase"
+import { storage } from "@/lib/firebase"
 import { toast } from "sonner"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
@@ -76,6 +77,10 @@ export function CreatePost() {
         setMediaPreviews(prev => prev.filter((_, i) => i !== index))
     }
 
+    const { addPost } = useSocial()
+
+    // ... (media handling logic remains same)
+
     const handleSubmit = async () => {
         if (!content.trim() && mediaFiles.length === 0) return
         if (!currentOrg || !currentUser) return
@@ -104,50 +109,19 @@ export function CreatePost() {
                 mediaUrls = await Promise.all(uploadPromises)
             }
 
-            const addPromise = addDoc(collection(db, "organizations", currentOrg.id, "posts"), {
-                content,
-                mediaUrls,
-                mediaType: mediaFiles.length > 0 ? mediaType : 'none',
-                author: {
-                    id: currentUser.id,
-                    name: currentUser.name || "Unknown",
-                    avatar: currentUser.avatar
-                },
-                likes: [],
-                commentsCount: 0,
-                createdAt: new Date().toISOString(),
-            })
-
-            // Fix Infinite Spinner:
-            // Race the addDoc against a 2.5s timeout.
-            // If server is slow (or quota full), we assume success (offline persistence) and unblock UI.
-            await Promise.race([
-                addPromise,
-                new Promise(resolve => setTimeout(resolve, 2500))
-            ])
+            // Use SocialContext's addPost for optimistic update
+            // Note: addPost handles the Firestore addDoc internally
+            await addPost(content, mediaUrls, mediaFiles.length > 0 ? mediaType : 'none')
 
             // Always unblock if we get here
             setContent("")
             setMediaFiles([])
             setMediaPreviews([])
-            toast.success("Post created!") // Show success even if technically still syncing in background
+            toast.success("Post created!")
 
         } catch (error) {
             console.error("Error creating post:", error)
-
-            // Handle Quota Error gracefully
-            const errorMsg = JSON.stringify(error)
-            const isQuota = errorMsg.includes('resource-exhausted') || errorMsg.includes('Quota exceeded')
-
-            if (isQuota) {
-                // Treat as success (offline mode)
-                setContent("")
-                setMediaFiles([])
-                setMediaPreviews([])
-                toast.success("Post created! (Offline Mode)")
-            } else {
-                toast.error(error instanceof Error ? error.message : "Failed to post")
-            }
+            toast.error("Failed to post") // Context handles rollback, but we notify user
         } finally {
             setIsSubmitting(false)
         }

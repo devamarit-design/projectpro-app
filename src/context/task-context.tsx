@@ -24,7 +24,9 @@ interface TaskContextType {
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
 
 export function TaskProvider({ children, currentUser }: { children: React.ReactNode, currentUser: User | null }) {
-    console.log("[TaskContext] 🟢 DOMAIN MOUNTED - Version 1.0.8(d)")
+    useEffect(() => {
+        console.log("[TaskContext] 🟢 DOMAIN MOUNTED - Version 1.0.8(d)")
+    }, [])
 
     // 0. State
     const { currentOrg: currentTeam } = useOrganization()
@@ -95,7 +97,10 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
 
     // ACTIONS WITH OPTIMISTIC UI
     const addTask = useCallback(async (projectId: string, taskData: Omit<ProjectTask, "id" | "projectId" | "orgId">) => {
-        if (!currentTeam) return
+        if (!currentTeam) {
+            console.error("[TaskContext] ❌ Cannot add task: No active organization selected");
+            throw new Error("No active organization selected");
+        }
 
         const tempId = `temp-${Date.now()}`
         const newTask: ProjectTask = {
@@ -143,7 +148,7 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
         } catch (e) {
             console.error("[TaskContext] ❌ Error adding task to Firestore:", e)
             setTasks(prev => prev.filter(t => t.id !== tempId)) // Rollback
-            return undefined
+            throw e; // Re-throw to let caller handle it
         }
     }, [currentTeam, currentUser])
 

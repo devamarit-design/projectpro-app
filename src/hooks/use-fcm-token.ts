@@ -33,13 +33,17 @@ export function useFcmToken() {
                 if (currentToken) {
                     setToken(currentToken)
                     if (currentUser?.id) {
-                        // Save token to user profile
-                        const userRef = doc(db, 'users', currentUser.id)
-                        await updateDoc(userRef, {
-                            fcmTokens: arrayUnion(currentToken),
-                            lastLoginAt: new Date().toISOString()
-                        })
-                        console.log('FCM Token generated and saved:', currentToken)
+                        // Check if token already exists to prevent infinite loops (lastLoginAt updates)
+                        const existingTokens = (currentUser as any).fcmTokens as string[] || []
+                        if (!existingTokens.includes(currentToken)) {
+                            // Save token to user profile
+                            const userRef = doc(db, 'users', currentUser.id)
+                            await updateDoc(userRef, {
+                                fcmTokens: arrayUnion(currentToken),
+                                lastLoginAt: new Date().toISOString()
+                            })
+                            console.log('FCM Token generated and saved:', currentToken)
+                        }
                     }
                 }
             }

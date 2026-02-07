@@ -28,7 +28,9 @@ export function SocialProvider({ children, currentUser }: { children: React.Reac
     // Global Post Listener
     useEffect(() => {
         if (!currentOrgId) return
+        setIsLoading(true)
 
+        // Query with server-side sorting for efficiency
         const q = query(
             collection(db, "organizations", currentOrgId, "posts"),
             orderBy("createdAt", "desc"),
@@ -36,23 +38,16 @@ export function SocialProvider({ children, currentUser }: { children: React.Reac
         )
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setPosts(prev => {
-                let newPosts = [...prev]
-                snapshot.docChanges().forEach((change) => {
-                    const data = { ...change.doc.data(), id: change.doc.id, orgId: currentOrgId } as Post
-                    if (change.type === "added") {
-                        if (!newPosts.find(p => p.id === data.id)) newPosts.unshift(data)
-                    }
-                    if (change.type === "modified") {
-                        const index = newPosts.findIndex(p => p.id === data.id)
-                        if (index > -1) newPosts[index] = data
-                    }
-                    if (change.type === "removed") {
-                        newPosts = newPosts.filter(p => p.id !== data.id)
-                    }
-                })
-                return newPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            })
+            const fetchedPosts = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                orgId: currentOrgId
+            })) as Post[]
+
+            setPosts(fetchedPosts)
+            setIsLoading(false)
+        }, (error) => {
+            console.error("Error fetching posts:", error)
             setIsLoading(false)
         })
 
@@ -60,7 +55,7 @@ export function SocialProvider({ children, currentUser }: { children: React.Reac
     }, [currentOrgId])
 
     const addPost = useCallback(async (content: string, mediaUrls: string[] = [], mediaType: 'image' | 'video' | 'none' = 'none') => {
-        if (!currentOrgId || !currentUser) return
+        if (!currentOrgId || !currentUser) return undefined
 
         const tempId = `temp-${Date.now()}`
         const newPost: Post = {
@@ -79,48 +74,76 @@ export function SocialProvider({ children, currentUser }: { children: React.Reac
             orgId: currentOrgId
         }
 
+        // Optimistic Update
         setPosts(prev => [newPost, ...prev])
 
         try {
-            const payload = { ...newPost }; delete (payload as any).id; delete (payload as any).orgId
+            const payload = { ...newPost };
+            delete (payload as any).id;
+            delete (payload as any).orgId;
+
+            // Use server timestamp for consistency, but keep local time for optimistic
+            // payload.createdAt = serverTimestamp() // Optional: if we want server time
+
             const docRef = await addDoc(collection(db, "organizations", currentOrgId, "posts"), payload)
+
+            // Optional: Update local ID with real ID (though snapshot usually handles this faster)
+            // setPosts(prev => prev.map(p => p.id === tempId ? { ...p, id: docRef.id } : p))
+
             return docRef.id
         } catch (e) {
             console.error("Error adding post", e)
-            setPosts(prev => prev.filter(p => p.id !== tempId))
-            return undefined
+            setPosts(prev => prev.filter(p => p.id !== tempId)) // Rollback
+            throw e
         }
     }, [currentOrgId, currentUser])
 
     const updatePost = useCallback(async (postId: string, updates: Partial<Post>) => {
         if (!currentOrgId) return
-        const original = [...posts]
+
+        const originalPosts = [...posts]
+
+        // Optimistic Update
         setPosts(prev => prev.map(p => p.id === postId ? { ...p, ...updates } : p))
+
         try {
             await updateDoc(doc(db, "organizations", currentOrgId, "posts", postId), updates)
         } catch (e) {
-            setPosts(original)
+            console.error("Error updating post", e)
+            setPosts(originalPosts) // Rollback
+            throw e
         }
     }, [posts, currentOrgId])
 
     const deletePost = useCallback(async (postId: string) => {
         if (!currentOrgId) return
-        const original = [...posts]
+
+        const originalPosts = [...posts]
+
+        // Optimistic Update
         setPosts(prev => prev.filter(p => p.id !== postId))
+
         try {
             await deleteDoc(doc(db, "organizations", currentOrgId, "posts", postId))
         } catch (e) {
-            setPosts(original)
+            console.error("Error deleting post", e)
+            setPosts(originalPosts) // Rollback
+            throw e
         }
     }, [posts, currentOrgId])
 
     const toggleLike = useCallback(async (postId: string) => {
         if (!currentOrgId || !currentUser) return
+
         const post = posts.find(p => p.id === postId)
         if (!post) return
 
         const userId = currentUser.id
         const isLiked = post.likes.includes(userId)
+
+        const originalPosts = [...posts]
+
+        // Optimistic Update
         const newLikes = isLiked
             ? post.likes.filter(id => id !== userId)
             : [...post.likes, userId]
@@ -133,9 +156,10 @@ export function SocialProvider({ children, currentUser }: { children: React.Reac
                 likes: isLiked ? arrayRemove(userId) : arrayUnion(userId)
             })
         } catch (e) {
-            setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: post.likes } : p))
+            console.error("Error toggling like", e)
+            setPosts(originalPosts) // Rollback
         }
-    }, [posts, currentOrgId])
+    }, [posts, currentOrgId, currentUser])
 
     const value = useMemo(() => ({
         posts, addPost, updatePost, deletePost, toggleLike, isLoading

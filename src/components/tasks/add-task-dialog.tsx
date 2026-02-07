@@ -311,6 +311,7 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
 
         } catch (error) {
             console.error("Error submitting task:", error)
+            alert("Failed to save task. Please try again. " + (error instanceof Error ? error.message : "Unknown error"))
         } finally {
             setIsUploading(false)
         }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react"
 import { useOrganization } from "@/context/organization-context"
+import { useSocial } from "@/context/social-context"
 import { collection, query, orderBy, limit, onSnapshot, where, QueryConstraint } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Post, PostCard } from "./post-card"
@@ -17,115 +18,55 @@ interface WallFeedProps {
 }
 
 export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedProps) {
-    const { currentOrg } = useOrganization()
-    const { currentUser } = useProjects()
-    const [posts, setPosts] = useState<Post[]>([])
-    const [isLoading, setIsLoading] = useState(true)
+    const { posts, isLoading: isSocialLoading } = useSocial()
+    const { currentUser } = useProjects() // We still need currentUser for filtering by user if needed
     const [selectedTag, setSelectedTag] = useState<string | null>(null)
-
-    const currentOrgId = currentOrg?.id
-    const currentUserId = currentUser?.id
 
     // Unified Hashtag Regex (Thai support)
     const hashtagRegex = /#[\wก-๙]+/g
 
-    const [error, setError] = useState<string | null>(null)
-
-    useEffect(() => {
-        if (!currentOrgId) return
-
-        setIsLoading(true)
-        setError(null)
-
-        const postsRef = collection(db, "organizations", currentOrgId, "posts")
-
-        // CLIENT-SIDE SORTING FIX:
-        // We remove server-side orderBy/limit to avoid index issues or missing fields hiding posts.
-        // We fetch "all" (or a safe large batch) and sort in memory.
-        const q = query(postsRef, limit(100))
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedPosts = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                orgId: currentOrgId
-            })) as Post[]
-
-            // Sort by createdAt desc (Newest first)
-            fetchedPosts.sort((a, b) => {
-                const dateA = new Date(a.createdAt).getTime()
-                const dateB = new Date(b.createdAt).getTime()
-                return dateB - dateA
-            })
-
-            let finalPosts = fetchedPosts
-            if (filterByUser && currentUserId) {
-                finalPosts = finalPosts.filter(p => p.author.id === currentUserId)
-            }
-
-            // Apply logic limit
-            const maxPosts = variant === 'widget' ? 8 : 50
-            finalPosts = finalPosts.slice(0, maxPosts)
-
-            setPosts(finalPosts)
-            setIsLoading(false)
-
-        }, (err) => {
-            console.error("Error fetching wall posts:", err)
-            setError(err.message)
-            setIsLoading(false)
-
-            const errorMsg = JSON.stringify(err)
-            if (err.code === 'resource-exhausted' || errorMsg.includes('Quota exceeded')) {
-                setQuotaError(true)
-            }
-        })
-
-        return () => unsubscribe()
-    }, [currentOrgId, variant, filterByUser, currentUserId])
-
     // Extract Unique Hashtags
     const availableHashtags = useMemo(() => {
         const tags = new Set<string>()
-        const sourcePosts = posts // Compute from all fetched posts
-
-        sourcePosts.forEach(post => {
+        posts.forEach(post => {
             if (!post.content) return
             const matches = post.content.match(hashtagRegex)
             if (matches) {
                 matches.forEach(tag => tags.add(tag))
             }
         })
-
-        // Sort tags alphabetically
         return Array.from(tags).sort((a, b) => a.localeCompare(b, 'th'))
     }, [posts])
 
     // Filter Logic
     const filteredPosts = useMemo(() => {
-        if (!selectedTag) return posts
-        return posts.filter(post =>
-            post.content && post.content.match(hashtagRegex)?.includes(selectedTag)
-        )
-    }, [posts, selectedTag])
+        let finalPosts = posts
 
-    const [quotaError, setQuotaError] = useState(false)
-
-    useEffect(() => {
-        const handleQuotaError = () => setQuotaError(true)
-        window.addEventListener('firestore-quota-exceeded', handleQuotaError)
-        return () => window.removeEventListener('firestore-quota-exceeded', handleQuotaError)
-    }, [])
-
-    const handleReset = () => {
-        if ((window as any).resetFirestore) {
-            (window as any).resetFirestore()
-        } else {
-            window.location.reload()
+        // Filter by Tag
+        if (selectedTag) {
+            finalPosts = finalPosts.filter(post =>
+                post.content && post.content.match(hashtagRegex)?.includes(selectedTag)
+            )
         }
-    }
 
-    if (isLoading) {
+        // Filter by User
+        if (filterByUser && currentUser?.id) {
+            finalPosts = finalPosts.filter(p => p.author.id === currentUser.id)
+        }
+
+        // Apply variant limit (widget vs full)
+        // For full view, we might want to show all loaded posts (which are already limited by context to 100)
+        // For widget, strictly limit to 8
+        if (variant === 'widget') {
+            finalPosts = finalPosts.slice(0, 8)
+        }
+
+        return finalPosts
+    }, [posts, selectedTag, filterByUser, currentUser?.id, variant])
+
+
+
+    if (isSocialLoading) {
         return (
             <div className="space-y-4">
                 {variant === 'full' && <Skeleton className="h-[140px] w-full rounded-xl" />}
@@ -135,14 +76,8 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
         )
     }
 
-    if (error) {
-        return (
-            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm">
-                <p className="font-bold">Failed to load posts</p>
-                <p>{error}</p>
-            </div>
-        )
-    }
+    // Removed Error State block as context handles errors gracefully (or we can add error from context if exposed)
+
 
     return (
         <div className={variant === 'full' ? "space-y-6 max-w-2xl mx-auto w-full" : "w-full"}>

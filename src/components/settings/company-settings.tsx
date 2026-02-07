@@ -9,18 +9,94 @@ import EditTeamDialog from "../../app/(dashboard)/team/edit-team-dialog"
 import { hasPermission } from "@/lib/permissions"
 import { useOrganization } from "@/context/organization-context" // Add this import
 import { getGoogleMapsUrl } from "@/lib/utils"
+// Firebase Imports for Migration Tool
+import { collection, query, where, getDocs, updateDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { Button } from "@/components/ui/button" // Ensure Button is imported if used
 
 export function CompanySettings() {
     const { t } = useTranslation()
     const { orgProfile } = useSettings()
     const { currentTeam, currentUser } = useProjects()
+    const { currentOrg } = useOrganization() // Get currentOrg from useOrganization
     const [isEditTeamOpen, setIsEditTeamOpen] = useState(false)
 
     // Use currentTeam if available for more specific data (like logo), falling back to orgProfile
     const displayProfile = currentTeam || orgProfile
 
+    // --- DATA MIGRATION TOOL (TEMPORARY) ---
+    const [isMigrating, setIsMigrating] = useState(false)
+    const handleFixTaskData = async () => {
+        if (!currentOrg) return
+        setIsMigrating(true)
+        try {
+            console.log("Starting Task Data Migration...")
+            // 1. Get all tasks in this org (even if orgId missing? No, we can't query them if orgId missing!)
+            // We must query by projectId.
+            // Get all projects first.
+            const projectsRef = collection(db, "projects")
+            const qProjects = query(projectsRef, where("orgId", "==", currentOrg.id))
+            const projectsSnap = await getDocs(qProjects)
+            const projectIds = projectsSnap.docs.map(d => d.id)
+
+            let updatedCount = 0
+
+            for (const projectId of projectIds) {
+                // Query tasks for this project (regardless of orgId)
+                // We need a composite index for projectId? Or just filtering?
+                // `projectId` filter should be enough if we don't have complex composites.
+                const tasksRef = collection(db, "tasks")
+                const qTasks = query(tasksRef, where("projectId", "==", projectId))
+                const tasksSnap = await getDocs(qTasks)
+
+                for (const taskDoc of tasksSnap.docs) {
+                    const task = taskDoc.data()
+                    if (!task.orgId) {
+                        console.log(`Fixing task ${taskDoc.id} (missing orgId)`)
+                        await updateDoc(taskDoc.ref, { orgId: currentOrg.id })
+                        updatedCount++
+                    }
+                }
+            }
+            alert(`Migration complete! Fixed ${updatedCount} tasks.`)
+
+        } catch (error) {
+            console.error("Migration failed:", error)
+            alert("Migration failed check console.")
+        } finally {
+            setIsMigrating(false)
+        }
+    }
+
+    // Placeholder for handleSave and isLoading, as they were in the provided snippet but not defined.
+    // Assuming they are part of a larger form submission logic.
+    const handleSave = () => console.log("Save changes clicked (placeholder)")
+    const isLoading = false
+
     return (
         <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Organization Settings</h2>
+                    <p className="text-muted-foreground">Manage your company details and preferences.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleFixTaskData} disabled={isMigrating}>
+                        {isMigrating ? "Fixing..." : "Fix Data (Admin)"}
+                    </Button>
+                    {/* Original Edit Button, integrated into the new header structure */}
+                    {currentTeam && hasPermission(currentTeam?.role, "COMPANY_UPDATE") && (
+                        <Button onClick={() => setIsEditTeamOpen(true)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            <span>{t.common.edit}</span>
+                        </Button>
+                    )}
+                    {/* Placeholder Save Button */}
+                    <Button onClick={handleSave} disabled={isLoading}>
+                        {isLoading ? "Saving..." : "Save Changes"}
+                    </Button>
+                </div>
+            </div>
 
             <div className="flex items-center justify-between border-b pb-4">
                 <div className="flex items-center gap-4">
