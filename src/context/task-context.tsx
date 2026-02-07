@@ -35,12 +35,15 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
         if (!currentTeam?.id) return
         setIsLoading(true)
 
+        console.log(`[TaskContext] 🟢 Initializing Task Listener for Org: ${currentTeam.id}`)
+
         const q = query(
             collection(db, "tasks"),
             where("orgId", "==", currentTeam.id)
         )
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            console.log(`[TaskContext] 📦 Snapshot received. Docs: ${snapshot.docs.length}. FromCache: ${snapshot.metadata.fromCache}`)
             setTasks(prevTasks => {
                 let updatedTasks = [...prevTasks]
 
@@ -66,6 +69,9 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
 
                 return active.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
             })
+            setIsLoading(false)
+        }, (error) => {
+            console.error(`[TaskContext] 🔴 Snapshot Error for org ${currentTeam.id}:`, error)
             setIsLoading(false)
         })
 
