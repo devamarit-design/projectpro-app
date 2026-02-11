@@ -318,7 +318,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                             type: 'error',
                             date: new Date().toISOString(),
                             read: !!readStatus[generateAlertId('overdue', task.id)],
-                            link: `/projects/detail?id=${project.id}`,
+                            link: `/projects/detail?id=${project.id}&taskId=${task.id}`,
                             relatedId: task.id
                         })
                     }
@@ -333,7 +333,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                             type: 'warning',
                             date: new Date().toISOString(),
                             read: !!readStatus[generateAlertId('due', task.id)],
-                            link: `/projects/detail?id=${project.id}`,
+                            link: `/projects/detail?id=${project.id}&taskId=${task.id}`,
                             relatedId: task.id
                         })
                     }
@@ -364,7 +364,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                         type: 'warning',
                         date: new Date().toISOString(),
                         read: !!readStatus[generateAlertId('exp-due', expense.id)],
-                        link: `/expenses`,
+                        link: `/expenses?id=${expense.id}`,
                         relatedId: expense.id
                     })
                 }
@@ -381,7 +381,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                         type: 'error',
                         date: new Date().toISOString(),
                         read: !!readStatus[generateAlertId('exp-overdue', expense.id)],
-                        link: `/expenses`,
+                        link: `/expenses?id=${expense.id}`,
                         relatedId: expense.id
                     })
                 }
@@ -393,7 +393,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                         type: 'warning',
                         date: new Date().toISOString(),
                         read: !!readStatus[generateAlertId('exp-warning', expense.id)],
-                        link: `/expenses`,
+                        link: `/expenses?id=${expense.id}`,
                         relatedId: expense.id
                     })
                 }

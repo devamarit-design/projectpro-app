@@ -33,9 +33,9 @@ type BoardProps = {
     users: User[]
     currentUser: User | null
     userFilter: string
-    onUpdateTask: (projectId: string, taskId: string, updates: Partial<ProjectTask>) => void
-    onDeleteTask: (projectId: string, taskId: string) => void
-    onToggleTask: (projectId: string, taskId: string) => void
+    onUpdateTask: (taskId: string, updates: Partial<ProjectTask>) => void
+    onDeleteTask: (taskId: string) => void
+    onToggleTask: (taskId: string) => void
     onSelectTask?: (taskId: string) => void
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     t: any // Translation object
@@ -387,7 +387,7 @@ export function TaskBoard({
         // Compare against original status (before any optimistic updates)
         if (activeData && originalStatus && originalStatus !== newStatus) {
             // Commit to DB
-            onUpdateTask(projectId, activeData.id, { status: newStatus })
+            onUpdateTask(activeData.id, { status: newStatus })
         }
         setOriginalStatus(null)
     }
@@ -431,8 +431,8 @@ export function TaskBoard({
                                 task={task}
                                 projectUsers={users}
                                 t={t}
-                                onDelete={(id) => onDeleteTask(projectId, id)}
-                                onToggle={(id) => onToggleTask(projectId, id)}
+                                onDelete={(id) => onDeleteTask(id)}
+                                onToggle={(id) => onToggleTask(id)}
                                 onSelect={onSelectTask}
                             />
                         ))}

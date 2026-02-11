@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Search, Filter, Camera, ScanLine, Tag, Wallet, TrendingDown, LayoutGrid, Hammer, Users, FileText, CreditCard, Archive, RefreshCcw, ArrowDownAZ } from "lucide-react"
+import { Plus, Search, Filter, Camera, ScanLine, Tag, Wallet, TrendingDown, LayoutGrid, Hammer, Users, FileText, CreditCard, Archive, RefreshCcw, ArrowDownAZ, FileDown } from "lucide-react"
 import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
 import { useProjects, ExpenseCategory } from "@/context/project-context"
 import { cn } from "@/lib/utils"
@@ -15,6 +15,9 @@ import { CheckCircle2 } from "lucide-react"
 import { Suspense } from "react"
 
 import { useSettings } from "@/context/settings-context"
+import { saveAs } from "file-saver"
+import { pdf } from "@react-pdf/renderer"
+import { ExpensesPDF } from "@/components/expenses/expenses-pdf"
 
 const FINANCIAL_TARGETS_KEY = "financial-targets" // Keep for legacy cleanup or remove if not needed, but safe to keep constant
 
@@ -64,13 +67,19 @@ function ExpensesContent() {
 
     // Dropdown State
     const [isDropdownOpen, setIsDropdownOpen] = React.useState(false)
+    const [isExportOpen, setIsExportOpen] = React.useState(false) // NEW: State for export dropdown
     const dropdownRef = React.useRef<HTMLDivElement>(null)
+    const exportRef = React.useRef<HTMLDivElement>(null) // NEW: Ref for export dropdown
 
     // Click Outside to Close Dropdown
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsDropdownOpen(false)
+            }
+            // NEW: Handle export dropdown outside click
+            if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
+                setIsExportOpen(false)
             }
         }
         document.addEventListener("mousedown", handleClickOutside)
@@ -178,6 +187,46 @@ function ExpensesContent() {
         mood = { emoji: "😬", label: "Tight (กระเป๋าพอดี)", color: "text-orange-500", bg: "bg-orange-500/10", icon: Wallet }
     }
 
+    // Export Logic
+    const handleExportCSV = () => {
+        if (filteredExpenses.length === 0) return alert("No expenses to export")
+
+        const headers = ["Date", "Title", "Category", "Amount", "Payee", "Status", "Project", "Created By"]
+        const csvContent = [
+            headers.join(","),
+            ...filteredExpenses.map(e => [
+                e.date,
+                `"${e.title.replace(/"/g, '""')}"`,
+                e.category,
+                e.totalValue,
+                `"${e.payee?.replace(/"/g, '""') || ""}"`,
+                e.status,
+                `"${projects.find(p => p.id === e.projectId)?.name || "General"}"`,
+                `"${users.find(u => u.id === e.createdBy)?.name || "Unknown"}"`
+            ].join(","))
+        ].join("\n")
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+        saveAs(blob, `expenses_export_${new Date().toISOString().split('T')[0]}.csv`)
+    }
+
+    const handleExportPDF = async () => {
+        if (filteredExpenses.length === 0) return alert("No expenses to export")
+        try {
+            const blob = await pdf(
+                <ExpensesPDF
+                    expenses={filteredExpenses}
+                    title={`Expense Report - ${new Date().toLocaleDateString()}`}
+                    showImages={true}
+                />
+            ).toBlob()
+            saveAs(blob, `expenses_report_${new Date().toISOString().split('T')[0]}.pdf`)
+        } catch (error) {
+            console.error("PDF generation failed:", error)
+            alert("Failed to generate PDF. Check console for details.")
+        }
+    }
+
     return (
         <div className="space-y-6 pb-20 max-w-[100vw] overflow-x-hidden">
             <AddExpenseDialog
@@ -199,6 +248,44 @@ function ExpensesContent() {
                     <p className="text-muted-foreground mt-1">{t.expenses.subtitle}</p>
                 </div>
                 <div className="relative z-20 flex items-center gap-3">
+                    {/* Export Button */}
+                    <div className="relative" ref={exportRef}>
+                        <button
+                            onClick={() => setIsExportOpen(!isExportOpen)}
+                            className={cn(
+                                "flex items-center gap-2 px-5 py-2.5 bg-muted/50 border border-border text-foreground rounded-xl font-medium shadow-sm hover:bg-muted transition-all",
+                                isExportOpen && "bg-muted ring-2 ring-primary/20"
+                            )}
+                        >
+                            <FileDown className="w-5 h-5 text-blue-500" />
+                            Export
+                        </button>
+                        {/* Dropdown Menu - Click & Left Aligned */}
+                        {isExportOpen && (
+                            <div className="absolute left-0 top-full mt-2 w-48 bg-background border border-border rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 origin-top-left">
+                                <button
+                                    onClick={() => {
+                                        handleExportCSV()
+                                        setIsExportOpen(false)
+                                    }}
+                                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
+                                >
+                                    <span className="font-medium text-sm">Export CSV</span>
+                                </button>
+                                <div className="h-px bg-border" />
+                                <button
+                                    onClick={() => {
+                                        handleExportPDF()
+                                        setIsExportOpen(false)
+                                    }}
+                                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
+                                >
+                                    <span className="font-medium text-sm">Export PDF (with Images)</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
                     <button
                         onClick={() => setIsContractOpen(true)}
                         className="flex items-center gap-2 px-5 py-2.5 bg-muted/50 border border-border text-foreground rounded-xl font-medium shadow-sm hover:bg-muted transition-all"
@@ -509,6 +596,7 @@ function ExpensesContent() {
                     const currentDate = expense.date
                     const prevExpense = index > 0 ? filteredExpenses[index - 1] : null
                     const showDateDivider = !prevExpense || prevExpense.date !== currentDate
+                    const isPaid = expense.status === 'Paid'
 
                     return (
                         <React.Fragment key={expense.id}>

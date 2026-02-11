@@ -92,16 +92,16 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
 
     const handleDelete = () => {
         if (confirm("Are you sure you want to delete this task?")) {
-            deleteTask(projectId, taskId)
+            deleteTask(taskId)
             onClose()
         }
     }
 
     const handleArchiveConfirm = () => {
         if (task.isArchived) {
-            unarchiveTask(projectId, taskId)
+            unarchiveTask(taskId)
         } else {
-            archiveTask(projectId, taskId)
+            archiveTask(taskId)
         }
         onClose()
     }
@@ -124,7 +124,7 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                 updates.dueDate = localTask.endDate; // Keep dueDate in sync
             }
 
-            await updateTask(projectId, task.id, updates)
+            await updateTask(task.id, updates)
             setIsSaving(false)
             onClose() // Close after save for better workflow
         } catch (error) {

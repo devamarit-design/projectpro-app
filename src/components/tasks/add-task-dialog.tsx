@@ -296,7 +296,7 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                 console.log("[AddTaskDialog] 🚀 Calling addTask/updateTask...", commonData)
 
                 if (taskToEdit) {
-                    updateTask(taskToEdit.projectId, taskToEdit.id, {
+                    updateTask(taskToEdit.id, {
                         ...commonData,
                         projectId: finalProjectId || taskToEdit.projectId,
                     })

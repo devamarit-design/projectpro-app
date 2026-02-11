@@ -4,6 +4,7 @@ import { useNotifications } from "@/context/notification-context"
 import { useProjects } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { Bell, Check, Trash2, Calendar, FileText, AlertTriangle, CheckCircle, Info, Settings } from "lucide-react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { format, isToday, isYesterday } from "date-fns"
 
@@ -47,6 +48,8 @@ export default function NotificationsPage() {
             default: return group
         }
     }
+
+    const router = useRouter()
 
     return (
         <div className="space-y-6 pb-20 max-w-2xl mx-auto">
@@ -101,7 +104,10 @@ export default function NotificationsPage() {
                                     {groupNotifications.map(notification => (
                                         <div
                                             key={notification.id}
-                                            onClick={() => markAsRead(notification.id)}
+                                            onClick={() => {
+                                                markAsRead(notification.id)
+                                                if (notification.link) router.push(notification.link)
+                                            }}
                                             className={`relative group flex gap-4 p-4 rounded-2xl border transition-all duration-300 cursor-pointer ${notification.read
                                                 ? "bg-background/40 border-white/5 opacity-70 hover:opacity-100"
                                                 : "bg-background/80 border-primary/20 shadow-lg shadow-primary/5 hover:border-primary/40"
@@ -139,17 +145,7 @@ export default function NotificationsPage() {
                                                         return notification.message
                                                     })()}
                                                 </p>
-                                                {notification.link && (
-                                                    <div className="pt-2">
-                                                        <Link
-                                                            href={notification.link}
-                                                            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        >
-                                                            {t.notifications.view_details} →
-                                                        </Link>
-                                                    </div>
-                                                )}
+                                                {/* Optional: Keep link visual but logic is now on card */}
                                             </div>
                                         </div>
                                     ))}

@@ -146,7 +146,13 @@ export default function ProjectDetailClient() {
 
     useEffect(() => {
         setIsClient(true)
-    }, [])
+        const taskId = searchParams.get("taskId")
+        if (taskId) {
+            setSelectedTaskId(taskId)
+            // Optional: Switch to tasks tab if you want them to see the context
+            // setActiveTab("tasks") 
+        }
+    }, [searchParams])
 
     const handleExportCSV = (type: 'Expense' | 'Income') => {
         let headers: string[] = []
