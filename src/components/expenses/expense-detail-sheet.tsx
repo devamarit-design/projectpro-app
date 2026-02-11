@@ -387,6 +387,25 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                             )}
                         </div>
 
+                        {/* Created By Field */}
+                        <div className="glass-card p-3 rounded-xl border border-white/5 space-y-1">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                <User className="w-3 h-3" /> Created By (ผู้ทำรายการ)
+                            </label>
+                            <div className="text-sm font-medium truncate flex items-center gap-2">
+                                {expense.createdBy ? (
+                                    <>
+                                        <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">
+                                            {users.find(u => u.id === expense.createdBy)?.name?.charAt(0) || "?"}
+                                        </div>
+                                        {users.find(u => u.id === expense.createdBy)?.name || "Unknown"}
+                                    </>
+                                ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Financial Breakdown */}
                         <div className="glass-card p-4 rounded-xl border border-white/5 space-y-3">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">

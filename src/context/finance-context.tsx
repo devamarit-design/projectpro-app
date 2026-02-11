@@ -9,6 +9,7 @@ import { Expense, IncomeDocument, Vendor, Customer, Worker, Contract } from "./p
 
 interface FinanceContextType {
     expenses: Expense[]
+    archivedExpenses: Expense[]
     incomes: IncomeDocument[]
     vendors: Vendor[]
     customers: Customer[]
@@ -108,7 +109,13 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
     const addExpense = useCallback(async (expenseData: Omit<Expense, "id" | "createdAt" | "orgId">) => {
         if (!currentTeam) return
         const tempId = `temp-${Date.now()}`
-        const newExpense = { ...expenseData, id: tempId, orgId: currentTeam.id, createdAt: new Date().toISOString() } as Expense
+        const newExpense = {
+            ...expenseData,
+            id: tempId,
+            orgId: currentTeam.id,
+            createdAt: new Date().toISOString(),
+            createdBy: currentUser?.id
+        } as Expense
         setExpenses(prev => [newExpense, ...prev])
         try {
             const payload = { ...newExpense }; delete (payload as any).id
@@ -127,9 +134,11 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
                 relatedUserIds: []
             })
             return docRef.id
-        } catch (e) {
+        } catch (e: any) {
             setExpenses(prev => prev.filter(i => i.id !== tempId))
-            return undefined
+            console.error("Error adding expense:", e)
+            // Re-throw to allow UI to handle specific errors (e.g. permission-denied)
+            throw e
         }
     }, [currentTeam, currentUser])
 
@@ -351,17 +360,24 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         try { await updateDoc(doc(db, "incomes", id), { isArchived: false }) } catch (e) { console.error(e) }
     }, [])
 
-    const value = useMemo(() => ({
-        expenses, incomes, vendors, customers, workers, contracts,
-        addExpense, updateExpense, deleteExpense,
-        addIncome, updateIncome, deleteIncome,
-        addVendor, updateVendor, deleteVendor,
-        addWorker, updateWorker, deleteWorker,
-        addCustomer, updateCustomer, deleteCustomer,
-        addContract, updateContract, deleteContract, payInstallment,
-        archiveExpense, unarchiveExpense, archiveIncome, unarchiveIncome,
-        isLoading
-    }), [
+    const value = useMemo(() => {
+        const activeExpenses = expenses.filter(e => !e.isArchived)
+        const archivedExpenses = expenses.filter(e => e.isArchived)
+
+        return {
+            expenses: activeExpenses,
+            archivedExpenses,
+            incomes, vendors, customers, workers, contracts,
+            addExpense, updateExpense, deleteExpense,
+            addIncome, updateIncome, deleteIncome,
+            addVendor, updateVendor, deleteVendor,
+            addWorker, updateWorker, deleteWorker,
+            addCustomer, updateCustomer, deleteCustomer,
+            addContract, updateContract, deleteContract, payInstallment,
+            archiveExpense, unarchiveExpense, archiveIncome, unarchiveIncome,
+            isLoading
+        }
+    }, [
         expenses, incomes, vendors, customers, workers, contracts,
         addExpense, updateExpense, deleteExpense,
         addIncome, updateIncome, deleteIncome,

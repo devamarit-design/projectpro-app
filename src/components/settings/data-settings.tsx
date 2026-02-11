@@ -201,6 +201,40 @@ export function DataSettings() {
             </div>
 
 
+
+            {/* Migration Tools */}
+            <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-4 flex gap-4 items-center justify-between">
+                <div className="flex gap-4 items-start">
+                    <Database className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                        <h4 className="text-sm font-medium text-purple-500">Data Migration Tools (Admin)</h4>
+                        <p className="text-sm text-purple-500/80 leading-relaxed">
+                            Backfill missing data for existing records.
+                        </p>
+                    </div>
+                </div>
+                <button
+                    onClick={async () => {
+                        if (!confirm("Start migration? This may take a while.")) return
+                        setMessage({ type: "success", text: "Migration started..." })
+                        try {
+                            const { migrateExpenseCreators } = await import("@/lib/migrations/created-by-migration")
+                            // @ts-ignore
+                            const result = await migrateExpenseCreators(companyProfile.id)
+                            setMessage({
+                                type: result.success ? "success" : "error",
+                                text: result.message
+                            })
+                        } catch (e: any) {
+                            setMessage({ type: "error", text: e.message })
+                        }
+                    }}
+                    className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-500 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
+                >
+                    Fix Expense Creators
+                </button>
+            </div>
+
         </div>
     )
 }

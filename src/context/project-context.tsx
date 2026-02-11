@@ -410,7 +410,9 @@ export interface ProjectContextType extends CoreProjectContextType {
     // ... work actions are currently simplified or handled as partials in TaskContext
 
     // Expense Management (Aggregated)
+    // Expense Management (Aggregated)
     expenses: Expense[]
+    archivedExpenses: Expense[]
     addExpense: (expense: Omit<Expense, "id" | "createdAt" | "orgId">) => Promise<string | undefined>
     updateExpense: (id: string, updates: Partial<Expense>) => Promise<void>
     deleteExpense: (id: string) => Promise<void>
@@ -1943,7 +1945,9 @@ export function useProjects() {
         setTasks: taskCtx.setTasks,
 
         // Finance
+        // Finance
         expenses: financeCtx.expenses,
+        archivedExpenses: financeCtx.archivedExpenses,
         incomes: financeCtx.incomes,
         vendors: financeCtx.vendors,
         customers: financeCtx.customers,
