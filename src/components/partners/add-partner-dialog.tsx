@@ -3,6 +3,7 @@
 import * as React from "react"
 import { X, User, Building, MapPin, Phone, Star, Tag, Check, Info, Camera, Loader2 } from "lucide-react"
 import { useProjects, User as UserType, Vendor as VendorType, Worker as WorkerType } from "@/context/project-context"
+import { useOrganization } from "@/context/organization-context"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
 import { uploadImage } from "@/lib/upload"
@@ -16,6 +17,7 @@ interface AddPartnerDialogProps {
 
 export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Person", initialData }: AddPartnerDialogProps) {
     const { addWorker, addVendor, updateWorker, updateVendor } = useProjects()
+    const { currentOrg } = useOrganization()
     const { t } = useTranslation()
     const [type, setType] = React.useState<"Person" | "Business">(defaultType)
 
@@ -126,7 +128,9 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
 
         setIsUploading(true)
         try {
-            const path = type === "Person" ? "partners/workers" : "partners/vendors"
+            if (!currentOrg?.id) throw new Error("Organization not found")
+            const baseDir = type === "Person" ? "partners/workers" : "partners/vendors"
+            const path = `organizations/${currentOrg.id}/${baseDir}`
             const url = await uploadImage(file, path)
             setAvatar(url)
         } catch (error) {

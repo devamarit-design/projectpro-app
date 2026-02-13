@@ -3,6 +3,7 @@
 import * as React from "react"
 import { X, Calendar, User, Trash2, Save, Building, Tag, DollarSign, Receipt, Info, Check, CheckCircle2, ShoppingBag, Camera, Upload, Layout, Archive, Clock, Plus } from "lucide-react"
 import { useProjects, Expense, ExpenseCategory, ExpenseItem } from "@/context/project-context"
+import { useOrganization } from "@/context/organization-context"
 import { cn } from "@/lib/utils"
 import { uploadWithThumbnail } from "@/lib/upload"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -14,6 +15,7 @@ interface ExpenseDetailSheetProps {
 
 export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetailSheetProps) {
     const { expenses, updateExpense, deleteExpense, projects, users, vendors, archiveExpense, unarchiveExpense } = useProjects()
+    const { currentOrg } = useOrganization()
 
     // Find the expense
     const expense = React.useMemo(() =>
@@ -97,7 +99,12 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                 let fileToUpload = editImageFile
 
                 setUploadStatus("Uploading image...")
-                const path = `expenses/${new Date().getFullYear()}`
+
+                if (!currentOrg?.id) {
+                    throw new Error("Organization not found. Please refresh and try again.")
+                }
+
+                const path = `organizations/${currentOrg.id}/expenses/${new Date().getFullYear()}`
                 const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(fileToUpload, path)
                 updates.receiptImage = originalUrl
                 updates.thumbnailUrl = thumbnailUrl

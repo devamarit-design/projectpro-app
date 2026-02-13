@@ -66,7 +66,8 @@ export function TeamSettings() {
 
         setIsUploading(true)
         try {
-            const url = await uploadImage(file, "company/logo")
+            if (!currentOrg?.id) throw new Error("Organization not found")
+            const url = await uploadImage(file, `organizations/${currentOrg.id}/company/logo`)
             updateOrgProfile({ logo: url })
         } catch (error) {
             console.error("Logo upload failed:", error)

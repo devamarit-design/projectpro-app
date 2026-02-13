@@ -3,6 +3,7 @@
 import * as React from "react"
 import { X, Building, MapPin, Calendar, Check, DollarSign, Upload, ImageIcon, Loader2 } from "lucide-react"
 import { useProjects, Project } from "@/context/project-context"
+import { useOrganization } from "@/context/organization-context"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
 import { uploadImage } from "@/lib/upload"
@@ -16,6 +17,7 @@ interface AddProjectDialogProps {
 
 export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProjectDialogProps) {
     const { addProject, customers } = useProjects()
+    const { currentOrg } = useOrganization()
     const { t } = useTranslation()
 
     // Form State
@@ -74,7 +76,8 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
 
         setIsUploading(true)
         try {
-            const url = await uploadImage(file, "projects/covers")
+            if (!currentOrg?.id) throw new Error("Organization not found")
+            const url = await uploadImage(file, `organizations/${currentOrg.id}/projects/covers`)
             setCoverImage(url)
         } catch (error) {
             console.error("Upload failed:", error)

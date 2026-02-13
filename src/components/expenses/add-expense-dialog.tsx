@@ -337,9 +337,12 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
             if (fileToUpload) {
                 setUploadStatus("Uploading image...")
-                // Determine path based on organization or project
-                // For now, simpler path structure
-                const path = `expenses/${new Date().getFullYear()}`
+
+                if (!currentOrg?.id) {
+                    throw new Error("Organization not found. Please refresh and try again.")
+                }
+
+                const path = `organizations/${currentOrg.id}/expenses/${new Date().getFullYear()}`
                 const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(fileToUpload, path)
                 finalReceiptUrl = originalUrl
                 finalThumbnailUrl = thumbnailUrl
