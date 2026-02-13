@@ -108,24 +108,20 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
     // Finance Actions
     const addExpense = useCallback(async (expenseData: Omit<Expense, "id" | "createdAt" | "orgId">) => {
         if (!currentTeam) return
-        const tempId = `temp-${Date.now()}`
-        const newExpense = {
-            ...expenseData,
-            id: tempId,
-            orgId: currentTeam.id,
-            createdAt: new Date().toISOString(),
-            createdBy: currentUser?.id
-        } as Expense
-        setExpenses(prev => [newExpense, ...prev])
         try {
-            const payload = { ...newExpense }; delete (payload as any).id
+            const payload = {
+                ...expenseData,
+                orgId: currentTeam.id,
+                createdAt: new Date().toISOString(),
+                createdBy: currentUser?.id
+            }
             const docRef = await addDoc(collection(db, "expenses"), payload)
             logActivity(db, currentTeam.id, {
                 action: "CREATE",
                 entityType: "EXPENSE",
                 entityId: docRef.id,
-                entityTitle: newExpense.title,
-                details: `Created new expense: ${newExpense.title}`,
+                entityTitle: expenseData.title,
+                details: `Created new expense: ${expenseData.title}`,
                 performedBy: {
                     uid: currentUser?.id,
                     name: currentUser?.name,
@@ -135,7 +131,6 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
             })
             return docRef.id
         } catch (e: any) {
-            setExpenses(prev => prev.filter(i => i.id !== tempId))
             console.error("Error adding expense:", e)
             // Re-throw to allow UI to handle specific errors (e.g. permission-denied)
             throw e
@@ -164,18 +159,19 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
 
     const addIncome = useCallback(async (incomeData: Omit<IncomeDocument, "id" | "createdAt" | "orgId">) => {
         if (!currentTeam) return
-        const tempId = `temp-${Date.now()}`
-        const newIncome = { ...incomeData, id: tempId, orgId: currentTeam.id, createdAt: new Date().toISOString() } as IncomeDocument
-        setIncomes(prev => [newIncome, ...prev])
         try {
-            const payload = { ...newIncome }; delete (payload as any).id
+            const payload = {
+                ...incomeData,
+                orgId: currentTeam.id,
+                createdAt: new Date().toISOString()
+            }
             const docRef = await addDoc(collection(db, "incomes"), payload)
             logActivity(db, currentTeam.id, {
                 action: "CREATE",
                 entityType: "INCOME",
                 entityId: docRef.id,
-                entityTitle: newIncome.documentNumber,
-                details: `Created new income document: ${newIncome.documentNumber}`,
+                entityTitle: incomeData.documentNumber,
+                details: `Created new income document: ${incomeData.documentNumber}`,
                 performedBy: {
                     uid: currentUser?.id,
                     name: currentUser?.name,
@@ -185,7 +181,7 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
             })
             return docRef.id
         } catch (e) {
-            setIncomes(prev => prev.filter(i => i.id !== tempId))
+            console.error("Error adding income:", e)
             return undefined
         }
     }, [currentTeam, currentUser])
