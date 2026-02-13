@@ -21,16 +21,18 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
         [expenses, expenseId])
 
     const [isEditing, setIsEditing] = React.useState(false)
-    const [isImageOpen, setIsImageOpen] = React.useState(false)
     const [editForm, setEditForm] = React.useState<Partial<Expense>>({})
     const [editImageFile, setEditImageFile] = React.useState<File | null>(null)
     const [isUploading, setIsUploading] = React.useState(false)
+    const [uploadStatus, setUploadStatus] = React.useState<string>("")
     const [showArchiveConfirm, setShowArchiveConfirm] = React.useState(false)
+    const [isImageOpen, setIsImageOpen] = React.useState(false)
 
-    // Initialize edit form when expense changes
+    // Reset edit form when opening/changing expense
     React.useEffect(() => {
         if (expense) {
             setEditForm(JSON.parse(JSON.stringify(expense))) // Deep copy for items
+            setUploadStatus("")
         }
     }, [expense])
 
@@ -68,6 +70,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
 
     const handleSave = async () => {
         setIsUploading(true)
+        setUploadStatus("Processing...")
         try {
             let updates = { ...editForm }
 
@@ -76,20 +79,24 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
 
                 // Compress if > 1MB
                 if (fileToUpload.size > 1024 * 1024) {
+                    setUploadStatus("Compressing image...")
                     try {
                         const { default: imageCompression } = await import('browser-image-compression')
                         const options = {
-                            maxSizeMB: 0.8,
-                            maxWidthOrHeight: 1920,
-                            useWebWorker: true
+                            maxSizeMB: 0.6, // Reduced to 0.6MB
+                            maxWidthOrHeight: 1280, // Reduced to 1280px
+                            useWebWorker: true,
+                            initialQuality: 0.7
                         }
                         const compressedFile = await imageCompression(fileToUpload, options)
                         fileToUpload = new File([compressedFile], fileToUpload.name, { type: fileToUpload.type })
+                        console.log(`Compressed: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`)
                     } catch (error) {
                         console.warn("Compression failed, uploading original:", error)
                     }
                 }
 
+                setUploadStatus("Uploading image...")
                 const path = `expenses/${new Date().getFullYear()}`
                 const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(fileToUpload, path)
                 updates.receiptImage = originalUrl
@@ -97,6 +104,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                 updates.imageEdited = true
             }
 
+            setUploadStatus("Saving data...")
             updateExpense(expenseId, updates)
             setIsEditing(false)
             setEditImageFile(null)
@@ -644,7 +652,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                     {isUploading ? (
                                         <>
                                             <div className="w-4 h-4 border-2 border-white/30 border-t-white/90 rounded-full animate-spin" />
-                                            Saving...
+                                            {uploadStatus || "Saving..."}
                                         </>
                                     ) : (
                                         <>

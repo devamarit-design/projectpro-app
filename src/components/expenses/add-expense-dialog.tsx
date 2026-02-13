@@ -73,6 +73,8 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     const amountRef = React.useRef<HTMLInputElement>(null)
 
 
+    const [uploadStatus, setUploadStatus] = React.useState<string>("")
+
     // Scroll tracking for receipt section auto-expand/collapse
     const scrollRef = React.useRef<HTMLDivElement>(null)
     const lastScrollY = React.useRef(0)
@@ -100,6 +102,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             setReceiptExpanded(false)
             setQuickAdd(null)
             setErrors({})
+            setUploadStatus("")
 
             if (startScanning) {
                 setIsScanOpen(true)
@@ -292,6 +295,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         }
 
         setIsUploading(true)
+        setUploadStatus("Processing...")
 
         try {
             let finalReceiptUrl = receiptImage
@@ -312,21 +316,25 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             if (fileToUpload) {
                 // Compress before upload
                 if (fileToUpload.size > 1024 * 1024) { // Only compress if > 1MB
+                    setUploadStatus("Compressing image...")
                     try {
                         const { default: imageCompression } = await import('browser-image-compression')
                         const options = {
-                            maxSizeMB: 0.8,
-                            maxWidthOrHeight: 1920,
-                            useWebWorker: true
+                            maxSizeMB: 0.6, // Tighter: 0.6MB
+                            maxWidthOrHeight: 1280, // Tighter: 1280px
+                            useWebWorker: true,
+                            initialQuality: 0.7
                         }
                         const compressedFile = await imageCompression(fileToUpload, options)
                         // Create a new File from the Blob to preserve name/type (imageCompression returns Blob)
                         fileToUpload = new File([compressedFile], fileToUpload.name, { type: fileToUpload.type })
+                        console.log(`Compressed: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`)
                     } catch (error) {
                         console.warn("Compression failed, uploading original:", error)
                     }
                 }
 
+                setUploadStatus("Uploading image...")
                 // Determine path based on organization or project
                 // For now, simpler path structure
                 const path = `expenses/${new Date().getFullYear()}`
@@ -334,6 +342,8 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 finalReceiptUrl = originalUrl
                 finalThumbnailUrl = thumbnailUrl
             }
+
+            setUploadStatus("Saving data...")
 
             if (billType === 'combine') {
                 // COMBINE MODE: One expense with all items under the same project
@@ -1104,7 +1114,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 {isUploading ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white/90 rounded-full animate-spin" />
-                                        Saving...
+                                        <span>{uploadStatus || "Saving..."}</span>
                                     </>
                                 ) : (
                                     t.expenses.dialog.save

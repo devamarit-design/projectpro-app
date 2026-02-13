@@ -1,6 +1,6 @@
 {
   "name": "hipslothproject-app",
-  "version": "1.0.9(d)",
+  "version": "1.0.9(e)",
   "private": true,
   "scripts": {
     "dev": "next dev",
