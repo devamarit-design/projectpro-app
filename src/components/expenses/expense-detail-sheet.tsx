@@ -105,7 +105,17 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
             }
 
             setUploadStatus("Saving data...")
-            updateExpense(expenseId, updates)
+
+            // SECURITY CHECK: Ensure we don't send huge Base64 strings to Firestore
+            if (updates.receiptImage && updates.receiptImage.startsWith('data:image')) {
+                console.warn("Found Base64 image in updates, removing to prevent Firestore limit crash")
+                // Only keep if it's small (unlikely for receipts)
+                if (updates.receiptImage.length > 500000) { // > 500KB
+                    delete updates.receiptImage
+                }
+            }
+
+            await updateExpense(expenseId, updates)
             setIsEditing(false)
             setEditImageFile(null)
         } catch (error) {

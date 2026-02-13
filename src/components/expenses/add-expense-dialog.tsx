@@ -347,6 +347,14 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
             setUploadStatus("Saving data...")
 
+            // SECURITY CHECK: Ensure we don't send huge Base64 strings to Firestore
+            if (finalReceiptUrl && finalReceiptUrl.startsWith('data:image')) {
+                console.warn("Found Base64 image in receiptImage, removing to prevent Firestore limit crash")
+                if (finalReceiptUrl.length > 500000) { // > 500KB
+                    finalReceiptUrl = null
+                }
+            }
+
             if (billType === 'combine') {
                 // COMBINE MODE: One expense with all items under the same project
                 const finalItems = items.map(item => {
