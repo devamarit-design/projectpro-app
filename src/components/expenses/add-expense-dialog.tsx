@@ -238,15 +238,37 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         }
     }
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
-            setReceiptFile(file)
+            let fileToProcess = file
+
+            // Compress immediately if > 1MB
+            if (file.size > 1024 * 1024) {
+                toast.loading("Compressing image...", { id: "compression" })
+                try {
+                    const { default: imageCompression } = await import('browser-image-compression')
+                    const options = {
+                        maxSizeMB: 0.6,
+                        maxWidthOrHeight: 1280,
+                        useWebWorker: true,
+                        initialQuality: 0.7
+                    }
+                    const compressedFile = await imageCompression(file, options)
+                    fileToProcess = new File([compressedFile], file.name, { type: file.type })
+                    toast.success("Image compressed", { id: "compression" })
+                } catch (err) {
+                    console.warn("Immediate compression failed:", err)
+                    toast.error("Compression failed", { id: "compression" })
+                }
+            }
+
+            setReceiptFile(fileToProcess)
             const reader = new FileReader()
             reader.onloadend = () => {
                 setReceiptImage(reader.result as string)
             }
-            reader.readAsDataURL(file)
+            reader.readAsDataURL(fileToProcess)
         }
     }
 
@@ -314,26 +336,6 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             }
 
             if (fileToUpload) {
-                // Compress before upload
-                if (fileToUpload.size > 1024 * 1024) { // Only compress if > 1MB
-                    setUploadStatus("Compressing image...")
-                    try {
-                        const { default: imageCompression } = await import('browser-image-compression')
-                        const options = {
-                            maxSizeMB: 0.6, // Tighter: 0.6MB
-                            maxWidthOrHeight: 1280, // Tighter: 1280px
-                            useWebWorker: true,
-                            initialQuality: 0.7
-                        }
-                        const compressedFile = await imageCompression(fileToUpload, options)
-                        // Create a new File from the Blob to preserve name/type (imageCompression returns Blob)
-                        fileToUpload = new File([compressedFile], fileToUpload.name, { type: fileToUpload.type })
-                        console.log(`Compressed: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`)
-                    } catch (error) {
-                        console.warn("Compression failed, uploading original:", error)
-                    }
-                }
-
                 setUploadStatus("Uploading image...")
                 // Determine path based on organization or project
                 // For now, simpler path structure

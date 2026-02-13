@@ -37,52 +37,46 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
 
     if (!isOpen) return null
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
-            setSelectedFile(file)
+            let fileToProcess = file
+
+            // Compress immediately if > 1MB
+            if (file.size > 1024 * 1024) {
+                try {
+                    const { default: imageCompression } = await import('browser-image-compression')
+                    const options = {
+                        maxSizeMB: 0.6,
+                        maxWidthOrHeight: 1280,
+                        useWebWorker: true,
+                        fileType: 'image/jpeg'
+                    }
+                    const compressedFile = await imageCompression(file, options)
+                    fileToProcess = new File([compressedFile], file.name, { type: file.type })
+                } catch (err) {
+                    console.warn("Immediate compression failed:", err)
+                }
+            }
+
+            setSelectedFile(fileToProcess)
             // Use FileReader to get Base64 string for persistence
             const reader = new FileReader()
             reader.onloadend = () => {
                 setPreviewUrl(reader.result as string)
             }
-            reader.readAsDataURL(file)
+            reader.readAsDataURL(fileToProcess)
         }
     }
 
     const handleScan = async () => {
-        if (!selectedFile && !previewUrl) return
+        if (!previewUrl) return
 
         setScanning(true)
 
         try {
-            // Client-Side AI Call
-            // Client-Side AI Call
-            // Compress image if needed
-            let imageToAnalyze = previewUrl!
-            if (selectedFile) {
-                try {
-                    // Dynamic import
-                    const { default: imageCompression } = await import('browser-image-compression')
-                    const options = {
-                        maxSizeMB: 0.8, // Reduced to < 1MB for server action limit
-                        maxWidthOrHeight: 1280, // Reasonable size for OCR
-                        useWebWorker: true,
-                        fileType: 'image/jpeg'
-                    }
-                    const compressedFile = await imageCompression(selectedFile, options)
-
-                    // Convert to base64
-                    imageToAnalyze = await new Promise((resolve) => {
-                        const reader = new FileReader()
-                        reader.onloadend = () => resolve(reader.result as string)
-                        reader.readAsDataURL(compressedFile)
-                    })
-                } catch (err) {
-                    console.warn("Compression failed, trying original", err)
-                }
-            }
-
+            // imageToAnalyze is already compressed if it was large
+            const imageToAnalyze = previewUrl
             const result = await analyzeReceipt(imageToAnalyze)
 
             if (!result.success) {

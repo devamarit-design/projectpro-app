@@ -55,16 +55,35 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
         onClose()
     }
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
-            setEditImageFile(file)
+            let fileToProcess = file
+
+            // Compress immediately if > 1MB
+            if (file.size > 1024 * 1024) {
+                try {
+                    const { default: imageCompression } = await import('browser-image-compression')
+                    const options = {
+                        maxSizeMB: 0.6,
+                        maxWidthOrHeight: 1280,
+                        useWebWorker: true,
+                        initialQuality: 0.7
+                    }
+                    const compressedFile = await imageCompression(file, options)
+                    fileToProcess = new File([compressedFile], file.name, { type: file.type })
+                } catch (err) {
+                    console.warn("Immediate compression failed:", err)
+                }
+            }
+
+            setEditImageFile(fileToProcess)
             const reader = new FileReader()
             reader.onloadend = () => {
                 // Update preview
                 setEditForm(prev => ({ ...prev, receiptImage: reader.result as string }))
             }
-            reader.readAsDataURL(file)
+            reader.readAsDataURL(fileToProcess)
         }
     }
 
@@ -76,25 +95,6 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
 
             if (editImageFile) {
                 let fileToUpload = editImageFile
-
-                // Compress if > 1MB
-                if (fileToUpload.size > 1024 * 1024) {
-                    setUploadStatus("Compressing image...")
-                    try {
-                        const { default: imageCompression } = await import('browser-image-compression')
-                        const options = {
-                            maxSizeMB: 0.6, // Reduced to 0.6MB
-                            maxWidthOrHeight: 1280, // Reduced to 1280px
-                            useWebWorker: true,
-                            initialQuality: 0.7
-                        }
-                        const compressedFile = await imageCompression(fileToUpload, options)
-                        fileToUpload = new File([compressedFile], fileToUpload.name, { type: fileToUpload.type })
-                        console.log(`Compressed: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`)
-                    } catch (error) {
-                        console.warn("Compression failed, uploading original:", error)
-                    }
-                }
 
                 setUploadStatus("Uploading image...")
                 const path = `expenses/${new Date().getFullYear()}`
