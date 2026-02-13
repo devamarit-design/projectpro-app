@@ -20,13 +20,8 @@ export async function uploadImage(file: File, path: string): Promise<string> {
 
         return downloadURL
     } catch (error) {
-        console.warn("Firebase Storage upload failed, falling back to Base64:", error)
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader()
-            reader.onloadend = () => resolve(reader.result as string)
-            reader.onerror = reject
-            reader.readAsDataURL(file)
-        })
+        console.error("Firebase Storage upload failed:", error)
+        throw error
     }
 }
 

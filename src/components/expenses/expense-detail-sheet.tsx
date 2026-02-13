@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Calendar, User, Trash2, Save, Building, Tag, DollarSign, Receipt, Info, Check, CheckCircle2, ShoppingBag, Camera, Upload, Layout, Archive, Clock } from "lucide-react"
+import { X, Calendar, User, Trash2, Save, Building, Tag, DollarSign, Receipt, Info, Check, CheckCircle2, ShoppingBag, Camera, Upload, Layout, Archive, Clock, Plus } from "lucide-react"
 import { useProjects, Expense, ExpenseCategory, ExpenseItem } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { uploadWithThumbnail } from "@/lib/upload"
@@ -72,8 +72,26 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
             let updates = { ...editForm }
 
             if (editImageFile) {
+                let fileToUpload = editImageFile
+
+                // Compress if > 1MB
+                if (fileToUpload.size > 1024 * 1024) {
+                    try {
+                        const { default: imageCompression } = await import('browser-image-compression')
+                        const options = {
+                            maxSizeMB: 0.8,
+                            maxWidthOrHeight: 1920,
+                            useWebWorker: true
+                        }
+                        const compressedFile = await imageCompression(fileToUpload, options)
+                        fileToUpload = new File([compressedFile], fileToUpload.name, { type: fileToUpload.type })
+                    } catch (error) {
+                        console.warn("Compression failed, uploading original:", error)
+                    }
+                }
+
                 const path = `expenses/${new Date().getFullYear()}`
-                const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(editImageFile, path)
+                const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(fileToUpload, path)
                 updates.receiptImage = originalUrl
                 updates.thumbnailUrl = thumbnailUrl
                 updates.imageEdited = true
@@ -84,7 +102,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
             setEditImageFile(null)
         } catch (error) {
             console.error("Failed to update expense", error)
-            alert("Failed to update expense")
+            alert("Failed to update expense. Please check your connection or try a smaller image.")
         } finally {
             setIsUploading(false)
         }
@@ -414,21 +432,83 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                             </h3>
 
                             {/* Items */}
-                            {expense.items && expense.items.length > 0 ? (
-                                <div className="space-y-2">
-                                    {expense.items.map((item, idx) => (
-                                        <div key={idx} className="flex items-center justify-between text-sm py-1 border-b border-white/5 last:border-0">
-                                            <div className="truncate pr-4 text-muted-foreground">
-                                                {item.description || "Unspecified Item"}
-                                                <span className="text-[10px] opacity-50 ml-2">({item.category})</span>
-                                            </div>
-                                            <div className="font-mono">฿{item.amount.toLocaleString()}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-muted-foreground italic">No itemized breakdown.</p>
-                            )}
+                            <div className="space-y-2">
+                                {(currentItems.length > 0 ? currentItems : (isEditing ? [] : [])).map((item, idx) => (
+                                    <div key={item.id || idx} className={cn("flex items-center justify-between text-sm py-1 border-b border-white/5 last:border-0", isEditing && "gap-2")}>
+                                        {isEditing ? (
+                                            <>
+                                                <div className="flex-1 min-w-0 flex gap-2">
+                                                    <input
+                                                        value={item.description}
+                                                        onChange={(e) => {
+                                                            const newItems = [...currentItems]
+                                                            newItems[idx] = { ...item, description: e.target.value }
+                                                            setEditForm(prev => ({ ...prev, items: newItems }))
+                                                        }}
+                                                        className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary/50"
+                                                        placeholder="Item description"
+                                                    />
+                                                </div>
+                                                <div className="w-24 shrink-0">
+                                                    <input
+                                                        type="number"
+                                                        value={item.amount}
+                                                        onChange={(e) => {
+                                                            const newItems = [...currentItems]
+                                                            newItems[idx] = { ...item, amount: parseFloat(e.target.value) || 0 }
+                                                            setEditForm(prev => ({ ...prev, items: newItems }))
+                                                        }}
+                                                        className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-sm text-right font-mono focus:outline-none focus:border-primary/50"
+                                                        placeholder="0.00"
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        const newItems = currentItems.filter((_, i) => i !== idx)
+                                                        setEditForm(prev => ({ ...prev, items: newItems }))
+                                                    }}
+                                                    className="p-1.5 hover:bg-red-500/10 text-red-500 rounded transition-colors"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="truncate pr-4 text-muted-foreground">
+                                                    {item.description || "Unspecified Item"}
+                                                    <span className="text-[10px] opacity-50 ml-2">({item.category})</span>
+                                                </div>
+                                                <div className="font-mono">฿{item.amount.toLocaleString()}</div>
+                                            </>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {isEditing && (
+                                    <button
+                                        onClick={() => {
+                                            const newItem: ExpenseItem = {
+                                                id: Math.random().toString(),
+                                                description: "",
+                                                amount: 0,
+                                                category: "Material",
+                                                projectId: editForm.projectId
+                                            }
+                                            setEditForm(prev => ({
+                                                ...prev,
+                                                items: [...(prev.items || []), newItem]
+                                            }))
+                                        }}
+                                        className="w-full py-2 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-primary hover:bg-primary/5 rounded-lg border border-dashed border-primary/20 transition-colors"
+                                    >
+                                        <Plus className="w-3.5 h-3.5" /> Add Item
+                                    </button>
+                                )}
+
+                                {!isEditing && (!expense.items || expense.items.length === 0) && (
+                                    <p className="text-sm text-muted-foreground italic">No itemized breakdown.</p>
+                                )}
+                            </div>
 
                             <div className="h-px bg-white/10 my-2" />
 

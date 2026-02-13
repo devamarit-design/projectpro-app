@@ -155,7 +155,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 title: newItemName,
                 status: "Todo",
                 priority: "Medium",
-                assignedTo: "Unassigned",
+                assignedTo: ["Unassigned"],
                 dueDate: new Date().toISOString()
             })
         } else if (quickAdd.type === 'sub-project' && quickAdd.parentId) {
@@ -315,7 +315,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     try {
                         const { default: imageCompression } = await import('browser-image-compression')
                         const options = {
-                            maxSizeMB: 1.5,
+                            maxSizeMB: 0.8,
                             maxWidthOrHeight: 1920,
                             useWebWorker: true
                         }
