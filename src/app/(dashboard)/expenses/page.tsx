@@ -34,6 +34,7 @@ function ExpensesContent() {
     const [startScanning, setStartScanning] = React.useState(false)
     const [isContractOpen, setIsContractOpen] = React.useState(false)
     const [isSmartScanOpen, setIsSmartScanOpen] = React.useState(false)
+    const [scannedData, setScannedData] = React.useState<any>(null)
 
     const [selectedExpenseId, setSelectedExpenseId] = React.useState<string | null>(null)
     const [searchQuery, setSearchQuery] = React.useState("")
@@ -94,6 +95,7 @@ function ExpensesContent() {
     const handleCloseAdd = () => {
         setIsAddOpen(false)
         setStartScanning(false)
+        setScannedData(null)
     }
 
     // Available Months
@@ -231,6 +233,7 @@ function ExpensesContent() {
                 isOpen={isAddOpen}
                 onClose={handleCloseAdd}
                 startScanning={startScanning}
+                initialData={scannedData}
             />
             <AddContractDialog
                 isOpen={isContractOpen}
@@ -313,7 +316,14 @@ function ExpensesContent() {
             <SmartScanDialog
                 isOpen={isSmartScanOpen}
                 onClose={() => setIsSmartScanOpen(false)}
-                autoSave={true}
+                onScanComplete={(data) => {
+                    setIsSmartScanOpen(false)
+                    setStartScanning(false)
+                    // Open Add Dialog with scanned data
+                    setScannedData(data)
+                    setIsAddOpen(true)
+                }}
+                autoSave={false}
             />
 
             {/* Mood Card - Expenses (Enhanced) */}

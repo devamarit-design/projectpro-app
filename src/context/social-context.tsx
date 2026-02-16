@@ -41,7 +41,8 @@ export function SocialProvider({ children, currentUser }: { children: React.Reac
             const fetchedPosts = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
-                orgId: currentOrgId
+                orgId: currentOrgId,
+                pending: doc.metadata.hasPendingWrites
             })) as Post[]
 
             setPosts(fetchedPosts)
@@ -57,9 +58,9 @@ export function SocialProvider({ children, currentUser }: { children: React.Reac
     const addPost = useCallback(async (content: string, mediaUrls: string[] = [], mediaType: 'image' | 'video' | 'none' = 'none') => {
         if (!currentOrgId || !currentUser) return undefined
 
-        const tempId = `temp-${Date.now()}`
-        const newPost: Post = {
-            id: tempId,
+        // removed tempId logic - relying on Firestore SDK optimistic updates
+
+        const newPost: Partial<Post> = {
             content,
             mediaUrls,
             mediaType,
@@ -74,26 +75,12 @@ export function SocialProvider({ children, currentUser }: { children: React.Reac
             orgId: currentOrgId
         }
 
-        // Optimistic Update
-        setPosts(prev => [newPost, ...prev])
-
         try {
-            const payload = { ...newPost };
-            delete (payload as any).id;
-            delete (payload as any).orgId;
-
-            // Use server timestamp for consistency, but keep local time for optimistic
-            // payload.createdAt = serverTimestamp() // Optional: if we want server time
-
-            const docRef = await addDoc(collection(db, "organizations", currentOrgId, "posts"), payload)
-
-            // Optional: Update local ID with real ID (though snapshot usually handles this faster)
-            // setPosts(prev => prev.map(p => p.id === tempId ? { ...p, id: docRef.id } : p))
-
+            // Firestore SDK will trigger onSnapshot immediately with hasPendingWrites: true
+            const docRef = await addDoc(collection(db, "organizations", currentOrgId, "posts"), newPost)
             return docRef.id
         } catch (e) {
             console.error("Error adding post", e)
-            setPosts(prev => prev.filter(p => p.id !== tempId)) // Rollback
             throw e
         }
     }, [currentOrgId, currentUser])

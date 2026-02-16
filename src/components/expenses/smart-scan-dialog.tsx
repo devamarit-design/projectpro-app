@@ -104,7 +104,7 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
                         quantity: qty,
                         unitPrice: unitPrice,
                         category: (item.category as any) || "Other",
-                        projectId: undefined
+                        projectId: ""
                     }
                 })
                 : []
@@ -120,7 +120,7 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
                     quantity: 1,
                     unitPrice: Number(data.total) || 0,
                     category: "Other",
-                    projectId: undefined
+                    projectId: ""
                 }]
             })
 
@@ -138,7 +138,7 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
                         quantity: 1,
                         unitPrice: Number(data.total) || 0,
                         category: "Other",
-                        projectId: undefined
+                        projectId: ""
                     }]
                 }
 
@@ -159,8 +159,8 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
 
     const handleAutoSave = async (data: any, imageUrl: string) => {
         try {
-            let finalReceiptUrl = undefined
-            let finalThumbnailUrl = undefined
+            let finalReceiptUrl: string | null = null
+            let finalThumbnailUrl: string | null = null
 
             // Upload Image if exists
             if (imageUrl && currentOrg?.id) {
@@ -189,8 +189,8 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
                 payee: data.merchant,
                 status: "Pending",
                 items: data.items,
-                receiptImage: finalReceiptUrl,
-                thumbnailUrl: finalThumbnailUrl,
+                ...(finalReceiptUrl ? { receiptImage: finalReceiptUrl } : {}),
+                ...(finalThumbnailUrl ? { thumbnailUrl: finalThumbnailUrl } : {}),
                 vatIncluded: true,
                 projectId: "" // Unassigned
             })

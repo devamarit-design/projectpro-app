@@ -59,6 +59,7 @@ export interface Post {
     createdAt: string
     updatedAt?: string // Added optional field
     orgId: string
+    pending?: boolean
 }
 
 interface PostCardProps {
@@ -153,8 +154,9 @@ export function PostCard({ post }: PostCardProps) {
                         </Avatar>
                         <div>
                             <p className="font-semibold text-sm">{post.author.name}</p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+                                {post.pending && <span className="text-[10px] text-primary animate-pulse">(Sending...)</span>}
                             </p>
                         </div>
                     </div>

@@ -111,18 +111,24 @@ export function CreatePost() {
 
             // Use SocialContext's addPost for optimistic update
             // Note: addPost handles the Firestore addDoc internally
-            await addPost(content, mediaUrls, mediaFiles.length > 0 ? mediaType : 'none')
+            // We do NOT await this anymore to prevent UI hanging on slow networks
+            addPost(content, mediaUrls, mediaFiles.length > 0 ? mediaType : 'none')
+                .catch(err => {
+                    console.error("Background post failed:", err)
+                    // Context handles rollback, but we notify user if needed
+                    toast.error("Failed to post in background")
+                })
 
-            // Always unblock if we get here
+            // Always unblock if we get here - IMMEDIATE FEEDBACK
             setContent("")
             setMediaFiles([])
             setMediaPreviews([])
+            setIsSubmitting(false) // Stop loading immediately
             toast.success("Post created!")
 
         } catch (error) {
             console.error("Error creating post:", error)
             toast.error("Failed to post") // Context handles rollback, but we notify user
-        } finally {
             setIsSubmitting(false)
         }
     }

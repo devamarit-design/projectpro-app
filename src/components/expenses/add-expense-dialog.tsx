@@ -19,11 +19,18 @@ interface AddExpenseDialogProps {
     defaultProjectId?: string
     startScanning?: boolean
     defaultDate?: string
+    initialData?: {
+        payee?: string
+        date?: string
+        total?: number
+        items?: ExpenseItem[]
+        receiptImage?: string
+    }
 }
 
 import { useTranslation } from "@/lib/i18n-context"
 
-export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, startScanning, defaultDate }: AddExpenseDialogProps) {
+export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, startScanning, defaultDate, initialData }: AddExpenseDialogProps) {
     const { addExpense, addProject, addTask, addSubProject, addUser, addVendor, addWorker, projects, tasks, users, vendors, workers, currentUser } = useProjects()
     const { currentOrg } = useOrganization()
     const { t } = useTranslation()
@@ -87,19 +94,40 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             setGlobalTaskId("")
             setGlobalSubProjectId("")
 
-            setItems([{ id: "1", description: "", amount: 0, quantity: 1, unitPrice: 0, category: "Material", projectId: defaultProjectId }])
-            setTitle("")
-            // Use defaultDate if provided, otherwise today
-            setDate(defaultDate || new Date().toISOString().split('T')[0])
-            setPayee("")
+            // Check for initialData from Smart Scan
+            if (initialData) {
+                setPayee(initialData.payee || "")
+                setDate(initialData.date || new Date().toISOString().split('T')[0])
+                if (initialData.items && initialData.items.length > 0) {
+                    setItems(initialData.items.map(i => ({ ...i, projectId: defaultProjectId })))
+                } else {
+                    setItems([{ id: "1", description: "", amount: initialData.total || 0, quantity: 1, unitPrice: initialData.total || 0, category: "Material", projectId: defaultProjectId }])
+                }
+                setTitle(initialData.payee ? `Bill from ${initialData.payee}` : "")
+
+                if (initialData.receiptImage) {
+                    setReceiptImage(initialData.receiptImage)
+                    setReceiptExpanded(true)
+                } else {
+                    setReceiptImage(null)
+                    setReceiptExpanded(false)
+                }
+            } else {
+                setItems([{ id: "1", description: "", amount: 0, quantity: 1, unitPrice: 0, category: "Material", projectId: defaultProjectId }])
+                setTitle("")
+                // Use defaultDate if provided, otherwise today
+                setDate(defaultDate || new Date().toISOString().split('T')[0])
+                setPayee("")
+                setReceiptImage(null)
+                setReceiptExpanded(false)
+            }
+
             setStatus("Paid")
             setPaidBy("")
             setVendor("")
             setVatIncluded(true)
-            setReceiptImage(null)
             setReceiptFile(null)
-            setReceiptExpanded(false)
-            setReceiptExpanded(false)
+
             setQuickAdd(null)
             setErrors({})
             setUploadStatus("")
@@ -108,7 +136,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 setIsScanOpen(true)
             }
         }
-    }, [isOpen, defaultProjectId, startScanning, defaultDate])
+    }, [isOpen, defaultProjectId, startScanning, defaultDate, initialData])
 
     // Scroll listener for auto-expand/collapse receipt section
     React.useEffect(() => {
