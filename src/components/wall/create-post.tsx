@@ -90,13 +90,19 @@ export function CreatePost() {
             let mediaUrls: string[] = []
 
             if (mediaFiles.length > 0) {
+                const toastId = toast.loading("Processing images...")
+
                 const uploadPromises = mediaFiles.map(async (file) => {
                     let fileToUpload = file
 
                     // Compress image if it is an image
                     if (file.type.startsWith('image/')) {
-                        const { compressImage } = await import('@/lib/image-utils');
-                        fileToUpload = await compressImage(file);
+                        try {
+                            const { compressImage } = await import('@/lib/image-utils');
+                            fileToUpload = await compressImage(file);
+                        } catch (e) {
+                            console.warn("Compression skipped", e)
+                        }
                     }
 
                     // Sanitize file name
@@ -106,7 +112,15 @@ export function CreatePost() {
                     return getDownloadURL(snapshot.ref)
                 })
 
-                mediaUrls = await Promise.all(uploadPromises)
+                try {
+                    mediaUrls = await Promise.all(uploadPromises)
+                    toast.dismiss(toastId)
+                } catch (e) {
+                    toast.dismiss(toastId)
+                    console.error("Upload failed", e)
+                    // If permissions fail, this throws.
+                    throw new Error("Failed to upload images. Check permissions.")
+                }
             }
 
             // Use SocialContext's addPost for optimistic update

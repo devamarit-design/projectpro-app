@@ -14,10 +14,8 @@ service firebase.storage {
 
     function isOrgMember(orgId) {
       return isAuthenticated() && 
-             firestore.exists(/databases/(default)/documents/organizations/$(orgId)/members/$(request.auth.uid)) ||
              (
-               // Fallback to checking user doc if member list isn't subcollection
-               firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.orgIds[orgId] == true ||
+               // Check user's orgIds array (Source of Truth)
                orgId in firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.orgIds
              );
     }

@@ -28,7 +28,7 @@ export const compressImage = async (file: File): Promise<File> => {
         }
 
         const options = {
-            maxSizeMB: 0.5, // 500KB limit
+            maxSizeMB: 0.3, // 300KB limit (aggressive compression for speed)
             maxWidthOrHeight: 1280, // Optimized for mobile/web viewing
             useWebWorker: true,
             fileType: 'image/jpeg', // Force convert to JPEG
