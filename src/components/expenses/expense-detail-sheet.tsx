@@ -459,10 +459,26 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                             {/* Items */}
                             <div className="space-y-2">
                                 {(currentItems.length > 0 ? currentItems : (isEditing ? [] : [])).map((item, idx) => (
-                                    <div key={item.id || idx} className={cn("flex items-center justify-between text-sm py-1 border-b border-white/5 last:border-0", isEditing && "gap-2")}>
+                                    <div key={item.id || idx} className={cn("flex flex-col sm:flex-row sm:items-center justify-between text-sm py-2 border-b border-white/5 last:border-0 gap-2", isEditing && "items-stretch")}>
                                         {isEditing ? (
                                             <>
-                                                <div className="flex-1 min-w-0 flex gap-2">
+                                                <div className="flex-1 flex gap-2 min-w-0">
+                                                    <div className="w-[110px] shrink-0">
+                                                        <select
+                                                            value={item.category}
+                                                            onChange={(e) => {
+                                                                const newItems = [...currentItems]
+                                                                newItems[idx] = { ...item, category: e.target.value as any }
+                                                                setEditForm(prev => ({ ...prev, items: newItems }))
+                                                            }}
+                                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-2 text-xs focus:outline-none focus:border-primary/50 h-full"
+                                                        >
+                                                            <option value="Material">Material</option>
+                                                            <option value="Labor">Labor</option>
+                                                            <option value="Sub-contract">Sub-contract</option>
+                                                            <option value="Other">Other</option>
+                                                        </select>
+                                                    </div>
                                                     <input
                                                         value={item.description}
                                                         onChange={(e) => {
@@ -470,32 +486,34 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                                             newItems[idx] = { ...item, description: e.target.value }
                                                             setEditForm(prev => ({ ...prev, items: newItems }))
                                                         }}
-                                                        className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary/50"
+                                                        className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 min-w-[100px]"
                                                         placeholder="Item description"
                                                     />
                                                 </div>
-                                                <div className="w-24 shrink-0">
-                                                    <input
-                                                        type="number"
-                                                        value={item.amount}
-                                                        onChange={(e) => {
-                                                            const newItems = [...currentItems]
-                                                            newItems[idx] = { ...item, amount: parseFloat(e.target.value) || 0 }
+                                                <div className="flex items-center gap-2 pl-0 sm:pl-2">
+                                                    <div className="flex-1 sm:w-28">
+                                                        <input
+                                                            type="number"
+                                                            value={item.amount}
+                                                            onChange={(e) => {
+                                                                const newItems = [...currentItems]
+                                                                newItems[idx] = { ...item, amount: parseFloat(e.target.value) || 0 }
+                                                                setEditForm(prev => ({ ...prev, items: newItems }))
+                                                            }}
+                                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-right font-mono focus:outline-none focus:border-primary/50"
+                                                            placeholder="0.00"
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            const newItems = currentItems.filter((_, i) => i !== idx)
                                                             setEditForm(prev => ({ ...prev, items: newItems }))
                                                         }}
-                                                        className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-sm text-right font-mono focus:outline-none focus:border-primary/50"
-                                                        placeholder="0.00"
-                                                    />
+                                                        className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors shrink-0"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </div>
-                                                <button
-                                                    onClick={() => {
-                                                        const newItems = currentItems.filter((_, i) => i !== idx)
-                                                        setEditForm(prev => ({ ...prev, items: newItems }))
-                                                    }}
-                                                    className="p-1.5 hover:bg-red-500/10 text-red-500 rounded transition-colors"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
                                             </>
                                         ) : (
                                             <>

@@ -106,6 +106,34 @@ export function PostCard({ post }: PostCardProps) {
 
     const handleLike = async () => {
         if (!currentUser) return
+
+        // If we are about to like (currently not liked)
+        if (!isLiked && post.author.id !== currentUser.id) {
+            try {
+                // Determine target: The post author
+                const targetId = post.author.id
+
+                // Add Notification
+                const { collection, addDoc } = await import("firebase/firestore")
+                const { db } = await import("@/lib/firebase")
+
+                await addDoc(collection(db, "notifications"), {
+                    title: "New Like",
+                    message: `${currentUser.name} liked your post`,
+                    type: "info",
+                    date: new Date().toISOString(),
+                    read: false,
+                    link: `/wall?postId=${post.id}`,
+                    relatedId: post.id,
+                    target: targetId,
+                    orgId: post.orgId,
+                    creatorId: currentUser.id
+                })
+            } catch (error) {
+                console.error("Failed to crate notification for like", error)
+            }
+        }
+
         await toggleLike(post.id)
     }
 
@@ -445,6 +473,7 @@ export function PostCard({ post }: PostCardProps) {
                 {showComments && (
                     <CommentSection
                         postId={post.id}
+                        postAuthorId={post.author.id}
                         onCommentAdded={() => setCommentsCount(prev => prev + 1)}
                     />
                 )}

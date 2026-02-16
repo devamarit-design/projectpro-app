@@ -149,8 +149,7 @@ export default function ProjectDetailClient() {
         const taskId = searchParams.get("taskId")
         if (taskId) {
             setSelectedTaskId(taskId)
-            // Optional: Switch to tasks tab if you want them to see the context
-            // setActiveTab("tasks") 
+            setActiveTab("tasks")
         }
     }, [searchParams])
 

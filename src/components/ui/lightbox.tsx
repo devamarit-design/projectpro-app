@@ -5,6 +5,7 @@ import { X, ZoomIn, ZoomOut, Download } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useBackNavigation } from "@/hooks/use-back-navigation"
 
 interface LightboxProps {
     open: boolean
@@ -24,6 +25,12 @@ export function Lightbox({ open, onOpenChange, src, alt }: LightboxProps) {
             setRotation(0)
         }
     }, [open])
+
+    useBackNavigation(
+        open,
+        (val) => onOpenChange(val),
+        `lightbox-${src}` // Use src as part of ID to be specific
+    )
 
     const handleZoomIn = () => setScale(prev => Math.min(prev + 0.5, 3))
     const handleZoomOut = () => setScale(prev => Math.max(prev - 0.5, 1))

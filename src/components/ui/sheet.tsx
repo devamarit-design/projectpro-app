@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { useBackNavigation } from "@/hooks/use-back-navigation"
 
 const Sheet = ({
     open,
@@ -12,6 +13,7 @@ const Sheet = ({
     onOpenChange?: (open: boolean) => void
     children: React.ReactNode
 }) => {
+    useBackNavigation(!!open, (val) => onOpenChange?.(val))
     if (!open) return null
     return (
         <div className="fixed inset-0 z-[100] flex justify-end bg-black/50 backdrop-blur-sm animate-in fade-in" onClick={() => onOpenChange?.(false)}>

@@ -3,6 +3,7 @@
 import * as React from "react"
 import { AlertTriangle, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useBackNavigation } from "@/hooks/use-back-navigation"
 
 interface ConfirmDialogProps {
     isOpen: boolean
@@ -32,6 +33,10 @@ export function ConfirmDialog({
     React.useEffect(() => {
         setMounted(true)
     }, [])
+
+    useBackNavigation(isOpen && mounted, (val) => {
+        if (!val) onClose()
+    })
 
     if (!isOpen || !mounted) return null
 

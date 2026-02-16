@@ -1,16 +1,21 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { useOrganization } from "@/context/organization-context"
 import { useProjects } from "@/context/project-context"
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore"
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, increment, arrayUnion, arrayRemove } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { formatDistanceToNow } from "date-fns"
-import { Send, Loader2 } from "lucide-react"
+import { Send, Loader2, Heart, X } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 
 interface Comment {
     id: string
@@ -21,21 +26,28 @@ interface Comment {
         avatar?: string
     }
     createdAt: string
+    likes?: string[] // User IDs
 }
 
 interface CommentSectionProps {
     postId: string
+    postAuthorId?: string
     onClose?: () => void
     onCommentAdded?: () => void
 }
 
-export function CommentSection({ postId, onClose, onCommentAdded }: CommentSectionProps) {
+export function CommentSection({ postId, postAuthorId, onClose, onCommentAdded }: CommentSectionProps) {
     const { currentOrg } = useOrganization()
-    const { currentUser } = useProjects()
+    const { currentUser, users } = useProjects()
     const [comments, setComments] = useState<Comment[]>([])
     const [newComment, setNewComment] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+
+    // Likers Dialog
+    const [showLikersModal, setShowLikersModal] = useState(false)
+    const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null)
+    const [activeLikers, setActiveLikers] = useState<any[]>([])
 
     useEffect(() => {
         if (!currentOrg || !postId) return
@@ -50,7 +62,8 @@ export function CommentSection({ postId, onClose, onCommentAdded }: CommentSecti
                     id: doc.id,
                     ...data,
                     // Handle Firestore Timestamp or ISO string
-                    createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString())
+                    createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
+                    likes: data.likes || []
                 }
             }) as Comment[]
             setComments(fetchedComments)
@@ -59,6 +72,46 @@ export function CommentSection({ postId, onClose, onCommentAdded }: CommentSecti
 
         return () => unsubscribe()
     }, [currentOrg, postId])
+
+    // Update active likers when dialog opens or selected comment changes
+    useEffect(() => {
+        if (showLikersModal && selectedCommentId) {
+            const comment = comments.find(c => c.id === selectedCommentId)
+            if (comment && comment.likes && users) {
+                const likerDetails = users.filter(u => comment.likes?.includes(u.id))
+                setActiveLikers(likerDetails)
+            } else {
+                setActiveLikers([])
+            }
+        }
+    }, [showLikersModal, selectedCommentId, comments, users])
+
+    const handleLikeComment = async (commentId: string, currentLikes: string[]) => {
+        if (!currentUser || !currentOrg) return
+
+        const isLiked = currentLikes.includes(currentUser.id)
+        const commentRef = doc(db, "organizations", currentOrg.id, "posts", postId, "comments", commentId)
+
+        try {
+            if (isLiked) {
+                await updateDoc(commentRef, {
+                    likes: arrayRemove(currentUser.id)
+                })
+            } else {
+                await updateDoc(commentRef, {
+                    likes: arrayUnion(currentUser.id)
+                })
+            }
+        } catch (error) {
+            console.error("Error toggling like:", error)
+            toast.error("Failed to update like")
+        }
+    }
+
+    const openLikersModal = (commentId: string) => {
+        setSelectedCommentId(commentId)
+        setShowLikersModal(true)
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -76,7 +129,8 @@ export function CommentSection({ postId, onClose, onCommentAdded }: CommentSecti
                 name: currentUser.name || "Unknown",
                 avatar: currentUser.avatar
             },
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            likes: []
         }
 
         // Add to local state immediately
@@ -101,7 +155,8 @@ export function CommentSection({ postId, onClose, onCommentAdded }: CommentSecti
                         name: currentUser.name || "Unknown",
                         avatar: currentUser.avatar
                     },
-                    createdAt: serverTimestamp()
+                    createdAt: serverTimestamp(),
+                    likes: []
                 })
 
                 // Wait at most 2 seconds for server confim, otherwise assume success (offline/latched)
@@ -114,6 +169,22 @@ export function CommentSection({ postId, onClose, onCommentAdded }: CommentSecti
                 updateDoc(postRef, {
                     commentsCount: increment(1)
                 }).catch(err => console.error("Error updating commentsCount:", err))
+
+                // 4. Create Notification if comment is not by author
+                if (postAuthorId && postAuthorId !== currentUser.id) {
+                    addDoc(collection(db, "notifications"), {
+                        title: "New Comment",
+                        message: `${currentUser.name} commented on your post`,
+                        type: "info",
+                        date: new Date().toISOString(),
+                        read: false,
+                        link: `/wall?postId=${postId}`,
+                        relatedId: postId,
+                        target: postAuthorId,
+                        orgId: currentOrg.id,
+                        creatorId: currentUser.id
+                    }).catch(err => console.error("Failed to create notification", err))
+                }
 
                 // Trigger callback if provided
                 if (onCommentAdded) onCommentAdded()
@@ -148,23 +219,55 @@ export function CommentSection({ postId, onClose, onCommentAdded }: CommentSecti
                         <p className="text-xs text-center text-muted-foreground py-2">No comments yet.</p>
                     ) : (
                         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
-                            {comments.map(comment => (
-                                <div key={comment.id} className="flex gap-3 text-sm">
-                                    <Avatar className="h-8 w-8 mt-0.5">
-                                        <AvatarImage src={comment.author.avatar} />
-                                        <AvatarFallback>{comment.author.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 space-y-1">
-                                        <div className="bg-muted/80 rounded-2xl rounded-tl-none px-3 py-2 inline-block max-w-[90%]">
-                                            <span className="font-semibold text-xs mr-2">{comment.author.name}</span>
-                                            <span className="text-foreground/90">{comment.content}</span>
+                            {comments.map(comment => {
+                                const isLiked = comment.likes?.includes(currentUser?.id || "")
+                                const likesCount = comment.likes?.length || 0
+
+                                return (
+                                    <div key={comment.id} className="flex gap-3 text-sm group">
+                                        <Avatar className="h-8 w-8 mt-0.5">
+                                            <AvatarImage src={comment.author.avatar} />
+                                            <AvatarFallback>{comment.author.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 space-y-1">
+                                            <div className="flex items-start gap-2">
+                                                <div className="bg-muted/80 rounded-2xl rounded-tl-none px-3 py-2 inline-block max-w-[90%] relative">
+                                                    <span className="font-semibold text-xs mr-2">{comment.author.name}</span>
+                                                    <span className="text-foreground/90">{comment.content}</span>
+
+                                                    {likesCount > 0 && (
+                                                        <button
+                                                            onClick={() => openLikersModal(comment.id)}
+                                                            className="absolute -bottom-2 -right-1 bg-background border border-border rounded-full px-1.5 py-0.5 flex items-center gap-0.5 shadow-sm text-[9px] text-muted-foreground hover:bg-muted cursor-pointer transition-colors"
+                                                        >
+                                                            <Heart className="w-2.5 h-2.5 fill-rose-500 text-rose-500" />
+                                                            <span>{likesCount}</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className={cn(
+                                                        "h-6 w-6 rounded-full -mt-1 opacity-0 group-hover:opacity-100 transition-opacity",
+                                                        isLiked && "opacity-100 text-rose-500 hover:text-rose-600 hover:bg-rose-100/10"
+                                                    )}
+                                                    onClick={() => handleLikeComment(comment.id, comment.likes || [])}
+                                                >
+                                                    <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current")} />
+                                                </Button>
+                                            </div>
+                                            <div className="flex items-center gap-3 pl-1">
+                                                <p className="text-[10px] text-muted-foreground">
+                                                    {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                                                </p>
+                                                {/* Optional: Reply button could go here */}
+                                            </div>
                                         </div>
-                                        <p className="text-[10px] text-muted-foreground pl-1">
-                                            {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
-                                        </p>
                                     </div>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     )}
                 </div>
@@ -193,6 +296,45 @@ export function CommentSection({ postId, onClose, onCommentAdded }: CommentSecti
                     </Button>
                 </div>
             </form>
+
+            {/* Likers Dialog */}
+            <Dialog open={showLikersModal} onOpenChange={setShowLikersModal}>
+                <DialogContent className="max-w-xs p-0 overflow-hidden bg-slate-950/95 backdrop-blur-xl border border-white/10 text-white rounded-3xl shadow-2xl">
+                    <DialogHeader className="p-4 border-b border-white/10 flex flex-row items-center justify-between">
+                        <DialogTitle className="text-sm font-bold flex items-center gap-2">
+                            <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+                            Liked by
+                        </DialogTitle>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-white/10" onClick={() => setShowLikersModal(false)}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </DialogHeader>
+                    <div className="p-2 space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
+                        {activeLikers.length > 0 ? activeLikers.map(user => (
+                            <div key={user.id} className="flex items-center gap-3 p-2.5 hover:bg-white/5 rounded-2xl transition-colors group">
+                                <Avatar className="h-10 w-10 border border-white/10 shadow-sm">
+                                    <AvatarImage src={user.avatar} />
+                                    <AvatarFallback className="bg-gradient-to-br from-rose-500 to-pink-600 text-xs text-white font-bold">
+                                        {user.name.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0 text-left">
+                                    <p className="text-sm font-bold text-white truncate leading-none mb-1">{user.name}</p>
+                                    <p className="text-[10px] text-white/40 truncate font-medium">{user.email || "Team Member"}</p>
+                                </div>
+                                {user.id === currentUser?.id && (
+                                    <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider scale-90">You</span>
+                                )}
+                            </div>
+                        )) : (
+                            <div className="flex flex-col items-center justify-center py-12 text-white/20 gap-3">
+                                <Heart className="w-10 h-10 stroke-1" />
+                                <p className="text-sm font-bold">No visible likes.</p>
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

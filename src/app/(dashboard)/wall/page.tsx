@@ -5,8 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTranslation } from "@/lib/i18n-context"
 import { LayoutGrid, User } from "lucide-react"
 
+import { useSearchParams } from "next/navigation"
+
 export default function WallPage() {
     const { t } = useTranslation()
+    const searchParams = useSearchParams()
+    const postId = searchParams.get('postId')
 
     return (
         <div className="p-6 space-y-6 max-w-5xl mx-auto">
@@ -32,7 +36,7 @@ export default function WallPage() {
                 </TabsList>
 
                 <TabsContent value="feed" className="m-0">
-                    <WallFeed variant="full" />
+                    <WallFeed variant="full" highlightPostId={postId} />
                 </TabsContent>
 
                 <TabsContent value="personal" className="m-0">

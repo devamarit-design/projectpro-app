@@ -15,12 +15,29 @@ import { cn } from "@/lib/utils"
 interface WallFeedProps {
     variant?: 'full' | 'widget'
     filterByUser?: boolean // If true, show only current user's posts
+    highlightPostId?: string | null
 }
 
-export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedProps) {
+export function WallFeed({ variant = 'full', filterByUser = false, highlightPostId }: WallFeedProps) {
     const { posts, isLoading: isSocialLoading } = useSocial()
     const { currentUser } = useProjects() // We still need currentUser for filtering by user if needed
     const [selectedTag, setSelectedTag] = useState<string | null>(null)
+
+    // Scroll to highlighted post
+    useEffect(() => {
+        if (highlightPostId && !isSocialLoading && posts.length > 0) {
+            const element = document.getElementById(`post-${highlightPostId}`)
+            if (element) {
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    element.classList.add('ring-2', 'ring-primary', 'ring-offset-2')
+                    setTimeout(() => {
+                        element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2')
+                    }, 3000)
+                }, 500)
+            }
+        }
+    }, [highlightPostId, isSocialLoading, posts])
 
     // Unified Hashtag Regex (Thai support)
     const hashtagRegex = /#[\wก-๙]+/g
@@ -139,7 +156,14 @@ export function WallFeed({ variant = 'full', filterByUser = false }: WallFeedPro
                     </div>
                 ) : (
                     filteredPosts.map(post => (
-                        <div key={post.id} className={variant === 'widget' ? "min-w-[320px] max-w-[320px] snap-center" : "w-full animate-in fade-in slide-in-from-bottom-4 duration-500"}>
+                        <div
+                            key={post.id}
+                            id={`post-${post.id}`}
+                            className={cn(
+                                variant === 'widget' ? "min-w-[320px] max-w-[320px] snap-center" : "w-full animate-in fade-in slide-in-from-bottom-4 duration-500",
+                                highlightPostId === post.id && "transition-all duration-1000"
+                            )}
+                        >
                             <PostCard post={post} />
                         </div>
                     ))

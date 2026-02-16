@@ -3,6 +3,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { useBackNavigation } from "@/hooks/use-back-navigation"
 
 // Context
 const AlertDialogContext = React.createContext<{
@@ -19,6 +20,7 @@ const AlertDialog = ({
     open?: boolean,
     onOpenChange?: (open: boolean) => void
 }) => {
+    useBackNavigation(!!open, (val) => onOpenChange?.(val))
     return (
         <AlertDialogContext.Provider value={{ open, onOpenChange }}>
             {children}
