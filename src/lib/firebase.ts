@@ -23,12 +23,12 @@ export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 // Initialize Firestore with Offline Persistence and Robustness Settings
-import { initializeFirestore, memoryLocalCache } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentSingleTabManager } from "firebase/firestore";
 
 let firestoreInstance;
 try {
     firestoreInstance = initializeFirestore(app, {
-        localCache: memoryLocalCache(),
+        localCache: persistentLocalCache({ tabManager: persistentSingleTabManager({}) }),
         experimentalForceLongPolling: true,
     });
 } catch (e) {

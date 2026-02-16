@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 
 export default function AboutPage() {
     const { t } = useTranslation()
-    const [version, setVersion] = useState("1.0.9(i)")
+    const [version, setVersion] = useState("1.0.10")
 
     useEffect(() => {
         fetch('/api/system/version')

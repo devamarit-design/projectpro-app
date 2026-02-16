@@ -1943,8 +1943,9 @@ export function useProjects() {
         archiveTask: taskCtx.archiveTask,
         unarchiveTask: taskCtx.unarchiveTask,
         setTasks: taskCtx.setTasks,
+        loadMoreTasks: taskCtx.loadMoreTasks,
+        loadArchivedTasks: taskCtx.loadArchivedTasks,
 
-        // Finance
         // Finance
         expenses: financeCtx.expenses,
         archivedExpenses: financeCtx.archivedExpenses,
@@ -1979,6 +1980,8 @@ export function useProjects() {
         unarchiveExpense: financeCtx.unarchiveExpense,
         archiveIncome: financeCtx.archiveIncome,
         unarchiveIncome: financeCtx.unarchiveIncome,
+        loadArchivedExpenses: financeCtx.loadArchivedExpenses,
+        loadArchivedIncomes: financeCtx.loadArchivedIncomes,
 
         // Social
         posts: socialCtx.posts,
@@ -1990,6 +1993,7 @@ export function useProjects() {
         // Loading states
         isTasksLoading: taskCtx.isLoading,
         isFinanceLoading: financeCtx.isLoading,
-        isSocialLoading: socialCtx.isLoading
+        isSocialLoading: socialCtx.isLoading,
+        isArchivedLoading: financeCtx.isArchivedLoading
     }), [context, taskCtx, financeCtx, socialCtx])
 }

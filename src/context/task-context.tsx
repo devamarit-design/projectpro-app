@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react"
 import { db } from "@/lib/firebase"
-import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, Timestamp, getDocs } from "firebase/firestore"
+import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, Timestamp, getDocs, limit, startAfter } from "firebase/firestore"
 import { useOrganization } from "@/context/organization-context"
 import { logActivity } from "@/lib/activity-logger"
 import { ProjectTask, TaskStatus, Priority, WorkItem, User } from "./project-context"
@@ -18,6 +18,9 @@ interface TaskContextType {
     archiveTask: (taskId: string) => Promise<void>
     unarchiveTask: (taskId: string) => Promise<void>
     setTasks: React.Dispatch<React.SetStateAction<ProjectTask[]>>
+    loadMoreTasks: () => Promise<void>
+    loadArchivedTasks: () => Promise<void>
+    hasMoreTasks: boolean
     isLoading: boolean
 }
 
@@ -25,7 +28,7 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined)
 
 export function TaskProvider({ children, currentUser }: { children: React.ReactNode, currentUser: User | null }) {
     useEffect(() => {
-        console.log("[TaskContext] 🟢 DOMAIN MOUNTED - Version 1.0.8(d)")
+        console.log("[TaskContext] 🟢 DOMAIN MOUNTED - Version 1.1.0 (Optimized)")
     }, [])
 
     // 0. State
@@ -34,27 +37,36 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
     const [archivedTasks, setArchivedTasks] = useState<ProjectTask[]>([])
     const [works, setWorks] = useState<WorkItem[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [hasMoreTasks, setHasMoreTasks] = useState(true)
+    const [lastTaskDoc, setLastTaskDoc] = useState<any>(null)
 
-    // 1. Active Tasks Listener
+    const INITIAL_LIMIT = 50
+
+    // 1. Active Tasks Listener (with Limit and OrderBy)
     useEffect(() => {
         if (!currentTeam?.id) return
         setIsLoading(true)
 
-        console.log(`[TaskContext] 🟢 Initializing ACTIVE Listener for Org: ${currentTeam.id}`)
+        console.log(`[TaskContext] 🟢 Initializing ACTIVE Listener (Limit ${INITIAL_LIMIT}) for Org: ${currentTeam.id}`)
 
         const q = query(
             collection(db, "tasks"),
             where("orgId", "==", currentTeam.id),
-            where("isArchived", "==", false)
+            where("isArchived", "==", false),
+            orderBy("createdAt", "desc"),
+            limit(INITIAL_LIMIT)
         )
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             console.log(`[TaskContext] 📦 ACTIVE Snapshot. Docs: ${snapshot.docs.length}. FromCache: ${snapshot.metadata.fromCache}`)
 
             const activeTasks = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ProjectTask))
+            setTasks(activeTasks)
 
-            // Sort by createdAt desc
-            setTasks(activeTasks.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
+            if (snapshot.docs.length > 0) {
+                setLastTaskDoc(snapshot.docs[snapshot.docs.length - 1])
+            }
+            setHasMoreTasks(snapshot.docs.length === INITIAL_LIMIT)
             setIsLoading(false)
         }, (error) => {
             console.error(`[TaskContext] 🔴 ACTIVE Snapshot Error:`, error)
@@ -64,25 +76,62 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
         return () => unsubscribe()
     }, [currentTeam?.id])
 
-    // 2. Archived Tasks Listener
-    useEffect(() => {
-        if (!currentTeam?.id) return
+    const loadMoreTasks = useCallback(async () => {
+        if (!currentTeam?.id || !lastTaskDoc || !hasMoreTasks) return
 
         const q = query(
             collection(db, "tasks"),
             where("orgId", "==", currentTeam.id),
-            where("isArchived", "==", true)
+            where("isArchived", "==", false),
+            orderBy("createdAt", "desc"),
+            startAfter(lastTaskDoc),
+            limit(INITIAL_LIMIT)
         )
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const archived = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ProjectTask))
-            setArchivedTasks(archived.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
-        }, (error) => {
-            console.error(`[TaskContext] 🔴 ARCHIVED Snapshot Error:`, error)
-        })
+        try {
+            const snapshot = await getDocs(q)
+            const moreTasks = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ProjectTask))
 
-        return () => unsubscribe()
-    }, [currentTeam?.id])
+            if (moreTasks.length > 0) {
+                setTasks(prev => {
+                    // Prevent duplicates
+                    const existingIds = new Set(prev.map(t => t.id))
+                    const uniqueNewTasks = moreTasks.filter(t => !existingIds.has(t.id))
+                    return [...prev, ...uniqueNewTasks]
+                })
+                setLastTaskDoc(snapshot.docs[snapshot.docs.length - 1])
+            }
+            setHasMoreTasks(snapshot.docs.length === INITIAL_LIMIT)
+        } catch (error) {
+            console.error("[TaskContext] Error loading more tasks:", error)
+        }
+    }, [currentTeam?.id, lastTaskDoc, hasMoreTasks])
+
+    const [isArchivedLoading, setIsArchivedLoading] = useState(false)
+
+    // 2. Archived Tasks (Lazy Load)
+    const loadArchivedTasks = useCallback(async () => {
+        if (!currentTeam?.id || archivedTasks.length > 0) return
+        setIsArchivedLoading(true)
+
+        const q = query(
+            collection(db, "tasks"),
+            where("orgId", "==", currentTeam.id),
+            where("isArchived", "==", true),
+            orderBy("createdAt", "desc"),
+            limit(100)
+        )
+
+        try {
+            const snapshot = await getDocs(q)
+            const archived = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ProjectTask))
+            setArchivedTasks(archived)
+        } catch (error) {
+            console.error("[TaskContext] Error loading archived tasks:", error)
+        } finally {
+            setIsArchivedLoading(false)
+        }
+    }, [currentTeam?.id, archivedTasks.length])
 
     // 3. Work Listener (Gantt)
     useEffect(() => {
@@ -320,8 +369,11 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
         archiveTask,
         unarchiveTask,
         setTasks,
+        loadMoreTasks,
+        loadArchivedTasks,
+        hasMoreTasks,
         isLoading
-    }), [tasks, archivedTasks, works, addTask, updateTask, deleteTask, toggleTask, archiveTask, unarchiveTask, isLoading])
+    }), [tasks, archivedTasks, works, addTask, updateTask, deleteTask, toggleTask, archiveTask, unarchiveTask, loadMoreTasks, loadArchivedTasks, hasMoreTasks, isLoading])
 
     return (
         <TaskContext.Provider value={value}>

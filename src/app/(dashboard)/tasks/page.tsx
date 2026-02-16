@@ -36,7 +36,7 @@ import { SortableTaskCard } from "@/components/tasks/sortable-task-card"
 import { TasksColumn } from "@/components/tasks/tasks-column"
 
 export default function TasksPage() {
-    const { projects, tasks, archivedTasks, updateTask, deleteTask, toggleTask, currentUser, users } = useProjects()
+    const { projects, tasks, archivedTasks, updateTask, deleteTask, toggleTask, currentUser, users, loadArchivedTasks } = useProjects()
     const { t } = useTranslation()
     const searchParams = useSearchParams()
     const router = useRouter()
@@ -44,6 +44,13 @@ export default function TasksPage() {
     const [projectFilter, setProjectFilter] = React.useState<string>("all")
     const [userFilter, setUserFilter] = React.useState<string>("all")
     const [showArchived, setShowArchived] = React.useState(false)
+
+    // Lazy load archived tasks when requested
+    React.useEffect(() => {
+        if (showArchived) {
+            loadArchivedTasks()
+        }
+    }, [showArchived, loadArchivedTasks])
     const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
     const [showAddTask, setShowAddTask] = React.useState(false)
 

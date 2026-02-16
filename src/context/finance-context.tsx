@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react"
 import { db } from "@/lib/firebase"
-import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore"
+import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, limit, getDocs } from "firebase/firestore"
 import { useOrganization } from "@/context/organization-context"
 import { logActivity } from "@/lib/activity-logger"
 import { Expense, IncomeDocument, Vendor, Customer, Worker, Contract } from "./project-context"
@@ -47,7 +47,11 @@ interface FinanceContextType {
     archiveIncome: (id: string) => Promise<void>
     unarchiveIncome: (id: string) => Promise<void>
 
+    loadArchivedExpenses: () => Promise<void>
+    loadArchivedIncomes: () => Promise<void>
+
     isLoading: boolean
+    isArchivedLoading: boolean
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined)
@@ -60,39 +64,54 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
     const [customers, setCustomers] = useState<Customer[]>([])
     const [workers, setWorkers] = useState<Worker[]>([])
     const [contracts, setContracts] = useState<Contract[]>([])
+    const [archivedExpenses, setArchivedExpenses] = useState<Expense[]>([])
+    const [archivedIncomes, setArchivedIncomes] = useState<IncomeDocument[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [isArchivedLoading, setIsArchivedLoading] = useState(false)
 
-    // Helper for incremental updates
-    const handleIncrementalUpdate = useCallback((setFn: React.Dispatch<React.SetStateAction<any[]>>, snapshot: any, sortKey: string = "createdAt") => {
-        setFn(prev => {
-            let newData = [...prev]
-            snapshot.docChanges().forEach((change: any) => {
-                const data = { ...change.doc.data(), id: change.doc.id }
-                if (change.type === "added") {
-                    if (!newData.find(item => item.id === data.id)) newData.unshift(data)
-                }
-                if (change.type === "modified") {
-                    const index = newData.findIndex(item => item.id === data.id)
-                    if (index > -1) newData[index] = data
-                }
-                if (change.type === "removed") {
-                    newData = newData.filter(item => item.id !== data.id)
-                }
-            })
-            return newData.sort((a, b) => new Date(b[sortKey] || 0).getTime() - new Date(a[sortKey] || 0).getTime())
-        })
-    }, [])
+    const DATA_LIMIT = 50
 
     // Listeners
     useEffect(() => {
         if (!currentTeam?.id) return
+        setIsLoading(true)
 
-        const unsubExpenses = onSnapshot(query(collection(db, "expenses"), where("orgId", "==", currentTeam.id)), (snap) => handleIncrementalUpdate(setExpenses, snap, "date"))
-        const unsubIncomes = onSnapshot(query(collection(db, "incomes"), where("orgId", "==", currentTeam.id)), (snap) => handleIncrementalUpdate(setIncomes, snap, "date"))
-        const unsubVendors = onSnapshot(query(collection(db, "vendors"), where("orgId", "==", currentTeam.id)), (snap) => handleIncrementalUpdate(setVendors, snap))
-        const unsubCustomers = onSnapshot(query(collection(db, "customers"), where("orgId", "==", currentTeam.id)), (snap) => handleIncrementalUpdate(setCustomers, snap))
-        const unsubWorkers = onSnapshot(query(collection(db, "workers"), where("orgId", "==", currentTeam.id)), (snap) => handleIncrementalUpdate(setWorkers, snap))
-        const unsubContracts = onSnapshot(query(collection(db, "contracts"), where("orgId", "==", currentTeam.id)), (snap) => handleIncrementalUpdate(setContracts, snap))
+        // 1. Expenses (Active & Ordered)
+        const qExpenses = query(
+            collection(db, "expenses"),
+            where("orgId", "==", currentTeam.id),
+            where("isArchived", "==", false),
+            orderBy("date", "desc"),
+            limit(DATA_LIMIT)
+        )
+        const unsubExpenses = onSnapshot(qExpenses, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
+            setExpenses(data)
+        }, (error) => console.error("[FinanceContext] Expenses sync error:", error))
+
+        // 2. Incomes (Active & Ordered)
+        const qIncomes = query(
+            collection(db, "incomes"),
+            where("orgId", "==", currentTeam.id),
+            where("isArchived", "==", false),
+            orderBy("date", "desc"),
+            limit(DATA_LIMIT)
+        )
+        const unsubIncomes = onSnapshot(qIncomes, (snap) => {
+            const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
+            setIncomes(data)
+        }, (error) => console.error("[FinanceContext] Incomes sync error:", error))
+
+        // 3. Master Data (Limited for now to prevent startup lag)
+        const qVendors = query(collection(db, "vendors"), where("orgId", "==", currentTeam.id), limit(100))
+        const qCustomers = query(collection(db, "customers"), where("orgId", "==", currentTeam.id), limit(100))
+        const qWorkers = query(collection(db, "workers"), where("orgId", "==", currentTeam.id), limit(100))
+        const qContracts = query(collection(db, "contracts"), where("orgId", "==", currentTeam.id), limit(50))
+
+        const unsubVendors = onSnapshot(qVendors, (snap) => setVendors(snap.docs.map(d => ({ ...d.data(), id: d.id } as Vendor))))
+        const unsubCustomers = onSnapshot(qCustomers, (snap) => setCustomers(snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer))))
+        const unsubWorkers = onSnapshot(qWorkers, (snap) => setWorkers(snap.docs.map(d => ({ ...d.data(), id: d.id } as Worker))))
+        const unsubContracts = onSnapshot(qContracts, (snap) => setContracts(snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract))))
 
         setIsLoading(false)
         return () => {
@@ -103,7 +122,39 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
             unsubWorkers()
             unsubContracts()
         }
-    }, [currentTeam?.id, handleIncrementalUpdate])
+    }, [currentTeam?.id])
+
+    const loadArchivedExpenses = useCallback(async () => {
+        if (!currentTeam?.id || archivedExpenses.length > 0) return
+        setIsArchivedLoading(true)
+        try {
+            const q = query(
+                collection(db, "expenses"),
+                where("orgId", "==", currentTeam.id),
+                where("isArchived", "==", true),
+                orderBy("date", "desc"),
+                limit(100)
+            )
+            const snap = await getDocs(q)
+            setArchivedExpenses(snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense)))
+        } catch (e) { console.error(e) } finally { setIsArchivedLoading(false) }
+    }, [currentTeam?.id, archivedExpenses.length])
+
+    const loadArchivedIncomes = useCallback(async () => {
+        if (!currentTeam?.id || archivedIncomes.length > 0) return
+        setIsArchivedLoading(true)
+        try {
+            const q = query(
+                collection(db, "incomes"),
+                where("orgId", "==", currentTeam.id),
+                where("isArchived", "==", true),
+                orderBy("date", "desc"),
+                limit(100)
+            )
+            const snap = await getDocs(q)
+            setArchivedIncomes(snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument)))
+        } catch (e) { console.error(e) } finally { setIsArchivedLoading(false) }
+    }, [currentTeam?.id, archivedIncomes.length])
 
     // Finance Actions
     const addExpense = useCallback(async (expenseData: Omit<Expense, "id" | "createdAt" | "orgId">) => {
@@ -357,11 +408,8 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
     }, [])
 
     const value = useMemo(() => {
-        const activeExpenses = expenses.filter(e => !e.isArchived)
-        const archivedExpenses = expenses.filter(e => e.isArchived)
-
         return {
-            expenses: activeExpenses,
+            expenses,
             archivedExpenses,
             incomes, vendors, customers, workers, contracts,
             addExpense, updateExpense, deleteExpense,
@@ -371,10 +419,11 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
             addCustomer, updateCustomer, deleteCustomer,
             addContract, updateContract, deleteContract, payInstallment,
             archiveExpense, unarchiveExpense, archiveIncome, unarchiveIncome,
-            isLoading
+            loadArchivedExpenses, loadArchivedIncomes,
+            isLoading, isArchivedLoading
         }
     }, [
-        expenses, incomes, vendors, customers, workers, contracts,
+        expenses, archivedExpenses, incomes, vendors, customers, workers, contracts,
         addExpense, updateExpense, deleteExpense,
         addIncome, updateIncome, deleteIncome,
         addVendor, updateVendor, deleteVendor,
@@ -382,7 +431,8 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         addCustomer, updateCustomer, deleteCustomer,
         addContract, updateContract, deleteContract, payInstallment,
         archiveExpense, unarchiveExpense, archiveIncome, unarchiveIncome,
-        isLoading
+        loadArchivedExpenses, loadArchivedIncomes,
+        isLoading, isArchivedLoading
     ])
 
     return (
