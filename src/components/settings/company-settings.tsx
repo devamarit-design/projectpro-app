@@ -75,24 +75,24 @@ export function CompanySettings() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold tracking-tight">Organization Settings</h2>
                     <p className="text-muted-foreground">Manage your company details and preferences.</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleFixTaskData} disabled={isMigrating}>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="outline" onClick={handleFixTaskData} disabled={isMigrating} className="whitespace-nowrap">
                         {isMigrating ? "Fixing..." : "Fix Data (Admin)"}
                     </Button>
                     {/* Original Edit Button, integrated into the new header structure */}
                     {currentTeam && hasPermission(currentTeam?.role, "COMPANY_UPDATE") && (
-                        <Button onClick={() => setIsEditTeamOpen(true)}>
+                        <Button onClick={() => setIsEditTeamOpen(true)} className="whitespace-nowrap">
                             <Edit className="w-4 h-4 mr-2" />
                             <span>{t.common.edit}</span>
                         </Button>
                     )}
                     {/* Placeholder Save Button */}
-                    <Button onClick={handleSave} disabled={isLoading}>
+                    <Button onClick={handleSave} disabled={isLoading} className="whitespace-nowrap">
                         {isLoading ? "Saving..." : "Save Changes"}
                     </Button>
                 </div>

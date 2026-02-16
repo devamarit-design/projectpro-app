@@ -1079,80 +1079,85 @@ export default function ProjectDetailClient() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {project.subProjects && project.subProjects.length > 0 ? (
-                                project.subProjects.map((sp) => (
-                                    <div
-                                        key={sp.id}
-                                        onClick={() => setSelectedSubProjectId(sp.id)}
-                                        className="group bg-card/50 backdrop-blur-sm border border-white/5 rounded-2xl p-5 hover:bg-white/5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all cursor-pointer relative overflow-hidden"
-                                    >
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+                                project.subProjects.map((sp) => {
+                                    // Calculate Total Project Expenses (Denominator)
+                                    const projectTotalExpenses = expenses
+                                        .filter(e => e.projectId === project.id && e.status !== 'Advanced') // Consistent filter
+                                        .reduce((sum, e) => sum + e.totalValue, 0)
 
-                                        <div className="relative">
-                                            <div className="flex justify-between items-start mb-3">
-                                                <div className="p-2.5 bg-primary/10 rounded-xl text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                                    <Target className="w-5 h-5" />
+                                    const spExpenses = expenses
+                                        .filter(e => e.subProjectId === sp.id && e.status !== 'Advanced')
+                                        .reduce((sum, e) => sum + e.totalValue, 0)
+
+                                    // Avoid division by zero
+                                    const percentage = projectTotalExpenses > 0 ? (spExpenses / projectTotalExpenses) * 100 : 0
+
+                                    return (
+                                        <div
+                                            key={sp.id}
+                                            onClick={() => setSelectedSubProjectId(sp.id)}
+                                            className="group bg-card/50 backdrop-blur-sm border border-white/5 rounded-2xl p-5 hover:bg-white/5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all cursor-pointer relative overflow-hidden"
+                                        >
+                                            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div className="p-2.5 bg-primary/10 rounded-xl text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                                        <Target className="w-5 h-5" />
+                                                    </div>
                                                 </div>
-                                                {/* Total Expense for Sub-project */}
-                                                <div className="text-right">
-                                                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Total Expense</p>
-                                                    <p className="font-bold text-red-500">
-                                                        ฿{expenses
-                                                            .filter(e => e.subProjectId === sp.id && e.status !== 'Advanced') // Exclude Advanced if needed, or include all? Usually expense = cost. Advanced is typically excluded until cleared. Let's include all for now or user specific? User said "Required Total Expense". Let's sum all.
-                                                            .reduce((sum, e) => sum + e.totalValue, 0)
-                                                            .toLocaleString()}
-                                                    </p>
+
+                                                <h4 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors">{sp.name}</h4>
+
+                                                {/* Financial Progress Bar (Contribution) */}
+                                                <div className="space-y-1 mb-4">
+                                                    <div className="flex justify-between text-[10px] uppercase font-bold text-muted-foreground">
+                                                        <span>Expense Proportion (สัดส่วนรายจ่าย)</span>
+                                                        <span>
+                                                            ฿{spExpenses.toLocaleString()} / ฿{projectTotalExpenses.toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                                                        <div
+                                                            className={cn("h-full rounded-full transition-all duration-500",
+                                                                // Color logic: simply primary for contribution, usually doesn't need red unless we tracked against sp budget.
+                                                                // But let's keep it simple blue for proportion, or maybe gradient?
+                                                                "bg-primary"
+                                                            )}
+                                                            style={{ width: `${Math.min(percentage, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                    <p className="text-[10px] text-right text-muted-foreground">{percentage.toFixed(1)}%</p>
+                                                </div>
+
+                                                <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                                                    {sp.description || (locale === 'th' ? "ไม่มีรายละเอียด" : "No description provided")}
+                                                </p>
+
+                                                <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground border-t border-white/5 pt-3">
+                                                    {sp.budget && (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <DollarSign className="w-3.5 h-3.5" />
+                                                            {sp.budget}
+                                                        </div>
+                                                    )}
+                                                    {sp.startDate && (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Calendar className="w-3.5 h-3.5" />
+                                                            {new Date(sp.startDate).toLocaleDateString()}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
-                                            <h4 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors">{sp.name}</h4>
-
-                                            {/* Task Progress Bar */}
-                                            <div className="space-y-1 mb-4">
-                                                <div className="flex justify-between text-[10px] uppercase font-bold text-muted-foreground">
-                                                    <span>Progress</span>
-                                                    <span>
-                                                        {(project.tasks || []).filter(t => t.subProjectId === sp.id && t.status === 'Done').length} / {(project.tasks || []).filter(t => t.subProjectId === sp.id).length} Tasks
-                                                    </span>
+                                            <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
+                                                <div className="p-1.5 bg-primary rounded-full text-primary-foreground shadow-sm">
+                                                    <ArrowUpRight className="w-4 h-4" />
                                                 </div>
-                                                <div className="w-full h-1.5 bg-muted/30 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-primary rounded-full"
-                                                        style={{
-                                                            width: `${(project.tasks || []).filter(t => t.subProjectId === sp.id).length > 0
-                                                                ? ((project.tasks || []).filter(t => t.subProjectId === sp.id && t.status === 'Done').length / (project.tasks || []).filter(t => t.subProjectId === sp.id).length) * 100
-                                                                : 0}%`
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                                                {sp.description || (locale === 'th' ? "ไม่มีรายละเอียด" : "No description provided")}
-                                            </p>
-
-                                            <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground border-t border-white/5 pt-3">
-                                                {sp.budget && (
-                                                    <div className="flex items-center gap-1.5">
-                                                        <DollarSign className="w-3.5 h-3.5" />
-                                                        {sp.budget}
-                                                    </div>
-                                                )}
-                                                {sp.startDate && (
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Calendar className="w-3.5 h-3.5" />
-                                                        {new Date(sp.startDate).toLocaleDateString()}
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
-
-                                        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
-                                            <div className="p-1.5 bg-primary rounded-full text-primary-foreground shadow-sm">
-                                                <ArrowUpRight className="w-4 h-4" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
+                                    )
+                                })
                             ) : (
                                 <div className="col-span-full py-12 flex flex-col items-center justify-center text-center space-y-4 bg-muted/20 rounded-3xl border border-dashed border-white/10">
                                     <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center">
