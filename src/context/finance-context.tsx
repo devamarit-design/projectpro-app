@@ -77,29 +77,33 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         setIsLoading(true)
 
         // 1. Expenses (Active & Ordered)
+        // 1. Expenses (Active & Ordered)
+        // QUERY: Remove isArchived filter to fix missing data (legacy data might not have the field)
         const qExpenses = query(
             collection(db, "expenses"),
             where("orgId", "==", currentTeam.id),
-            where("isArchived", "==", false),
             orderBy("date", "desc"),
             limit(DATA_LIMIT)
         )
         const unsubExpenses = onSnapshot(qExpenses, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
-            setExpenses(data)
+            // CLIENT-SIDE FILTER: Include if isArchived is false OR undefined
+            setExpenses(data.filter(d => d.isArchived !== true))
         }, (error) => console.error("[FinanceContext] Expenses sync error:", error))
 
         // 2. Incomes (Active & Ordered)
+        // 2. Incomes (Active & Ordered)
+        // QUERY: Remove isArchived filter to fix missing data
         const qIncomes = query(
             collection(db, "incomes"),
             where("orgId", "==", currentTeam.id),
-            where("isArchived", "==", false),
             orderBy("date", "desc"),
             limit(DATA_LIMIT)
         )
         const unsubIncomes = onSnapshot(qIncomes, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
-            setIncomes(data)
+            // CLIENT-SIDE FILTER
+            setIncomes(data.filter(d => d.isArchived !== true))
         }, (error) => console.error("[FinanceContext] Incomes sync error:", error))
 
         // 3. Master Data (Limited for now to prevent startup lag)

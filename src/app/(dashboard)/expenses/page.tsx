@@ -6,6 +6,7 @@ import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
 import { useProjects, ExpenseCategory } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import AddExpenseDialog from "@/components/expenses/add-expense-dialog"
+import { ExpenseEntrySelectionDialog } from "@/components/expenses/expense-entry-selection-dialog"
 import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
 import { useSearchParams, useRouter } from "next/navigation"
 import { AddContractDialog } from "@/components/contracts/add-contract-dialog"
@@ -22,15 +23,17 @@ import { ExpensesPDF } from "@/components/expenses/expenses-pdf"
 const FINANCIAL_TARGETS_KEY = "financial-targets" // Keep for legacy cleanup or remove if not needed, but safe to keep constant
 
 function ExpensesContent() {
-    const { expenses, archivedExpenses, projects, users, currentUser, currentTeam, updateExpense } = useProjects()
+    const { expenses, archivedExpenses, projects, users, currentUser, currentTeam, updateExpense, isFinanceLoading } = useProjects()
     const { financialTargets } = useSettings() // Use global settings
     const { t } = useTranslation()
     const searchParams = useSearchParams()
     const router = useRouter()
     // Combined State: isAddOpen controls the dialog, startScanning passes the intent
     const [isAddOpen, setIsAddOpen] = React.useState(false)
+    const [isSelectionOpen, setIsSelectionOpen] = React.useState(false)
     const [startScanning, setStartScanning] = React.useState(false)
     const [isContractOpen, setIsContractOpen] = React.useState(false)
+    const [isSmartScanOpen, setIsSmartScanOpen] = React.useState(false)
 
     const [selectedExpenseId, setSelectedExpenseId] = React.useState<string | null>(null)
     const [searchQuery, setSearchQuery] = React.useState("")
@@ -49,7 +52,7 @@ function ExpensesContent() {
         const id = searchParams.get('id')
 
         if (action === 'new') {
-            setIsAddOpen(true)
+            setIsSelectionOpen(true)
             router.replace('/expenses')
         } else if (editId) {
             setSelectedExpenseId(editId)
@@ -65,19 +68,14 @@ function ExpensesContent() {
         setIsAddOpen(true)
     }
 
-    // Dropdown State
-    const [isDropdownOpen, setIsDropdownOpen] = React.useState(false)
-    const [isExportOpen, setIsExportOpen] = React.useState(false) // NEW: State for export dropdown
-    const dropdownRef = React.useRef<HTMLDivElement>(null)
-    const exportRef = React.useRef<HTMLDivElement>(null) // NEW: Ref for export dropdown
+    // NEW: State for export dropdown
+    const [isExportOpen, setIsExportOpen] = React.useState(false)
+    const exportRef = React.useRef<HTMLDivElement>(null)
 
-    // Click Outside to Close Dropdown
+    // Click Outside to Close Export Dropdown
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsDropdownOpen(false)
-            }
-            // NEW: Handle export dropdown outside click
+            // Handle export dropdown outside click
             if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
                 setIsExportOpen(false)
             }
@@ -240,6 +238,13 @@ function ExpensesContent() {
             />
             <ExpenseDetailSheet expenseId={selectedExpenseId} onClose={() => setSelectedExpenseId(null)} />
 
+            <ExpenseEntrySelectionDialog
+                isOpen={isSelectionOpen}
+                onClose={() => setIsSelectionOpen(false)}
+                onSelectManual={handleOpenAdd}
+                onSelectScan={() => setIsSmartScanOpen(true)}
+            />
+
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -294,45 +299,22 @@ function ExpensesContent() {
                         {t.expenses.create_contract}
                     </button>
 
-                    {/* Dropdown Button */}
-                    <div className="relative" ref={dropdownRef}>
-                        <button
-                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg hover:opacity-90 active:scale-95 transition-all"
-                        >
-                            <Plus className="w-5 h-5" />
-                            {t.expenses.add_expense}
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {isDropdownOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-48 bg-background border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 origin-top-right z-50">
-                                <button
-                                    onClick={() => {
-                                        handleOpenAdd()
-                                        setIsDropdownOpen(false)
-                                    }}
-                                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
-                                >
-                                    <Plus className="w-4 h-4 text-muted-foreground" />
-                                    <span className="font-medium text-sm">{t.expenses.manual_entry}</span>
-                                </button>
-                                <div className="h-px bg-border" />
-                                <button
-                                    onClick={() => {
-                                        handleOpenScan()
-                                        setIsDropdownOpen(false)
-                                    }}
-                                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
-                                >
-                                    <ScanLine className="w-4 h-4 text-purple-500" />
-                                    <span className="font-medium text-sm text-purple-500">{t.expenses.smart_scan}</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    {/* Add Expense Button - Opens Selection */}
+                    <button
+                        onClick={() => setIsSelectionOpen(true)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg hover:opacity-90 active:scale-95 transition-all"
+                    >
+                        <Plus className="w-5 h-5" />
+                        {t.expenses.add_expense}
+                    </button>
                 </div>
             </div>
+
+            <SmartScanDialog
+                isOpen={isSmartScanOpen}
+                onClose={() => setIsSmartScanOpen(false)}
+                autoSave={true}
+            />
 
             {/* Mood Card - Expenses (Enhanced) */}
             <div className={`p-6 sm:p-8 rounded-3xl border border-white/10 ${mood.bg} flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden animate-in zoom-in duration-500 slide-in-from-bottom-4`}>
@@ -585,11 +567,18 @@ function ExpensesContent() {
             </div>
 
             <div className="grid gap-3">
-                {filteredExpenses.length === 0 ? (
+                {isFinanceLoading ? (
+                    <div className="text-center py-20 opacity-50">
+                        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+                        <p className="text-sm text-muted-foreground">Loading expenses...</p>
+                    </div>
+                ) : filteredExpenses.length === 0 ? (
                     <div className="text-center py-20 opacity-50">
                         <Wallet className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                         <h3 className="text-lg font-medium">{t.expenses.empty}</h3>
-                        <p className="text-sm text-muted-foreground">{t.expenses.empty_hint}</p>
+                        <p className="text-sm text-muted-foreground">
+                            {expenses.length === 0 ? t.expenses.empty_hint : "No expenses match your filters."}
+                        </p>
                     </div>
                 ) : filteredExpenses.map((expense, index) => {
                     // Check if we need a date divider
@@ -619,7 +608,7 @@ function ExpensesContent() {
                                             expense.category === 'Labor' ? 'bg-blue-500/10 text-blue-500' :
                                                 'bg-purple-500/10 text-purple-500'
                                     )}>
-                                        <span className="text-[10px] font-bold uppercase">{expense.category.substring(0, 3)}</span>
+                                        <span className="text-[10px] font-bold uppercase">{(expense.category || "Other").substring(0, 3)}</span>
                                     </div>
                                     <div className="flex-1 min-w-0 overflow-hidden">
                                         <h3 className="font-semibold text-foreground truncate">{expense.title}</h3>

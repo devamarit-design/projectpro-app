@@ -1,14 +1,19 @@
 import { useProjects, ExpenseItem } from "@/context/project-context"
 import { useState, useEffect } from "react"
-import { Camera, Upload, Loader2, CheckCircle } from "lucide-react"
+import { Camera, Upload, Loader2, CheckCircle, Save } from "lucide-react"
 import { analyzeReceipt } from "@/lib/ai-service"
+import { uploadWithThumbnail } from "@/lib/upload"
+import { useOrganization } from "@/context/organization-context"
+import { toast } from "sonner"
 
-export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
+export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = false }: {
     isOpen: boolean
     onClose: () => void
     onScanComplete?: (data: { merchant: string, date: string, items: ExpenseItem[], total: number, receiptImage?: string }) => void
+    autoSave?: boolean
 }) {
     const { addExpense } = useProjects()
+    const { currentOrg } = useOrganization()
     const [scanning, setScanning] = useState(false)
     const [completed, setCompleted] = useState(false)
 
@@ -119,12 +124,87 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete }: {
                 }]
             })
 
+            // Auto Save Logic
+            if (autoSave) {
+                // We need to pass the data we just created, as setExtractedData is async
+                const finalData = {
+                    merchant: data.merchant || "Unknown Merchant",
+                    date: data.date || new Date().toISOString().split('T')[0],
+                    total: Number(data.total) || 0,
+                    items: extractedItems.length > 0 ? extractedItems : [{
+                        id: Math.random().toString(),
+                        description: "Total Expense",
+                        amount: Number(data.total) || 0,
+                        quantity: 1,
+                        unitPrice: Number(data.total) || 0,
+                        category: "Other",
+                        projectId: undefined
+                    }]
+                }
+
+                await handleAutoSave(finalData, previewUrl)
+                return // Exit early as handleAutoSave will close dialog
+            }
+
             setCompleted(true)
         } catch (error: any) {
             console.error("Scan failed:", error)
             alert(`Scan failed: ${error.message}. Please check your API Key.`)
         } finally {
-            setScanning(false)
+            if (!autoSave) {
+                setScanning(false)
+            }
+        }
+    }
+
+    const handleAutoSave = async (data: any, imageUrl: string) => {
+        try {
+            let finalReceiptUrl = undefined
+            let finalThumbnailUrl = undefined
+
+            // Upload Image if exists
+            if (imageUrl && currentOrg?.id) {
+                // Convert Base64 to File
+                try {
+                    const res = await fetch(imageUrl)
+                    const blob = await res.blob()
+                    const fileToUpload = new File([blob], `scan_${Date.now()}.jpg`, { type: "image/jpeg" })
+
+                    const path = `organizations/${currentOrg.id}/expenses/${new Date().getFullYear()}`
+                    const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(fileToUpload, path)
+                    finalReceiptUrl = originalUrl
+                    finalThumbnailUrl = thumbnailUrl
+                } catch (err) {
+                    console.error("Failed to upload auto-save image", err)
+                    toast.error("Failed to upload receipt image")
+                }
+            }
+
+            await addExpense({
+                title: `Bill from ${data.merchant}`,
+                amount: `฿${data.total.toLocaleString()}`,
+                totalValue: data.total,
+                date: data.date,
+                category: data.items[0]?.category || "Other",
+                payee: data.merchant,
+                status: "Pending",
+                items: data.items,
+                receiptImage: finalReceiptUrl,
+                thumbnailUrl: finalThumbnailUrl,
+                vatIncluded: true,
+                projectId: "" // Unassigned
+            })
+
+            toast.success("Expense added via AI Scan", {
+                description: "You can edit details later",
+                duration: 4000
+            })
+
+            onClose()
+        } catch (error) {
+            console.error("Auto-save failed:", error)
+            toast.error("Failed to auto-save expense")
+            setScanning(false) // Stop loading on error
         }
     }
 

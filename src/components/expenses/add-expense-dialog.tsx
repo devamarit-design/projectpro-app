@@ -632,9 +632,25 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
                         <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
 
-                            {/* Mobile Scan Button */}
-
-
+                            {/* Smart Scan Quick Access */}
+                            <div className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-2xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+                                <div className="flex items-center gap-3 text-purple-500">
+                                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                        <ScanLine className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold leading-none">{t.expenses.smart_scan}</p>
+                                        <p className="text-[10px] opacity-70 mt-1">สแกนบิลเพื่อกรอกข้อมูลอัตโนมัติ</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsScanOpen(true)}
+                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95"
+                                >
+                                    เริ่มสแกน / Start Scan
+                                </button>
+                            </div>
                             {/* Top Metadata */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
