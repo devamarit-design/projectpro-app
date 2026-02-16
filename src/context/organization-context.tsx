@@ -170,19 +170,34 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
                 for (const org of orgList) {
                     if (!org.memberIds && org.members && org.members.length > 0) {
                         try {
-                            // Check if current user is an admin/owner to perform the migration, or if its just open
-                            // Simplest is just to attempt the write if we are an owner/admin
                             const currentUserRole = org.members.find(m => m.userId === firebaseUser.uid)?.role
                             if (currentUserRole === 'Owner' || currentUserRole === 'Admin') {
                                 const extractedMemberIds = Array.from(new Set(org.members.map(m => m.userId)))
                                 const orgRef = doc(db, "organizations", org.id)
-                                // We don't await this to avoid blocking the UI
                                 setDoc(orgRef, { memberIds: extractedMemberIds }, { merge: true })
-                                    .then(() => console.log(`Migrated memberIds for org ${org.id}`))
                                     .catch(e => console.warn(`Migration failed for org ${org.id}`, e))
                             }
                         } catch (e) {
                             console.warn("Migration check error", e)
+                        }
+                    }
+                }
+
+                // SELF-HEALING: Ensure User's 'orgIds' contains all orgs they are a member of.
+                // This creates consistency for Firestore Rules (Option #2 in isOrgMember).
+                if (orgList.length > 0) {
+                    const currentOrgIds = userData.orgIds || []
+                    const missingParams = orgList
+                        .filter(o => !currentOrgIds.includes(o.id))
+                        .map(o => o.id)
+
+                    if (missingParams.length > 0) {
+                        console.log("Syncing missing orgIds to user profile:", missingParams)
+                        const updatedOrgIds = Array.from(new Set([...currentOrgIds, ...missingParams]))
+                        try {
+                            await setDoc(userRef, { orgIds: updatedOrgIds }, { merge: true })
+                        } catch (err) {
+                            console.error("Failed to sync user orgIds", err)
                         }
                     }
                 }
