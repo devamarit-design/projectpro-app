@@ -69,7 +69,7 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
     const [isLoading, setIsLoading] = useState(true)
     const [isArchivedLoading, setIsArchivedLoading] = useState(false)
 
-    const DATA_LIMIT = 50
+
 
     // Listeners
     useEffect(() => {
@@ -77,13 +77,11 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         setIsLoading(true)
 
         // 1. Expenses (Active & Ordered)
-        // 1. Expenses (Active & Ordered)
-        // QUERY: Remove isArchived filter to fix missing data (legacy data might not have the field)
+        // QUERY: Remove limit to ensure all expenses are loaded
         const qExpenses = query(
             collection(db, "expenses"),
             where("orgId", "==", currentTeam.id),
-            orderBy("date", "desc"),
-            limit(DATA_LIMIT)
+            orderBy("date", "desc")
         )
         const unsubExpenses = onSnapshot(qExpenses, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
@@ -92,13 +90,11 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         }, (error) => console.error("[FinanceContext] Expenses sync error:", error))
 
         // 2. Incomes (Active & Ordered)
-        // 2. Incomes (Active & Ordered)
-        // QUERY: Remove isArchived filter to fix missing data
+        // QUERY: Remove limit to ensure all incomes are loaded
         const qIncomes = query(
             collection(db, "incomes"),
             where("orgId", "==", currentTeam.id),
-            orderBy("date", "desc"),
-            limit(DATA_LIMIT)
+            orderBy("date", "desc")
         )
         const unsubIncomes = onSnapshot(qIncomes, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
@@ -106,11 +102,11 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
             setIncomes(data.filter(d => d.isArchived !== true))
         }, (error) => console.error("[FinanceContext] Incomes sync error:", error))
 
-        // 3. Master Data (Limited for now to prevent startup lag)
-        const qVendors = query(collection(db, "vendors"), where("orgId", "==", currentTeam.id), limit(100))
-        const qCustomers = query(collection(db, "customers"), where("orgId", "==", currentTeam.id), limit(100))
-        const qWorkers = query(collection(db, "workers"), where("orgId", "==", currentTeam.id), limit(100))
-        const qContracts = query(collection(db, "contracts"), where("orgId", "==", currentTeam.id), limit(50))
+        // 3. Master Data (Unlimited to ensure dropdowns are complete)
+        const qVendors = query(collection(db, "vendors"), where("orgId", "==", currentTeam.id))
+        const qCustomers = query(collection(db, "customers"), where("orgId", "==", currentTeam.id))
+        const qWorkers = query(collection(db, "workers"), where("orgId", "==", currentTeam.id))
+        const qContracts = query(collection(db, "contracts"), where("orgId", "==", currentTeam.id))
 
         const unsubVendors = onSnapshot(qVendors, (snap) => setVendors(snap.docs.map(d => ({ ...d.data(), id: d.id } as Vendor))))
         const unsubCustomers = onSnapshot(qCustomers, (snap) => setCustomers(snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer))))
