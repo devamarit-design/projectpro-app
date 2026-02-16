@@ -639,6 +639,7 @@ export const th = {
             security: "ความปลอดภัย",
             data: "จัดการข้อมูล",
             theme: "ธีมแอปพลิเคชัน",
+            performance: "ประสิทธิภาพ",
             telegram: "Telegram"
         },
         telegram: {
@@ -710,7 +711,17 @@ export const th = {
             reset: "รีเซ็ต",
             save: "บันทึกการเปลี่ยนแปลง",
             saved: "บันทึกแล้ว!",
-            global_hint: "การเปลี่ยนแปลงจะมีผลทั่วทั้งแอปพลิเคชัน"
+            global_hint: "การเปลี่ยนแปลงจะมีผลทั่วทั้งแอปพลิเคชัน",
+            performance: "ประสิทธิภาพ",
+            performance_badge: "Android / เครื่องช้า",
+            reduce_transparency: "ลดความโปร่งใส",
+            reduce_transparency_desc: "ปิดเอฟเฟกต์เบลอ ช่วยให้ลื่นขึ้นบน Android",
+            reduce_motion: "ลดการเคลื่อนไหว",
+            reduce_motion_desc: "ลดแอนิเมชัน ทำให้แอปตอบสนองไวขึ้น",
+            framerate: "เฟรมเรต",
+            framerate_desc: "ปรับความลื่นไหลของหน้าจอ",
+            framerate_normal: "ปกติ (60Hz)",
+            framerate_high: "สูง (90Hz - 120Hz)"
         },
         data: {
             title: "จัดการข้อมูล",

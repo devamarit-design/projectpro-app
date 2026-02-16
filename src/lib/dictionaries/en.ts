@@ -641,6 +641,7 @@ export const en = {
             security: "Security & Lock",
             data: "Data Management",
             theme: "App Theme",
+            performance: "Performance",
             telegram: "Telegram"
         },
         telegram: {
@@ -712,7 +713,17 @@ export const en = {
             reset: "Reset",
             save: "Save Changes",
             saved: "Saved!",
-            global_hint: "Changes are applied globally to the app."
+            global_hint: "Changes are applied globally to the app.",
+            performance: "Performance",
+            performance_badge: "Android / Low-end Devices",
+            reduce_transparency: "Reduce Transparency",
+            reduce_transparency_desc: "Disables blur effects. Improves performance on Android.",
+            reduce_motion: "Reduce Motion",
+            reduce_motion_desc: "Simplifies animations. Makes the app feel snappier.",
+            framerate: "Framerate",
+            framerate_desc: "Adjust screen refresh rate preference.",
+            framerate_normal: "Normal (60Hz)",
+            framerate_high: "High (90Hz - 120Hz)"
         },
         data: {
             title: "Data Management",

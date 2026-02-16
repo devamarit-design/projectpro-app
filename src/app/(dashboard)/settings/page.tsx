@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { useTranslation } from "@/lib/i18n-context"
 import { useProjects } from "@/context/project-context"
-import { Building2, FileText, Palette, Users, Shield, Bell, Send } from "lucide-react"
+import { Building2, FileText, Palette, Users, Shield, Bell, Send, MonitorSmartphone } from "lucide-react"
 import { CompanySettings } from "@/components/settings/company-settings"
 import { DocumentSettings } from "@/components/settings/document-settings"
 import { ThemeSettings } from "@/components/settings/theme-settings"
@@ -12,6 +12,7 @@ import { TeamSettings } from "@/components/settings/team-settings"
 import { SecuritySettings } from "@/components/settings/security-settings"
 import { NotificationSettings } from "@/components/settings/notifications-settings"
 import { TelegramSettings } from "@/components/settings/telegram-settings"
+import { PerformanceSettings } from "@/components/settings/performance-settings"
 
 
 export default function SettingsPage() {
@@ -37,6 +38,7 @@ export default function SettingsPage() {
         ...(isAdmin ? [{ id: "team", label: t.settings.menu.team, icon: Users }] : []),
         { id: "security", label: t.settings.menu.security, icon: Shield },
         { id: "theme", label: t.settings.menu.theme, icon: Palette },
+        { id: "performance", label: t.settings.menu.performance, icon: MonitorSmartphone },
     ]
 
     return (
@@ -77,6 +79,7 @@ export default function SettingsPage() {
                         {activeSection === "notifications" && <NotificationSettings />}
                         {activeSection === "telegram" && <TelegramSettings />}
                         {activeSection === "theme" && <ThemeSettings />}
+                        {activeSection === "performance" && <PerformanceSettings />}
                         {activeSection === "team" && isAdmin && <TeamSettings />}
                         {activeSection === "security" && <SecuritySettings />}
 

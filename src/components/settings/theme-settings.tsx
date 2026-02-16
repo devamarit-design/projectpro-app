@@ -8,6 +8,7 @@ import { useTranslation } from "@/lib/i18n-context"
 export function ThemeSettings() {
     const { t } = useTranslation()
     const { appTheme, updateAppTheme, setPreviewTheme } = useSettings()
+
     const [draftTheme, setDraftTheme] = useState<AppTheme>(appTheme)
     const [isSaved, setIsSaved] = useState(false)
 
@@ -332,6 +333,8 @@ export function ThemeSettings() {
                         className="w-full max-w-md accent-primary"
                     />
                 </div>
+
+
 
                 <div className="pt-6 border-t border-border flex items-center justify-between max-w-lg">
                     <p className="text-xs text-muted-foreground">

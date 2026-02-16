@@ -386,150 +386,137 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 }
             }
 
-            if (billType === 'combine') {
-                // COMBINE MODE: One expense with all items under the same project
-                const finalItems = items.map(item => {
-                    const cleanItem: any = {
-                        ...item,
-                        projectId: globalProjectId || undefined,
-                        taskId: globalTaskId || undefined,
-                    }
-                    if (globalSubProjectId) cleanItem.subProjectId = globalSubProjectId
-                    // Remove undefined values
-                    Object.keys(cleanItem).forEach(key => {
-                        if (cleanItem[key] === undefined || cleanItem[key] === '') {
-                            delete cleanItem[key]
+            // NON-BLOCKING SAVE: We don't await the Firestore write to prevent UI hang.
+            // We trust the optimistic update and background sync.
+            const savePromise = (async () => {
+                if (billType === 'combine') {
+                    // COMBINE MODE
+                    const finalItems = items.map(item => {
+                        const cleanItem: any = {
+                            ...item,
+                            projectId: globalProjectId || undefined,
+                            taskId: globalTaskId || undefined,
                         }
+                        if (globalSubProjectId) cleanItem.subProjectId = globalSubProjectId
+                        Object.keys(cleanItem).forEach(key => {
+                            if (cleanItem[key] === undefined || cleanItem[key] === '') {
+                                delete cleanItem[key]
+                            }
+                        })
+                        return cleanItem
                     })
-                    return cleanItem
-                })
-
-                const expenseData: Parameters<typeof addExpense>[0] = {
-                    title: title || payee || "New Expense",
-                    amount: `฿${subtotal.toLocaleString()} `,
-                    totalValue: subtotal,
-                    date,
-                    category: items[0]?.category || "Other",
-                    items: finalItems,
-                    payee: payee || "",
-                    status,
-                    vatIncluded,
-                    projectId: globalProjectId || "",
-                }
-
-                if (globalSubProjectId) expenseData.subProjectId = globalSubProjectId
-
-                if (status === 'Advanced' && paidBy) expenseData.paidBy = paidBy
-                if (status === 'Credit' && vendor) expenseData.vendor = vendor
-                if (finalReceiptUrl) expenseData.receiptImage = finalReceiptUrl
-                if (finalThumbnailUrl) expenseData.thumbnailUrl = finalThumbnailUrl
-
-                await addExpense(expenseData)
-            } else {
-                // SPLIT MODE: Group items by projectId + subProjectId combination
-                const itemsByProjectSubProject: Record<string, typeof items> = {}
-
-                items.forEach(item => {
-                    // Create unique key combining projectId and subProjectId
-                    const pid = item.projectId || "unassigned"
-                    const spid = item.subProjectId || "none"
-                    const key = `${pid}__${spid}`
-
-                    if (!itemsByProjectSubProject[key]) {
-                        itemsByProjectSubProject[key] = []
-                    }
-                    itemsByProjectSubProject[key].push(item)
-                })
-
-                // Create one expense per project+subproject group
-                await Promise.all(Object.entries(itemsByProjectSubProject).map(async ([key, groupItems]) => {
-                    const [projectId, subProjectId] = key.split("__")
-                    const groupTotal = groupItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
-
-                    const project = projects.find(p => p.id === projectId)
-                    const projectName = project?.name || "Unassigned"
-                    const subProject = project?.subProjects?.find(sp => sp.id === subProjectId)
-                    const subProjectName = subProject?.name
-
-                    // Build title with project and optionally subproject name
-                    let groupTitle = `${title || payee || "Split Bill"} (${projectName}`
-                    if (subProjectName) {
-                        groupTitle += ` - ${subProjectName}`
-                    }
-                    groupTitle += ")"
 
                     const expenseData: Parameters<typeof addExpense>[0] = {
-                        title: groupTitle,
-                        amount: `฿${groupTotal.toLocaleString()} `,
-                        totalValue: groupTotal,
+                        title: title || payee || "New Expense",
+                        amount: `฿${subtotal.toLocaleString()} `,
+                        totalValue: subtotal,
                         date,
-                        category: groupItems[0]?.category || "Other",
-                        items: groupItems,
+                        category: items[0]?.category || "Other",
+                        items: finalItems,
                         payee: payee || "",
                         status,
                         vatIncluded,
-                        projectId: projectId === "unassigned" ? "" : projectId
+                        projectId: globalProjectId || "",
                     }
 
-                    // Add subProjectId if it exists
-                    if (subProjectId && subProjectId !== "none") {
-                        expenseData.subProjectId = subProjectId
-                    }
-
+                    if (globalSubProjectId) expenseData.subProjectId = globalSubProjectId
                     if (status === 'Advanced' && paidBy) expenseData.paidBy = paidBy
                     if (status === 'Credit' && vendor) expenseData.vendor = vendor
                     if (finalReceiptUrl) expenseData.receiptImage = finalReceiptUrl
                     if (finalThumbnailUrl) expenseData.thumbnailUrl = finalThumbnailUrl
 
                     await addExpense(expenseData)
-                }))
-            }
-
-            toast.success("Expense added successfully")
-
-            // Send Telegram Notification (silent fail - don't block expense creation)
-            if (currentOrg?.id) {
-                const project = projects.find(p => p.id === (billType === 'combine' ? globalProjectId : items[0]?.projectId))
-
-                // Find subProjectName
-                let subProjectName = undefined
-                const subProjectId = billType === 'combine' ? globalSubProjectId : items[0]?.subProjectId
-                if (subProjectId && project) {
-                    subProjectName = project.subProjects?.find(sp => sp.id === subProjectId)?.name
-                }
-
-                try {
-                    await sendExpenseNotification({
-                        orgId: currentOrg.id,
-                        expense: {
-                            projectName: project?.name || 'ไม่ระบุโครงการ',
-                            subProjectName: subProjectName,
-                            itemName: title || payee || 'ไม่ระบุรายการ',
-                            amount: subtotal,
-                            userName: currentUser?.name || 'Unknown',
-                            date: date,
-                            status: status
-                        }
+                } else {
+                    // SPLIT MODE
+                    const itemsByProjectSubProject: Record<string, typeof items> = {}
+                    items.forEach(item => {
+                        const pid = item.projectId || "unassigned"
+                        const spid = item.subProjectId || "none"
+                        const key = `${pid}__${spid}`
+                        if (!itemsByProjectSubProject[key]) itemsByProjectSubProject[key] = []
+                        itemsByProjectSubProject[key].push(item)
                     })
-                } catch (telegramError) {
-                    // Silent fail - don't show error to user
-                    console.warn('Telegram notification failed:', telegramError)
-                }
-            }
 
+                    await Promise.all(Object.entries(itemsByProjectSubProject).map(async ([key, groupItems]) => {
+                        const [projectId, subProjectId] = key.split("__")
+                        const groupTotal = groupItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+
+                        const project = projects.find(p => p.id === projectId)
+                        const subProject = project?.subProjects?.find(sp => sp.id === subProjectId)
+                        let groupTitle = `${title || payee || "Split Bill"} (${project?.name || "Unassigned"}`
+                        if (subProject?.name) groupTitle += ` - ${subProject?.name}`
+                        groupTitle += ")"
+
+                        const expenseData: Parameters<typeof addExpense>[0] = {
+                            title: groupTitle,
+                            amount: `฿${groupTotal.toLocaleString()} `,
+                            totalValue: groupTotal,
+                            date,
+                            category: groupItems[0]?.category || "Other",
+                            items: groupItems,
+                            payee: payee || "",
+                            status,
+                            vatIncluded,
+                            projectId: projectId === "unassigned" ? "" : projectId
+                        }
+                        if (subProjectId && subProjectId !== "none") expenseData.subProjectId = subProjectId
+                        if (status === 'Advanced' && paidBy) expenseData.paidBy = paidBy
+                        if (status === 'Credit' && vendor) expenseData.vendor = vendor
+                        if (finalReceiptUrl) expenseData.receiptImage = finalReceiptUrl
+                        if (finalThumbnailUrl) expenseData.thumbnailUrl = finalThumbnailUrl
+
+                        await addExpense(expenseData)
+                    }))
+                }
+
+                // Send Telegram Notification (Background)
+                if (currentOrg?.id) {
+                    try {
+                        const project = projects.find(p => p.id === (billType === 'combine' ? globalProjectId : items[0]?.projectId))
+                        let subProjectName = undefined
+                        const subProjectId = billType === 'combine' ? globalSubProjectId : items[0]?.subProjectId
+                        if (subProjectId && project) {
+                            subProjectName = project.subProjects?.find(sp => sp.id === subProjectId)?.name
+                        }
+
+                        await sendExpenseNotification({
+                            orgId: currentOrg.id,
+                            expense: {
+                                projectName: project?.name || 'ไม่ระบุโครงการ',
+                                subProjectName: subProjectName,
+                                itemName: title || payee || 'ไม่ระบุรายการ',
+                                amount: subtotal,
+                                userName: currentUser?.name || 'Unknown',
+                                date: date,
+                                status: status
+                            }
+                        })
+                    } catch (telegramError) {
+                        console.warn('Telegram notification failed:', telegramError)
+                    }
+                }
+            })()
+
+            // Catch background errors
+            savePromise.catch(err => {
+                console.error("Background expense save failed:", err)
+                toast.error("Failed to sync expense to server")
+            })
+
+            // IMMEDIATE FEEDBACK
+            toast.success("Expense saving...")
             onClose()
+
         } catch (error: any) {
             console.error("Error adding expense:", error)
             const errorMsg = error?.message || "Unknown error"
-            const isPermissionError = errorMsg.toLowerCase().includes("permission")
-
-            toast.error(
-                isPermissionError
-                    ? "Failed to add expense. You might not have permission."
-                    : `Error: ${errorMsg}`
-            )
-        } finally {
+            toast.error(`Error: ${errorMsg}`)
+            // Only stop isUploading if we actually failed synchronously (e.g. image upload)
             setIsUploading(false)
+        } finally {
+            // If we closed, isUploading doesn't matter, but if we errored, we need to reset
+            // We can't easily distinguish here efficiently without refactoring the try/catch block heavily
+            // But since onClose unmounts, it's fine.
         }
     }
 

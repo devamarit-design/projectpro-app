@@ -9,6 +9,7 @@ import { SettingsProvider } from "@/context/settings-context";
 import { SecurityProvider } from "@/context/security-context";
 import { LockScreen } from "@/components/auth/lock-screen";
 import { OrganizationProvider } from "@/context/organization-context"; // New Import
+import { PerformanceProvider } from "@/context/performance-context";
 import { ThemeSync } from "@/components/theme-sync";
 import { VersionUpdater } from "@/components/system/version-updater";
 import { FirestoreRecoverToast } from "@/components/firestore-recover-toast";
@@ -126,47 +127,51 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <LanguageProvider>
-            <OrganizationProvider>
-              <ProjectProvider>
-                <SettingsProvider>
-                  <NotificationProvider>
-                    <SecurityProvider>
-                      {/* Glass Status Bar Overlay for PWA */}
-                      <div
-                        className="fixed top-0 left-0 right-0 z-[200] pointer-events-none backdrop-blur-md bg-background/30 transition-colors duration-300"
-                        style={{ height: 'env(safe-area-inset-top)' }}
-                      />
-                      <LockScreen />
-                      <ThemeSync />
-                      <VersionUpdater />
-                      {/* <FirestoreRecoverToast /> */}
-                      <Toaster
-                        position="bottom-center"
-                        toastOptions={{
-                          unstyled: true,
-                          classNames: {
-                            toast: "bg-background/40 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl p-4 gap-3 flex items-center w-full md:w-[356px]",
-                            title: "text-foreground font-semibold text-sm",
-                            description: "text-muted-foreground text-xs",
-                            actionButton: "bg-primary text-primary-foreground font-medium text-xs px-3 py-1.5 rounded-lg",
-                            cancelButton: "bg-muted text-muted-foreground hover:bg-muted/80 text-xs px-3 py-1.5 rounded-lg",
-                            success: "border-emerald-500/20 text-emerald-500",
-                            error: "border-red-500/20 text-red-500",
-                            warning: "border-amber-500/20 text-amber-500",
-                            info: "border-blue-500/20 text-blue-500",
-                          },
-                          style: {
-                            bottom: 'calc(env(safe-area-inset-bottom) + 24px)',
-                          },
-                        }}
-                      />
-                      {children}
-                      <SpeedInsights />
-                    </SecurityProvider>
-                  </NotificationProvider>
-                </SettingsProvider>
-              </ProjectProvider>
-            </OrganizationProvider>
+            <PerformanceProvider>
+              <OrganizationProvider>
+                <ProjectProvider>
+                  <SettingsProvider>
+                    <NotificationProvider>
+                      <SettingsProvider>
+                        <SecurityProvider>
+                          {/* Glass Status Bar Overlay for PWA */}
+                          <div
+                            className="fixed top-0 left-0 right-0 z-[200] pointer-events-none backdrop-blur-md bg-background/30 transition-colors duration-300"
+                            style={{ height: 'env(safe-area-inset-top)' }}
+                          />
+                          <LockScreen />
+                          <ThemeSync />
+                          <VersionUpdater />
+                          {/* <FirestoreRecoverToast /> */}
+                          <Toaster
+                            position="bottom-center"
+                            toastOptions={{
+                              unstyled: true,
+                              classNames: {
+                                toast: "bg-background/40 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl p-4 gap-3 flex items-center w-full md:w-[356px]",
+                                title: "text-foreground font-semibold text-sm",
+                                description: "text-muted-foreground text-xs",
+                                actionButton: "bg-primary text-primary-foreground font-medium text-xs px-3 py-1.5 rounded-lg",
+                                cancelButton: "bg-muted text-muted-foreground hover:bg-muted/80 text-xs px-3 py-1.5 rounded-lg",
+                                success: "border-emerald-500/20 text-emerald-500",
+                                error: "border-red-500/20 text-red-500",
+                                warning: "border-amber-500/20 text-amber-500",
+                                info: "border-blue-500/20 text-blue-500",
+                              },
+                              style: {
+                                bottom: 'calc(env(safe-area-inset-bottom) + 24px)',
+                              },
+                            }}
+                          />
+                          {children}
+                          <SpeedInsights />
+                        </SecurityProvider>
+                      </SettingsProvider>
+                    </NotificationProvider>
+                  </SettingsProvider>
+                </ProjectProvider>
+              </OrganizationProvider>
+            </PerformanceProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

@@ -519,3 +519,56 @@ html[data-theme-gradient="true"] .neon-glow-btn:hover {
 .shadow-elevated {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 }
+
+/* =========================================
+   PERFORMANCE MODE OVERRIDES
+   ========================================= */
+
+/* Reduce Transparency: specific overrides */
+body.reduce-transparency .glass,
+body.reduce-transparency .glass-card,
+body.reduce-transparency .glass-dark,
+body.reduce-transparency [class*="backdrop-blur"],
+body.reduce-transparency nav {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Fallback backgrounds when transparency is off */
+body.reduce-transparency .glass {
+  background-color: hsl(var(--background)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+body.reduce-transparency .glass-card {
+  background-color: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+/* Mobile Nav specific fix to ensure it's solid */
+body.reduce-transparency nav.fixed {
+  background-color: hsl(var(--background)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Full screen overlays (menus) */
+body.reduce-transparency .fixed.inset-0 {
+  background-color: hsl(var(--background) / 0.98) !important;
+}
+
+/* Dialog/Sheet Overlays */
+body.reduce-transparency [class*="bg-black/80"],
+body.reduce-transparency [class*="bg-background/80"] {
+  background-color: hsl(var(--background)) !important;
+}
+
+/* Reduce Motion */
+body.reduce-motion *,
+body.reduce-motion *::before,
+body.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
