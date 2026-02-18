@@ -306,7 +306,13 @@ export function ProjectGantt({ projectId, works: initialWorks, onWorkUpdate, onW
                     </DropdownMenu>
 
                     {canCreate && (
-                        <Button onClick={onAddWork} className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-11 px-8 font-black text-[12px] uppercase tracking-widest shadow-xl">
+                        <Button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onAddWork();
+                            }}
+                            className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-11 px-8 font-black text-[12px] uppercase tracking-widest shadow-xl"
+                        >
                             <Plus className="mr-2 h-5 w-5 stroke-[3px]" />
                             {t.schedule?.add_work || "Add Work"}
                         </Button>

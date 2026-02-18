@@ -43,8 +43,8 @@ export function AddWorkDialog({ isOpen, onOpenChange, projectId, initialData }: 
         color: "bg-blue-600"
     })
 
-    // Reset when open or initialData changes
     useEffect(() => {
+        console.log(`[AddWorkDialog] Effect: isOpen=${isOpen}, projectId=${projectId}, initialData=${initialData?.id}`)
         if (isOpen) {
             // ... existing code ...
             if (initialData) {
@@ -71,7 +71,7 @@ export function AddWorkDialog({ isOpen, onOpenChange, projectId, initialData }: 
                 })
             }
         }
-    }, [isOpen, projectId, projects, initialData])
+    }, [isOpen, projectId, initialData]) // Removed 'projects' to prevent reset on re-render
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -111,7 +111,10 @@ export function AddWorkDialog({ isOpen, onOpenChange, projectId, initialData }: 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             {/* Removed overflow-hidden to fix clipping on hover effects */}
-            <DialogContent className="sm:max-w-[600px] bg-[#020617] border-white/10 text-white rounded-[32px] p-0 shadow-2xl overflow-visible">
+            <DialogContent className={cn(
+                "sm:max-w-[600px] bg-[#020617] text-white rounded-[32px] p-0 shadow-2xl overflow-visible border-2",
+                formData.color.replace('bg-', 'border-').replace('600', '500') + "/30"
+            )}>
                 <DialogHeader className="p-8 pb-6 bg-gradient-to-b from-white/5 to-transparent rounded-t-[32px]">
                     <DialogTitle className="flex items-center gap-4 text-2xl font-bold tracking-tight text-white">
                         <div className={cn("p-3 rounded-2xl bg-gradient-to-br shadow-inner transition-colors duration-500", formData.color.replace('bg-', 'from-').replace('600', '500') + " to-slate-900/50")}>
@@ -275,7 +278,10 @@ export function AddWorkDialog({ isOpen, onOpenChange, projectId, initialData }: 
                         )}
                         <Button
                             disabled={loading}
-                            className="bg-primary hover:bg-primary/90 text-white rounded-2xl h-14 px-8 font-bold text-base uppercase tracking-widest shadow-xl shadow-primary/20 flex-1 hover:scale-[1.02] transition-transform active:scale-[0.98]"
+                            className={cn(
+                                "text-white rounded-2xl h-14 px-8 font-bold text-base uppercase tracking-widest shadow-xl shadow-primary/20 flex-1 hover:scale-[1.02] transition-transform active:scale-[0.98]",
+                                formData.color
+                            )}
                         >
                             {loading ? "กำลังบันทึก..." : (initialData ? "บันทึกการแก้ไข" : "สร้างแผนงาน")}
                         </Button>

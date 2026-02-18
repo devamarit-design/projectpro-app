@@ -36,3 +36,9 @@ function getFirebaseAdminApp(): App {
 
 export const adminApp = getFirebaseAdminApp();
 export const adminAuth = getAuth(adminApp);
+
+import { getFirestore } from "firebase-admin/firestore";
+import { getMessaging } from "firebase-admin/messaging";
+
+export const db = getFirestore(adminApp);
+export const messaging = getMessaging(adminApp);

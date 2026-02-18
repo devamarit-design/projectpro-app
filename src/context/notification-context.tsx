@@ -243,15 +243,24 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
                             onMessage(messaging, (payload) => {
                                 console.log('Foreground Message:', payload)
+                                const link = payload.data?.url || (payload.notification as any)?.click_action
+
                                 addNotification({
                                     title: payload.notification?.title || 'New Message',
                                     message: payload.notification?.body || '',
                                     type: 'info',
                                     date: new Date().toISOString(),
-                                    role: 'all' // defaulting
+                                    role: 'all', // defaulting
+                                    link: link
                                 } as any)
+
                                 toast(payload.notification?.title || 'New Message', {
-                                    description: payload.notification?.body || ''
+                                    description: payload.notification?.body || '',
+                                    action: link ? {
+                                        label: 'View',
+                                        onClick: () => window.location.href = link
+                                    } : undefined,
+                                    duration: 5000
                                 })
                             })
                         } catch (err) {

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useSettings, NotificationSettings as NotificationSettingsType } from "@/context/settings-context"
 import { useNotifications } from "@/context/notification-context"
 import { useProjects } from "@/context/project-context"
-import { Bell, Calendar, Clock, AlertTriangle, Smartphone, Save, Loader2 } from "lucide-react"
+import { Bell, Calendar, Clock, AlertTriangle, Smartphone, Save, Loader2, Send } from "lucide-react"
 import { MoodSettings } from "./mood-settings"
 import { FinancialTargetSettings } from "./financial-target-settings"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,7 @@ import { useTranslation } from "@/lib/i18n-context"
 export function NotificationSettings() {
     const { t } = useTranslation()
     const { notificationSettings, updateNotificationSettings } = useSettings()
-    const { requestPushPermission, permissionStatus, isPushEnabled } = useNotifications()
+    const { requestPushPermission, permissionStatus, isPushEnabled, addNotification } = useNotifications()
     const { currentUser, currentTeam } = useProjects()
 
     const canEdit = currentTeam?.role === 'Owner' || currentTeam?.role === 'Admin'
@@ -192,6 +192,88 @@ export function NotificationSettings() {
                             />
                             <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                         </label>
+                    </div>
+
+                    {/* Daily Morning Summary - Org Setting */}
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <label className="text-sm font-medium flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-amber-500" />
+                                Daily Morning Summary
+                            </label>
+                            <p className="text-xs text-muted-foreground">Receive a daily summary of tasks to be done and overdue items (7:00 AM)</p>
+                        </div>
+                        <label className={`relative inline-flex items-center ${canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+                            <input
+                                type="checkbox"
+                                disabled={!canEdit}
+                                checked={localSettings.notifyOnDailyTasks}
+                                onChange={(e) => handleSettingChange({ notifyOnDailyTasks: e.target.checked })}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+
+                    <div className="h-px bg-border/50" />
+
+                    {/* Manual Testing Section */}
+                    <div className="space-y-4">
+                        <h4 className="text-sm font-medium">Manual Notification Tests</h4>
+                        <div className="flex flex-wrap gap-4">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    addNotification({
+                                        title: "Manual Test Notification",
+                                        message: "This is a manually triggered in-app notification.",
+                                        type: "info",
+                                        date: new Date().toISOString()
+                                    })
+                                    toast.info("Test In-App Notification Sent", {
+                                        description: "Added to notification center.",
+                                        action: {
+                                            label: "View",
+                                            onClick: () => console.log("Clicked")
+                                        }
+                                    })
+                                }}
+                            >
+                                <Bell className="w-4 h-4 mr-2" />
+                                Send Test In-App Notification
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                    if (!currentTeam?.id) return toast.error("No Organization ID")
+                                    const toastId = toast.loading("Sending Telegram message...")
+                                    try {
+                                        const res = await fetch('/api/notifications/telegram/test', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                orgId: currentTeam.id, // Using currentTeam.id as orgId
+                                                type: 'work'
+                                            })
+                                        })
+                                        const data = await res.json()
+                                        if (data.success) {
+                                            toast.success("Telegram message sent!", { id: toastId })
+                                        } else {
+                                            toast.error(data.error || "Failed to send", { id: toastId })
+                                        }
+                                    } catch (err) {
+                                        toast.error("Error sending message", { id: toastId })
+                                    }
+                                }}
+                            >
+                                <Send className="w-4 h-4 mr-2" />
+                                Send Test Telegram Notification
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>

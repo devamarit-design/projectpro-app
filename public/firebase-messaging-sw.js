@@ -21,13 +21,40 @@ try {
         const notificationOptions = {
             body: payload.notification.body,
             icon: '/icons/icon-192x192.png',
-            badge: '/icons/icon-192x192.png' // For Android/iOS PWA badge
+            badge: '/icons/icon-192x192.png', // For Android/iOS PWA badge
+            data: payload.data // Pass data to notification for click handling
         };
 
-        if (self.registration && self.registration.showNotification) {
-            self.registration.showNotification(notificationTitle, notificationOptions);
-        }
+        self.registration.showNotification(notificationTitle, notificationOptions);
     });
+
+    self.addEventListener('notificationclick', function (event) {
+        console.log('[firebase-messaging-sw.js] Notification click received', event);
+        event.notification.close();
+
+        // Retrieve URL from notification data
+        const urlToOpen = event.notification.data?.url || '/';
+
+        event.waitUntil(
+            clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
+                // Check if there's already a tab open
+                for (let i = 0; i < clientList.length; i++) {
+                    const client = clientList[i];
+                    if (client.url.includes(self.location.origin) && 'focus' in client) {
+                        if (urlToOpen && urlToOpen !== '/') {
+                            client.navigate(urlToOpen);
+                        }
+                        return client.focus();
+                    }
+                }
+                // If not, open a new window
+                if (clients.openWindow) {
+                    return clients.openWindow(urlToOpen);
+                }
+            })
+        );
+    });
+
 } catch (error) {
     console.error('Firebase messaging service worker initialization failed:', error);
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { useProjects, WorkItem } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { Calendar, LayoutGrid, List } from "lucide-react"
@@ -49,18 +49,34 @@ export default function SchedulePage() {
         await updateWorkOrder(updates)
     }, [updateWorkOrder])
 
+    // DEBUG: Track state changes
+    const handleOpenChange = useCallback((open: boolean) => {
+        console.log(`[SchedulePage] handleOpenChange called with: ${open}`)
+        setIsAddModalOpen(open)
+    }, [])
+
     const handleAddWork = useCallback(() => {
+        console.log("[SchedulePage] handleAddWork called -> Setting isAddModalOpen = true (delayed)")
         setEditingWork(null)
+        // Delay opening to prevent immediate closing due to event bubbling/race conditions
         setIsAddModalOpen(true)
     }, [])
 
     const handleWorkClick = useCallback((workId: string) => {
+        console.log(`[SchedulePage] handleWorkClick called with ${workId}`)
         const work = allWorks.find(w => w.id === workId)
         if (work) {
             setEditingWork(work)
             setIsAddModalOpen(true)
         }
     }, [allWorks])
+
+    useEffect(() => {
+        console.log("[SchedulePage] MOUNTED")
+        return () => console.log("[SchedulePage] UNMOUNTED")
+    }, [])
+
+    console.log(`[SchedulePage] Render: isAddModalOpen=${isAddModalOpen}, editingWork=${editingWork?.id}`)
 
     return (
         <div className="flex flex-col h-full bg-background">
@@ -215,7 +231,7 @@ export default function SchedulePage() {
 
             <AddWorkDialog
                 isOpen={isAddModalOpen}
-                onOpenChange={setIsAddModalOpen}
+                onOpenChange={handleOpenChange}
                 initialData={editingWork}
                 projectId={editingWork?.projectId}
             />

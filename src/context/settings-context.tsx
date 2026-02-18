@@ -43,7 +43,9 @@ export type NotificationSettings = {
     notifyOnTaskAssignment: boolean
     notifyOnOverdue: boolean
     notifyOnPaymentDue: boolean
+    notifyOnDailyTasks: boolean // New setting
 }
+
 
 export type FinancialTargets = {
     incomeMin: number
@@ -163,7 +165,8 @@ const defaultNotificationSettings: NotificationSettings = {
     warnDaysExpenses: 7,
     notifyOnTaskAssignment: true,
     notifyOnOverdue: true,
-    notifyOnPaymentDue: true
+    notifyOnPaymentDue: true,
+    notifyOnDailyTasks: false
 }
 
 const defaultFinancialTargets: FinancialTargets = {
