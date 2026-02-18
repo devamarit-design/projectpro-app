@@ -199,6 +199,24 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
                 },
                 relatedUserIds: newTask.assignedTo || []
             })
+
+            // Push Notification for Assignees
+            if (newTask.assignedTo && newTask.assignedTo.length > 0) {
+                const targetUserIds = newTask.assignedTo.filter(id => id !== currentUser?.id)
+                if (targetUserIds.length > 0) {
+                    fetch('/api/notifications/push/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userIds: targetUserIds,
+                            title: `New Task Assigned: ${newTask.title}`,
+                            body: `${currentUser?.name} assigned you to a new task.`,
+                            url: `/projects/detail?id=${projectId}&taskId=${docRef.id}`
+                        })
+                    }).catch(console.error)
+                }
+            }
+
             return docRef.id
         } catch (e) {
             console.error("[TaskContext] ❌ Error adding task to Firestore:", e)
@@ -237,6 +255,27 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
                     },
                     relatedUserIds: updates.assignedTo || []
                 })
+
+                // Push Notification for NEW Assignees
+                if (updates.assignedTo) {
+                    const currentTask = tasks.find(t => t.id === taskId)
+                    const newAssignees = updates.assignedTo.filter(id =>
+                        !currentTask?.assignedTo?.includes(id) && id !== currentUser.id
+                    )
+
+                    if (newAssignees.length > 0) {
+                        fetch('/api/notifications/push/send', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userIds: newAssignees,
+                                title: `Task Assigned: ${updates.title || currentTask?.title || 'Unknown Task'}`,
+                                body: `${currentUser.name} assigned you to this task.`,
+                                url: `/projects/detail?id=${currentTask?.projectId}&taskId=${taskId}`
+                            })
+                        }).catch(console.error)
+                    }
+                }
             }
         } catch (e) {
             console.error("Error updating task", e)

@@ -31,9 +31,18 @@ const GANTT_COLORS = [
 ]
 
 export function AddWorkDialog({ isOpen, onOpenChange, projectId, initialData }: AddWorkDialogProps) {
-    const { projects, addWork, updateWork, deleteWork } = useProjects()
+    const { projects, addWork, updateWork, deleteWork, works } = useProjects()
     const [loading, setLoading] = useState(false)
     const [selectedProjectId, setSelectedProjectId] = useState<string>(projectId || "")
+    const [isCategoryOpen, setIsCategoryOpen] = useState(false)
+
+    // Derive unique categories from existing works
+    const uniqueCategories = Array.from(new Set(works.filter(w => w.category).map(w => w.category as string)))
+    if (!uniqueCategories.includes("โครงสร้าง")) uniqueCategories.push("โครงสร้าง")
+    if (!uniqueCategories.includes("สถาปัตย์")) uniqueCategories.push("สถาปัตย์")
+    if (!uniqueCategories.includes("ระบบไฟฟ้า")) uniqueCategories.push("ระบบไฟฟ้า")
+    if (!uniqueCategories.includes("ระบบประปา")) uniqueCategories.push("ระบบประปา")
+
     const [formData, setFormData] = useState({
         title: "",
         category: "โครงสร้าง",
@@ -168,18 +177,45 @@ export function AddWorkDialog({ isOpen, onOpenChange, projectId, initialData }: 
                             </div>
                         </div>
 
-                        {/* Category - Custom Input */}
-                        <div className="col-span-2 sm:col-span-1 space-y-3">
+                        {/* Category - Searchable & Creatable */}
+                        <div className="col-span-2 sm:col-span-1 space-y-3 relative z-50">
                             <Label className="text-[11px] font-black uppercase text-white/30 tracking-widest pl-1">หมวดหมู่</Label>
                             <div className="relative group">
-                                <Box className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400 group-focus-within:text-emerald-300 transition-colors" />
-                                <Input
-                                    required
-                                    value={formData.category}
-                                    onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                    className="bg-white/5 border-white/10 h-14 rounded-2xl pl-12 focus:ring-emerald-500/20 text-base"
-                                    placeholder="ระบุหมวดหมู่งาน..."
-                                />
+                                <Box className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400 group-focus-within:text-emerald-300 transition-colors pointer-events-none z-10" />
+                                <div className="relative">
+                                    <Input
+                                        required
+                                        value={formData.category}
+                                        onChange={e => {
+                                            setFormData({ ...formData, category: e.target.value })
+                                            setIsCategoryOpen(true)
+                                        }}
+                                        onFocus={() => setIsCategoryOpen(true)}
+                                        onBlur={() => setTimeout(() => setIsCategoryOpen(false), 200)}
+                                        className="bg-white/5 border-white/10 h-14 rounded-2xl pl-12 focus:ring-emerald-500/20 text-base"
+                                        placeholder="ระบุหมวดหมู่งาน..."
+                                    />
+                                    {isCategoryOpen && (
+                                        <div className="absolute top-full left-0 right-0 mt-2 bg-[#020617] border border-white/10 rounded-2xl shadow-xl max-h-[200px] overflow-y-auto z-[100] p-2">
+                                            {uniqueCategories.filter(c => c.toLowerCase().includes(formData.category.toLowerCase())).length > 0 ? (
+                                                uniqueCategories.filter(c => c.toLowerCase().includes(formData.category.toLowerCase())).map((cat) => (
+                                                    <div
+                                                        key={cat}
+                                                        onClick={() => setFormData({ ...formData, category: cat })}
+                                                        className="px-4 py-3 hover:bg-white/10 rounded-xl cursor-pointer text-sm text-white flex items-center gap-2"
+                                                    >
+                                                        <Box className="w-4 h-4 text-emerald-500/50" />
+                                                        {cat}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="px-4 py-3 text-sm text-white/50 text-center">
+                                                    พิมพ์เพื่อเพิ่มหมวดหมู่ใหม่
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
