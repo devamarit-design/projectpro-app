@@ -22,6 +22,12 @@ interface TaskContextType {
     loadArchivedTasks: () => Promise<void>
     hasMoreTasks: boolean
     isLoading: boolean
+
+    // Work Management
+    addWork: (projectId: string, work: Omit<WorkItem, "id" | "projectId" | "orgId">) => Promise<string | undefined>
+    updateWork: (projectId: string, workId: string, updates: Partial<WorkItem>) => Promise<void>
+    deleteWork: (projectId: string, workId: string) => Promise<void>
+    updateWorkOrder: (updates: { id: string, sortOrder: number }[]) => Promise<void>
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
@@ -358,6 +364,106 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
         performAutoArchive()
     }, [currentTeam?.id, tasks.length, hasCheckedAutoArchive])
 
+    // 4. Work Actions
+    const addWork = useCallback(async (projectId: string, workData: Omit<WorkItem, "id" | "projectId" | "orgId">) => {
+        if (!currentTeam) return
+        try {
+            const newWork = {
+                ...workData,
+                projectId,
+                orgId: currentTeam.id,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }
+            const docRef = await addDoc(collection(db, "works"), newWork)
+
+            // Log Activity
+            logActivity(db, currentTeam.id, {
+                action: "CREATE",
+                entityType: "WORK",
+                entityId: docRef.id,
+                entityTitle: workData.title,
+                details: `Created new work item: ${workData.title}`,
+                performedBy: {
+                    uid: currentUser?.id || "unknown",
+                    name: currentUser?.name || "Unknown",
+                    role: currentUser?.role || "Staff"
+                },
+                relatedUserIds: []
+            })
+
+            return docRef.id
+        } catch (e) {
+            console.error("Error adding work", e)
+            throw e
+        }
+    }, [currentTeam, currentUser])
+
+    const updateWork = useCallback(async (projectId: string, workId: string, updates: Partial<WorkItem>) => {
+        try {
+            await updateDoc(doc(db, "works", workId), {
+                ...updates,
+                updatedAt: new Date().toISOString()
+            })
+
+            if (currentTeam && currentUser) {
+                logActivity(db, currentTeam.id, {
+                    action: "UPDATE",
+                    entityType: "WORK",
+                    entityId: workId,
+                    entityTitle: updates.title || "Work",
+                    details: `Updated work item`,
+                    performedBy: {
+                        uid: currentUser.id,
+                        name: currentUser.name,
+                        role: currentUser.role
+                    },
+                    relatedUserIds: []
+                })
+            }
+        } catch (e) {
+            console.error("Error updating work", e)
+            throw e
+        }
+    }, [currentTeam, currentUser])
+
+    const deleteWork = useCallback(async (projectId: string, workId: string) => {
+        try {
+            await deleteDoc(doc(db, "works", workId))
+
+            if (currentTeam && currentUser) {
+                logActivity(db, currentTeam.id, {
+                    action: "DELETE",
+                    entityType: "WORK",
+                    entityId: workId,
+                    entityTitle: "Deleted Work",
+                    details: `Deleted work item`,
+                    performedBy: {
+                        uid: currentUser.id,
+                        name: currentUser.name,
+                        role: currentUser.role
+                    },
+                    relatedUserIds: []
+                })
+            }
+        } catch (e) {
+            console.error("Error deleting work", e)
+            throw e
+        }
+    }, [currentTeam, currentUser])
+
+    const updateWorkOrder = useCallback(async (updates: { id: string, sortOrder: number }[]) => {
+        try {
+            const batchPromises = updates.map(u =>
+                updateDoc(doc(db, "works", u.id), { sortOrder: u.sortOrder })
+            )
+            await Promise.all(batchPromises)
+        } catch (e) {
+            console.error("Error updating work order", e)
+            throw e
+        }
+    }, [])
+
     const value = useMemo(() => ({
         tasks,
         archivedTasks,
@@ -372,8 +478,13 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
         loadMoreTasks,
         loadArchivedTasks,
         hasMoreTasks,
-        isLoading
-    }), [tasks, archivedTasks, works, addTask, updateTask, deleteTask, toggleTask, archiveTask, unarchiveTask, loadMoreTasks, loadArchivedTasks, hasMoreTasks, isLoading])
+        isLoading,
+        // Work Actions
+        addWork,
+        updateWork,
+        deleteWork,
+        updateWorkOrder
+    }), [tasks, archivedTasks, works, addTask, updateTask, deleteTask, toggleTask, archiveTask, unarchiveTask, loadMoreTasks, loadArchivedTasks, hasMoreTasks, isLoading, addWork, updateWork, deleteWork, updateWorkOrder])
 
     return (
         <TaskContext.Provider value={value}>

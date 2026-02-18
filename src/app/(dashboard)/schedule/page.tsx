@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { useProjects, WorkItem } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { Calendar, LayoutGrid, List } from "lucide-react"
@@ -34,33 +34,33 @@ export default function SchedulePage() {
         return allWorks.filter(w => w.projectId === selectedProjectId)
     }, [allWorks, selectedProjectId])
 
-    const handleWorkUpdate = async (workId: string, updates: any) => {
+    const handleWorkUpdate = useCallback(async (workId: string, updates: any) => {
         const work = works.find(w => w.id === workId)
         if (work) {
             await updateWork(work.projectId, workId, updates)
         }
-    }
+    }, [works, updateWork])
 
-    const handleReorder = async (newWorks: WorkItem[]) => {
+    const handleReorder = useCallback(async (newWorks: WorkItem[]) => {
         const updates = newWorks.map((w, index) => ({
             id: w.id,
             sortOrder: index
         }))
         await updateWorkOrder(updates)
-    }
+    }, [updateWorkOrder])
 
-    const handleAddWork = () => {
+    const handleAddWork = useCallback(() => {
         setEditingWork(null)
         setIsAddModalOpen(true)
-    }
+    }, [])
 
-    const handleWorkClick = (workId: string) => {
+    const handleWorkClick = useCallback((workId: string) => {
         const work = allWorks.find(w => w.id === workId)
         if (work) {
             setEditingWork(work)
             setIsAddModalOpen(true)
         }
-    }
+    }, [allWorks])
 
     return (
         <div className="flex flex-col h-full bg-background">
@@ -163,12 +163,12 @@ export default function SchedulePage() {
                                             <td className="px-6 py-4 text-muted-foreground">{work.projectName}</td>
                                             <td className="px-6 py-4">
                                                 <div className="flex -space-x-2">
-                                                    {work.assigneeIds?.map((userId, i) => (
-                                                        <div key={i} className="w-6 h-6 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-[10px] font-bold text-foreground">
+                                                    {work.assignedTo && (
+                                                        <div className="w-6 h-6 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-[10px] font-bold text-foreground">
                                                             User
                                                         </div>
-                                                    ))}
-                                                    {(!work.assigneeIds || work.assigneeIds.length === 0) && (
+                                                    )}
+                                                    {!work.assignedTo && (
                                                         <span className="text-xs text-muted-foreground">-</span>
                                                     )}
                                                 </div>
@@ -176,11 +176,11 @@ export default function SchedulePage() {
                                             <td className="px-6 py-4">
                                                 <span className={cn(
                                                     "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                                                    work.status === 'completed' ? "bg-green-500/10 text-green-500" :
-                                                        work.status === 'in-progress' ? "bg-blue-500/10 text-blue-500" :
+                                                    work.progress === 100 ? "bg-green-500/10 text-green-500" :
+                                                        work.progress > 0 ? "bg-blue-500/10 text-blue-500" :
                                                             "bg-slate-500/10 text-slate-500"
                                                 )}>
-                                                    {work.status || 'To Do'}
+                                                    {work.progress === 100 ? 'Completed' : work.progress > 0 ? 'In Progress' : 'To Do'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-muted-foreground">

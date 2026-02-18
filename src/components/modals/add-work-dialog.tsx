@@ -46,6 +46,7 @@ export function AddWorkDialog({ isOpen, onOpenChange, projectId, initialData }: 
     // Reset when open or initialData changes
     useEffect(() => {
         if (isOpen) {
+            // ... existing code ...
             if (initialData) {
                 // Edit Mode
                 setSelectedProjectId(initialData.projectId || projectId || "")

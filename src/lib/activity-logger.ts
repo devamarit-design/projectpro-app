@@ -2,7 +2,7 @@ import { addDoc, collection } from "firebase/firestore"
 import { Firestore } from "firebase/firestore"
 
 export type ActivityAction = "CREATE" | "UPDATE" | "DELETE"
-export type EntityType = "PROJECT" | "TASK" | "EXPENSE" | "INCOME" | "USER" | "FILE" | "CONTRACT"
+export type EntityType = "PROJECT" | "TASK" | "EXPENSE" | "INCOME" | "USER" | "FILE" | "CONTRACT" | "WORK"
 
 export interface ActivityLogData {
     action: ActivityAction

@@ -917,7 +917,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                 </div>
 
                                                 {/* Categories & Split Project Selection */}
-                                                <div className="sm:col-span-11 grid grid-cols-3 gap-2">
+                                                <div className="sm:col-span-11 grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                     <select
                                                         value={item.category}
                                                         onChange={(e) => updateItem(item.id, { category: e.target.value as ExpenseCategory })}
@@ -966,6 +966,28 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                         </>
                                                     )}
                                                 </div>
+
+                                                {/* Sub-project Selector for Split Bill */}
+                                                {billType === 'split' && item.projectId && (
+                                                    <div className="sm:col-span-12">
+                                                        <select
+                                                            value={item.subProjectId || ""}
+                                                            onChange={(e) => handleSelectChange(
+                                                                e.target.value,
+                                                                (val) => updateItem(item.id, { subProjectId: val }),
+                                                                'sub-project',
+                                                                item.projectId
+                                                            )}
+                                                            className="w-full bg-background border border-white/10 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none truncate"
+                                                        >
+                                                            <option value="">- Select Sub-project (Optional) -</option>
+                                                            {projects.find(p => p.id === item.projectId)?.subProjects?.map(sp => (
+                                                                <option key={sp.id} value={sp.id}>{sp.name}</option>
+                                                            ))}
+                                                            <option value="NEW" className="font-bold text-primary">+ Add New...</option>
+                                                        </select>
+                                                    </div>
+                                                )}
 
                                                 {/* Delete */}
                                                 <div className="sm:col-span-1 flex justify-end">

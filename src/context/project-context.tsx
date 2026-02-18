@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, useMemo } from "react"
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react"
 import { auth, googleProvider, db } from "@/lib/firebase"
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, User as FirebaseUser, setPersistence, browserLocalPersistence, updatePassword, deleteUser as deleteAuthUser, reauthenticateWithPopup, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth"
 import { getFunctions, httpsCallable } from "firebase/functions"
@@ -407,7 +407,10 @@ export interface ProjectContextType extends CoreProjectContextType {
 
     // Work Management (Aggregated)
     works: WorkItem[]
-    // ... work actions are currently simplified or handled as partials in TaskContext
+    addWork: (projectId: string, work: Omit<WorkItem, "id" | "projectId" | "orgId">) => Promise<string | undefined>
+    updateWork: (projectId: string, workId: string, updates: Partial<WorkItem>) => Promise<void>
+    deleteWork: (projectId: string, workId: string) => Promise<void>
+    updateWorkOrder: (updates: { id: string, sortOrder: number }[]) => Promise<void>
 
     // Expense Management (Aggregated)
     // Expense Management (Aggregated)
@@ -1072,7 +1075,7 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
 
 
 
-    const login = async (provider: string, credentials?: { email?: string, password?: string }) => {
+    const login = useCallback(async (provider: string, credentials?: { email?: string, password?: string }) => {
         setIsAuthLoading(true)
 
         try {
@@ -1114,10 +1117,10 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
             }
             throw error
         }
-    }
+    }, [getEnvironment])
 
 
-    const register = async (name: string, email: string, password: string) => {
+    const register = useCallback(async (name: string, email: string, password: string) => {
         try {
             // 1. Create Auth User
             const userCredential = await createUserWithEmailAndPassword(auth, email, password)
@@ -1158,9 +1161,9 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
             console.error("Registration failed", error)
             throw error
         }
-    }
+    }, [])
 
-    const updateUserPassword = async (password: string) => {
+    const updateUserPassword = useCallback(async (password: string) => {
         if (!auth.currentUser) return
         try {
             await updatePassword(auth.currentUser, password)
@@ -1168,9 +1171,9 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
             console.error("Failed to update password", error)
             throw error
         }
-    }
+    }, [])
 
-    const deleteAccount = async (password?: string) => {
+    const deleteAccount = useCallback(async (password?: string) => {
         if (!auth.currentUser) return
 
         try {
@@ -1204,9 +1207,9 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
             console.error("Delete account failed", error)
             throw error
         }
-    }
+    }, [])
 
-    const logout = async () => {
+    const logout = useCallback(async () => {
         try {
             await signOut(auth)
             // Clear all local state
@@ -1223,7 +1226,7 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
             console.error("Logout failed", error)
         }
-    }
+    }, [])
 
 
 
@@ -1316,10 +1319,10 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
     }, [currentTeam?.id])
 
 
-    const seedData = async () => {
+    const seedData = useCallback(async () => {
         if (!currentTeam || !currentUser) return
         await seedDatabase(currentTeam.id, currentUser.id)
-    }
+    }, [currentTeam, currentUser])
 
 
 
@@ -1333,7 +1336,7 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
     // --- CRUD Operations (Firestore) ---
 
     // 1. Projects
-    const addProject = async (project: Omit<Project, "id">) => {
+    const addProject = useCallback(async (project: Omit<Project, "id">) => {
         if (!currentTeam) return
         try {
             await addDoc(collection(db, "projects"), {
@@ -1360,9 +1363,9 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
             console.error("Error adding project", e)
         }
-    }
+    }, [currentTeam, currentUser])
 
-    const updateProject = async (id: string, updates: Partial<Project>) => {
+    const updateProject = useCallback(async (id: string, updates: Partial<Project>) => {
         try {
             await updateDoc(doc(db, "projects", id), { ...updates, updatedAt: new Date().toISOString() })
         } catch (e) {
@@ -1384,9 +1387,9 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
                 relatedUserIds: []
             })
         }
-    }
+    }, [currentTeam, currentUser])
 
-    const deleteProject = async (id: string) => {
+    const deleteProject = useCallback(async (id: string) => {
         try {
             await deleteDoc(doc(db, "projects", id))
         } catch (e) {
@@ -1409,35 +1412,35 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
                 relatedUserIds: []
             })
         }
-    }
+    }, [currentTeam, currentUser, projects])
 
     // ========== ARCHIVE SYSTEM ==========
     // ========== ARCHIVE SYSTEM (Projects) ==========
-    const archiveProject = async (id: string) => {
+    const archiveProject = useCallback(async (id: string) => {
         try {
             await updateDoc(doc(db, "projects", id), { isArchived: true })
         } catch (e) {
             console.error("Error archiving project", e)
         }
-    }
+    }, [])
 
-    const unarchiveProject = async (id: string) => {
+    const unarchiveProject = useCallback(async (id: string) => {
         try {
             await updateDoc(doc(db, "projects", id), { isArchived: false })
         } catch (e) {
             console.error("Error unarchiving project", e)
         }
-    }
+    }, [])
 
-    const getProject = (id: string) => {
+    const getProject = useCallback((id: string) => {
         const project = projects.find(p => p.id === id)
         return project
-    }
+    }, [projects])
 
     // Work actions migrated to TaskContext
 
     // Add Sub-project (โปรเจคย่อย)
-    const addSubProject = async (projectId: string, subProject: Omit<SubProject, "id">) => {
+    const addSubProject = useCallback(async (projectId: string, subProject: Omit<SubProject, "id">) => {
         const project = projects.find(p => p.id === projectId)
         if (!project) return
 
@@ -1452,13 +1455,13 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
             console.error("Error adding sub-project", e)
         }
-    }
+    }, [projects])
 
-    const deleteSubProject = async (projectId: string, subProjectId: string) => {
+    const deleteSubProject = useCallback(async (projectId: string, subProjectId: string) => {
         const project = projects.find(p => p.id === projectId)
-        if (!project || !project.subProjects) return
+        if (!project) return
 
-        const updatedSubProjects = project.subProjects.filter(sp => sp.id !== subProjectId)
+        const updatedSubProjects = (project.subProjects || []).filter(sp => sp.id !== subProjectId)
 
         // Optimistic Update
         setProjects(prev => prev.map(p => p.id === projectId ? { ...p, subProjects: updatedSubProjects } : p))
@@ -1468,14 +1471,14 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
             console.error("Error deleting sub-project", e)
         }
-    }
+    }, [projects])
 
     // Finance actions migrated to FinanceContext
 
 
     // User CRUD
     // User CRUD
-    const addUser = async (userData: Omit<User, "id" | "joinedDate" | "status" | "orgIds">) => {
+    const addUser = useCallback(async (userData: Omit<User, "id" | "joinedDate" | "status" | "orgIds">) => {
         if (!currentTeam) return
         try {
             // 1. Check if user with this email already exists
@@ -1587,9 +1590,9 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
             console.error("Error adding user", e)
         }
-    }
+    }, [currentTeam, currentUser])
 
-    const updateUser = async (id: string, updates: Partial<User>) => {
+    const updateUser = useCallback(async (id: string, updates: Partial<User>) => {
         const isSelf = currentUser?.id === id
         const { role, ...otherUpdates } = updates
 
@@ -1670,9 +1673,9 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
             console.error("Error updating user", e)
         }
-    }
+    }, [currentTeam, currentUser])
 
-    const deleteUser = async (id: string) => {
+    const deleteUser = useCallback(async (id: string) => {
         if (!currentTeam) return
         try {
             // Call Cloud Function to remove user from org
@@ -1696,12 +1699,12 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
             console.error("Error deleting user", e)
             alert("Failed to remove user. Please try again.")
         }
-    }
+    }, [currentTeam])
 
     // Customer/Vendor/Worker CRUD migrated to FinanceContext
 
     // 3. Files
-    const addFile = async (file: Omit<ProjectFile, "id" | "uploadedAt">) => {
+    const addFile = useCallback(async (file: Omit<ProjectFile, "id" | "uploadedAt">) => {
         if (!currentTeam) return
         try {
             await addDoc(collection(db, "files"), {
@@ -1728,17 +1731,17 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
                 relatedUserIds: []
             })
         }
-    }
+    }, [currentTeam, currentUser])
 
-    const deleteFile = async (id: string) => {
+    const deleteFile = useCallback(async (id: string) => {
         try {
             await deleteDoc(doc(db, "files", id))
         } catch (e) {
             console.error("Error deleting file", e)
         }
-    }
+    }, [])
 
-    const updateCompanyProfile = async (updates: Partial<CompanyProfile>) => {
+    const updateCompanyProfile = useCallback(async (updates: Partial<CompanyProfile>) => {
         if (!currentTeam) return
 
         try {
@@ -1762,17 +1765,16 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
             if (updates.signatureName !== undefined) orgUpdates['settings.signatureName'] = updates.signatureName
             if (updates.description !== undefined) orgUpdates['settings.description'] = updates.description
 
-            await updateDoc(orgRef, { ...orgUpdates, updatedAt: new Date().toISOString() })
-
-            // Refresh organization data to update local state (currentTeam)
-            await refreshOrgs()
+            if (Object.keys(orgUpdates).length > 0) {
+                await updateDoc(orgRef, { ...orgUpdates, updatedAt: new Date().toISOString() })
+            }
 
         } catch (e) {
             console.error("Error updating company profile", e)
         }
-    }
+    }, [currentTeam])
 
-    const restoreData = async (data: Record<string, unknown>) => {
+    const restoreData = useCallback(async (data: Record<string, unknown>) => {
         try {
             if (data.projects) setProjects(data.projects as Project[])
             if (data.files) setFiles(data.files as ProjectFile[])
@@ -1783,7 +1785,7 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
             console.error("Restore failed", e)
             return false
         }
-    }
+    }, [])
 
     const filteredProjects = React.useMemo(() =>
         projects.filter(p => p.orgId === currentTeam?.id),
@@ -1879,7 +1881,10 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
         isRedirecting,
         getEnvironment,
         filteredProjectIds,
-        users
+        users,
+        addUser,
+        updateUser,
+        deleteUser
     ])
 
     return (
@@ -1945,6 +1950,12 @@ export function useProjects() {
         setTasks: taskCtx.setTasks,
         loadMoreTasks: taskCtx.loadMoreTasks,
         loadArchivedTasks: taskCtx.loadArchivedTasks,
+
+        // Work Management
+        addWork: taskCtx.addWork,
+        updateWork: taskCtx.updateWork,
+        deleteWork: taskCtx.deleteWork,
+        updateWorkOrder: taskCtx.updateWorkOrder,
 
         // Finance
         expenses: financeCtx.expenses,
