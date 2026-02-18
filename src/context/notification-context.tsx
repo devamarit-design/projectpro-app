@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react"
 import { useProjects, ProjectTask, Expense } from "./project-context"
 import { useSettings } from "./settings-context"
 import { differenceInDays, parseISO, isPast, addDays } from "date-fns"
-import { collection, query, where, onSnapshot, orderBy, limit } from "firebase/firestore"
+import { collection, query, where, onSnapshot, orderBy, limit, doc, updateDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { toast } from "sonner"
 
@@ -239,7 +239,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                             console.log("FCM Token:", token)
                             setIsPushEnabled(true)
                             toast.success("Ready to receive notifications")
-                            // TODO: Save this token to Firestore for the current user
+                            // Save token to Firestore
+                            if (currentUser?.id) {
+                                const userRef = doc(db, "users", currentUser.id)
+                                // Use arrayUnion to add token without duplicates
+                                const { arrayUnion } = await import("firebase/firestore")
+                                await updateDoc(userRef, {
+                                    fcmTokens: arrayUnion(token)
+                                })
+                            }
 
                             onMessage(messaging, (payload) => {
                                 console.log('Foreground Message:', payload)

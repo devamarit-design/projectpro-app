@@ -238,6 +238,18 @@ export function NotificationSettings() {
                                             onClick: () => console.log("Clicked")
                                         }
                                     })
+
+                                    // 2. Trigger Web Push (Browser)
+                                    if (currentUser?.id) {
+                                        fetch('/api/notifications/push/test', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                userId: currentUser.id,
+                                                type: 'summary'
+                                            })
+                                        }).catch(console.error)
+                                    }
                                 }}
                             >
                                 <Bell className="w-4 h-4 mr-2" />
