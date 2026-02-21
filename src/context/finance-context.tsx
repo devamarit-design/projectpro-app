@@ -167,6 +167,7 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
                 createdBy: currentUser?.id
             }
             const docRef = await addDoc(collection(db, "expenses"), payload)
+            // Fire-and-forget: don't block the caller waiting for activity log
             logActivity(db, currentTeam.id, {
                 action: "CREATE",
                 entityType: "EXPENSE",
@@ -179,7 +180,7 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
                     role: currentUser?.role
                 },
                 relatedUserIds: []
-            })
+            }).catch((e: any) => console.warn("[logActivity] expense log failed:", e))
             return docRef.id
         } catch (e: any) {
             console.error("Error adding expense:", e)

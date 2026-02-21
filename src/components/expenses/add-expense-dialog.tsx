@@ -469,31 +469,28 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     }))
                 }
 
-                // Send Telegram Notification (Background)
+                // Send Telegram Notification (Background, Fire-and-forget)
                 if (currentOrg?.id) {
-                    try {
-                        const project = projects.find(p => p.id === (billType === 'combine' ? globalProjectId : items[0]?.projectId))
-                        let subProjectName = undefined
-                        const subProjectId = billType === 'combine' ? globalSubProjectId : items[0]?.subProjectId
-                        if (subProjectId && project) {
-                            subProjectName = project.subProjects?.find(sp => sp.id === subProjectId)?.name
-                        }
-
-                        await sendExpenseNotification({
-                            orgId: currentOrg.id,
-                            expense: {
-                                projectName: project?.name || 'ไม่ระบุโครงการ',
-                                subProjectName: subProjectName,
-                                itemName: title || payee || 'ไม่ระบุรายการ',
-                                amount: subtotal,
-                                userName: currentUser?.name || 'Unknown',
-                                date: date,
-                                status: status
-                            }
-                        })
-                    } catch (telegramError) {
-                        console.warn('Telegram notification failed:', telegramError)
+                    const project = projects.find(p => p.id === (billType === 'combine' ? globalProjectId : items[0]?.projectId))
+                    let subProjectName = undefined
+                    const subProjectId = billType === 'combine' ? globalSubProjectId : items[0]?.subProjectId
+                    if (subProjectId && project) {
+                        subProjectName = project.subProjects?.find(sp => sp.id === subProjectId)?.name
                     }
+
+                    // Fire-and-forget: Telegram notification must not block expense save chain
+                    sendExpenseNotification({
+                        orgId: currentOrg.id,
+                        expense: {
+                            projectName: project?.name || 'ไม่ระบุโครงการ',
+                            subProjectName: subProjectName,
+                            itemName: title || payee || 'ไม่ระบุรายการ',
+                            amount: subtotal,
+                            userName: currentUser?.name || 'Unknown',
+                            date: date,
+                            status: status
+                        }
+                    }).catch((e: any) => console.warn('Telegram notification failed:', e))
                 }
             })()
 
