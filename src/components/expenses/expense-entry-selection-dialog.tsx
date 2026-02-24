@@ -48,7 +48,6 @@ export function ExpenseEntrySelectionDialog({
                     <button
                         onClick={() => {
                             onSelectScan()
-                            onClose()
                         }}
                         className="w-full group relative overflow-hidden rounded-2xl border border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 transition-all p-5 text-left flex items-start gap-4 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10 active:scale-[0.98]"
                     >
@@ -76,7 +75,6 @@ export function ExpenseEntrySelectionDialog({
                     <button
                         onClick={() => {
                             onSelectManual()
-                            onClose()
                         }}
                         className="w-full group relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all p-5 text-left flex items-start gap-4 hover:border-white/20 active:scale-[0.98]"
                     >

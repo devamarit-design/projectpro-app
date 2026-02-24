@@ -67,6 +67,7 @@ function ExpensesContent() {
     const handleOpenAdd = () => {
         setStartScanning(false)
         setIsAddOpen(true)
+        setIsSelectionOpen(false)
     }
 
     // NEW: State for export dropdown
@@ -254,7 +255,10 @@ function ExpensesContent() {
                 isOpen={isSelectionOpen}
                 onClose={handleCloseSelection}
                 onSelectManual={handleOpenAdd}
-                onSelectScan={() => setIsSmartScanOpen(true)}
+                onSelectScan={() => {
+                    setIsSmartScanOpen(true)
+                    setIsSelectionOpen(false)
+                }}
             />
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -264,17 +268,17 @@ function ExpensesContent() {
                     </h1>
                     <p className="text-muted-foreground mt-1">{t.expenses.subtitle}</p>
                 </div>
-                <div className="relative z-20 flex items-center gap-3">
+                <div className="relative z-20 flex flex-wrap items-center gap-2 sm:gap-3">
                     {/* Export Button */}
                     <div className="relative" ref={exportRef}>
                         <button
                             onClick={() => setIsExportOpen(!isExportOpen)}
                             className={cn(
-                                "flex items-center gap-2 px-5 py-2.5 bg-muted/50 border border-border text-foreground rounded-xl font-medium shadow-sm hover:bg-muted transition-all",
+                                "flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-muted/50 border border-border text-foreground rounded-xl font-medium shadow-sm hover:bg-muted transition-all text-sm sm:text-base whitespace-nowrap",
                                 isExportOpen && "bg-muted ring-2 ring-primary/20"
                             )}
                         >
-                            <FileDown className="w-5 h-5 text-blue-500" />
+                            <FileDown className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
                             Export
                         </button>
                         {/* Dropdown Menu - Click & Left Aligned */}
@@ -305,18 +309,18 @@ function ExpensesContent() {
 
                     <button
                         onClick={() => setIsContractOpen(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-muted/50 border border-border text-foreground rounded-xl font-medium shadow-sm hover:bg-muted transition-all"
+                        className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-muted/50 border border-border text-foreground rounded-xl font-medium shadow-sm hover:bg-muted transition-all text-sm sm:text-base whitespace-nowrap"
                     >
-                        <FileText className="w-5 h-5 text-amber-500" />
+                        <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
                         {t.expenses.create_contract}
                     </button>
 
                     {/* Add Expense Button - Opens Selection */}
                     <button
                         onClick={() => setIsSelectionOpen(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg hover:opacity-90 active:scale-95 transition-all"
+                        className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg hover:opacity-90 active:scale-95 transition-all text-sm sm:text-base whitespace-nowrap"
                     >
-                        <Plus className="w-5 h-5" />
+                        <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                         {t.expenses.add_expense}
                     </button>
                 </div>
