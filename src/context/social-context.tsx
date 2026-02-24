@@ -79,35 +79,6 @@ export function SocialProvider({ children, currentUser }: { children: React.Reac
             // Firestore SDK will trigger onSnapshot immediately with hasPendingWrites: true
             const docRef = await addDoc(collection(db, "organizations", currentOrgId, "posts"), newPost)
 
-            // Push Notification to ALL users in Organization (except author)
-            // Retrieve all users in this org
-            // Note: In a large scale app, this should be done via Cloud Functions
-            try {
-                const { getDocs, query, where, collection } = await import("firebase/firestore")
-                const usersRef = collection(db, "users")
-                const q = query(usersRef, where("orgIds", "array-contains", currentOrgId))
-                const snapshot = await getDocs(q)
-
-                const targetUserIds = snapshot.docs
-                    .map(doc => doc.id)
-                    .filter(id => id !== currentUser.id)
-
-                if (targetUserIds.length > 0) {
-                    fetch('/api/notifications/push/send', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            userIds: targetUserIds,
-                            title: `New Post from ${currentUser.name}`,
-                            body: content.length > 50 ? content.substring(0, 50) + '...' : content,
-                            url: `/social?postId=${docRef.id}`
-                        })
-                    }).catch(console.error)
-                }
-            } catch (err) {
-                console.error("Error sending post notification:", err)
-            }
-
             return docRef.id
         } catch (e) {
             console.error("Error adding post", e)

@@ -345,51 +345,43 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             return
         }
 
-        setIsUploading(true)
-        setUploadStatus("Processing...")
+        onClose()
+        const toastId = toast.loading("กำลังบันทึกค่าใช้จ่าย... / Saving expense...")
 
-        try {
-            let finalReceiptUrl = receiptImage
-            let finalThumbnailUrl = undefined
-            let fileToUpload = receiptFile
+        const runSave = async () => {
+            try {
+                let finalReceiptUrl = receiptImage
+                let finalThumbnailUrl = undefined
+                let fileToUpload = receiptFile
 
-            // handle smart scan base64 image
-            if (!fileToUpload && receiptImage && receiptImage.startsWith('data:image')) {
-                try {
-                    const res = await fetch(receiptImage)
-                    const blob = await res.blob()
-                    fileToUpload = new File([blob], `scan_${Date.now()}.jpg`, { type: "image/jpeg" })
-                } catch (err) {
-                    console.error("Failed to convert base64 to file", err)
-                }
-            }
-
-            if (fileToUpload) {
-                setUploadStatus("Uploading image...")
-
-                if (!currentOrg?.id) {
-                    throw new Error("Organization not found. Please refresh and try again.")
+                // handle smart scan base64 image
+                if (!fileToUpload && receiptImage && receiptImage.startsWith('data:image')) {
+                    try {
+                        const res = await fetch(receiptImage)
+                        const blob = await res.blob()
+                        fileToUpload = new File([blob], `scan_${Date.now()}.jpg`, { type: "image/jpeg" })
+                    } catch (err) {
+                        console.error("Failed to convert base64 to file", err)
+                    }
                 }
 
-                const path = `organizations/${currentOrg.id}/expenses/${new Date().getFullYear()}`
-                const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(fileToUpload, path)
-                finalReceiptUrl = originalUrl
-                finalThumbnailUrl = thumbnailUrl
-            }
-
-            setUploadStatus("Saving data...")
-
-            // SECURITY CHECK: Ensure we don't send huge Base64 strings to Firestore
-            if (finalReceiptUrl && finalReceiptUrl.startsWith('data:image')) {
-                console.warn("Found Base64 image in receiptImage, removing to prevent Firestore limit crash")
-                if (finalReceiptUrl.length > 500000) { // > 500KB
-                    finalReceiptUrl = null
+                if (fileToUpload) {
+                    if (!currentOrg?.id) {
+                        throw new Error("Organization not found.")
+                    }
+                    const path = `organizations/${currentOrg.id}/expenses/${new Date().getFullYear()}`
+                    const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(fileToUpload, path)
+                    finalReceiptUrl = originalUrl
+                    finalThumbnailUrl = thumbnailUrl
                 }
-            }
 
-            // NON-BLOCKING SAVE: We don't await the Firestore write to prevent UI hang.
-            // We trust the optimistic update and background sync.
-            const savePromise = (async () => {
+                // SECURITY CHECK: Ensure we don't send huge Base64 strings to Firestore
+                if (finalReceiptUrl && finalReceiptUrl.startsWith('data:image')) {
+                    if (finalReceiptUrl.length > 500000) { // > 500KB
+                        finalReceiptUrl = null
+                    }
+                }
+
                 if (billType === 'combine') {
                     // COMBINE MODE
                     const finalItems = items.map(item => {
@@ -409,7 +401,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                     const expenseData: Parameters<typeof addExpense>[0] = {
                         title: title || payee || "New Expense",
-                        amount: `฿${subtotal.toLocaleString()} `,
+                        amount: `฿${subtotal.toLocaleString()}`,
                         totalValue: subtotal,
                         date,
                         category: items[0]?.category || "Other",
@@ -450,7 +442,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                         const expenseData: Parameters<typeof addExpense>[0] = {
                             title: groupTitle,
-                            amount: `฿${groupTotal.toLocaleString()} `,
+                            amount: `฿${groupTotal.toLocaleString()}`,
                             totalValue: groupTotal,
                             date,
                             category: groupItems[0]?.category || "Other",
@@ -470,7 +462,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     }))
                 }
 
-                // Send Telegram Notification (Background, Fire-and-forget)
+                // Send Telegram Notification
                 if (currentOrg?.id) {
                     const project = projects.find(p => p.id === (billType === 'combine' ? globalProjectId : items[0]?.projectId))
                     let subProjectName = undefined
@@ -479,7 +471,6 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                         subProjectName = project.subProjects?.find(sp => sp.id === subProjectId)?.name
                     }
 
-                    // Fire-and-forget: Telegram notification must not block expense save chain
                     sendExpenseNotification({
                         orgId: currentOrg.id,
                         expense: {
@@ -493,29 +484,15 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                         }
                     }).catch((e: any) => console.warn('Telegram notification failed:', e))
                 }
-            })()
 
-            // Catch background errors
-            savePromise.catch(err => {
-                console.error("Background expense save failed:", err)
-                toast.error("Failed to sync expense to server")
-            })
-
-            // IMMEDIATE FEEDBACK
-            toast.success("Expense saving...")
-            onClose()
-
-        } catch (error: any) {
-            console.error("Error adding expense:", error)
-            const errorMsg = error?.message || "Unknown error"
-            toast.error(`Error: ${errorMsg}`)
-            // Only stop isUploading if we actually failed synchronously (e.g. image upload)
-            setIsUploading(false)
-        } finally {
-            // If we closed, isUploading doesn't matter, but if we errored, we need to reset
-            // We can't easily distinguish here efficiently without refactoring the try/catch block heavily
-            // But since onClose unmounts, it's fine.
+                toast.success("บันทึกสำเร็จ! / Expense Saved!", { id: toastId })
+            } catch (error: any) {
+                console.error("Background expense save failed:", error)
+                toast.error(`บันทึกไม่สำเร็จ: ${error?.message || "Unknown error"}`, { id: toastId })
+            }
         }
+
+        runSave()
     }
 
     // Helper to get tasks for a project

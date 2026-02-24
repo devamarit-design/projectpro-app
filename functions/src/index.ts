@@ -16,6 +16,7 @@ import {
 export * from './notifications'
 export * from './notifications_wall'
 export * from './notifications_financial'
+export * from './cleanup'
 
 // Initialize Firebase Admin
 admin.initializeApp()

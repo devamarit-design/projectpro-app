@@ -135,6 +135,8 @@ export interface Expense {
     subProjectId?: string
     orgId?: string
     isArchived?: boolean // Archive flag
+    isDeleted?: boolean // Soft delete flag
+    deletedAt?: string // Timestamp of deletion
     createdAt?: string // Timestamp
     updatedAt?: string // Timestamp
     createdBy?: string // User ID of creator
@@ -294,6 +296,8 @@ export interface IncomeDocument {
     remarks?: string
     referenceDocumentId?: string // Link QT -> BN -> RE
     isArchived?: boolean // Archive flag
+    isDeleted?: boolean // Soft delete flag
+    deletedAt?: string // Timestamp of deletion
     vatIncluded?: boolean // VAT included flag
     createdAt?: string
     updatedAt?: string
@@ -324,6 +328,8 @@ export interface Contract {
     totalAmount: number
     status: "Active" | "Completed" | "Terminated"
     installments: ContractInstallment[]
+    isDeleted?: boolean // Soft delete flag
+    deletedAt?: string // Timestamp of deletion
     createdAt: string
     updatedAt?: string
 }
@@ -418,13 +424,15 @@ export interface ProjectContextType extends CoreProjectContextType {
     archivedExpenses: Expense[]
     addExpense: (expense: Omit<Expense, "id" | "createdAt" | "orgId">) => Promise<string | undefined>
     updateExpense: (id: string, updates: Partial<Expense>) => Promise<void>
-    deleteExpense: (id: string) => Promise<void>
+    deleteExpense: (id: string, permanent?: boolean) => Promise<void>
+    restoreExpense: (id: string) => Promise<void>
 
     // Income (Aggregated)
     incomes: IncomeDocument[]
     addIncome: (income: Omit<IncomeDocument, "id" | "createdAt" | "orgId">) => Promise<string | undefined>
     updateIncome: (id: string, updates: Partial<IncomeDocument>) => Promise<void>
-    deleteIncome: (id: string) => Promise<void>
+    deleteIncome: (id: string, permanent?: boolean) => Promise<void>
+    restoreIncome: (id: string) => Promise<void>
 
     // Finance Master Data (Aggregated)
     vendors: Vendor[]
@@ -442,7 +450,8 @@ export interface ProjectContextType extends CoreProjectContextType {
     deleteCustomer: (id: string) => Promise<void>
     addContract: (contract: Omit<Contract, "id" | "createdAt" | "status">) => Promise<void>
     updateContract: (id: string, updates: Partial<Contract>) => Promise<void>
-    deleteContract: (id: string) => Promise<void>
+    deleteContract: (id: string, permanent?: boolean) => Promise<void>
+    restoreContract: (id: string) => Promise<void>
     payInstallment: (contractId: string, installmentId: string) => Promise<void>
 
     // Archive System (Aggregated)

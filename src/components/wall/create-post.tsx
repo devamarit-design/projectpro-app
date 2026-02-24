@@ -85,66 +85,55 @@ export function CreatePost() {
         if (!content.trim() && mediaFiles.length === 0) return
         if (!currentOrg || !currentUser) return
 
-        setIsSubmitting(true)
-        try {
-            let mediaUrls: string[] = []
+        const currentContent = content
+        const currentMediaFiles = [...mediaFiles]
+        const currentMediaType = mediaType
 
-            if (mediaFiles.length > 0) {
-                const toastId = toast.loading("Processing images...")
+        // IMMEDIATE FEEDBACK
+        setContent("")
+        setMediaFiles([])
+        setMediaPreviews([])
+        setIsSubmitting(false)
 
-                const uploadPromises = mediaFiles.map(async (file) => {
-                    let fileToUpload = file
+        const toastId = toast.loading("กำลังโพสต์... / Posting...")
 
-                    // Compress image if it is an image
-                    if (file.type.startsWith('image/')) {
-                        try {
-                            const { compressImage } = await import('@/lib/image-utils');
-                            fileToUpload = await compressImage(file);
-                        } catch (e) {
-                            console.warn("Compression skipped", e)
+        const runPost = async () => {
+            try {
+                let mediaUrls: string[] = []
+
+                if (currentMediaFiles.length > 0) {
+                    const uploadPromises = currentMediaFiles.map(async (file) => {
+                        let fileToUpload = file
+
+                        // Compress image if it is an image
+                        if (file.type.startsWith('image/')) {
+                            try {
+                                const { compressImage } = await import('@/lib/image-utils');
+                                fileToUpload = await compressImage(file);
+                            } catch (e) {
+                                console.warn("Compression skipped", e)
+                            }
                         }
-                    }
 
-                    // Sanitize file name
-                    const sanitizedFileName = fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-                    const storageRef = ref(storage, `organizations/${currentOrg.id}/posts/${Date.now()}_${sanitizedFileName}`)
-                    const snapshot = await uploadBytes(storageRef, fileToUpload)
-                    return getDownloadURL(snapshot.ref)
-                })
+                        // Sanitize file name
+                        const sanitizedFileName = fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                        const storageRef = ref(storage, `organizations/${currentOrg.id}/posts/${Date.now()}_${sanitizedFileName}`)
+                        const snapshot = await uploadBytes(storageRef, fileToUpload)
+                        return getDownloadURL(snapshot.ref)
+                    })
 
-                try {
                     mediaUrls = await Promise.all(uploadPromises)
-                    toast.dismiss(toastId)
-                } catch (e) {
-                    toast.dismiss(toastId)
-                    console.error("Upload failed", e)
-                    // If permissions fail, this throws.
-                    throw new Error("Failed to upload images. Check permissions.")
                 }
+
+                await addPost(currentContent, mediaUrls, currentMediaFiles.length > 0 ? currentMediaType : 'none')
+                toast.success("โพสต์เรียบร้อย! / Post created!", { id: toastId })
+            } catch (error: any) {
+                console.error("Background post failed:", error)
+                toast.error(`โพสต์ไม่สำเร็จ: ${error?.message || "Unknown error"}`, { id: toastId })
             }
-
-            // Use SocialContext's addPost for optimistic update
-            // Note: addPost handles the Firestore addDoc internally
-            // We do NOT await this anymore to prevent UI hanging on slow networks
-            addPost(content, mediaUrls, mediaFiles.length > 0 ? mediaType : 'none')
-                .catch(err => {
-                    console.error("Background post failed:", err)
-                    // Context handles rollback, but we notify user if needed
-                    toast.error("Failed to post in background")
-                })
-
-            // Always unblock if we get here - IMMEDIATE FEEDBACK
-            setContent("")
-            setMediaFiles([])
-            setMediaPreviews([])
-            setIsSubmitting(false) // Stop loading immediately
-            toast.success("Post created!")
-
-        } catch (error) {
-            console.error("Error creating post:", error)
-            toast.error("Failed to post") // Context handles rollback, but we notify user
-            setIsSubmitting(false)
         }
+
+        runPost()
     }
 
     return (

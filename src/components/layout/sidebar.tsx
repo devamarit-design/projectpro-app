@@ -86,11 +86,11 @@ export function Sidebar({ className }: { className?: string }) {
             title: "อื่นๆ", // Other
             items: [
                 { href: "/settings", label: t.common.settings, icon: Settings },
-                // { href: "/wall", label: "Team Wall", icon: Newspaper },
                 { href: "/announcements", label: "ประกาศ", icon: Megaphone },
                 { href: "/about", label: t.navbar.about, icon: Info },
                 { href: "/policy", label: t.navbar.policy, icon: ShieldCheck },
                 { href: "/bored", label: t.navbar.bored, icon: Gamepad2 },
+                { href: "/trash", label: "ถังขยะ (Trash)", icon: Archive },
             ]
         }
     ]

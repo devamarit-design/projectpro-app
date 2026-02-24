@@ -17,10 +17,12 @@ interface FinanceContextType {
     contracts: Contract[]
     addExpense: (expense: Omit<Expense, "id" | "createdAt" | "orgId">) => Promise<string | undefined>
     updateExpense: (id: string, updates: Partial<Expense>) => Promise<void>
-    deleteExpense: (id: string) => Promise<void>
+    deleteExpense: (id: string, permanent?: boolean) => Promise<void>
+    restoreExpense: (id: string) => Promise<void>
     addIncome: (income: Omit<IncomeDocument, "id" | "createdAt" | "orgId">) => Promise<string | undefined>
     updateIncome: (id: string, updates: Partial<IncomeDocument>) => Promise<void>
-    deleteIncome: (id: string) => Promise<void>
+    deleteIncome: (id: string, permanent?: boolean) => Promise<void>
+    restoreIncome: (id: string) => Promise<void>
 
     // Master Data
     addVendor: (vendor: Omit<Vendor, "id" | "status">) => Promise<void>
@@ -38,7 +40,8 @@ interface FinanceContextType {
     // Contracts
     addContract: (contract: Omit<Contract, "id" | "createdAt" | "status">) => Promise<void>
     updateContract: (id: string, updates: Partial<Contract>) => Promise<void>
-    deleteContract: (id: string) => Promise<void>
+    deleteContract: (id: string, permanent?: boolean) => Promise<void>
+    restoreContract: (id: string) => Promise<void>
     payInstallment: (contractId: string, installmentId: string) => Promise<void>
 
     // Archive
@@ -85,8 +88,8 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         )
         const unsubExpenses = onSnapshot(qExpenses, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
-            // CLIENT-SIDE FILTER: Include if isArchived is false OR undefined
-            setExpenses(data.filter(d => d.isArchived !== true))
+            // CLIENT-SIDE FILTER: Include if isArchived is false OR undefined AND isDeleted is not true
+            setExpenses(data.filter(d => d.isArchived !== true && d.isDeleted !== true))
         }, (error) => console.error("[FinanceContext] Expenses sync error:", error))
 
         // 2. Incomes (Active & Ordered)
@@ -99,7 +102,7 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         const unsubIncomes = onSnapshot(qIncomes, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
             // CLIENT-SIDE FILTER
-            setIncomes(data.filter(d => d.isArchived !== true))
+            setIncomes(data.filter(d => d.isArchived !== true && d.isDeleted !== true))
         }, (error) => console.error("[FinanceContext] Incomes sync error:", error))
 
         // 3. Master Data (Unlimited to ensure dropdowns are complete)
@@ -111,7 +114,7 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         const unsubVendors = onSnapshot(qVendors, (snap) => setVendors(snap.docs.map(d => ({ ...d.data(), id: d.id } as Vendor))))
         const unsubCustomers = onSnapshot(qCustomers, (snap) => setCustomers(snap.docs.map(d => ({ ...d.data(), id: d.id } as Customer))))
         const unsubWorkers = onSnapshot(qWorkers, (snap) => setWorkers(snap.docs.map(d => ({ ...d.data(), id: d.id } as Worker))))
-        const unsubContracts = onSnapshot(qContracts, (snap) => setContracts(snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract))))
+        const unsubContracts = onSnapshot(qContracts, (snap) => setContracts(snap.docs.map(d => ({ ...d.data(), id: d.id } as Contract)).filter(d => d.isDeleted !== true)))
 
         setIsLoading(false)
         return () => {
@@ -199,15 +202,25 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         }
     }, [expenses])
 
-    const deleteExpense = useCallback(async (id: string) => {
+    const deleteExpense = useCallback(async (id: string, permanent?: boolean) => {
         const original = [...expenses]
         setExpenses(prev => prev.filter(e => e.id !== id))
         try {
-            await deleteDoc(doc(db, "expenses", id))
+            if (permanent) {
+                await deleteDoc(doc(db, "expenses", id))
+            } else {
+                await updateDoc(doc(db, "expenses", id), { isDeleted: true, deletedAt: new Date().toISOString() })
+            }
         } catch (e) {
             setExpenses(original)
         }
     }, [expenses])
+
+    const restoreExpense = useCallback(async (id: string) => {
+        try {
+            await updateDoc(doc(db, "expenses", id), { isDeleted: false })
+        } catch (e) { console.error(e) }
+    }, [])
 
     const addIncome = useCallback(async (incomeData: Omit<IncomeDocument, "id" | "createdAt" | "orgId">) => {
         if (!currentTeam) return
@@ -248,15 +261,25 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         }
     }, [incomes])
 
-    const deleteIncome = useCallback(async (id: string) => {
+    const deleteIncome = useCallback(async (id: string, permanent?: boolean) => {
         const original = [...incomes]
         setIncomes(prev => prev.filter(i => i.id !== id))
         try {
-            await deleteDoc(doc(db, "incomes", id))
+            if (permanent) {
+                await deleteDoc(doc(db, "incomes", id))
+            } else {
+                await updateDoc(doc(db, "incomes", id), { isDeleted: true, deletedAt: new Date().toISOString() })
+            }
         } catch (e) {
             setIncomes(original)
         }
     }, [incomes])
+
+    const restoreIncome = useCallback(async (id: string) => {
+        try {
+            await updateDoc(doc(db, "incomes", id), { isDeleted: false })
+        } catch (e) { console.error(e) }
+    }, [])
 
     // Master Data Actions
     const addVendor = useCallback(async (vendor: Omit<Vendor, "id" | "status">) => {
@@ -374,8 +397,20 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         try { await updateDoc(doc(db, "contracts", id), { ...updates, updatedAt: new Date().toISOString() }) } catch (e) { console.error(e) }
     }, [])
 
-    const deleteContract = useCallback(async (id: string) => {
-        try { await deleteDoc(doc(db, "contracts", id)) } catch (e) { console.error(e) }
+    const deleteContract = useCallback(async (id: string, permanent?: boolean) => {
+        try {
+            if (permanent) {
+                await deleteDoc(doc(db, "contracts", id))
+            } else {
+                await updateDoc(doc(db, "contracts", id), { isDeleted: true, deletedAt: new Date().toISOString() })
+            }
+        } catch (e) { console.error(e) }
+    }, [])
+
+    const restoreContract = useCallback(async (id: string) => {
+        try {
+            await updateDoc(doc(db, "contracts", id), { isDeleted: false })
+        } catch (e) { console.error(e) }
     }, [])
 
     const payInstallment = useCallback(async (contractId: string, installmentId: string) => {
@@ -413,24 +448,24 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
             expenses,
             archivedExpenses,
             incomes, vendors, customers, workers, contracts,
-            addExpense, updateExpense, deleteExpense,
-            addIncome, updateIncome, deleteIncome,
+            addExpense, updateExpense, deleteExpense, restoreExpense,
+            addIncome, updateIncome, deleteIncome, restoreIncome,
             addVendor, updateVendor, deleteVendor,
             addWorker, updateWorker, deleteWorker,
             addCustomer, updateCustomer, deleteCustomer,
-            addContract, updateContract, deleteContract, payInstallment,
+            addContract, updateContract, deleteContract, restoreContract, payInstallment,
             archiveExpense, unarchiveExpense, archiveIncome, unarchiveIncome,
             loadArchivedExpenses, loadArchivedIncomes,
             isLoading, isArchivedLoading
         }
     }, [
         expenses, archivedExpenses, incomes, vendors, customers, workers, contracts,
-        addExpense, updateExpense, deleteExpense,
-        addIncome, updateIncome, deleteIncome,
+        addExpense, updateExpense, deleteExpense, restoreExpense,
+        addIncome, updateIncome, deleteIncome, restoreIncome,
         addVendor, updateVendor, deleteVendor,
         addWorker, updateWorker, deleteWorker,
         addCustomer, updateCustomer, deleteCustomer,
-        addContract, updateContract, deleteContract, payInstallment,
+        addContract, updateContract, deleteContract, restoreContract, payInstallment,
         archiveExpense, unarchiveExpense, archiveIncome, unarchiveIncome,
         loadArchivedExpenses, loadArchivedIncomes,
         isLoading, isArchivedLoading
