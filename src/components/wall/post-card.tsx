@@ -54,7 +54,8 @@ export interface Post {
         name: string
         avatar?: string
     }
-    likes: string[] // User IDs
+    likes: string[] // User IDs (Legacy)
+    reactions?: Record<string, string[]> // Emoji -> User IDs
     commentsCount: number
     createdAt: string
     updatedAt?: string // Added optional field
@@ -67,16 +68,41 @@ interface PostCardProps {
 }
 
 export function PostCard({ post }: PostCardProps) {
-    const { toggleLike, deletePost, updatePost } = useSocial()
+    const { toggleReaction, deletePost, updatePost } = useSocial()
     const { currentUser, users } = useProjects()
 
-    // Local state for UI only (though context handles it optimistically, we might want local state for other things)
-    // Actually, since context is optimistic, we can derive isLiked directly from props which come from context!
-    // But to be super safe and responsive, we can stick to props.
+    // Emojis configuration
+    const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"]
 
-    // Derived state from props (which are now optimistic from context)
-    const isLiked = post.likes.includes(currentUser?.id || "")
-    const likesCount = post.likes.length
+    // Reaction mappings
+    const currentReactions = post.reactions || {}
+    // Backward compatibility: mix legacy likes into 👍
+    if (post.likes?.length && !currentReactions["👍"]) {
+        currentReactions["👍"] = post.likes
+    } else if (post.likes?.length) {
+        // Merge them nicely
+        currentReactions["👍"] = Array.from(new Set([...currentReactions["👍"], ...post.likes]))
+    }
+
+    const hasAnyReaction = Object.values(currentReactions).some(users => users.includes(currentUser?.id || ""))
+
+    // Total aggregated counts
+    let totalReactionsCount = 0
+    const reactionSummary: Record<string, number> = {}
+
+    Object.entries(currentReactions).forEach(([emoji, userIds]) => {
+        if (userIds.length > 0) {
+            reactionSummary[emoji] = userIds.length
+            totalReactionsCount += userIds.length
+        }
+    })
+
+    // Prepare likers for the unified user list
+    const allLikersSet = new Set<string>()
+    Object.values(currentReactions).forEach(userIds => {
+        userIds.forEach(id => allLikersSet.add(id))
+    })
+    const likers = users.filter(user => allLikersSet.has(user.id))
 
 
     const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0)
@@ -97,29 +123,29 @@ export function PostCard({ post }: PostCardProps) {
     const [lightboxSrc, setLightboxSrc] = useState("")
     const [showLikesModal, setShowLikesModal] = useState(false)
 
-    // Filter likes
-    const likers = users.filter(user => post.likes.includes(user.id))
-
     // Permission: Author Only
     const isAuthor = currentUser?.id === post.author.id
     const canEdit = isAuthor
 
-    const handleLike = async () => {
+    const handleReaction = async (emoji: string) => {
         if (!currentUser) return
 
-        // If we are about to like (currently not liked)
-        if (!isLiked && post.author.id !== currentUser.id) {
-            try {
-                // Determine target: The post author
-                const targetId = post.author.id
+        // Optimistic UI updates are handled by the Context
+        await toggleReaction(post.id, emoji)
 
-                // Add Notification
+        // Find if we are adding a reaction (not removing it)
+        const isCurrentlyReacted = currentReactions[emoji]?.includes(currentUser.id)
+
+        // Notify Author if it is a NEW reaction and we are not the author
+        if (!isCurrentlyReacted && post.author.id !== currentUser.id) {
+            try {
+                const targetId = post.author.id
                 const { collection, addDoc } = await import("firebase/firestore")
                 const { db } = await import("@/lib/firebase")
 
                 await addDoc(collection(db, "notifications"), {
-                    title: "New Like",
-                    message: `${currentUser.name} liked your post`,
+                    title: `New Reaction ${emoji}`,
+                    message: `${currentUser.name} reacted with ${emoji} to your post`,
                     type: "info",
                     date: new Date().toISOString(),
                     read: false,
@@ -130,11 +156,9 @@ export function PostCard({ post }: PostCardProps) {
                     creatorId: currentUser.id
                 })
             } catch (error) {
-                console.error("Failed to crate notification for like", error)
+                console.error("Failed to create notification for reaction", error)
             }
         }
-
-        await toggleLike(post.id)
     }
 
     const handleDelete = async () => {
@@ -370,25 +394,44 @@ export function PostCard({ post }: PostCardProps) {
                 {/* Actions */}
                 <div className="px-4 py-3 border-t border-border/50 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="relative group">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleLike}
+                        <HoverCard openDelay={200} closeDelay={300}>
+                            <HoverCardTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="relative flex items-center gap-1.5 hover:bg-muted/50"
+                                    onClick={() => handleReaction("👍")}
+                                >
+                                    <Heart className={cn("h-4 w-4", hasAnyReaction && "fill-rose-500 text-rose-500")} />
+                                </Button>
+                            </HoverCardTrigger>
+                            <HoverCardContent
+                                side="top"
+                                align="start"
+                                className="w-auto p-1.5 flex gap-1 rounded-full bg-background border shadow-xl"
                             >
-                                <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
-                            </Button>
+                                {EMOJIS.map(emoji => (
+                                    <button
+                                        key={emoji}
+                                        onClick={() => handleReaction(emoji)}
+                                        className="text-2xl hover:scale-125 hover:-translate-y-1 transition-all duration-200 p-1.5 focus:outline-none"
+                                        title={`React with ${emoji}`}
+                                    >
+                                        {emoji}
+                                    </button>
+                                ))}
+                            </HoverCardContent>
+                        </HoverCard>
 
-                            {/* Likes List Modal Trigger - Replaces Hover Tooltip */}
-                        </div>
-                        {likesCount > 0 && (
+                        {/* Reaction Count Display */}
+                        {totalReactionsCount > 0 && (
                             <HoverCard openDelay={200}>
                                 <HoverCardTrigger asChild>
                                     <button
                                         className="text-xs text-muted-foreground hover:text-foreground hover:underline ml-1 focus:outline-none"
                                         onClick={() => setShowLikesModal(true)}
                                     >
-                                        {likesCount} likes
+                                        {totalReactionsCount} reactions
                                     </button>
                                 </HoverCardTrigger>
                                 <HoverCardContent className="w-80 p-0 overflow-hidden bg-[#020617]/95 backdrop-blur-xl border-white/10 text-white rounded-3xl shadow-2xl" side="top" align="start">
@@ -433,30 +476,39 @@ export function PostCard({ post }: PostCardProps) {
                                         <X className="h-4 w-4" />
                                     </Button>
                                 </DialogHeader>
-                                <div className="p-2 space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
-                                    {likers.length > 0 ? likers.map(user => (
-                                        <div key={user.id} className="flex items-center gap-3 p-2.5 hover:bg-white/5 rounded-2xl transition-colors group">
-                                            <Avatar className="h-10 w-10 border border-white/10 shadow-sm">
-                                                <AvatarImage src={user.avatar} />
-                                                <AvatarFallback className="bg-gradient-to-br from-rose-500 to-pink-600 text-xs text-white font-bold">
-                                                    {user.name.charAt(0)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1 min-w-0 text-left">
-                                                <p className="text-sm font-bold text-white truncate leading-none mb-1">{user.name}</p>
-                                                <p className="text-[10px] text-white/40 truncate font-medium">{user.email || "Team Member"}</p>
-                                            </div>
-                                            {user.id === currentUser?.id && (
-                                                <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider scale-90">You</span>
-                                            )}
-                                        </div>
-                                    )) : (
-                                        <div className="flex flex-col items-center justify-center py-12 text-white/20 gap-3">
-                                            <Heart className="w-10 h-10 stroke-1" />
-                                            <p className="text-sm font-bold">No visible likes.</p>
-                                        </div>
-                                    )}
-                                </div>
+                                {likers.length > 0 ? (
+                                    <div className="p-1 space-y-0.5 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                        {Object.entries(currentReactions).flatMap(([emoji, uIdArr]) =>
+                                            users.filter(u => uIdArr.includes(u.id)).map(user => (
+                                                <div key={`${emoji}-${user.id}`} className="flex items-center gap-3 p-2.5 hover:bg-white/5 rounded-2xl transition-colors group">
+                                                    <div className="relative">
+                                                        <Avatar className="h-10 w-10 border border-white/10 shadow-sm">
+                                                            <AvatarImage src={user.avatar} />
+                                                            <AvatarFallback className="bg-gradient-to-br from-rose-500 to-pink-600 text-xs text-white font-bold">
+                                                                {user.name.charAt(0)}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="absolute -bottom-1 -right-1 bg-black rounded-full border border-white/10 text-[10px] w-5 h-5 flex items-center justify-center">
+                                                            {emoji}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 text-left">
+                                                        <p className="text-sm font-bold text-white truncate leading-none mb-1">{user.name}</p>
+                                                        <p className="text-[10px] text-white/40 truncate font-medium">{user.email || "Team Member"}</p>
+                                                    </div>
+                                                    {user.id === currentUser?.id && (
+                                                        <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider scale-90">You</span>
+                                                    )}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-12 text-white/20 gap-3">
+                                        <Heart className="w-10 h-10 stroke-1" />
+                                        <p className="text-sm font-bold">No visible reactions.</p>
+                                    </div>
+                                )}
                             </DialogContent>
                         </Dialog>
 
@@ -479,7 +531,7 @@ export function PostCard({ post }: PostCardProps) {
                         onCommentAdded={() => setCommentsCount(prev => prev + 1)}
                     />
                 )}
-            </div >
+            </div>
 
             <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
                 <AlertDialogContent>
@@ -503,8 +555,6 @@ export function PostCard({ post }: PostCardProps) {
                 onOpenChange={setLightboxOpen}
                 src={lightboxSrc}
             />
-
-
         </>
     )
 }

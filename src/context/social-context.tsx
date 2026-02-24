@@ -13,6 +13,7 @@ interface SocialContextType {
     updatePost: (postId: string, updates: Partial<Post>) => Promise<void>
     deletePost: (postId: string) => Promise<void>
     toggleLike: (postId: string) => Promise<void>
+    toggleReaction: (postId: string, emoji: string) => Promise<void>
     isLoading: boolean
 }
 
@@ -69,95 +70,62 @@ export function SocialProvider({ children, currentUser }: { children: React.Reac
                 name: currentUser.name,
                 avatar: currentUser.avatar
             },
-            likes: [],
+            avatar: currentUser.avatar,
+            likes: [], // Legacy
+            reactions: {}, // New emoji tracking
             commentsCount: 0,
             createdAt: new Date().toISOString(),
-            orgId: currentOrgId
-        }
 
-        try {
-            // Firestore SDK will trigger onSnapshot immediately with hasPendingWrites: true
-            const docRef = await addDoc(collection(db, "organizations", currentOrgId, "posts"), newPost)
+            const userId = currentUser.id
+    const currentReactions = post.reactions || {}
 
-            return docRef.id
-        } catch (e) {
-            console.error("Error adding post", e)
-            throw e
-        }
-    }, [currentOrgId, currentUser])
+    // Remove from all existing emojis (radio-group behavior per post/user)
+    // Or keep it multi-select? Let's do multi-select: toggle this specific emoji
+    const usersForEmoji = currentReactions[emoji] || []
+    const isReacted = usersForEmoji.includes(userId)
 
-    const updatePost = useCallback(async (postId: string, updates: Partial<Post>) => {
-        if (!currentOrgId) return
+    const originalPosts = [...posts]
 
-        const originalPosts = [...posts]
+    // Optimistic Update
+    const newUsersForEmoji = isReacted
+                ? usersForEmoji.filter(id => id !== userId)
+                : [...usersForEmoji, userId]
 
-        // Optimistic Update
-        setPosts(prev => prev.map(p => p.id === postId ? { ...p, ...updates } : p))
+    const newReactions = {
+                ...currentReactions,
+                [emoji]: newUsersForEmoji
+            }
 
-        try {
-            await updateDoc(doc(db, "organizations", currentOrgId, "posts", postId), updates)
-        } catch (e) {
-            console.error("Error updating post", e)
-            setPosts(originalPosts) // Rollback
-            throw e
-        }
-    }, [posts, currentOrgId])
+    // Cleanup empty emoji arrays
+    if(newReactions[emoji].length === 0) {
+            delete newReactions[emoji]
+    }
 
-    const deletePost = useCallback(async (postId: string) => {
-        if (!currentOrgId) return
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, reactions: newReactions } : p))
 
-        const originalPosts = [...posts]
+    try {
+        const postRef = doc(db, "organizations", currentOrgId, "posts", postId)
 
-        // Optimistic Update
-        setPosts(prev => prev.filter(p => p.id !== postId))
+        // If the array is empty, we must technically just set it to empty array or delete the field
+        // To be safe with Firestore maps, we update the specific key
+        await updateDoc(postRef, {
+            [`reactions.${emoji}`]: isReacted ? arrayRemove(userId) : arrayUnion(userId)
+        })
+    } catch (e) {
+        console.error("Error toggling reaction", e)
+        setPosts(originalPosts) // Rollback
+    }
+}, [posts, currentOrgId, currentUser])
 
-        try {
-            await deleteDoc(doc(db, "organizations", currentOrgId, "posts", postId))
-        } catch (e) {
-            console.error("Error deleting post", e)
-            setPosts(originalPosts) // Rollback
-            throw e
-        }
-    }, [posts, currentOrgId])
+const value = useMemo(() => ({
+    posts, addPost, updatePost, deletePost, toggleLike, toggleReaction, isLoading
+}), [posts, addPost, updatePost, deletePost, toggleLike, toggleReaction, isLoading])
 
-    const toggleLike = useCallback(async (postId: string) => {
-        if (!currentOrgId || !currentUser) return
-
-        const post = posts.find(p => p.id === postId)
-        if (!post) return
-
-        const userId = currentUser.id
-        const isLiked = post.likes.includes(userId)
-
-        const originalPosts = [...posts]
-
-        // Optimistic Update
-        const newLikes = isLiked
-            ? post.likes.filter(id => id !== userId)
-            : [...post.likes, userId]
-
-        setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: newLikes } : p))
-
-        try {
-            const postRef = doc(db, "organizations", currentOrgId, "posts", postId)
-            await updateDoc(postRef, {
-                likes: isLiked ? arrayRemove(userId) : arrayUnion(userId)
-            })
-        } catch (e) {
-            console.error("Error toggling like", e)
-            setPosts(originalPosts) // Rollback
-        }
-    }, [posts, currentOrgId, currentUser])
-
-    const value = useMemo(() => ({
-        posts, addPost, updatePost, deletePost, toggleLike, isLoading
-    }), [posts, addPost, updatePost, deletePost, toggleLike, isLoading])
-
-    return (
-        <SocialContext.Provider value={value}>
-            {children}
-        </SocialContext.Provider>
-    )
+return (
+    <SocialContext.Provider value={value}>
+        {children}
+    </SocialContext.Provider>
+)
 }
 
 export function useSocial() {

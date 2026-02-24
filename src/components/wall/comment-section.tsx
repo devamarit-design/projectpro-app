@@ -26,8 +26,11 @@ interface Comment {
         avatar?: string
     }
     createdAt: string
-    likes?: string[] // User IDs
+    likes?: string[] // User IDs (Legacy)
+    reactions?: Record<string, string[]> // Emoji -> User IDs
 }
+
+const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"]
 
 interface CommentSectionProps {
     postId: string
@@ -63,7 +66,8 @@ export function CommentSection({ postId, postAuthorId, onClose, onCommentAdded }
                     ...data,
                     // Handle Firestore Timestamp or ISO string
                     createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
-                    likes: data.likes || []
+                    likes: data.likes || [],
+                    reactions: data.reactions || {}
                 }
             }) as Comment[]
             setComments(fetchedComments)
@@ -77,8 +81,17 @@ export function CommentSection({ postId, postAuthorId, onClose, onCommentAdded }
     useEffect(() => {
         if (showLikersModal && selectedCommentId) {
             const comment = comments.find(c => c.id === selectedCommentId)
-            if (comment && comment.likes && users) {
-                const likerDetails = users.filter(u => comment.likes?.includes(u.id))
+            if (comment && users) {
+                // Backward compatibility + Reactions
+                let allLikerIds: string[] = []
+                if (comment.likes) allLikerIds = [...allLikerIds, ...comment.likes]
+                if (comment.reactions) {
+                    Object.values(comment.reactions).forEach(userIds => {
+                        allLikerIds = [...allLikerIds, ...userIds]
+                    })
+                }
+                const uniqueLikerIds = Array.from(new Set(allLikerIds))
+                const likerDetails = users.filter(u => uniqueLikerIds.includes(u.id))
                 setActiveLikers(likerDetails)
             } else {
                 setActiveLikers([])
@@ -86,25 +99,52 @@ export function CommentSection({ postId, postAuthorId, onClose, onCommentAdded }
         }
     }, [showLikersModal, selectedCommentId, comments, users])
 
-    const handleLikeComment = async (commentId: string, currentLikes: string[]) => {
+    const handleReactionComment = async (commentId: string, emoji: string) => {
         if (!currentUser || !currentOrg) return
 
-        const isLiked = currentLikes.includes(currentUser.id)
+        const comment = comments.find(c => c.id === commentId)
+        if (!comment) return
+
+        const currentReactions = comment.reactions || {}
+        const usersForEmoji = currentReactions[emoji] || []
+        const isReacted = usersForEmoji.includes(currentUser.id)
+
         const commentRef = doc(db, "organizations", currentOrg.id, "posts", postId, "comments", commentId)
 
         try {
-            if (isLiked) {
-                await updateDoc(commentRef, {
-                    likes: arrayRemove(currentUser.id)
-                })
-            } else {
-                await updateDoc(commentRef, {
-                    likes: arrayUnion(currentUser.id)
-                })
+            // Firestore update logic for maps usually requires merging the whole field if modifying arrays
+            const newUsersForEmoji = isReacted
+                ? usersForEmoji.filter(id => id !== currentUser.id)
+                : [...usersForEmoji, currentUser.id]
+
+            const newReactions = {
+                ...currentReactions,
+                [emoji]: newUsersForEmoji
             }
+
+            await updateDoc(commentRef, {
+                reactions: newReactions
+            })
+
+            // Only notify if it's a NEW reaction (not removing sync)
+            if (!isReacted && comment.author.id !== currentUser.id) {
+                addDoc(collection(db, "notifications"), {
+                    title: `New Reaction ${emoji}`,
+                    message: `${currentUser.name} reacted with ${emoji} to your comment`,
+                    type: "info",
+                    date: new Date().toISOString(),
+                    read: false,
+                    link: `/wall?postId=${postId}`,
+                    relatedId: postId,
+                    target: comment.author.id,
+                    orgId: currentOrg.id,
+                    creatorId: currentUser.id
+                }).catch(err => console.error("Failed to create reaction notification", err))
+            }
+
         } catch (error) {
-            console.error("Error toggling like:", error)
-            toast.error("Failed to update like")
+            console.error("Error toggling reaction:", error)
+            toast.error("Failed to update reaction")
         }
     }
 
@@ -220,8 +260,20 @@ export function CommentSection({ postId, postAuthorId, onClose, onCommentAdded }
                     ) : (
                         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
                             {comments.map(comment => {
-                                const isLiked = comment.likes?.includes(currentUser?.id || "")
-                                const likesCount = comment.likes?.length || 0
+                                // Map legacy likes to 👍 for backward compatibility context
+                                const currentReactions = comment.reactions || {}
+                                if (comment.likes?.length && !currentReactions["👍"]) {
+                                    currentReactions["👍"] = comment.likes
+                                } else if (comment.likes?.length) {
+                                    currentReactions["👍"] = Array.from(new Set([...currentReactions["👍"], ...comment.likes]))
+                                }
+
+                                const hasAnyReaction = Object.values(currentReactions).some(users => users.includes(currentUser?.id || ""))
+
+                                let totalReactionsCount = 0
+                                Object.values(currentReactions).forEach(userIds => {
+                                    totalReactionsCount += userIds.length
+                                })
 
                                 return (
                                     <div key={comment.id} className="flex gap-3 text-sm group">
@@ -231,38 +283,46 @@ export function CommentSection({ postId, postAuthorId, onClose, onCommentAdded }
                                         </Avatar>
                                         <div className="flex-1 space-y-1">
                                             <div className="flex items-start gap-2">
-                                                <div className="bg-muted/80 rounded-2xl rounded-tl-none px-3 py-2 inline-block max-w-[90%] relative">
+                                                <div className="bg-muted/80 rounded-2xl rounded-tl-none px-3 py-2 inline-block max-w-[90%] relative group/comment">
                                                     <span className="font-semibold text-xs mr-2">{comment.author.name}</span>
                                                     <span className="text-foreground/90">{comment.content}</span>
 
-                                                    {likesCount > 0 && (
+                                                    {totalReactionsCount > 0 && (
                                                         <button
                                                             onClick={() => openLikersModal(comment.id)}
                                                             className="absolute -bottom-2 -right-1 bg-background border border-border rounded-full px-1.5 py-0.5 flex items-center gap-0.5 shadow-sm text-[9px] text-muted-foreground hover:bg-muted cursor-pointer transition-colors"
                                                         >
                                                             <Heart className="w-2.5 h-2.5 fill-rose-500 text-rose-500" />
-                                                            <span>{likesCount}</span>
+                                                            <span>{totalReactionsCount}</span>
                                                         </button>
                                                     )}
-                                                </div>
 
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className={cn(
-                                                        "h-6 w-6 rounded-full -mt-1 opacity-0 group-hover:opacity-100 transition-opacity",
-                                                        isLiked && "opacity-100 text-rose-500 hover:text-rose-600 hover:bg-rose-100/10"
-                                                    )}
-                                                    onClick={() => handleLikeComment(comment.id, comment.likes || [])}
-                                                >
-                                                    <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current")} />
-                                                </Button>
-                                            </div>
-                                            <div className="flex items-center gap-3 pl-1">
-                                                <p className="text-[10px] text-muted-foreground">
-                                                    {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
-                                                </p>
-                                                {/* Optional: Reply button could go here */}
+                                                    {/* Reaction Popover Trigger - Shows on Hover */}
+                                                    <div className="absolute -right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover/comment:opacity-100 transition-opacity flex">
+                                                        <div className="bg-background border shadow-sm rounded-full flex gap-0.5 p-0.5 pointer-events-auto">
+                                                            <Dialog>
+                                                                {/* Optional inline emoji buttons for quicker access */}
+                                                                {EMOJIS.slice(0, 3).map(emoji => (
+                                                                    <Button
+                                                                        key={emoji}
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-6 w-6 rounded-full text-xs hover:scale-110"
+                                                                        onClick={() => handleReactionComment(comment.id, emoji)}
+                                                                    >
+                                                                        {emoji}
+                                                                    </Button>
+                                                                ))}
+                                                            </Dialog>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 pl-1">
+                                                    <p className="text-[10px] text-muted-foreground">
+                                                        {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                                                    </p>
+                                                    {/* Optional: Reply button could go here */}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -303,33 +363,52 @@ export function CommentSection({ postId, postAuthorId, onClose, onCommentAdded }
                     <DialogHeader className="p-4 border-b border-white/10 flex flex-row items-center justify-between">
                         <DialogTitle className="text-sm font-bold flex items-center gap-2">
                             <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
-                            Liked by
+                            Reactions
                         </DialogTitle>
                         <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-white/10" onClick={() => setShowLikersModal(false)}>
                             <X className="h-4 w-4" />
                         </Button>
                     </DialogHeader>
                     <div className="p-2 space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
-                        {activeLikers.length > 0 ? activeLikers.map(user => (
-                            <div key={user.id} className="flex items-center gap-3 p-2.5 hover:bg-white/5 rounded-2xl transition-colors group">
-                                <Avatar className="h-10 w-10 border border-white/10 shadow-sm">
-                                    <AvatarImage src={user.avatar} />
-                                    <AvatarFallback className="bg-gradient-to-br from-rose-500 to-pink-600 text-xs text-white font-bold">
-                                        {user.name.charAt(0)}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0 text-left">
-                                    <p className="text-sm font-bold text-white truncate leading-none mb-1">{user.name}</p>
-                                    <p className="text-[10px] text-white/40 truncate font-medium">{user.email || "Team Member"}</p>
-                                </div>
-                                {user.id === currentUser?.id && (
-                                    <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider scale-90">You</span>
-                                )}
-                            </div>
-                        )) : (
+                        {activeLikers.length > 0 ? (
+                            (() => {
+                                const selectedComment = comments.find(c => c.id === selectedCommentId)
+                                const commentReactions = selectedComment?.reactions || {}
+                                if (selectedComment?.likes?.length && !commentReactions["👍"]) {
+                                    commentReactions["👍"] = selectedComment.likes
+                                } else if (selectedComment?.likes?.length) {
+                                    commentReactions["👍"] = Array.from(new Set([...commentReactions["👍"], ...selectedComment.likes]))
+                                }
+
+                                return Object.entries(commentReactions).flatMap(([emoji, uIdArr]) =>
+                                    activeLikers.filter(u => uIdArr.includes(u.id)).map(user => (
+                                        <div key={`${emoji}-${user.id}`} className="flex items-center gap-3 p-2.5 hover:bg-white/5 rounded-2xl transition-colors group">
+                                            <div className="relative">
+                                                <Avatar className="h-10 w-10 border border-white/10 shadow-sm">
+                                                    <AvatarImage src={user.avatar} />
+                                                    <AvatarFallback className="bg-gradient-to-br from-rose-500 to-pink-600 text-xs text-white font-bold">
+                                                        {user.name.charAt(0)}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="absolute -bottom-1 -right-1 bg-black rounded-full border border-white/10 text-[10px] w-5 h-5 flex items-center justify-center">
+                                                    {emoji}
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 min-w-0 text-left">
+                                                <p className="text-sm font-bold text-white truncate leading-none mb-1">{user.name}</p>
+                                                <p className="text-[10px] text-white/40 truncate font-medium">{user.email || "Team Member"}</p>
+                                            </div>
+                                            {user.id === currentUser?.id && (
+                                                <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider scale-90">You</span>
+                                            )}
+                                        </div>
+                                    ))
+                                )
+                            })()
+                        ) : (
                             <div className="flex flex-col items-center justify-center py-12 text-white/20 gap-3">
                                 <Heart className="w-10 h-10 stroke-1" />
-                                <p className="text-sm font-bold">No visible likes.</p>
+                                <p className="text-sm font-bold">No visible reactions.</p>
                             </div>
                         )}
                     </div>
