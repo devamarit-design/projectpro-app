@@ -46,6 +46,7 @@ export function CommentSection({ postId, postAuthorId, onClose, onCommentAdded }
     const [newComment, setNewComment] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const [activeReactionCommentId, setActiveReactionCommentId] = useState<string | null>(null)
 
     // Likers Dialog
     const [showLikersModal, setShowLikersModal] = useState(false)
@@ -296,32 +297,43 @@ export function CommentSection({ postId, postAuthorId, onClose, onCommentAdded }
                                                             <span>{totalReactionsCount}</span>
                                                         </button>
                                                     )}
-
-                                                    {/* Reaction Popover Trigger - Shows on Hover */}
-                                                    <div className="absolute -right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover/comment:opacity-100 transition-opacity flex">
-                                                        <div className="bg-background border shadow-sm rounded-full flex gap-0.5 p-0.5 pointer-events-auto">
-                                                            <Dialog>
-                                                                {/* Optional inline emoji buttons for quicker access */}
-                                                                {EMOJIS.slice(0, 3).map(emoji => (
-                                                                    <Button
-                                                                        key={emoji}
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-6 w-6 rounded-full text-xs hover:scale-110"
-                                                                        onClick={() => handleReactionComment(comment.id, emoji)}
-                                                                    >
-                                                                        {emoji}
-                                                                    </Button>
-                                                                ))}
-                                                            </Dialog>
-                                                        </div>
-                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-3 pl-1">
+                                                <div className="flex items-center gap-3 pl-1 mt-0.5">
                                                     <p className="text-[10px] text-muted-foreground">
                                                         {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                                                     </p>
-                                                    {/* Optional: Reply button could go here */}
+                                                    <div className="relative">
+                                                        <button
+                                                            onClick={() => setActiveReactionCommentId(activeReactionCommentId === comment.id ? null : comment.id)}
+                                                            className="text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors"
+                                                        >
+                                                            React
+                                                        </button>
+                                                        {activeReactionCommentId === comment.id && (
+                                                            <>
+                                                                <div
+                                                                    className="fixed inset-0 z-40"
+                                                                    onClick={(e) => { e.stopPropagation(); setActiveReactionCommentId(null); }}
+                                                                />
+                                                                <div className="absolute bottom-full left-0 mb-1 w-auto p-1 flex gap-1 rounded-full bg-background border shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                                                                    {EMOJIS.map(emoji => (
+                                                                        <button
+                                                                            key={emoji}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleReactionComment(comment.id, emoji)
+                                                                                setActiveReactionCommentId(null)
+                                                                            }}
+                                                                            className="text-2xl hover:scale-125 hover:-translate-y-1 transition-all duration-200 p-1.5 focus:outline-none relative z-50"
+                                                                            title={`React with ${emoji}`}
+                                                                        >
+                                                                            {emoji}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

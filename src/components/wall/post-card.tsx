@@ -70,6 +70,7 @@ interface PostCardProps {
 export function PostCard({ post }: PostCardProps) {
     const { toggleReaction, deletePost, updatePost } = useSocial()
     const { currentUser, users } = useProjects()
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
     // Emojis configuration
     const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"]
@@ -394,34 +395,43 @@ export function PostCard({ post }: PostCardProps) {
                 {/* Actions */}
                 <div className="px-4 py-3 border-t border-border/50 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <HoverCard openDelay={200} closeDelay={300}>
-                            <HoverCardTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="relative flex items-center gap-1.5 hover:bg-muted/50"
-                                    onClick={() => handleReaction("👍")}
-                                >
-                                    <Heart className={cn("h-4 w-4", hasAnyReaction && "fill-rose-500 text-rose-500")} />
-                                </Button>
-                            </HoverCardTrigger>
-                            <HoverCardContent
-                                side="top"
-                                align="start"
-                                className="w-auto p-1.5 flex gap-1 rounded-full bg-background border shadow-xl"
+                        {/* Reaction Picker Button */}
+                        <div className="relative flex items-center">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="relative flex items-center gap-1.5 hover:bg-muted/50"
+                                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                             >
-                                {EMOJIS.map(emoji => (
-                                    <button
-                                        key={emoji}
-                                        onClick={() => handleReaction(emoji)}
-                                        className="text-2xl hover:scale-125 hover:-translate-y-1 transition-all duration-200 p-1.5 focus:outline-none"
-                                        title={`React with ${emoji}`}
-                                    >
-                                        {emoji}
-                                    </button>
-                                ))}
-                            </HoverCardContent>
-                        </HoverCard>
+                                <Heart className={cn("h-4 w-4", hasAnyReaction && "fill-rose-500 text-rose-500")} />
+                            </Button>
+
+                            {showEmojiPicker && (
+                                <>
+                                    {/* Invisible overlay to catch outside clicks and close the picker */}
+                                    <div
+                                        className="fixed inset-0 z-40"
+                                        onClick={() => setShowEmojiPicker(false)}
+                                    />
+                                    <div className="absolute bottom-full left-0 mb-2 w-auto p-1 flex gap-1 rounded-full bg-background border shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                                        {EMOJIS.map(emoji => (
+                                            <button
+                                                key={emoji}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleReaction(emoji)
+                                                    setShowEmojiPicker(false)
+                                                }}
+                                                className="text-2xl hover:scale-125 hover:-translate-y-1 transition-all duration-200 p-1.5 focus:outline-none relative z-50"
+                                                title={`React with ${emoji}`}
+                                            >
+                                                {emoji}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
 
                         {/* Reaction Count Display */}
                         {totalReactionsCount > 0 && (

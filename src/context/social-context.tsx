@@ -13,6 +13,7 @@ interface SocialContextType {
     updatePost: (postId: string, updates: Partial<Post>) => Promise<void>
     deletePost: (postId: string) => Promise<void>
     toggleLike: (postId: string) => Promise<void>
+    toggleReaction: (postId: string, emoji: string) => Promise<void>
     isLoading: boolean
 }
 
