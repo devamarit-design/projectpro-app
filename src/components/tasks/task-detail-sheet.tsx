@@ -6,6 +6,7 @@ import { X, Calendar, User, Tag, Trash2, Clock, CheckCircle2, Layout, AlignLeft,
 import { useProjects, Priority, TaskStatus, ProjectTask } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import Image from "next/image"
 
 interface TaskDetailSheetProps {
     taskId: string | null
@@ -414,10 +415,12 @@ export default function TaskDetailSheet({ taskId, onClose }: TaskDetailSheetProp
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     {task.images.map((url, index) => (
                                         <div key={index} className="aspect-square relative rounded-xl overflow-hidden border border-white/10 group">
-                                            <img
+                                            <Image
                                                 src={url}
                                                 alt={`Task attachment ${index + 1}`}
-                                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                                fill
+                                                sizes="(max-width: 768px) 50vw, 33vw"
+                                                className="object-cover transition-transform duration-300 group-hover:scale-110"
                                             />
                                             <a
                                                 href={url}

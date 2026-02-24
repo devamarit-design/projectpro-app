@@ -6,6 +6,7 @@ import { useSettings } from "@/context/settings-context"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n-context"
+import Image from "next/image"
 
 export function DashboardBanner() {
     const { banners } = useSettings()
@@ -70,7 +71,7 @@ export function DashboardBanner() {
                     <div className="absolute inset-0 bg-black">
                         {banner.url ? (
                             <>
-                                <img src={banner.url} alt={banner.title} className="w-full h-full object-cover opacity-60" />
+                                <Image src={banner.url as string} alt={banner.title || "Banner"} fill sizes="(max-width: 1024px) 100vw, 1024px" className="object-cover opacity-60" priority={index === 0} unoptimized />
                                 <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
                             </>
                         ) : (

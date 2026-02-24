@@ -13,6 +13,7 @@ import { getGoogleMapsUrl } from "@/lib/utils"
 import { collection, query, where, getDocs, updateDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Button } from "@/components/ui/button" // Ensure Button is imported if used
+import Image from "next/image"
 
 export function CompanySettings() {
     const { t } = useTranslation()
@@ -100,9 +101,9 @@ export function CompanySettings() {
 
             <div className="flex items-center justify-between border-b pb-4">
                 <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/20 overflow-hidden">
+                    <div className="relative h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/20 overflow-hidden">
                         {displayProfile.logo ? (
-                            <img src={displayProfile.logo} alt="Logo" className="h-full w-full object-contain" />
+                            <Image src={displayProfile.logo} alt="Logo" fill sizes="64px" className="object-contain" />
                         ) : (
                             <Building2 className="w-8 h-8 text-primary" />
                         )}

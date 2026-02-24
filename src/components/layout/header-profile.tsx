@@ -18,6 +18,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { useOrganization } from "@/context/organization-context"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import Image from "next/image"
 
 import { createPortal } from "react-dom"
 
@@ -133,9 +134,9 @@ export function HeaderProfile() {
                                 currentTeam?.id === team.id && "bg-primary/5 border-l-2 border-primary"
                             )}
                         >
-                            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-lg shadow-sm group-hover:scale-105 transition-transform overflow-hidden">
+                            <div className="relative w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-lg shadow-sm group-hover:scale-105 transition-transform overflow-hidden">
                                 {team.logo && (team.logo.startsWith('http') || team.logo.startsWith('data:')) ? (
-                                    <img src={team.logo} alt={team.name} className="w-full h-full object-cover" />
+                                    <Image src={team.logo} alt={team.name} fill sizes="32px" className="object-cover" />
                                 ) : (
                                     team.logo || "🏢"
                                 )}
@@ -228,12 +229,14 @@ export function HeaderProfile() {
                 onClick={toggleDropdown}
                 className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
             >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold shadow-md overflow-hidden relative">
+                <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold shadow-md overflow-hidden relative">
                     {currentUser.avatar && !hasImageError ? (
-                        <img
+                        <Image
                             src={currentUser.avatar}
                             alt={currentUser.name}
-                            className="w-full h-full rounded-full object-cover"
+                            fill
+                            sizes="32px"
+                            className="rounded-full object-cover"
                             onError={() => setHasImageError(true)}
                         />
                     ) : (

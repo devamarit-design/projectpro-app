@@ -5,6 +5,7 @@ import { analyzeReceipt } from "@/lib/ai-service"
 import { uploadWithThumbnail } from "@/lib/upload"
 import { useOrganization } from "@/context/organization-context"
 import { toast } from "sonner"
+import Image from "next/image"
 
 export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = false }: {
     isOpen: boolean
@@ -254,7 +255,7 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
                         <div className="space-y-4">
                             {previewUrl ? (
                                 <div className="relative rounded-xl overflow-hidden aspect-[3/4] border border-white/10 bg-black/50 group">
-                                    <img src={previewUrl} alt="Preview" className="w-full h-full object-contain" />
+                                    <Image src={previewUrl} alt="Preview" fill sizes="400px" className="object-contain" unoptimized={previewUrl.startsWith('data:') || previewUrl.startsWith('blob:')} />
                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                         <label className="cursor-pointer px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full font-medium text-sm text-white transition-colors">
                                             Change Photo
@@ -298,8 +299,8 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
                         <div className="py-10 flex flex-col items-center gap-4 relative">
                             {previewUrl && (
                                 <div className="w-32 h-40 rounded-lg overflow-hidden relative mb-4 border border-white/20">
-                                    <img src={previewUrl} className="w-full h-full object-cover opacity-50" />
-                                    <div className="absolute inset-0 bg-primary/20 animate-pulse" />
+                                    <Image src={previewUrl} alt="Scanning" fill sizes="128px" className="object-cover opacity-50" unoptimized={previewUrl.startsWith('data:') || previewUrl.startsWith('blob:')} />
+                                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/30 to-transparent scan-line" />
                                     <div className="absolute top-0 left-0 w-full h-0.5 bg-primary shadow-[0_0_10px_2px_rgba(var(--primary),0.5)] animate-[scan_2s_ease-in-out_infinite]" />
                                 </div>
                             )}

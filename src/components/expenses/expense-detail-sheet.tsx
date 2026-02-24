@@ -7,6 +7,7 @@ import { useOrganization } from "@/context/organization-context"
 import { cn } from "@/lib/utils"
 import { uploadWithThumbnail } from "@/lib/upload"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import Image from "next/image"
 
 interface ExpenseDetailSheetProps {
     expenseId: string | null
@@ -597,10 +598,12 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                             <div className="relative group rounded-xl overflow-hidden border border-white/10 bg-black/40 aspect-[3/4] sm:aspect-video flex items-center justify-center">
                                 {displayImage ? (
                                     <>
-                                        <img
+                                        <Image
                                             src={displayImage}
                                             alt="Receipt"
-                                            className="w-full h-full object-contain"
+                                            fill
+                                            sizes="(max-width: 768px) 100vw, 50vw"
+                                            className="object-contain"
                                         />
                                         <div className={cn(
                                             "absolute inset-0 bg-black/60 transition-opacity flex items-center justify-center gap-3",
@@ -665,16 +668,20 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                 onClick={() => setIsImageOpen(false)}
                             >
                                 <button
-                                    className="absolute top-4 right-4 p-3 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors"
+                                    className="absolute top-4 right-4 p-3 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors z-10"
                                     onClick={() => setIsImageOpen(false)}
                                 >
                                     <X className="w-6 h-6" />
                                 </button>
-                                <img
-                                    src={fullImage}
-                                    alt="Full Receipt"
-                                    className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                                />
+                                <div className="relative w-full h-full p-8 flex items-center justify-center">
+                                    <Image
+                                        src={fullImage}
+                                        alt="Full Receipt"
+                                        fill
+                                        sizes="100vw"
+                                        className="object-contain rounded-lg shadow-2xl"
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>

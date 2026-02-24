@@ -9,6 +9,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { useProjects } from "@/context/project-context"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 export function BannerSettings() {
     const { banners, updateBanners } = useSettings()
@@ -141,9 +142,9 @@ export function BannerSettings() {
                                             </div>
 
                                             {/* Preview */}
-                                            <div className="w-32 h-20 shrink-0 rounded-lg overflow-hidden bg-muted relative border border-white/10">
+                                            <div className="relative w-32 h-20 shrink-0 rounded-lg overflow-hidden bg-muted border border-white/10">
                                                 {banner.url ? (
-                                                    <img src={banner.url} alt="Banner" className="w-full h-full object-cover" />
+                                                    <Image src={banner.url} alt="Banner" fill sizes="128px" className="object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-500/20">
                                                         <ImageIcon className="w-6 h-6 text-muted-foreground" />

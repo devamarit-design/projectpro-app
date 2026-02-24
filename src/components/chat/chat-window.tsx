@@ -17,6 +17,7 @@ import {
     MessageCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const messages = [
     { id: 1, sender: 'John Doe', text: 'Sawasdee krab, I have a question about my order.', time: '10:30 AM', direction: 'inbound', platform: 'meta' },
@@ -57,11 +58,13 @@ export function ChatWindow({
                         <ChevronLeft size={20} />
                     </button>
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center overflow-hidden shadow-sm">
-                            <img
+                        <div className="relative w-10 h-10 rounded-xl bg-secondary flex items-center justify-center overflow-hidden shadow-sm">
+                            <Image
                                 src="https://api.dicebear.com/7.x/avataaars/svg?seed=John"
                                 alt="Avatar"
-                                className="w-full h-full object-cover"
+                                fill
+                                sizes="40px"
+                                className="object-cover"
                             />
                         </div>
                         <div className="min-w-0">

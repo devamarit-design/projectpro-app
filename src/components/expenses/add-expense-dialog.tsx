@@ -12,6 +12,7 @@ import { uploadWithThumbnail } from "@/lib/upload"
 import SearchableCombobox from "@/components/ui/searchable-combobox"
 import { useOrganization } from "@/context/organization-context"
 import { sendExpenseNotification } from "@/lib/functions-client"
+import Image from "next/image"
 
 interface AddExpenseDialogProps {
     isOpen: boolean
@@ -1049,7 +1050,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                         <div className="mt-3 animate-in fade-in slide-in-from-top-2">
                                             {receiptImage ? (
                                                 <div className="relative rounded-xl overflow-hidden border border-white/10 group aspect-video bg-black/40">
-                                                    <img src={receiptImage} alt="Receipt Preview" className="w-full h-full object-contain" />
+                                                    <Image src={receiptImage} alt="Receipt Preview" fill sizes="(max-width: 768px) 100vw, 400px" className="object-contain" unoptimized={receiptImage.startsWith('data:') || receiptImage.startsWith('blob:')} />
                                                     <button
                                                         type="button"
                                                         onClick={(e) => {

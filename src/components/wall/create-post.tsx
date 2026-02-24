@@ -180,7 +180,7 @@ export function CreatePost() {
                                         <X className="h-3 w-3" />
                                     </Button>
                                     {mediaType === 'image' ? (
-                                        <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                                        <Image src={preview} alt="Preview" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" unoptimized={preview.startsWith('data:') || preview.startsWith('blob:')} />
                                     ) : (
                                         <video src={preview} className="w-full h-full object-cover" />
                                     )}

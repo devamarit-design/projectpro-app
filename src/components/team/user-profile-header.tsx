@@ -4,6 +4,7 @@ import { User } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { Mail, Phone, MapPin, Calendar, Edit, Star, Shield, CheckCircle2, DollarSign, FolderKanban } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 interface UserProfileHeaderProps {
     user: User
@@ -29,9 +30,9 @@ export function UserProfileHeader({ user, stats, onEdit, isCurrentUserOrAdmin }:
                 <div className="flex flex-col gap-6 items-center relative z-10 text-center">
                     {/* Avatar & Status */}
                     <div className="flex flex-col items-center gap-4 shrink-0">
-                        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border-4 border-white/10 flex items-center justify-center shadow-2xl relative">
+                        <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border-4 border-white/10 flex items-center justify-center shadow-2xl relative overflow-hidden">
                             {user.avatar ? (
-                                <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
+                                <Image src={user.avatar} alt={user.name} fill sizes="128px" className="object-cover" />
                             ) : (
                                 <span className="text-4xl font-bold text-primary">{user.name.charAt(0)}</span>
                             )}

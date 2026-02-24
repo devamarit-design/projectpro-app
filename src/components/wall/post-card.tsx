@@ -260,9 +260,11 @@ export function PostCard({ post }: PostCardProps) {
                                                         setLightboxOpen(true)
                                                     }}
                                                 >
-                                                    <img
+                                                    <Image
                                                         src={post.mediaUrls[0]}
                                                         alt="Post attachment"
+                                                        width={800}
+                                                        height={600}
                                                         className="w-full h-auto max-h-[600px] object-cover"
                                                     />
                                                 </div>

@@ -5,6 +5,7 @@ import { X, Calendar, User, Tag, ChevronDown, CheckCircle2, Layout } from "lucid
 import { useProjects, Priority, TaskStatus } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import SearchableCombobox from "@/components/ui/searchable-combobox"
+import Image from "next/image"
 
 interface AddTaskDialogProps {
     isOpen: boolean
@@ -374,7 +375,7 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                                 {/* Existing Images */}
                                 {existingImages.map((url, i) => (
                                     <div key={`exist-${i}`} className="relative w-20 h-20 rounded-lg overflow-hidden border border-white/10 group">
-                                        <img src={url} alt="Task" className="w-full h-full object-cover" />
+                                        <Image src={url} alt="Task" fill sizes="80px" className="object-cover" />
                                         <button
                                             type="button"
                                             onClick={() => removeImage(i, true)}
@@ -388,7 +389,7 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
                                 {/* New Previews */}
                                 {previewImages.map((url, i) => (
                                     <div key={`new-${i}`} className="relative w-20 h-20 rounded-lg overflow-hidden border border-white/10 group">
-                                        <img src={url} alt="Preview" className="w-full h-full object-cover" />
+                                        <Image src={url} alt="Preview" fill sizes="80px" className="object-cover" unoptimized={url.startsWith('data:') || url.startsWith('blob:')} />
                                         <button
                                             type="button"
                                             onClick={() => removeImage(i, false)}

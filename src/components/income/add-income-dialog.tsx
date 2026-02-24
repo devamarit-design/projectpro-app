@@ -9,6 +9,7 @@ import AddProjectDialog from "@/components/projects/add-project-dialog"
 import { useOrganization } from "@/context/organization-context"
 import { sendQuotationNotification } from "@/lib/functions-client"
 import SearchableCombobox from "@/components/ui/searchable-combobox"
+import Image from "next/image"
 
 interface AddIncomeDialogProps {
     open: boolean
@@ -243,7 +244,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
 
     const compressBase64 = (base64: string): Promise<string> => {
         return new Promise((resolve, reject) => {
-            const img = new Image()
+            const img = new window.Image()
             img.src = base64
             img.onload = () => {
                 const canvas = document.createElement('canvas')
@@ -272,7 +273,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
                 resolve(dataUrl)
             }
-            img.onerror = (e) => reject(new Error("Image load failed"))
+            img.onerror = (e: any) => reject("Image load failed")
         })
     }
 
@@ -492,12 +493,12 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                 <label
                                                     htmlFor={`file-${item.id}`}
                                                     className={cn(
-                                                        "w-10 h-10 rounded-lg flex items-center justify-center border border-input cursor-pointer transition-colors overflow-hidden",
+                                                        "w-10 h-10 rounded-lg flex items-center justify-center border border-input cursor-pointer transition-colors overflow-hidden relative",
                                                         item.image ? "bg-transparent" : "bg-muted hover:bg-muted/80"
                                                     )}
                                                 >
                                                     {item.image ? (
-                                                        <img src={item.image} className="w-full h-full object-cover" alt="Item" />
+                                                        <Image src={item.image} alt="Item" fill sizes="40px" className="object-cover" unoptimized={item.image.startsWith('data:') || item.image.startsWith('blob:')} />
                                                     ) : (
                                                         <ImageIcon className="w-4 h-4 text-muted-foreground" />
                                                     )}
@@ -574,10 +575,10 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                     />
                                                     <label
                                                         htmlFor={`zone-file-${section.id}`}
-                                                        className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center border border-white/5 cursor-pointer hover:bg-muted/80 transition-colors overflow-hidden"
+                                                        className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center border border-white/5 cursor-pointer hover:bg-muted/80 transition-colors overflow-hidden relative"
                                                     >
                                                         {section.coverImage ? (
-                                                            <img src={section.coverImage} className="w-full h-full object-cover" />
+                                                            <Image src={section.coverImage} alt="Cover" fill sizes="40px" className="object-cover" unoptimized={section.coverImage.startsWith('data:') || section.coverImage.startsWith('blob:')} />
                                                         ) : (
                                                             <ImageIcon className="w-5 h-5 text-muted-foreground" />
                                                         )}
@@ -621,12 +622,12 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                             <label
                                                                 htmlFor={`file-${item.id}`}
                                                                 className={cn(
-                                                                    "w-10 h-10 rounded-lg flex items-center justify-center border border-input cursor-pointer transition-colors overflow-hidden",
+                                                                    "w-10 h-10 rounded-lg flex items-center justify-center border border-input cursor-pointer transition-colors overflow-hidden relative",
                                                                     item.image ? "bg-transparent" : "bg-muted hover:bg-muted/80"
                                                                 )}
                                                             >
                                                                 {item.image ? (
-                                                                    <img src={item.image} className="w-full h-full object-cover" alt="Item" />
+                                                                    <Image src={item.image} alt="Item" fill sizes="40px" className="object-cover" unoptimized={item.image.startsWith('data:') || item.image.startsWith('blob:')} />
                                                                 ) : (
                                                                     <ImageIcon className="w-4 h-4 text-muted-foreground" />
                                                                 )}

@@ -4,6 +4,7 @@ import { useProjects, User as UserType, Vendor as VendorType, Worker as WorkerTy
 import { cn, getGoogleMapsUrl } from "@/lib/utils"
 // Reuse AddPartnerDialog for editing
 import AddPartnerDialog from "./add-partner-dialog"
+import Image from "next/image"
 
 interface PartnerDetailSheetProps {
     partnerId: string | null
@@ -42,7 +43,9 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
         const userTasks: { task: any, project: any }[] = []
         projects.forEach(p => {
             p.tasks?.forEach(t => {
-                if (t.assignedTo === partner.name) {
+                if (t.assignedTo && Array.isArray(t.assignedTo) && t.assignedTo.includes(partner.name)) {
+                    userTasks.push({ task: t, project: p })
+                } else if (typeof t.assignedTo === 'string' && t.assignedTo === partner.name) {
                     userTasks.push({ task: t, project: p })
                 }
             })
@@ -116,7 +119,7 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                                 type === 'Vendor' ? "bg-orange-500 text-white" : "bg-blue-500 text-white"
                             )}>
                                 {partner.avatar ? (
-                                    <img src={partner.avatar} alt={partner.name} className="w-full h-full object-cover" />
+                                    <Image src={partner.avatar} alt={partner.name} fill sizes="96px" className="object-cover" />
                                 ) : (
                                     type === 'Vendor' ? <Building className="w-10 h-10" /> : <User className="w-10 h-10" />
                                 )}

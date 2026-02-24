@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 
 import { db } from "@/lib/firebase"
 import { collection, addDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp } from "firebase/firestore"
+import Image from "next/image"
 
 const GRID_SIZE = 20
 const INITIAL_SNAKE = [{ x: 10, y: 10 }]
@@ -222,9 +223,9 @@ export function SnakeGame({ showTitle = true }: { showTitle?: boolean }) {
                             )}
                             style={{ gridColumnStart: segment.x + 1, gridRowStart: segment.y + 1 }}
                         >
-                            <div className="w-full h-full rounded-lg bg-primary overflow-hidden border border-primary/50 shadow-lg">
+                            <div className="w-full h-full rounded-lg bg-primary overflow-hidden border border-primary/50 shadow-lg relative">
                                 {i === 0 && currentUser?.avatar ? (
-                                    <img src={currentUser.avatar} className="w-full h-full object-cover" />
+                                    <Image src={currentUser.avatar} alt="User Avatar" fill sizes="40px" className="object-cover" />
                                 ) : (
                                     <div className="w-full h-full bg-primary/20" />
                                 )}
@@ -237,9 +238,9 @@ export function SnakeGame({ showTitle = true }: { showTitle?: boolean }) {
                         className="flex items-center justify-center p-0.5 animate-bounce"
                         style={{ gridColumnStart: food.x + 1, gridRowStart: food.y + 1 }}
                     >
-                        <div className="w-full h-full rounded-full bg-amber-500 overflow-hidden border-2 border-white/20 shadow-xl">
+                        <div className="w-full h-full rounded-full bg-amber-500 overflow-hidden border-2 border-white/20 shadow-xl relative">
                             {food.user?.avatar ? (
-                                <img src={food.user.avatar} className="w-full h-full object-cover" />
+                                <Image src={food.user.avatar} alt="User Avatar" fill sizes="40px" className="object-cover" />
                             ) : (
                                 <div className="w-full h-full bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-[8px] font-bold">
                                     {food.user?.name?.charAt(0) || "T"}
@@ -341,9 +342,9 @@ export function SnakeGame({ showTitle = true }: { showTitle?: boolean }) {
                                             <div className="w-6 text-center font-bold text-muted-foreground">
                                                 {index + 1}
                                             </div>
-                                            <div className="w-10 h-10 rounded-full bg-muted overflow-hidden border border-white/10 shrink-0">
+                                            <div className="w-10 h-10 rounded-full bg-muted overflow-hidden border border-white/10 shrink-0 relative">
                                                 {entry.userAvatar ? (
-                                                    <img src={entry.userAvatar} className="w-full h-full object-cover" />
+                                                    <Image src={entry.userAvatar} alt="User Avatar" fill sizes="40px" className="object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center font-bold text-xs">
                                                         {entry.userName.charAt(0)}

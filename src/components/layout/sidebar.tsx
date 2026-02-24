@@ -33,6 +33,7 @@ import { useTranslation } from "@/lib/i18n-context"
 import { useProjects } from "@/context/project-context"
 import { hasPermission } from "@/lib/permissions"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import Image from "next/image"
 
 export function Sidebar({ className }: { className?: string }) {
     const pathname = usePathname()
@@ -201,9 +202,9 @@ export function Sidebar({ className }: { className?: string }) {
 
             <div className="p-3 border-t border-sidebar-border/50">
                 <div className="flex items-center gap-2 p-2 rounded-xl bg-sidebar-accent/30 border border-sidebar-border/50">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-sm overflow-hidden">
+                    <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-sm overflow-hidden shrink-0">
                         {currentUser?.avatar ? (
-                            <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" />
+                            <Image src={currentUser.avatar} alt={currentUser.name} fill sizes="40px" className="object-cover" unoptimized />
                         ) : (
                             currentUser?.name?.charAt(0) || "U"
                         )}

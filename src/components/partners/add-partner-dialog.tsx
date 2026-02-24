@@ -7,6 +7,7 @@ import { useOrganization } from "@/context/organization-context"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
 import { uploadImage } from "@/lib/upload"
+import Image from "next/image"
 
 interface AddPartnerDialogProps {
     isOpen: boolean
@@ -197,11 +198,11 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                     <div className="flex flex-col items-center justify-center space-y-3">
                         <div className="relative group">
                             <div className={cn(
-                                "w-24 h-24 rounded-3xl overflow-hidden border-4 border-background shadow-xl flex items-center justify-center bg-muted/50 transition-all group-hover:opacity-80",
+                                "w-24 h-24 rounded-3xl overflow-hidden border-4 border-background shadow-xl flex items-center justify-center bg-muted/50 transition-all group-hover:opacity-80 relative",
                                 type === "Business" ? "bg-orange-500/10 text-orange-500" : "bg-blue-500/10 text-blue-500"
                             )}>
                                 {avatar ? (
-                                    <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                    <Image src={avatar} alt="Avatar" fill sizes="96px" className="object-cover" />
                                 ) : (
                                     type === "Business" ? <Building className="w-10 h-10" /> : <User className="w-10 h-10" />
                                 )}

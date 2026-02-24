@@ -3,6 +3,7 @@
 import React from "react";
 import { Search, Filter, CheckCircle2, MessageSquare, Clock, Hash, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const chatThreads = [
     { id: 1, name: 'John Doe', lastMsg: 'Sure, it is #45892.', time: '2m', platform: 'meta', unread: 2, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John', status: 'pending', type: 'DM' },
@@ -84,10 +85,10 @@ export function ThreadList({
                         <div className="flex items-center gap-3 w-full">
                             <div className="relative flex-shrink-0">
                                 <div className={cn(
-                                    "w-10 h-10 rounded-xl overflow-hidden shadow-sm",
+                                    "relative w-10 h-10 rounded-xl overflow-hidden shadow-sm",
                                     selectedId === t.id && "ring-2 ring-primary ring-offset-2 ring-offset-background"
                                 )}>
-                                    <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
+                                    <Image src={t.avatar} alt={t.name} fill sizes="40px" className="object-cover" />
                                 </div>
                                 <div className={cn(
                                     "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background shadow-xs",

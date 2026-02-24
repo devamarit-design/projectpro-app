@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useBackNavigation } from "@/hooks/use-back-navigation"
+import Image from "next/image"
 
 interface LightboxProps {
     open: boolean
@@ -79,20 +80,23 @@ export function Lightbox({ open, onOpenChange, src, alt }: LightboxProps) {
                     onClick={() => onOpenChange(false)} // Click outside to close
                 >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                        src={src}
-                        alt={alt || "Full screen image"}
-                        className="max-w-full max-h-full object-contain transition-transform duration-200"
+                    <div className="relative w-full h-full flex items-center justify-center transition-transform duration-200"
                         style={{
                             transform: `scale(${scale}) rotate(${rotation}deg)`,
                             cursor: scale > 1 ? 'grab' : 'zoom-in'
                         }}
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            // If not zoomed, zoom in. If zoomed, reset or do nothing?
-                            // Let's keep it simple: click image doesn't close
-                        }}
-                    />
+                    >
+                        <Image
+                            src={src}
+                            alt={alt || "Full screen image"}
+                            fill
+                            sizes="100vw"
+                            className="object-contain"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                            }}
+                        />
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
