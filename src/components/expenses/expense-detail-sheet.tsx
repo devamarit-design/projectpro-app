@@ -555,8 +555,18 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
 
                             <div className="h-px bg-white/10 my-2" />
 
-                            {/* Totals */}
                             <div className="space-y-1 text-sm">
+                                {isEditing && (
+                                    <label className="flex items-center gap-2 cursor-pointer pb-2 mb-2 border-b border-white/5 justify-end">
+                                        <input
+                                            type="checkbox"
+                                            checked={editForm.vatIncluded ?? expense.vatIncluded ?? false}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, vatIncluded: e.target.checked }))}
+                                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        />
+                                        <span className="text-sm font-bold">VAT Included</span>
+                                    </label>
+                                )}
                                 {isVatIncluded && (
                                     <>
                                         <div className="flex justify-between text-muted-foreground">
