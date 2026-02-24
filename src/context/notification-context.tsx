@@ -381,7 +381,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                         type: 'warning',
                         date: new Date().toISOString(),
                         read: !!readStatus[generateAlertId('exp-due', expense.id)],
-                        link: `/expenses?id=${expense.id}`,
+                        link: `/expenses?expenseId=${expense.id}`,
                         relatedId: expense.id
                     })
                 }
@@ -398,7 +398,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                         type: 'error',
                         date: new Date().toISOString(),
                         read: !!readStatus[generateAlertId('exp-overdue', expense.id)],
-                        link: `/expenses?id=${expense.id}`,
+                        link: `/expenses?expenseId=${expense.id}`,
                         relatedId: expense.id
                     })
                 }
@@ -410,7 +410,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                         type: 'warning',
                         date: new Date().toISOString(),
                         read: !!readStatus[generateAlertId('exp-warning', expense.id)],
-                        link: `/expenses?id=${expense.id}`,
+                        link: `/expenses?expenseId=${expense.id}`,
                         relatedId: expense.id
                     })
                 }

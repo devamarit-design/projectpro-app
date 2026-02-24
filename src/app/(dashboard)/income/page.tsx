@@ -60,14 +60,19 @@ export default function IncomePage() {
     const [customerFilter, setCustomerFilter] = useState("all")
     const [technicianFilter, setTechnicianFilter] = useState("all")
 
-    // Handle action=new from Quick Add menu
+    // Handle action=new from Quick Add menu or incomeId from Notifications
     useEffect(() => {
         const action = searchParams.get('action')
+        const incomeId = searchParams.get('incomeId')
+
         if (action === 'new') {
             setShowAddDialog(true)
-            router.replace('/income')
+        } else if (incomeId) {
+            setSelectedIncomeId(incomeId)
+        } else {
+            setSelectedIncomeId(null)
         }
-    }, [searchParams, router])
+    }, [searchParams])
 
     // Helper to get names
     const getCustomerName = (id: string) => customers.find((c: Customer) => c.id === id)?.name || "Unknown"
@@ -161,12 +166,18 @@ export default function IncomePage() {
             <AddIncomeDialog
                 key={showAddDialog ? 'new-income' : 'closed'}
                 open={showAddDialog}
-                onOpenChange={setShowAddDialog}
+                onOpenChange={(open) => {
+                    if (!open && searchParams.has('action')) router.back()
+                    setShowAddDialog(open)
+                }}
             />
 
             <IncomeDetailSheet
                 documentId={selectedIncomeId}
-                onClose={() => setSelectedIncomeId(null)}
+                onClose={() => {
+                    if (searchParams.has('incomeId')) router.back()
+                    else setSelectedIncomeId(null)
+                }}
             />
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -365,7 +376,7 @@ export default function IncomePage() {
                                             )}
                                             <tr
                                                 key={doc.id}
-                                                onClick={() => setSelectedIncomeId(doc.id)}
+                                                onClick={() => router.push(`?incomeId=${doc.id}`, { scroll: false })}
                                                 className="border-b border-white/5 hover:bg-muted/30 transition-colors cursor-pointer"
                                             >
                                                 <td className="px-6 py-4 font-medium">{doc.documentNumber}</td>
@@ -397,7 +408,10 @@ export default function IncomePage() {
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <button
-                                                        onClick={() => setSelectedIncomeId(doc.id)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            router.push(`?incomeId=${doc.id}`, { scroll: false })
+                                                        }}
                                                         className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                                                     >
                                                         <FileText className="w-4 h-4" />

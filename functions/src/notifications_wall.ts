@@ -56,7 +56,7 @@ export const onPostCreated = functions
                 type: 'info',
                 date: new Date().toISOString(),
                 read: false,
-                link: '/wall',
+                link: `/wall?postId=${context.params.postId}`,
                 relatedId: context.params.postId,
                 target: 'all',
                 orgId: orgId,
@@ -80,7 +80,7 @@ export const onPostCreated = functions
                         type: 'WALL_POST',
                         postId: context.params.postId,
                         orgId: orgId,
-                        url: '/wall'
+                        url: `/wall?postId=${context.params.postId}`
                     },
                     android: { notification: { icon: 'stock_ticker_update', color: '#2196f3' } },
                     apns: { payload: { aps: { badge: 1, sound: 'default' } } }
@@ -146,7 +146,7 @@ export const onPostLike = functions
                 type: 'info',
                 date: new Date().toISOString(),
                 read: false,
-                link: '/wall',
+                link: `/wall?postId=${context.params.postId}`,
                 relatedId: context.params.postId,
                 target: authorId, // Target specific user
                 orgId: context.params.orgId,
@@ -163,7 +163,7 @@ export const onPostLike = functions
                     type: 'POST_LIKE',
                     postId: context.params.postId,
                     orgId: context.params.orgId,
-                    url: '/wall'
+                    url: `/wall?postId=${context.params.postId}`
                 },
                 android: { notification: { icon: 'stock_ticker_update', color: '#e91e63' } },
                 apns: { payload: { aps: { badge: 1, sound: 'default' } } }
@@ -225,7 +225,7 @@ export const onCommentCreated = functions
                 type: 'info',
                 date: new Date().toISOString(),
                 read: false,
-                link: '/wall',
+                link: `/wall?postId=${postId}`,
                 relatedId: postId,
                 target: authorId,
                 orgId: orgId,
@@ -242,7 +242,7 @@ export const onCommentCreated = functions
                     type: 'POST_COMMENT',
                     postId: postId,
                     orgId: orgId,
-                    url: '/wall'
+                    url: `/wall?postId=${postId}`
                 },
                 android: { notification: { icon: 'stock_ticker_update', color: '#4caf50' } },
                 apns: { payload: { aps: { badge: 1, sound: 'default' } } }

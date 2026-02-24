@@ -103,7 +103,7 @@ export const onExpenseCreated = functions
                     type: 'EXPENSE',
                     expenseId: context.params.expenseId,
                     orgId: orgId,
-                    url: '/finance'
+                    url: '/expenses'
                 },
                 android: { notification: { icon: 'stock_ticker_update', color: '#f44336' } },
                 apns: { payload: { aps: { badge: 1, sound: 'default' } } }
@@ -117,7 +117,7 @@ export const onExpenseCreated = functions
                 type: expense.status === 'Paid' ? 'success' : 'info',
                 date: new Date().toISOString(),
                 read: false,
-                link: '/finance',
+                link: '/expenses',
                 relatedId: context.params.expenseId,
                 target: 'admin', // Frontend filters this for Admin/Owner
                 orgId: orgId,
@@ -169,7 +169,7 @@ export const onExpenseStatusChanged = functions
                         type: 'EXPENSE_PAID',
                         expenseId: context.params.expenseId,
                         orgId: orgId || '',
-                        url: '/finance'
+                        url: '/expenses'
                     },
                     android: { notification: { icon: 'stock_ticker_update', color: '#4caf50' } },
                     apns: { payload: { aps: { badge: 1, sound: 'default' } } }
@@ -183,7 +183,7 @@ export const onExpenseStatusChanged = functions
                     type: 'success',
                     date: new Date().toISOString(),
                     read: false,
-                    link: '/finance',
+                    link: '/expenses',
                     relatedId: context.params.expenseId,
                     target: creatorId, // Target specific user
                     orgId: orgId || '',
@@ -230,7 +230,7 @@ export const onIncomeCreated = functions
                     type: 'INCOME',
                     incomeId: context.params.incomeId,
                     orgId: orgId,
-                    url: '/finance/income'
+                    url: '/income'
                 },
                 android: { notification: { icon: 'stock_ticker_update', color: '#009688' } }, // Teal for income
                 apns: { payload: { aps: { badge: 1, sound: 'default' } } }
@@ -244,7 +244,7 @@ export const onIncomeCreated = functions
                 type: 'success',
                 date: new Date().toISOString(),
                 read: false,
-                link: '/finance/income',
+                link: '/income',
                 relatedId: context.params.incomeId,
                 target: 'admin',
                 orgId: orgId,

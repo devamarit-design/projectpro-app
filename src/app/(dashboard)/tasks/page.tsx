@@ -61,16 +61,12 @@ export default function TasksPage() {
 
         if (action === 'new') {
             setShowAddTask(true)
-            router.replace('/tasks')
         } else if (taskIdParam) {
             setSelectedTaskId(taskIdParam)
-            // Optional: Clean URL but keep history accessible? 
-            // Better to keep it clean so refresh doesn't reopen if user closed it.
-            // But replacing immediately might prevent user from seeing it in address bar?
-            // Let's replace.
-            router.replace('/tasks')
+        } else {
+            setSelectedTaskId(null)
         }
-    }, [searchParams, router])
+    }, [searchParams])
 
     // DnD State
     const [activeId, setActiveId] = React.useState<string | null>(null)
@@ -283,7 +279,7 @@ export default function TasksPage() {
                                     tasks={tasksInColumn}
                                     statusColor={statusColors[status]}
                                     onAddTask={() => setShowAddTask(true)}
-                                    onSelectTask={setSelectedTaskId}
+                                    onSelectTask={(id) => router.push(`?taskId=${id}`, { scroll: false })}
                                     t={t}
                                     users={users}
                                 />
@@ -305,8 +301,14 @@ export default function TasksPage() {
             </DndContext>
 
             {/* Task Detail Sheet & Add Task Dialog */}
-            <AddTaskDialog isOpen={showAddTask} onClose={() => setShowAddTask(false)} />
-            <TaskDetailSheet taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
+            <AddTaskDialog isOpen={showAddTask} onClose={() => {
+                if (searchParams.has('action')) router.back()
+                setShowAddTask(false)
+            }} />
+            <TaskDetailSheet taskId={selectedTaskId} onClose={() => {
+                if (searchParams.has('taskId')) router.back()
+                setSelectedTaskId(null)
+            }} />
         </div>
     )
 }

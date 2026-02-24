@@ -46,21 +46,21 @@ function ExpensesContent() {
     const [showArchived, setShowArchived] = React.useState(false)
 
     // Check for 'action=new' param
-    // Check for 'action=new' or 'editId' or 'id' params (from Notifications)
+    // Check for 'action=new' or 'editId' or 'expenseId' params (from Notifications)
     React.useEffect(() => {
         const action = searchParams.get('action')
         const editId = searchParams.get('editId')
-        const id = searchParams.get('id')
+        const expenseIdParam = searchParams.get('expenseId')
 
         if (action === 'new') {
             setIsSelectionOpen(true)
-            router.replace('/expenses')
         } else if (editId) {
             setSelectedExpenseId(editId)
             router.replace('/expenses')
-        } else if (id) {
-            setSelectedExpenseId(id)
-            router.replace('/expenses')
+        } else if (expenseIdParam) {
+            setSelectedExpenseId(expenseIdParam)
+        } else {
+            setSelectedExpenseId(null)
         }
     }, [searchParams, router])
 
@@ -93,9 +93,15 @@ function ExpensesContent() {
     }
 
     const handleCloseAdd = () => {
+        if (searchParams.has('action')) router.back()
         setIsAddOpen(false)
         setStartScanning(false)
         setScannedData(null)
+    }
+
+    const handleCloseSelection = () => {
+        if (searchParams.has('action')) router.back()
+        setIsSelectionOpen(false)
     }
 
     // Available Months
@@ -239,11 +245,14 @@ function ExpensesContent() {
                 isOpen={isContractOpen}
                 onClose={() => setIsContractOpen(false)}
             />
-            <ExpenseDetailSheet expenseId={selectedExpenseId} onClose={() => setSelectedExpenseId(null)} />
+            <ExpenseDetailSheet expenseId={selectedExpenseId} onClose={() => {
+                if (searchParams.has('expenseId')) router.back()
+                else setSelectedExpenseId(null)
+            }} />
 
             <ExpenseEntrySelectionDialog
                 isOpen={isSelectionOpen}
-                onClose={() => setIsSelectionOpen(false)}
+                onClose={handleCloseSelection}
                 onSelectManual={handleOpenAdd}
                 onSelectScan={() => setIsSmartScanOpen(true)}
             />
@@ -606,7 +615,7 @@ function ExpensesContent() {
                                 </div>
                             )}
                             <div
-                                onClick={() => setSelectedExpenseId(expense.id)}
+                                onClick={() => router.push(`?expenseId=${expense.id}`, { scroll: false })}
                                 className={cn(
                                     "glass-card p-4 rounded-xl border border-white/5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group overflow-hidden",
                                     expense.isArchived && "opacity-60 grayscale bg-gray-500/5 hover:bg-gray-500/10 border-gray-500/20"

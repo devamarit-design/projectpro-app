@@ -48,7 +48,7 @@ import { AddWorkDialog } from "@/components/modals/add-work-dialog"
 import { TaskBoard } from "@/components/tasks/task-board"
 import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
 
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import dynamic from "next/dynamic"
 import { toast } from "sonner"
 
@@ -102,6 +102,18 @@ const groupIncomes = (docs: IncomeDocument[]) => {
 
 export default function ProjectDetailClient() {
     const searchParams = useSearchParams()
+    const router = useRouter()
+    const pathname = usePathname()
+
+    const createQueryString = useCallback(
+        (name: string, value: string) => {
+            const params = new URLSearchParams(searchParams.toString())
+            params.set(name, value)
+            return params.toString()
+        },
+        [searchParams]
+    )
+
     const id = searchParams.get("id") || ""
     const { t, locale } = useTranslation()
     const { getProject, addTask, addSubProject, deleteSubProject, deleteTask, toggleTask, updateTask, expenses, files, addFile, currentUser, users, incomes, customers, isLoading, currentTeam, works, addWork, updateWork, deleteWork, updateWorkOrder } = useProjects()
@@ -176,6 +188,15 @@ export default function ProjectDetailClient() {
         if (taskId) {
             setSelectedTaskId(taskId)
             setActiveTab("tasks")
+        } else {
+            setSelectedTaskId(null)
+        }
+
+        const expenseId = searchParams.get("expenseId")
+        if (expenseId) {
+            setSelectedExpenseId(expenseId)
+        } else {
+            setSelectedExpenseId(null)
         }
     }, [searchParams])
 
@@ -759,7 +780,7 @@ export default function ProjectDetailClient() {
                                                 projectExpenses.map((expense) => (
                                                     <div
                                                         key={expense.id}
-                                                        onClick={() => setSelectedExpenseId(expense.id)}
+                                                        onClick={() => router.push(`${pathname}?${createQueryString('expenseId', expense.id)}`, { scroll: false })}
                                                         className="glass-card p-4 rounded-xl border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer group"
                                                     >
                                                         <div className="flex items-center gap-4">
@@ -1011,7 +1032,7 @@ export default function ProjectDetailClient() {
                                     onUpdateTask={updateTask}
                                     onDeleteTask={deleteTask}
                                     onToggleTask={toggleTask}
-                                    onSelectTask={(id) => setSelectedTaskId(id)}
+                                    onSelectTask={(id) => router.push(`${pathname}?${createQueryString('taskId', id)}`, { scroll: false })}
                                     t={t}
                                 />
                             </div>
@@ -1299,14 +1320,20 @@ export default function ProjectDetailClient() {
 
             <ExpenseDetailSheet
                 expenseId={selectedExpenseId}
-                onClose={() => setSelectedExpenseId(null)}
+                onClose={() => {
+                    if (searchParams.has('expenseId')) router.back()
+                    else setSelectedExpenseId(null)
+                }}
             />
 
             {/* Task/Sub-project Detail Sheet */}
             {
                 selectedTaskId && (
                     <TaskDetailSheet
-                        onClose={() => setSelectedTaskId(null)}
+                        onClose={() => {
+                            if (searchParams.has('taskId')) router.back()
+                            else setSelectedTaskId(null)
+                        }}
                         taskId={selectedTaskId}
                     />
                 )
@@ -1457,7 +1484,7 @@ export default function ProjectDetailClient() {
                                                                 e.stopPropagation()
                                                                 setSelectedSubProjectId(null)
                                                                 setActiveTab('tasks')
-                                                                setSelectedTaskId(task.id)
+                                                                router.push(`${pathname}?${createQueryString('taskId', task.id)}`, { scroll: false })
                                                             }}
                                                             className="text-xs p-2 bg-muted/30 rounded-lg flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors group"
                                                         >
@@ -1541,7 +1568,7 @@ export default function ProjectDetailClient() {
                                                                 key={expense.id}
                                                                 onClick={(e) => {
                                                                     e.stopPropagation()
-                                                                    setSelectedExpenseId(expense.id)
+                                                                    router.push(`${pathname}?${createQueryString('expenseId', expense.id)}`, { scroll: false })
                                                                 }}
                                                                 className="p-3 bg-muted/30 rounded-xl border border-white/5 hover:bg-muted/50 transition-all cursor-pointer group space-y-2"
                                                             >

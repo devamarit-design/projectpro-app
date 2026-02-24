@@ -33,7 +33,8 @@ try {
         event.notification.close();
 
         // Retrieve URL from notification data
-        const urlToOpen = event.notification.data?.url || '/';
+        const relativeUrl = event.notification.data?.url || '/';
+        const absoluteUrl = new URL(relativeUrl, self.location.origin).href;
 
         event.waitUntil(
             clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
@@ -41,15 +42,15 @@ try {
                 for (let i = 0; i < clientList.length; i++) {
                     const client = clientList[i];
                     if (client.url.includes(self.location.origin) && 'focus' in client) {
-                        if (urlToOpen && urlToOpen !== '/') {
-                            client.navigate(urlToOpen);
+                        if (relativeUrl && relativeUrl !== '/') {
+                            client.navigate(absoluteUrl);
                         }
                         return client.focus();
                     }
                 }
                 // If not, open a new window
                 if (clients.openWindow) {
-                    return clients.openWindow(urlToOpen);
+                    return clients.openWindow(absoluteUrl);
                 }
             })
         );
