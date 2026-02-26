@@ -82,7 +82,11 @@ service cloud.firestore {
         match /comments/{commentId} {
             allow read: if isAuthenticated() && isOrgMember(orgId);
             allow create: if isAuthenticated() && isOrgMember(orgId);
-            allow update, delete: if isAuthenticated() && (resource.data.author.id == request.auth.uid || isOrgOwner(orgId));
+            allow update: if isAuthenticated() && isOrgMember(orgId) && (
+              (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'reactions'])) ||
+              (resource.data.author.id == request.auth.uid || isOrgOwner(orgId))
+            );
+            allow delete: if isAuthenticated() && (resource.data.author.id == request.auth.uid || isOrgOwner(orgId));
         }
       }
     }
