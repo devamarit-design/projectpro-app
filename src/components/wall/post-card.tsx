@@ -87,6 +87,15 @@ export function PostCard({ post }: PostCardProps) {
 
     const hasAnyReaction = Object.values(currentReactions).some(users => users.includes(currentUser?.id || ""))
 
+    let userReactionEmoji: string | null = null;
+    if (currentUser) {
+        Object.entries(currentReactions).forEach(([emoji, userIds]) => {
+            if (userIds.includes(currentUser.id)) {
+                userReactionEmoji = emoji;
+            }
+        });
+    }
+
     // Total aggregated counts
     let totalReactionsCount = 0
     const reactionSummary: Record<string, number> = {}
@@ -209,7 +218,7 @@ export function PostCard({ post }: PostCardProps) {
                             <p className="font-semibold text-sm">{post.author.name}</p>
                             <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
-                                {post.pending && <span className="text-[10px] text-primary animate-pulse">(Sending...)</span>}
+                                {post.pending && (Date.now() - new Date(post.createdAt).getTime() < 10000) && <span className="text-[10px] text-primary animate-pulse">(Sending...)</span>}
                             </p>
                         </div>
                     </div>
@@ -400,10 +409,14 @@ export function PostCard({ post }: PostCardProps) {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="relative flex items-center gap-1.5 hover:bg-muted/50"
+                                className="relative flex items-center gap-1.5 hover:bg-muted/50 px-2"
                                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                             >
-                                <Heart className={cn("h-4 w-4", hasAnyReaction && "fill-rose-500 text-rose-500")} />
+                                {userReactionEmoji ? (
+                                    <span className="text-base leading-none mb-[1px]">{userReactionEmoji}</span>
+                                ) : (
+                                    <Heart className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-rose-500" />
+                                )}
                             </Button>
 
                             {showEmojiPicker && (

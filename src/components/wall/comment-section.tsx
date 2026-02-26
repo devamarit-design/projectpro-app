@@ -271,6 +271,15 @@ export function CommentSection({ postId, postAuthorId, onClose, onCommentAdded }
 
                                 const hasAnyReaction = Object.values(currentReactions).some(users => users.includes(currentUser?.id || ""))
 
+                                let userReactionEmoji: string | null = null;
+                                if (currentUser) {
+                                    Object.entries(currentReactions).forEach(([emoji, userIds]) => {
+                                        if (userIds.includes(currentUser.id)) {
+                                            userReactionEmoji = emoji;
+                                        }
+                                    });
+                                }
+
                                 let totalReactionsCount = 0
                                 Object.values(currentReactions).forEach(userIds => {
                                     totalReactionsCount += userIds.length
@@ -305,9 +314,14 @@ export function CommentSection({ postId, postAuthorId, onClose, onCommentAdded }
                                                     <div className="relative">
                                                         <button
                                                             onClick={() => setActiveReactionCommentId(activeReactionCommentId === comment.id ? null : comment.id)}
-                                                            className="text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors"
+                                                            className="text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center p-0.5"
+                                                            title="React"
                                                         >
-                                                            React
+                                                            {userReactionEmoji ? (
+                                                                <span className="text-[13px] leading-none mb-[1px]">{userReactionEmoji}</span>
+                                                            ) : (
+                                                                <Heart className="w-3.5 h-3.5" />
+                                                            )}
                                                         </button>
                                                         {activeReactionCommentId === comment.id && (
                                                             <>
