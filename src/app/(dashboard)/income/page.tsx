@@ -10,6 +10,10 @@ import { hasPermission } from "@/lib/permissions"
 import { AddIncomeDialog } from "@/components/income/add-income-dialog"
 import { IncomeDetailSheet } from "@/components/income/income-detail-sheet"
 import { useSettings } from "@/context/settings-context" // Add this import
+import { saveAs } from "file-saver"
+import { pdf } from "@react-pdf/renderer"
+import { IncomePDF } from "@/components/income/income-pdf"
+import { cn } from "@/lib/utils"
 
 const documents = [] // Removed hardcoded data
 
@@ -59,6 +63,23 @@ export default function IncomePage() {
     const [monthFilter, setMonthFilter] = useState("all")
     const [customerFilter, setCustomerFilter] = useState("all")
     const [technicianFilter, setTechnicianFilter] = useState("all")
+
+    // Export State
+    const [isExportOpen, setIsExportOpen] = useState(false)
+    const exportRef = React.useRef<HTMLDivElement>(null)
+
+    // Click Outside to Close Export Dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
+                setIsExportOpen(false)
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside)
+        }
+    }, [])
 
     // Handle action=new from Quick Add menu or incomeId from Notifications
     useEffect(() => {
@@ -159,6 +180,45 @@ export default function IncomePage() {
         })
     }, [incomes, filter, search, projectFilter, monthFilter, customerFilter, technicianFilter, sortOption, customers, projects, users])
 
+    // Export Logic
+    const handleExportCSV = () => {
+        if (filteredIncomes.length === 0) return alert("No documents to export")
+
+        const headers = ["Date", "Document Number", "Type", "Customer", "Project", "Amount", "Status"]
+        const csvContent = [
+            headers.join(","),
+            ...filteredIncomes.map(doc => [
+                doc.date,
+                doc.documentNumber,
+                doc.type,
+                `"${getCustomerName(doc.customerId).replace(/"/g, '""')}"`,
+                `"${getProjectName(doc.projectId).replace(/"/g, '""')}"`,
+                doc.grandTotal,
+                doc.status
+            ].join(","))
+        ].join("\n")
+
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
+        saveAs(blob, `income_export_${new Date().toISOString().split('T')[0]}.csv`)
+    }
+
+    const handleExportPDF = async () => {
+        if (filteredIncomes.length === 0) return alert("No documents to export")
+        try {
+            const blob = await pdf(
+                <IncomePDF
+                    incomes={filteredIncomes}
+                    title={`Income Report - ${new Date().toLocaleDateString()}`}
+                    customers={customers}
+                    projects={projects}
+                />
+            ).toBlob()
+            saveAs(blob, `income_report_${new Date().toISOString().split('T')[0]}.pdf`)
+        } catch (error) {
+            console.error("PDF generation failed:", error)
+            alert("Failed to generate PDF. Check console for details.")
+        }
+    }
 
 
     return (
@@ -186,6 +246,41 @@ export default function IncomePage() {
                     <p className="text-muted-foreground mt-1">{t.income.subtitle}</p>
                 </div>
                 <div className="flex gap-2">
+                    <div className="relative" ref={exportRef}>
+                        <button
+                            onClick={() => setIsExportOpen(!isExportOpen)}
+                            className={cn(
+                                "flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-muted/50 border border-border text-foreground rounded-xl font-medium shadow-sm hover:bg-muted transition-all text-sm sm:text-base whitespace-nowrap",
+                                isExportOpen && "bg-muted ring-2 ring-primary/20"
+                            )}
+                        >
+                            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+                            Export
+                        </button>
+                        {isExportOpen && (
+                            <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 w-48 bg-background border border-border rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 origin-top-right">
+                                <button
+                                    onClick={() => {
+                                        handleExportCSV()
+                                        setIsExportOpen(false)
+                                    }}
+                                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
+                                >
+                                    <span className="font-medium text-sm">Export CSV</span>
+                                </button>
+                                <div className="h-px bg-border" />
+                                <button
+                                    onClick={() => {
+                                        handleExportPDF()
+                                        setIsExportOpen(false)
+                                    }}
+                                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
+                                >
+                                    <span className="font-medium text-sm">Export PDF</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={() => setShowAddDialog(true)}
                         className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg hover:opacity-90 transition-all active:scale-95"

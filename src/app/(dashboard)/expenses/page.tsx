@@ -198,22 +198,27 @@ function ExpensesContent() {
     const handleExportCSV = () => {
         if (filteredExpenses.length === 0) return alert("No expenses to export")
 
-        const headers = ["Date", "Title", "Category", "Amount", "Payee", "Status", "Project", "Created By"]
+        const headers = ["Date", "Title", "Category", "Amount", "Payee", "Status", "Project", "Sub Project", "Created By"]
         const csvContent = [
             headers.join(","),
-            ...filteredExpenses.map(e => [
-                e.date,
-                `"${e.title.replace(/"/g, '""')}"`,
-                e.category,
-                e.totalValue,
-                `"${e.payee?.replace(/"/g, '""') || ""}"`,
-                e.status,
-                `"${projects.find(p => p.id === e.projectId)?.name || "General"}"`,
-                `"${users.find(u => u.id === e.createdBy)?.name || "Unknown"}"`
-            ].join(","))
+            ...filteredExpenses.map(e => {
+                const project = projects.find(p => p.id === e.projectId)
+                const subProjectName = project?.subProjects?.find(sp => sp.id === e.subProjectId)?.name || ""
+                return [
+                    e.date,
+                    `"${e.title.replace(/"/g, '""')}"`,
+                    e.category,
+                    e.totalValue,
+                    `"${e.payee?.replace(/"/g, '""') || ""}"`,
+                    e.status,
+                    `"${project?.name || "General"}"`,
+                    `"${subProjectName.replace(/"/g, '""')}"`,
+                    `"${users.find(u => u.id === e.createdBy)?.name || "Unknown"}"`
+                ].join(",")
+            })
         ].join("\n")
 
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
         saveAs(blob, `expenses_export_${new Date().toISOString().split('T')[0]}.csv`)
     }
 
@@ -225,6 +230,7 @@ function ExpensesContent() {
                     expenses={filteredExpenses}
                     title={`Expense Report - ${new Date().toLocaleDateString()}`}
                     showImages={true}
+                    projects={projects}
                 />
             ).toBlob()
             saveAs(blob, `expenses_report_${new Date().toISOString().split('T')[0]}.pdf`)

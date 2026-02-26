@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Image, Font } from '@react-pdf/renderer';
-import { Expense } from '@/context/project-context';
+import { Expense, Project } from '@/context/project-context';
 import { THAI_FONT_FAMILY, registerThaiFonts } from '@/lib/pdf-fonts';
 
 // Register fonts (ensure it runs once)
@@ -87,14 +87,14 @@ const styles = StyleSheet.create({
         borderColor: '#000',
     },
     totalLabel: {
-        width: '85%', // Span most columns
+        width: '90%', // Span most columns
         padding: 5,
         textAlign: 'right',
         fontSize: 12,
         fontWeight: 'bold',
     },
     totalAmount: {
-        width: '15%',
+        width: '10%',
         padding: 5,
         textAlign: 'right',
         fontSize: 12,
@@ -106,9 +106,10 @@ interface ExpensesPDFProps {
     expenses: Expense[];
     title?: string;
     showImages?: boolean;
+    projects: Project[];
 }
 
-export const ExpensesPDF: React.FC<ExpensesPDFProps> = ({ expenses, title = "Expense Report", showImages = false }) => {
+export const ExpensesPDF: React.FC<ExpensesPDFProps> = ({ expenses, title = "Expense Report", showImages = false, projects }) => {
     const totalAmount = expenses.reduce((sum, e) => sum + (e.status !== 'Unpaid' ? e.totalValue : 0), 0);
 
     return (
@@ -123,45 +124,55 @@ export const ExpensesPDF: React.FC<ExpensesPDFProps> = ({ expenses, title = "Exp
                         <View style={{ ...styles.tableColHeader, width: '15%' }}>
                             <Text style={styles.tableCellHeader}>Date</Text>
                         </View>
-                        <View style={{ ...styles.tableColHeader, width: '35%' }}>
+                        <View style={{ ...styles.tableColHeader, width: '30%' }}>
                             <Text style={styles.tableCellHeader}>Description</Text>
                         </View>
                         <View style={{ ...styles.tableColHeader, width: '15%' }}>
-                            <Text style={styles.tableCellHeader}>Category</Text>
-                        </View>
-                        <View style={{ ...styles.tableColHeader, width: '20%' }}>
-                            <Text style={styles.tableCellHeader}>Payee</Text>
+                            <Text style={styles.tableCellHeader}>Project</Text>
                         </View>
                         <View style={{ ...styles.tableColHeader, width: '15%' }}>
-                            <Text style={styles.tableCellHeader}>Amount</Text>
+                            <Text style={styles.tableCellHeader}>Sub Project</Text>
+                        </View>
+                        <View style={{ ...styles.tableColHeader, width: '15%' }}>
+                            <Text style={styles.tableCellHeader}>Payee</Text>
+                        </View>
+                        <View style={{ ...styles.tableColHeader, width: '10%' }}>
+                            <Text style={styles.tableCellHeader}>Total</Text>
                         </View>
                     </View>
 
                     {/* Table Body */}
-                    {expenses.map((expense) => (
-                        <View style={styles.tableRow} key={expense.id}>
-                            <View style={{ ...styles.tableCol, width: '15%' }}>
-                                <Text style={styles.tableCell}>{expense.date}</Text>
+                    {expenses.map((expense) => {
+                        const project = projects.find(p => p.id === expense.projectId);
+                        const subProjectName = project?.subProjects?.find(sp => sp.id === expense.subProjectId)?.name || "-";
+                        return (
+                            <View style={styles.tableRow} key={expense.id}>
+                                <View style={{ ...styles.tableCol, width: '15%' }}>
+                                    <Text style={styles.tableCell}>{expense.date}</Text>
+                                </View>
+                                <View style={{ ...styles.tableCol, width: '30%' }}>
+                                    <Text style={styles.tableCell}>{expense.title}</Text>
+                                </View>
+                                <View style={{ ...styles.tableCol, width: '15%' }}>
+                                    <Text style={styles.tableCell}>{project?.name || "General"}</Text>
+                                </View>
+                                <View style={{ ...styles.tableCol, width: '15%' }}>
+                                    <Text style={styles.tableCell}>{subProjectName}</Text>
+                                </View>
+                                <View style={{ ...styles.tableCol, width: '15%' }}>
+                                    <Text style={styles.tableCell}>{expense.payee}</Text>
+                                </View>
+                                <View style={{ ...styles.tableCol, width: '10%' }}>
+                                    <Text style={styles.tableCell}>{expense.totalValue.toLocaleString()}</Text>
+                                </View>
                             </View>
-                            <View style={{ ...styles.tableCol, width: '35%' }}>
-                                <Text style={styles.tableCell}>{expense.title}</Text>
-                            </View>
-                            <View style={{ ...styles.tableCol, width: '15%' }}>
-                                <Text style={styles.tableCell}>{expense.category}</Text>
-                            </View>
-                            <View style={{ ...styles.tableCol, width: '20%' }}>
-                                <Text style={styles.tableCell}>{expense.payee}</Text>
-                            </View>
-                            <View style={{ ...styles.tableCol, width: '15%' }}>
-                                <Text style={styles.tableCell}>{expense.totalValue.toLocaleString()}</Text>
-                            </View>
-                        </View>
-                    ))}
+                        );
+                    })}
 
                     {/* Total Row */}
                     <View style={styles.totalRow}>
                         <Text style={styles.totalLabel}>Grand Total:</Text>
-                        <Text style={styles.totalAmount}>{totalAmount.toLocaleString()}</Text>
+                        <Text style={{ ...styles.totalAmount, width: '10%' }}>{totalAmount.toLocaleString()}</Text>
                     </View>
                 </View>
 
