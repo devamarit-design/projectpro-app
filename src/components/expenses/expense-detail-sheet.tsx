@@ -4,6 +4,7 @@ import * as React from "react"
 import { X, Calendar, User, Trash2, Save, Building, Tag, DollarSign, Receipt, Info, Check, CheckCircle2, ShoppingBag, Camera, Upload, Layout, Archive, Clock, Plus } from "lucide-react"
 import { useProjects, Expense, ExpenseCategory, ExpenseItem } from "@/context/project-context"
 import { useOrganization } from "@/context/organization-context"
+import { hasPermission } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 import { uploadWithThumbnail } from "@/lib/upload"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -15,8 +16,10 @@ interface ExpenseDetailSheetProps {
 }
 
 export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetailSheetProps) {
-    const { expenses, updateExpense, deleteExpense, projects, users, vendors, archiveExpense, unarchiveExpense } = useProjects()
+    const { expenses, updateExpense, deleteExpense, projects, users, vendors, archiveExpense, unarchiveExpense, currentUser } = useProjects()
     const { currentOrg } = useOrganization()
+
+    const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Owner'
 
     // Find the expense
     const expense = React.useMemo(() =>
@@ -402,9 +405,29 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                 <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                                     <Building className="w-3 h-3" /> Project
                                 </label>
-                                <div className="text-sm font-medium truncate">
-                                    {projects.find(p => p.id === expense.projectId)?.name || "General"}
-                                </div>
+                                {isEditing && isAdmin ? (
+                                    <select
+                                        value={editForm.projectId || ""}
+                                        onChange={(e) => {
+                                            const newProjectId = e.target.value
+                                            setEditForm(prev => ({
+                                                ...prev,
+                                                projectId: newProjectId,
+                                                subProjectId: "" // Reset subproject when project changes
+                                            }))
+                                        }}
+                                        className="w-full bg-transparent text-sm font-medium focus:outline-none"
+                                    >
+                                        <option value="">General (ไม่ระบุโปรเจค)</option>
+                                        {projects.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <div className="text-sm font-medium truncate">
+                                        {projects.find(p => p.id === expense.projectId)?.name || "General"}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -413,7 +436,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                             <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                                 <Layout className="w-3 h-3" /> Sub-project
                             </label>
-                            {isEditing ? (
+                            {isEditing && isAdmin ? (
                                 <select
                                     value={editForm.subProjectId || ""}
                                     onChange={(e) => setEditForm(prev => ({ ...prev, subProjectId: e.target.value }))}
