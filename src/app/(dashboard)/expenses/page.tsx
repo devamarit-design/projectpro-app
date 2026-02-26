@@ -198,22 +198,68 @@ function ExpensesContent() {
     const handleExportCSV = () => {
         if (filteredExpenses.length === 0) return alert("No expenses to export")
 
-        const headers = ["Date", "Title", "Category", "Amount", "Payee", "Status", "Project", "Sub Project", "Created By"]
+        const headers = [
+            "วัน/เดือน/ปี",
+            "รับ-จ่าย",
+            "โปรเจค",
+            "โปรเจคย่อย",
+            "รายการ",
+            "ราคา",
+            "ร้านค้า",
+            "VAT",
+            "ว่าง",
+            "จำนวนเงิน",
+            "เดือน",
+            "ปี",
+            "งวด",
+            "หมวดหมู่",
+            "สถานะ",
+            "ผู้สร้าง"
+        ]
+
         const csvContent = [
             headers.join(","),
             ...filteredExpenses.map(e => {
                 const project = projects.find(p => p.id === e.projectId)
                 const subProjectName = project?.subProjects?.find(sp => sp.id === e.subProjectId)?.name || ""
+                const createdByName = users.find(u => u.id === e.createdBy)?.name || "Unknown"
+
+                let dateStr = e.date
+                let monthName = ""
+                let yearBE = ""
+                let combinedMonthYear = ""
+
+                try {
+                    const d = new Date(e.date)
+                    if (!isNaN(d.getTime())) {
+                        const day = d.getDate()
+                        const month = d.getMonth() + 1
+                        const year = d.getFullYear() + 543
+                        dateStr = `${day}/${month}/${year}`
+                        const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
+                        monthName = thaiMonths[d.getMonth()]
+                        yearBE = year.toString()
+                        combinedMonthYear = `${monthName}${yearBE}`
+                    }
+                } catch (err) { }
+
                 return [
-                    e.date,
-                    `"${e.title.replace(/"/g, '""')}"`,
-                    e.category,
-                    e.totalValue,
-                    `"${e.payee?.replace(/"/g, '""') || ""}"`,
-                    e.status,
-                    `"${project?.name || "General"}"`,
+                    `"${dateStr}"`,
+                    `"ค่าใช้จ่าย"`,
+                    `"${(project?.name || "General").replace(/"/g, '""')}"`,
                     `"${subProjectName.replace(/"/g, '""')}"`,
-                    `"${users.find(u => u.id === e.createdBy)?.name || "Unknown"}"`
+                    `"${e.title.replace(/"/g, '""')}"`,
+                    e.totalValue,
+                    `"${(e.payee || e.vendor || "").replace(/"/g, '""')}"`,
+                    `"${e.vatIncluded ? 'Include' : 'Exclude'}"`,
+                    `"${combinedMonthYear}"`,
+                    `-${e.totalValue}`,
+                    `"${monthName}"`,
+                    `"${yearBE}"`,
+                    `"-งวด"`,
+                    `"${e.category}"`,
+                    `"${e.status}"`,
+                    `"${createdByName.replace(/"/g, '""')}"`
                 ].join(",")
             })
         ].join("\n")
