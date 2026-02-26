@@ -1,12 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { X, ZoomIn, ZoomOut, Download } from "lucide-react"
+import { X, Download } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useBackNavigation } from "@/hooks/use-back-navigation"
 import Image from "next/image"
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 
 interface LightboxProps {
     open: boolean
@@ -16,25 +17,11 @@ interface LightboxProps {
 }
 
 export function Lightbox({ open, onOpenChange, src, alt }: LightboxProps) {
-    const [scale, setScale] = React.useState(1)
-    const [rotation, setRotation] = React.useState(0)
-
-    // Reset state when closed
-    React.useEffect(() => {
-        if (!open) {
-            setScale(1)
-            setRotation(0)
-        }
-    }, [open])
-
     useBackNavigation(
         open,
         (val) => onOpenChange(val),
         `lightbox-${src}` // Use src as part of ID to be specific
     )
-
-    const handleZoomIn = () => setScale(prev => Math.min(prev + 0.5, 3))
-    const handleZoomOut = () => setScale(prev => Math.max(prev - 0.5, 1))
 
     const handleDownload = async () => {
         try {
@@ -62,41 +49,31 @@ export function Lightbox({ open, onOpenChange, src, alt }: LightboxProps) {
 
                 {/* Toolbar */}
                 <div className="absolute top-4 right-4 z-50 flex gap-2">
-                    <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10" onClick={handleZoomOut}>
-                        <ZoomOut className="h-5 w-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10" onClick={handleZoomIn}>
-                        <ZoomIn className="h-5 w-5" />
-                    </Button>
-
                     <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10" onClick={() => onOpenChange(false)}>
                         <X className="h-6 w-6" />
                     </Button>
                 </div>
 
                 {/* Image Container */}
-                <div
-                    className="relative w-full h-full flex items-center justify-center overflow-auto p-4"
-                    onClick={() => onOpenChange(false)} // Click outside to close
-                >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <div className="relative w-full h-full flex items-center justify-center transition-transform duration-200"
-                        style={{
-                            transform: `scale(${scale}) rotate(${rotation}deg)`,
-                            cursor: scale > 1 ? 'grab' : 'zoom-in'
-                        }}
+                <div className="relative w-full h-full flex items-center justify-center p-4">
+                    <TransformWrapper
+                        initialScale={1}
+                        minScale={0.5}
+                        maxScale={4}
+                        centerOnInit
                     >
-                        <Image
-                            src={src}
-                            alt={alt || "Full screen image"}
-                            fill
-                            sizes="100vw"
-                            className="object-contain"
-                            onClick={(e) => {
-                                e.stopPropagation()
-                            }}
-                        />
-                    </div>
+                        <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <div className="relative w-full h-full min-h-[50vh] flex items-center justify-center">
+                                <Image
+                                    src={src}
+                                    alt={alt || "Full screen image"}
+                                    fill
+                                    sizes="100vw"
+                                    className="object-contain"
+                                />
+                            </div>
+                        </TransformComponent>
+                    </TransformWrapper>
                 </div>
             </DialogContent>
         </Dialog>
