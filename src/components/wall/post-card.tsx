@@ -451,10 +451,27 @@ export function PostCard({ post }: PostCardProps) {
                             <HoverCard openDelay={200}>
                                 <HoverCardTrigger asChild>
                                     <button
-                                        className="text-xs text-muted-foreground hover:text-foreground hover:underline ml-1 focus:outline-none"
+                                        className="flex items-center gap-1.5 focus:outline-none group"
                                         onClick={() => setShowLikesModal(true)}
                                     >
-                                        {totalReactionsCount} reactions
+                                        {/* Stacked Emojis */}
+                                        <div className="flex -space-x-1.5">
+                                            {Object.entries(reactionSummary)
+                                                .sort((a, b) => b[1] - a[1]) // Sort by count desc
+                                                .slice(0, 3) // Show top 3
+                                                .map(([emoji], i) => (
+                                                    <div
+                                                        key={emoji}
+                                                        className="w-5 h-5 rounded-full bg-muted border border-background flex items-center justify-center text-[10px] relative shadow-sm"
+                                                        style={{ zIndex: 10 - i }}
+                                                    >
+                                                        {emoji}
+                                                    </div>
+                                                ))}
+                                        </div>
+                                        <span className="text-xs text-muted-foreground group-hover:text-foreground group-hover:underline">
+                                            {totalReactionsCount} {totalReactionsCount === 1 ? 'reaction' : 'reactions'}
+                                        </span>
                                     </button>
                                 </HoverCardTrigger>
                                 <HoverCardContent className="w-80 p-0 overflow-hidden bg-[#020617]/95 backdrop-blur-xl border-white/10 text-white rounded-3xl shadow-2xl" side="top" align="start">

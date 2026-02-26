@@ -300,9 +300,22 @@ export function CommentSection({ postId, postAuthorId, onClose, onCommentAdded }
                                                     {totalReactionsCount > 0 && (
                                                         <button
                                                             onClick={() => openLikersModal(comment.id)}
-                                                            className="absolute -bottom-2 -right-1 bg-background border border-border rounded-full px-1.5 py-0.5 flex items-center gap-0.5 shadow-sm text-[9px] text-muted-foreground hover:bg-muted cursor-pointer transition-colors"
+                                                            className="absolute -bottom-2 -right-1 bg-background border border-border rounded-full px-1.5 py-0.5 flex items-center gap-1 shadow-sm text-[10px] text-muted-foreground hover:bg-muted cursor-pointer transition-colors"
                                                         >
-                                                            <Heart className="w-2.5 h-2.5 fill-rose-500 text-rose-500" />
+                                                            <div className="flex -space-x-1">
+                                                                {Object.entries(currentReactions)
+                                                                    .sort((a, b) => b[1].length - a[1].length)
+                                                                    .slice(0, 3)
+                                                                    .map(([emoji], i) => (
+                                                                        <div
+                                                                            key={emoji}
+                                                                            className="w-4 h-4 rounded-full bg-muted border border-background flex items-center justify-center text-[8px] relative shadow-sm"
+                                                                            style={{ zIndex: 10 - i }}
+                                                                        >
+                                                                            {emoji}
+                                                                        </div>
+                                                                    ))}
+                                                            </div>
                                                             <span>{totalReactionsCount}</span>
                                                         </button>
                                                     )}
