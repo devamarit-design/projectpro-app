@@ -9,7 +9,7 @@ import { FileText, Printer, CheckCircle, Plus, ChevronDown, ChevronUp, Edit, Tra
 import { useTranslation } from "@/lib/i18n-context"
 
 export default function ContractsPage() {
-    const { contracts, projects, workers, payInstallment, deleteContract } = useProjects()
+    const { contracts, projects, workers, payInstallment, unpayInstallment, deleteContract, currentTeam } = useProjects()
     const { t } = useTranslation()
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [previewContract, setPreviewContract] = useState<Contract | null>(null)
@@ -208,9 +208,23 @@ export default function ContractsPage() {
                                                     </button>
 
                                                     {inst.status === 'Paid' ? (
-                                                        <span className="p-1 bg-green-500/10 text-green-500 rounded-full border border-green-500/20" title="Paid">
-                                                            <CheckCircle className="w-4 h-4" />
-                                                        </span>
+                                                        (currentTeam?.role === 'Owner' || currentTeam?.role === 'Admin') ? (
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (confirm(`${t.common?.cancel || "Cancel"} ${t.contracts.pay_now}?`)) {
+                                                                        unpayInstallment(contract.id, inst.id)
+                                                                    }
+                                                                }}
+                                                                className="p-1.5 bg-green-500/10 text-green-500 rounded-md border border-green-500/20 hover:bg-green-500/20 transition-colors"
+                                                                title={`${t.common?.cancel || "Cancel"} Paid Status`}
+                                                            >
+                                                                <CheckCircle className="w-4 h-4 fill-green-500/20" />
+                                                            </button>
+                                                        ) : (
+                                                            <span className="p-1 bg-green-500/10 text-green-500 rounded-full border border-green-500/20" title="Paid">
+                                                                <CheckCircle className="w-4 h-4" />
+                                                            </span>
+                                                        )
                                                     ) : (
                                                         <button
                                                             onClick={() => {

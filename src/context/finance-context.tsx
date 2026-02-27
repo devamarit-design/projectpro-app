@@ -43,6 +43,7 @@ interface FinanceContextType {
     deleteContract: (id: string, permanent?: boolean) => Promise<void>
     restoreContract: (id: string) => Promise<void>
     payInstallment: (contractId: string, installmentId: string) => Promise<void>
+    unpayInstallment: (contractId: string, installmentId: string) => Promise<void>
 
     // Archive
     archiveExpense: (id: string) => Promise<void>
@@ -451,6 +452,37 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         } catch (e) { console.error(e) }
     }, [contracts, currentTeam, workers, addExpense])
 
+    const unpayInstallment = useCallback(async (contractId: string, installmentId: string) => {
+        const contract = contracts.find(c => c.id === contractId)
+        if (!contract || !currentTeam) return
+
+        const installment = contract.installments.find(i => i.id === installmentId)
+        if (!installment || installment.status !== "Paid") return
+
+        try {
+            // Delete associated expense if it exists
+            if (installment.expenseId) {
+                await deleteExpense(installment.expenseId, true)
+            }
+
+            const updatedInstallments = contract.installments.map(inst => {
+                if (inst.id === installmentId) {
+                    const { paidAt, expenseId, ...rest } = inst;
+                    return {
+                        ...rest,
+                        status: "Pending"
+                    };
+                }
+                return inst;
+            });
+
+            await updateDoc(doc(db, "contracts", contractId), {
+                installments: updatedInstallments,
+                updatedAt: new Date().toISOString()
+            })
+        } catch (e) { console.error(e) }
+    }, [contracts, currentTeam, deleteExpense])
+
     // Archive
     const archiveExpense = useCallback(async (id: string) => {
         try { await updateDoc(doc(db, "expenses", id), { isArchived: true }) } catch (e) { console.error(e) }
@@ -475,7 +507,7 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
             addVendor, updateVendor, deleteVendor,
             addWorker, updateWorker, deleteWorker,
             addCustomer, updateCustomer, deleteCustomer,
-            addContract, updateContract, deleteContract, restoreContract, payInstallment,
+            addContract, updateContract, deleteContract, restoreContract, payInstallment, unpayInstallment,
             archiveExpense, unarchiveExpense, archiveIncome, unarchiveIncome,
             loadArchivedExpenses, loadArchivedIncomes,
             isLoading, isArchivedLoading
@@ -487,7 +519,7 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         addVendor, updateVendor, deleteVendor,
         addWorker, updateWorker, deleteWorker,
         addCustomer, updateCustomer, deleteCustomer,
-        addContract, updateContract, deleteContract, restoreContract, payInstallment,
+        addContract, updateContract, deleteContract, restoreContract, payInstallment, unpayInstallment,
         archiveExpense, unarchiveExpense, archiveIncome, unarchiveIncome,
         loadArchivedExpenses, loadArchivedIncomes,
         isLoading, isArchivedLoading

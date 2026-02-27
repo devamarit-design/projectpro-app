@@ -453,6 +453,7 @@ export interface ProjectContextType extends CoreProjectContextType {
     deleteContract: (id: string, permanent?: boolean) => Promise<void>
     restoreContract: (id: string) => Promise<void>
     payInstallment: (contractId: string, installmentId: string) => Promise<void>
+    unpayInstallment: (contractId: string, installmentId: string) => Promise<void>
 
     // Archive System (Aggregated)
     archiveTask: (id: string) => Promise<void>
@@ -1996,6 +1997,7 @@ export function useProjects() {
         updateContract: financeCtx.updateContract,
         deleteContract: financeCtx.deleteContract,
         payInstallment: financeCtx.payInstallment,
+        unpayInstallment: financeCtx.unpayInstallment,
         archiveExpense: financeCtx.archiveExpense,
         unarchiveExpense: financeCtx.unarchiveExpense,
         archiveIncome: financeCtx.archiveIncome,
