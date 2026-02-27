@@ -417,17 +417,39 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         const contract = contracts.find(c => c.id === contractId)
         if (!contract || !currentTeam) return
 
-        const updatedInstallments = contract.installments.map(inst =>
-            inst.id === installmentId ? { ...inst, status: "Paid", paidAt: new Date().toISOString() } : inst
-        )
+        const installment = contract.installments.find(i => i.id === installmentId)
+        if (!installment || installment.status === "Paid") return
 
         try {
+            const worker = workers.find(w => w.id === contract.workerId)
+            const payeeName = worker ? worker.name : "Unknown Sub-contractor"
+
+            const expenseId = await addExpense({
+                title: `Contract Payment: ${contract.title} - ${installment.description}`,
+                amount: `฿${installment.amount.toLocaleString()}`,
+                totalValue: installment.amount,
+                date: new Date().toISOString().split('T')[0],
+                category: "Sub-contract",
+                status: "Paid",
+                projectId: contract.projectId,
+                payee: payeeName
+            })
+
+            const updatedInstallments = contract.installments.map(inst =>
+                inst.id === installmentId ? {
+                    ...inst,
+                    status: "Paid",
+                    paidAt: new Date().toISOString(),
+                    expenseId: expenseId
+                } : inst
+            )
+
             await updateDoc(doc(db, "contracts", contractId), {
                 installments: updatedInstallments,
                 updatedAt: new Date().toISOString()
             })
         } catch (e) { console.error(e) }
-    }, [contracts, currentTeam])
+    }, [contracts, currentTeam, workers, addExpense])
 
     // Archive
     const archiveExpense = useCallback(async (id: string) => {
