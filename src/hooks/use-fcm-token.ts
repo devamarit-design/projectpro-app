@@ -51,6 +51,9 @@ export function useFcmToken() {
             // On iOS/Android, we need to register to get a token
             await PushNotifications.register()
 
+            // Remove existing listeners to prevent duplicates if called multiple times
+            await PushNotifications.removeAllListeners()
+
             // Listeners
             PushNotifications.addListener('registration', (token) => {
                 const fcmToken = token.value

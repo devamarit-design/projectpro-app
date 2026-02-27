@@ -14,10 +14,10 @@ async function getOrgAdminTokens(orgId: string): Promise<string[]> {
     const orgData = orgSnap.data()
     const members = orgData?.members || []
 
-    // Filter for Admin or Owner
-    const adminUserIds = members
+    // Filter for Admin or Owner and deduplicate User IDs
+    const adminUserIds = [...new Set(members
         .filter((m: any) => m.role === 'Admin' || m.role === 'Owner')
-        .map((m: any) => m.userId)
+        .map((m: any) => m.userId))]
 
     if (adminUserIds.length === 0) return []
 
@@ -126,6 +126,15 @@ export const onExpenseCreated = functions
 
             const response = await messaging.sendEachForMulticast(payload)
             console.log(`Sent expense notification to ${response.successCount} admins`)
+
+            // Cleanup invalid tokens (optional but good practice to avoid duplicate obsolete tokens)
+            if (response.failureCount > 0) {
+                // Since admins might have different tokens mixed, we could try to clean up
+                // but we don't know which admin owns which token here easily without grouping by user.
+                // It's safer to just log for now to avoid accidental deletions of valid tokens for other users.
+                console.warn(`Failed to send to ${response.failureCount} tokens in getOrgAdminTokens`)
+            }
+
             return { success: true }
 
         } catch (error) {
