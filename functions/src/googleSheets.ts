@@ -14,10 +14,23 @@ export async function appendRowToSheet(
         const client = await auth.getClient();
         const sheets = google.sheets({ version: 'v4', auth: client as any });
 
-        // Append the row to "Sheet1"
+        // Dynamically get the first sheet's name instead of hardcoding "Sheet1"
+        const spreadsheet = await sheets.spreadsheets.get({
+            spreadsheetId: sheetId,
+        });
+
+        const sheetsList = spreadsheet.data.sheets;
+        if (!sheetsList || sheetsList.length === 0) {
+            throw new Error("No sheets found in the spreadsheet.");
+        }
+
+        const firstSheetName = sheetsList[0].properties?.title || "Sheet1";
+        console.log(`Using sheet name: "${firstSheetName}" for spreadsheet: ${sheetId}`);
+
+        // Append the row to the first sheet
         await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
-            range: 'Sheet1!A:P', // We have 16 columns matching the CSV fields
+            range: `'${firstSheetName}'!A:P`, // Quoted sheet name is safer
             valueInputOption: 'USER_ENTERED',
             requestBody: {
                 values: [values],

@@ -47,3 +47,4 @@ next-env.d.ts
 firebase-debug.log
 /functions/lib
 /functions/node_modules
+/functions/service-account-key.json
