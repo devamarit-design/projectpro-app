@@ -19,6 +19,7 @@ export interface Organization {
     settings: {
         currency: string
         locale: string
+        googleSheetId?: string
         logoUrl?: string
         taxId?: string
         address?: string

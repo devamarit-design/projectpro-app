@@ -83,7 +83,12 @@ export const onPostCreated = functions
                         url: `/wall?postId=${context.params.postId}`
                     },
                     android: { notification: { icon: 'stock_ticker_update', color: '#2196f3' } },
-                    apns: { payload: { aps: { badge: 1, sound: 'default' } } }
+                    apns: { payload: { aps: { badge: 1, sound: 'default' } } },
+                    webpush: {
+                        fcmOptions: {
+                            link: `/wall?postId=${context.params.postId}`
+                        }
+                    }
                 }
                 batches.push(messaging.sendEachForMulticast(payload))
             }
@@ -166,7 +171,12 @@ export const onPostLike = functions
                     url: `/wall?postId=${context.params.postId}`
                 },
                 android: { notification: { icon: 'stock_ticker_update', color: '#e91e63' } },
-                apns: { payload: { aps: { badge: 1, sound: 'default' } } }
+                apns: { payload: { aps: { badge: 1, sound: 'default' } } },
+                webpush: {
+                    fcmOptions: {
+                        link: `/wall?postId=${context.params.postId}`
+                    }
+                }
             }
 
             await messaging.sendEachForMulticast(payload)
@@ -245,7 +255,12 @@ export const onCommentCreated = functions
                     url: `/wall?postId=${postId}`
                 },
                 android: { notification: { icon: 'stock_ticker_update', color: '#4caf50' } },
-                apns: { payload: { aps: { badge: 1, sound: 'default' } } }
+                apns: { payload: { aps: { badge: 1, sound: 'default' } } },
+                webpush: {
+                    fcmOptions: {
+                        link: `/wall?postId=${postId}`
+                    }
+                }
             }
 
             await messaging.sendEachForMulticast(payload)

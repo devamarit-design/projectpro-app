@@ -90,6 +90,11 @@ export const onTaskAssigned = functions
                             sound: 'default'
                         }
                     }
+                },
+                webpush: {
+                    fcmOptions: {
+                        link: `/tasks?taskId=${context.params.taskId}`
+                    }
                 }
             }
 
@@ -198,7 +203,12 @@ export const onTaskStatusChanged = functions
                         url: `/tasks?taskId=${context.params.taskId}`
                     },
                     android: { notification: { icon: 'stock_ticker_update', color: '#4caf50' } },
-                    apns: { payload: { aps: { badge: 1, sound: 'default' } } }
+                    apns: { payload: { aps: { badge: 1, sound: 'default' } } },
+                    webpush: {
+                        fcmOptions: {
+                            link: `/tasks?taskId=${context.params.taskId}`
+                        }
+                    }
                 }
 
 
@@ -299,7 +309,12 @@ export const checkTaskDueDates = functions
                                 url: `/tasks?taskId=${doc.id}`
                             },
                             android: { notification: { icon: 'stock_ticker_update', color: '#ff9800' } },
-                            apns: { payload: { aps: { badge: 1, sound: 'default' } } }
+                            apns: { payload: { aps: { badge: 1, sound: 'default' } } },
+                            webpush: {
+                                fcmOptions: {
+                                    link: `/tasks?taskId=${doc.id}`
+                                }
+                            }
                         }
 
                         // Create In-App Notification

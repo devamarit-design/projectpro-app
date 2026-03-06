@@ -13,6 +13,7 @@ import { SecuritySettings } from "@/components/settings/security-settings"
 import { NotificationSettings } from "@/components/settings/notifications-settings"
 import { TelegramSettings } from "@/components/settings/telegram-settings"
 import { PerformanceSettings } from "@/components/settings/performance-settings"
+import { GoogleSheetsSettings } from "@/components/settings/google-sheets-settings"
 
 
 export default function SettingsPage() {
@@ -39,6 +40,7 @@ export default function SettingsPage() {
         { id: "security", label: t.settings.menu.security, icon: Shield },
         { id: "theme", label: t.settings.menu.theme, icon: Palette },
         { id: "performance", label: t.settings.menu.performance, icon: MonitorSmartphone },
+        { id: "google-sheets", label: "Google Sheets", icon: FileText },
     ]
 
     return (
@@ -82,6 +84,7 @@ export default function SettingsPage() {
                         {activeSection === "performance" && <PerformanceSettings />}
                         {activeSection === "team" && isAdmin && <TeamSettings />}
                         {activeSection === "security" && <SecuritySettings />}
+                        {activeSection === "google-sheets" && <GoogleSheetsSettings />}
 
                     </div>
                 </main>

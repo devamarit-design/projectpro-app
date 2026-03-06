@@ -17,6 +17,7 @@ export * from './notifications'
 export * from './notifications_wall'
 export * from './notifications_financial'
 export * from './cleanup'
+import { appendRowToSheet } from './googleSheets'
 
 // Initialize Firebase Admin
 admin.initializeApp()
@@ -703,3 +704,102 @@ export const getChatHubToken = functions
             )
         }
     })
+
+/**
+ * Handle new expense creation for Google Sheets Integration
+ */
+export const onExpenseCreated = functions
+    .region(region)
+    .firestore.document('expenses/{expenseId}')
+    .onCreate(async (snap, context) => {
+        const expense = snap.data()
+        if (!expense) return
+
+        try {
+            const orgId = expense.orgId
+            if (!orgId) {
+                console.log(`Expense ${context.params.expenseId} has no orgId. Skipping Google Sheets export.`)
+                return
+            }
+
+            // Get organization settings to check for Google Sheet ID
+            const orgDoc = await db.collection('organizations').doc(orgId).get()
+            if (!orgDoc.exists) return
+
+            const orgData = orgDoc.data()
+            const googleSheetId = orgData?.settings?.googleSheetId
+
+            if (!googleSheetId) {
+                console.log(`Organization ${orgId} has no googleSheetId configured.`)
+                return
+            }
+
+            // Fetch necessary names (Project, SubProject, User) if IDs are present
+            let projectName = "General"
+            let subProjectName = ""
+            let createdByName = "Unknown"
+
+            if (expense.projectId) {
+                const projectDoc = await db.collection('projects').doc(expense.projectId).get()
+                if (projectDoc.exists) projectName = projectDoc.data()?.name || projectName
+            }
+
+            // Assuming subProjectName isn't easily accessible without querying the project's subProjects array,
+            // we will leave it empty if not provided directly on the expense, or you could implement the fetch if needed.
+
+            if (expense.createdBy) {
+                const userDoc = await db.collection('users').doc(expense.createdBy).get()
+                if (userDoc.exists) {
+                    const userData = userDoc.data()
+                    createdByName = userData?.displayName || userData?.name || "Unknown"
+                }
+            }
+
+            // Format date components
+            let dateStr = expense.date || new Date().toISOString().split('T')[0]
+            let monthName = ""
+            let yearBE = ""
+            let combinedMonthYear = ""
+
+            try {
+                const d = new Date(dateStr)
+                if (!isNaN(d.getTime())) {
+                    const day = d.getDate()
+                    const month = d.getMonth() + 1
+                    const year = d.getFullYear() + 543
+                    dateStr = `${day}/${month}/${year}`
+                    const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
+                    monthName = thaiMonths[d.getMonth()]
+                    yearBE = year.toString()
+                    combinedMonthYear = `${monthName}${yearBE}`
+                }
+            } catch (err) { }
+
+            // Construct row data matching the 16 CSV columns
+            // ["วัน/เดือน/ปี", "รับ-จ่าย", "โปรเจค", "โปรเจคย่อย", "รายการ", "ราคา", "ร้านค้า", "VAT", "ว่าง", "จำนวนเงิน", "เดือน", "ปี", "งวด", "หมวดหมู่", "สถานะ", "ผู้สร้าง"]
+            const rowData = [
+                dateStr,
+                "ค่าใช้จ่าย",
+                projectName,
+                subProjectName,
+                expense.title || "",
+                expense.totalValue || 0,
+                expense.payee || expense.vendor || "",
+                expense.vatIncluded ? 'Include' : 'Exclude',
+                combinedMonthYear,
+                `-${expense.totalValue || 0}`,
+                monthName,
+                yearBE,
+                "-งวด", // งวด
+                expense.category || "",
+                expense.status || "Pending",
+                createdByName
+            ]
+
+            await appendRowToSheet(googleSheetId, rowData)
+
+        } catch (error) {
+            console.error(`Error processing expense ${context.params.expenseId} for Google Sheets:`, error)
+        }
+    })
+

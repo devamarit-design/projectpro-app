@@ -106,7 +106,12 @@ export const onExpenseCreated = functions
                     url: '/expenses'
                 },
                 android: { notification: { icon: 'stock_ticker_update', color: '#f44336' } },
-                apns: { payload: { aps: { badge: 1, sound: 'default' } } }
+                apns: { payload: { aps: { badge: 1, sound: 'default' } } },
+                webpush: {
+                    fcmOptions: {
+                        link: '/expenses'
+                    }
+                }
             }
 
 
@@ -181,7 +186,12 @@ export const onExpenseStatusChanged = functions
                         url: '/expenses'
                     },
                     android: { notification: { icon: 'stock_ticker_update', color: '#4caf50' } },
-                    apns: { payload: { aps: { badge: 1, sound: 'default' } } }
+                    apns: { payload: { aps: { badge: 1, sound: 'default' } } },
+                    webpush: {
+                        fcmOptions: {
+                            link: '/expenses'
+                        }
+                    }
                 }
 
 
@@ -242,7 +252,12 @@ export const onIncomeCreated = functions
                     url: '/income'
                 },
                 android: { notification: { icon: 'stock_ticker_update', color: '#009688' } }, // Teal for income
-                apns: { payload: { aps: { badge: 1, sound: 'default' } } }
+                apns: { payload: { aps: { badge: 1, sound: 'default' } } },
+                webpush: {
+                    fcmOptions: {
+                        link: '/income'
+                    }
+                }
             }
 
 

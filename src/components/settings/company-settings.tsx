@@ -10,10 +10,12 @@ import { hasPermission } from "@/lib/permissions"
 import { useOrganization } from "@/context/organization-context" // Add this import
 import { getGoogleMapsUrl } from "@/lib/utils"
 // Firebase Imports for Migration Tool
-import { collection, query, where, getDocs, updateDoc } from "firebase/firestore"
+import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Button } from "@/components/ui/button" // Ensure Button is imported if used
 import Image from "next/image"
+// Remove sonner toast import as it's not used here anymore if only for SheetId
+// import { toast } from "sonner"
 
 export function CompanySettings() {
     const { t } = useTranslation()

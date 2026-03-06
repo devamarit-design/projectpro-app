@@ -28,33 +28,7 @@ try {
         self.registration.showNotification(notificationTitle, notificationOptions);
     });
 
-    self.addEventListener('notificationclick', function (event) {
-        console.log('[firebase-messaging-sw.js] Notification click received', event);
-        event.notification.close();
 
-        // Retrieve URL from notification data
-        const relativeUrl = event.notification.data?.url || '/';
-        const absoluteUrl = new URL(relativeUrl, self.location.origin).href;
-
-        event.waitUntil(
-            clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
-                // Check if there's already a tab open
-                for (let i = 0; i < clientList.length; i++) {
-                    const client = clientList[i];
-                    if (client.url.includes(self.location.origin) && 'focus' in client) {
-                        if (relativeUrl && relativeUrl !== '/') {
-                            client.navigate(absoluteUrl);
-                        }
-                        return client.focus();
-                    }
-                }
-                // If not, open a new window
-                if (clients.openWindow) {
-                    return clients.openWindow(absoluteUrl);
-                }
-            })
-        );
-    });
 
 } catch (error) {
     console.error('Firebase messaging service worker initialization failed:', error);
