@@ -801,7 +801,7 @@ async function getExpenseRowDataForSheets(expense: any, expenseId: string) {
 /**
  * Handle new expense creation for Google Sheets Integration
  */
-export const onExpenseCreated = functions
+export const gsyncOnExpenseCreated = functions
     .region(region)
     .firestore.document('expenses/{expenseId}')
     .onCreate(async (snap, context) => {
@@ -821,7 +821,7 @@ export const onExpenseCreated = functions
 /**
  * Handle expense updates for Google Sheets Integration
  */
-export const onExpenseUpdated = functions
+export const gsyncOnExpenseUpdated = functions
     .region(region)
     .firestore.document('expenses/{expenseId}')
     .onUpdate(async (change, context) => {
