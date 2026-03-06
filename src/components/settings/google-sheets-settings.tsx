@@ -80,7 +80,10 @@ export function GoogleSheetsSettings() {
                 </h4>
                 <div className="text-sm text-muted-foreground space-y-2 leading-relaxed">
                     <p>1. Open your target Google Sheet.</p>
-                    <p>2. Click <strong>"Share"</strong> and add the Service Account email as an <strong>Editor</strong>.</p>
+                    <p>2. Click <strong>"Share"</strong> and add the Service Account email below as an <strong>Editor</strong>:</p>
+                    <p className="font-mono text-xs bg-black/20 p-2 rounded-md break-all text-primary/80 select-all">
+                        hipsloth-sheets-bot@hipslothsheet.iam.gserviceaccount.com
+                    </p>
                     <p>3. Copy the Sheet ID from the URL and paste it above.</p>
                     <p className="text-xs mt-4 p-3 bg-background/50 rounded-lg border border-border/30">
                         <strong>Note:</strong> Once connected, every new expense created in this organization will be automatically added as a new row in your sheet.
