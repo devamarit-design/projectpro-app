@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Search, Filter, Camera, ScanLine, Tag, Wallet, TrendingDown, LayoutGrid, Hammer, Users, FileText, CreditCard, Archive, RefreshCcw, ArrowDownAZ, FileDown } from "lucide-react"
+import { Plus, Search, Filter, Camera, ScanLine, Tag, Wallet, TrendingDown, LayoutGrid, Hammer, Users, FileText, CreditCard, Archive, RefreshCcw, ArrowDownAZ, FileDown, ChevronDown, ChevronRight } from "lucide-react"
 import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
 import { useProjects, ExpenseCategory } from "@/context/project-context"
 import { cn } from "@/lib/utils"
@@ -44,6 +44,13 @@ function ExpensesContent() {
     const [userFilter, setUserFilter] = React.useState<string>("all")
     const [monthFilter, setMonthFilter] = React.useState<string>("all")
     const [showArchived, setShowArchived] = React.useState(false)
+
+    // Month group expansion state
+    const [expandedMonths, setExpandedMonths] = React.useState<Record<string, boolean>>({})
+
+    const toggleMonth = (month: string, isCurrentlyExpanded: boolean) => {
+        setExpandedMonths(prev => ({ ...prev, [month]: !isCurrentlyExpanded }))
+    }
 
     // Check for 'action=new' param
     // Check for 'action=new' or 'editId' or 'expenseId' params (from Notifications)
@@ -158,6 +165,28 @@ function ExpensesContent() {
             return 0
         })
     }, [baseFilteredExpenses, statusFilter, sortOrder])
+
+    // Group and Sort Months for List Display
+    const groupedExpenses = React.useMemo(() => {
+        const groups: Record<string, typeof filteredExpenses> = {}
+        filteredExpenses.forEach(expense => {
+            let monthStr = "Unknown"
+            if (expense.date) {
+                monthStr = expense.date.substring(0, 7) // YYYY-MM
+            }
+            if (!groups[monthStr]) groups[monthStr] = []
+            groups[monthStr].push(expense)
+        })
+        return groups
+    }, [filteredExpenses])
+
+    const sortedMonthsList = React.useMemo(() => {
+        return Object.keys(groupedExpenses).sort((a, b) => {
+            if (a === "Unknown") return 1;
+            if (b === "Unknown") return -1;
+            return b.localeCompare(a)
+        })
+    }, [groupedExpenses])
 
     // Calculate Total
     const totalExpense = React.useMemo(() => {
@@ -655,95 +684,138 @@ function ExpensesContent() {
                             {expenses.length === 0 ? t.expenses.empty_hint : "No expenses match your filters."}
                         </p>
                     </div>
-                ) : filteredExpenses.map((expense, index) => {
-                    // Check if we need a date divider
-                    const currentDate = expense.date
-                    const prevExpense = index > 0 ? filteredExpenses[index - 1] : null
-                    const showDateDivider = !prevExpense || prevExpense.date !== currentDate
-                    const isPaid = expense.status === 'Paid'
+                ) : sortedMonthsList.map((month, monthIndex) => {
+                    const isExpanded = expandedMonths[month] !== undefined ? expandedMonths[month] : monthIndex === 0;
+                    const monthExpenses = groupedExpenses[month];
+
+                    // calculate month total
+                    const monthTotal = monthExpenses.reduce((sum, e) => e.status !== 'Unpaid' ? sum + e.totalValue : sum, 0);
+
+                    // month name for display
+                    let monthDisplay = month;
+                    if (month !== "Unknown") {
+                        const d = new Date(month + "-01");
+                        if (!isNaN(d.getTime())) {
+                            monthDisplay = d.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+                        }
+                    }
 
                     return (
-                        <React.Fragment key={expense.id}>
-                            {showDateDivider && (
-                                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground py-2 px-1">
-                                    <div className="w-2 h-2 rounded-full bg-primary/60" />
-                                    {new Date(currentDate).toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                        <div key={month} className="mb-6 space-y-3">
+                            <div
+                                onClick={() => toggleMonth(month, isExpanded)}
+                                className="flex items-center justify-between cursor-pointer py-2 px-1 hover:bg-muted/10 rounded-lg transition-colors group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                                        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                    </div>
+                                    <h2 className="text-lg font-bold text-foreground">{monthDisplay}</h2>
+                                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                        {monthExpenses.length} รายการ
+                                    </span>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-bold text-foreground">฿{monthTotal.toLocaleString()}</p>
+                                </div>
+                            </div>
+
+                            {isExpanded && (
+                                <div className="grid gap-3 pl-1 sm:pl-2 border-l-2 border-primary/10 ml-2">
+                                    {monthExpenses.map((expense, index) => {
+                                        // Check if we need a date divider
+                                        const currentDate = expense.date
+                                        const prevExpense = index > 0 ? monthExpenses[index - 1] : null
+                                        const showDateDivider = !prevExpense || prevExpense.date !== currentDate
+                                        const isPaid = expense.status === 'Paid'
+
+                                        return (
+                                            <React.Fragment key={expense.id}>
+                                                {showDateDivider && (
+                                                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground py-2 px-1">
+                                                        <div className="w-2 h-2 rounded-full bg-primary/60" />
+                                                        {new Date(currentDate).toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                                                    </div>
+                                                )}
+                                                <div
+                                                    onClick={() => router.push(`?expenseId=${expense.id}`, { scroll: false })}
+                                                    className={cn(
+                                                        "glass-card p-4 rounded-xl border border-white/5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group overflow-hidden",
+                                                        expense.isArchived && "opacity-60 grayscale bg-gray-500/5 hover:bg-gray-500/10 border-gray-500/20"
+                                                    )}
+                                                >
+                                                    <div className="flex gap-4 items-center w-full sm:w-auto min-w-0">
+                                                        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors group-hover:scale-110 duration-200",
+                                                            expense.category === 'Material' ? 'bg-orange-500/10 text-orange-500' :
+                                                                expense.category === 'Labor' ? 'bg-blue-500/10 text-blue-500' :
+                                                                    'bg-purple-500/10 text-purple-500'
+                                                        )}>
+                                                            <span className="text-[10px] font-bold uppercase">{(expense.category || "Other").substring(0, 3)}</span>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0 overflow-hidden">
+                                                            <h3 className="font-semibold text-foreground truncate">{expense.title}</h3>
+                                                            <div className="text-xs text-muted-foreground flex items-center gap-2 truncate">
+                                                                {expense.status === 'Advanced' ? (
+                                                                    <span className="text-purple-500 font-bold flex items-center gap-1">
+                                                                        Advance to: {expense.payee}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span>{expense.payee}</span>
+                                                                )}
+                                                                <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                                                                <span>{expense.date}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end pl-[64px] sm:pl-0">
+                                                        <div className="text-right">
+                                                            <p className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{expense.amount}</p>
+                                                        </div>
+                                                        <div className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                                                            expense.status === 'Paid' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                                                expense.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                                                    expense.status === 'Advanced' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                                                                        'bg-red-500/10 text-red-500 border-red-500/20'
+                                                        )}>
+                                                            {expense.status === 'Unpaid' ? 'Cancel' : expense.status}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Admin Actions for Status Change */}
+                                                    {(currentTeam?.role === 'Admin' || currentTeam?.role === 'Owner') &&
+                                                        (expense.status === 'Pending' || expense.status === 'Credit' || expense.status === 'Advanced') && (
+                                                            <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        if (confirm(`Approve payment for "${expense.title}"?`)) {
+                                                                            updateExpense(expense.id, { status: 'Paid' })
+                                                                        }
+                                                                    }}
+                                                                    className="flex items-center gap-2 pl-3 pr-4 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 rounded-full transition-all group/btn"
+                                                                >
+                                                                    <CheckCircle2 className="w-4 h-4" />
+                                                                    <span className="text-xs font-bold uppercase tracking-tight">จ่ายแล้ว</span>
+                                                                    <span className="text-[10px] opacity-70 border-l border-green-500/20 pl-2">
+                                                                        {expense.status === 'Advanced' ? (expense.paidBy || expense.payee) : expense.payee}
+                                                                    </span>
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                    {expense.status === 'Unpaid' && (
+                                                        <div className="px-3 py-1 bg-gray-500/10 text-gray-500 border border-gray-500/20 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                                            CANCEL
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </React.Fragment>
+                                        )
+                                    })}
                                 </div>
                             )}
-                            <div
-                                onClick={() => router.push(`?expenseId=${expense.id}`, { scroll: false })}
-                                className={cn(
-                                    "glass-card p-4 rounded-xl border border-white/5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-primary/20 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group overflow-hidden",
-                                    expense.isArchived && "opacity-60 grayscale bg-gray-500/5 hover:bg-gray-500/10 border-gray-500/20"
-                                )}
-                            >
-                                <div className="flex gap-4 items-center w-full sm:w-auto min-w-0">
-                                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors group-hover:scale-110 duration-200",
-                                        expense.category === 'Material' ? 'bg-orange-500/10 text-orange-500' :
-                                            expense.category === 'Labor' ? 'bg-blue-500/10 text-blue-500' :
-                                                'bg-purple-500/10 text-purple-500'
-                                    )}>
-                                        <span className="text-[10px] font-bold uppercase">{(expense.category || "Other").substring(0, 3)}</span>
-                                    </div>
-                                    <div className="flex-1 min-w-0 overflow-hidden">
-                                        <h3 className="font-semibold text-foreground truncate">{expense.title}</h3>
-                                        <div className="text-xs text-muted-foreground flex items-center gap-2 truncate">
-                                            {expense.status === 'Advanced' ? (
-                                                <span className="text-purple-500 font-bold flex items-center gap-1">
-                                                    Advance to: {expense.payee}
-                                                </span>
-                                            ) : (
-                                                <span>{expense.payee}</span>
-                                            )}
-                                            <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                                            <span>{expense.date}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end pl-[64px] sm:pl-0">
-                                    <div className="text-right">
-                                        <p className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{expense.amount}</p>
-                                    </div>
-                                    <div className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                                        expense.status === 'Paid' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                                            expense.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
-                                                expense.status === 'Advanced' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
-                                                    'bg-red-500/10 text-red-500 border-red-500/20'
-                                    )}>
-                                        {expense.status === 'Unpaid' ? 'Cancel' : expense.status}
-                                    </div>
-                                </div>
-
-                                {/* Admin Actions for Status Change */}
-                                {(currentTeam?.role === 'Admin' || currentTeam?.role === 'Owner') &&
-                                    (expense.status === 'Pending' || expense.status === 'Credit' || expense.status === 'Advanced') && (
-                                        <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    if (confirm(`Approve payment for "${expense.title}"?`)) {
-                                                        updateExpense(expense.id, { status: 'Paid' })
-                                                    }
-                                                }}
-                                                className="flex items-center gap-2 pl-3 pr-4 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 rounded-full transition-all group/btn"
-                                            >
-                                                <CheckCircle2 className="w-4 h-4" />
-                                                <span className="text-xs font-bold uppercase tracking-tight">จ่ายแล้ว</span>
-                                                <span className="text-[10px] opacity-70 border-l border-green-500/20 pl-2">
-                                                    {expense.status === 'Advanced' ? (expense.paidBy || expense.payee) : expense.payee}
-                                                </span>
-                                            </button>
-                                        </div>
-                                    )}
-
-                                {expense.status === 'Unpaid' && (
-                                    <div className="px-3 py-1 bg-gray-500/10 text-gray-500 border border-gray-500/20 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                                        CANCEL
-                                    </div>
-                                )}
-                            </div>
-                        </React.Fragment>
+                        </div>
                     )
                 })}
             </div>
