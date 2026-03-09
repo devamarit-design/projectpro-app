@@ -17,7 +17,9 @@ export * from './notifications'
 export * from './notifications_wall'
 export * from './notifications_financial'
 export * from './cleanup'
+import { google } from 'googleapis'
 import { appendRowToSheet, updateRowInSheet } from './googleSheets'
+import { getDriveClient, ensureFolderExists, uploadFileToDrive, checkFolderAccess } from './googleDrive'
 
 // Initialize Firebase Admin
 admin.initializeApp()
@@ -819,6 +821,124 @@ export const gsyncOnExpenseCreated = functions
     })
 
 /**
+ * Handle new expense creation for Google Drive Integration (Receipt sync)
+ */
+export const gdriveOnExpenseCreated = functions
+    .region(region)
+    .firestore.document('expenses/{expenseId}')
+    .onCreate(async (snap, context) => {
+        const expense = snap.data()
+        if (!expense || !expense.receiptImage || !expense.orgId) return
+
+        try {
+            // 1. Get org settings
+            const orgDoc = await db.collection('organizations').doc(expense.orgId).get()
+            if (!orgDoc.exists) return
+
+            const googleDriveFolderId = orgDoc.data()?.settings?.googleDriveFolderId
+            if (!googleDriveFolderId) return
+
+            // 2. Initialize Drive (using OAuth2 tokens from org settings)
+            const googleDriveTokens = orgDoc.data()?.settings?.googleDriveTokens
+            if (!googleDriveTokens?.refresh_token) {
+                console.error(`Google Drive not connected for org: ${expense.orgId}`)
+                return
+            }
+
+            const clientId = functions.config().google?.client_id
+            const clientSecret = functions.config().google?.client_secret
+
+            if (!clientId || !clientSecret) {
+                console.error('Google Client ID/Secret missing in Cloud Functions config.')
+                return
+            }
+
+            const drive = await getDriveClient({
+                clientId,
+                clientSecret,
+                refreshToken: googleDriveTokens.refresh_token
+            })
+
+            // 3. Setup Folder Path [Project Name, Year (BE), Month (Thai)]
+            let dateObj = new Date()
+            if (expense.date) {
+                dateObj = new Date(expense.date)
+                if (isNaN(dateObj.getTime())) dateObj = new Date()
+            }
+
+            // Get Project Name
+            let projectName = 'General'
+            if (expense.projectId) {
+                const projectDoc = await db.collection('projects').doc(expense.projectId).get()
+                if (projectDoc.exists) {
+                    projectName = projectDoc.data()?.name || 'General'
+                }
+            } else if (expense.projectName) {
+                projectName = expense.projectName
+            }
+
+            const yearStr = (dateObj.getFullYear() + 543).toString() // Thai Year (BE)
+            const monthStr = dateObj.toLocaleString('th-TH', { month: 'long' }) // Thai Month Name
+
+            const folderPath = ['Expenses', projectName, yearStr, monthStr]
+            let currentParentId = googleDriveFolderId
+            for (const folderName of folderPath) {
+                currentParentId = await ensureFolderExists(drive, folderName, currentParentId)
+            }
+
+            // 4. Download receipt image
+            let buffer: Buffer
+            let mimeType = 'image/jpeg'
+
+            if (expense.receiptImage.startsWith('data:')) {
+                const matches = expense.receiptImage.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/)
+                if (matches && matches.length === 3) {
+                    mimeType = matches[1]
+                    buffer = Buffer.from(matches[2], 'base64')
+                } else {
+                    buffer = Buffer.from(expense.receiptImage.split(',')[1] || expense.receiptImage, 'base64')
+                }
+            } else if (expense.receiptImage.includes('firebasestorage.googleapis.com') ||
+                expense.receiptImage.includes('storage.googleapis.com')) {
+                // Firebase Storage URL - use Admin SDK to download without auth token
+                const urlObj = new URL(expense.receiptImage)
+                const pathMatch = urlObj.pathname.match(/\/o\/(.+)$/)
+                if (!pathMatch) throw new Error('Could not parse storage path from URL')
+                const storagePath = decodeURIComponent(pathMatch[1]).split('?')[0]
+                const storageBucket = admin.storage().bucket()
+                const file = storageBucket.file(storagePath)
+                const [fileBuffer] = await file.download()
+                const [metaData] = await file.getMetadata()
+                buffer = fileBuffer
+                mimeType = (metaData as any).contentType || 'image/jpeg'
+            } else {
+                const response = await fetch(expense.receiptImage)
+                if (!response.ok) throw new Error(`Failed to download receipt: ${response.statusText}`)
+                mimeType = response.headers.get('content-type') || 'application/octet-stream'
+                const arrayBuffer = await response.arrayBuffer()
+                buffer = Buffer.from(arrayBuffer)
+            }
+
+            // 5. Create File Name (using actual Expense fields: title, payee)
+            const payeeName = expense.payee || expense.vendor || 'Unknown'
+            const titleSafe = (expense.title || 'Expense').substring(0, 30)
+
+            let ext = '.jpg'
+            if (mimeType.includes('png')) ext = '.png'
+            if (mimeType.includes('pdf')) ext = '.pdf'
+
+            const fileName = `${titleSafe} - ${payeeName}${ext}`.replace(/[:/\\?*]/g, '_')
+
+            // 6. Upload
+            await uploadFileToDrive(drive, buffer, fileName, mimeType, currentParentId)
+            console.log(`Successfully synced receipt for expense ${context.params.expenseId} to Drive.`)
+
+        } catch (error) {
+            console.error(`Error syncing expense ${context.params.expenseId} to Drive:`, error)
+        }
+    })
+
+/**
  * Handle expense updates for Google Sheets Integration
  */
 export const gsyncOnExpenseUpdated = functions
@@ -835,6 +955,198 @@ export const gsyncOnExpenseUpdated = functions
             await updateRowInSheet(result.googleSheetId, context.params.expenseId, result.rowData)
         } catch (error) {
             console.error(`Error updating expense ${context.params.expenseId} for Google Sheets:`, error)
+        }
+    })
+
+/**
+ * Handle direct file uploads to Google Drive via HTTP Callable
+ */
+export const uploadToGoogleDrive = functions
+    .region(region)
+    .runWith({
+        timeoutSeconds: 300,
+        memory: '1GB'
+    })
+    .https.onCall(async (data, context) => {
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated')
+        }
+
+        const { fileUrl, base64Data, fileName, mimeType, folderPath, orgId } = data
+
+        if (!fileName || !orgId || (!fileUrl && !base64Data)) {
+            throw new functions.https.HttpsError('invalid-argument', 'Missing required file data, fileName, or orgId')
+        }
+
+        try {
+            // 1. Check if organization has configured a Google Drive Folder ID
+            const orgRef = db.collection('organizations').doc(orgId)
+            const orgDoc = await orgRef.get()
+
+            if (!orgDoc.exists) {
+                return { success: false, reason: 'Organization not found' }
+            }
+
+            const googleDriveFolderId = orgDoc.data()?.settings?.googleDriveFolderId
+
+            if (!googleDriveFolderId) {
+                return { success: false, reason: 'Google Drive Folder ID is not configured for this organization' }
+            }
+
+            // 2. Initialize Drive Client (using OAuth2 from Organization Settings)
+            const googleDriveTokens = orgDoc.data()?.settings?.googleDriveTokens
+            if (!googleDriveTokens?.refresh_token) {
+                return { success: false, reason: 'Google Drive is not connected for this organization. Please connect in Settings.' }
+            }
+
+            // Client ID and Secret should be set in environment config
+            const clientId = functions.config().google?.client_id
+            const clientSecret = functions.config().google?.client_secret
+
+            if (!clientId || !clientSecret) {
+                return { success: false, reason: 'Server configuration error: Google Client ID or Secret missing.' }
+            }
+
+            const drive = await getDriveClient({
+                clientId,
+                clientSecret,
+                refreshToken: googleDriveTokens.refresh_token
+            })
+
+            // 3. Ensure folder structure exists
+            // folderPath is an array of strings e.g. ["2026", "Project Name"]
+            let currentParentId = googleDriveFolderId
+            if (folderPath && Array.isArray(folderPath)) {
+                for (const folderName of folderPath) {
+                    currentParentId = await ensureFolderExists(drive, folderName, currentParentId)
+                }
+            }
+
+            // 4. Get File Buffer (from Base64 or URL)
+            let buffer: Buffer
+            if (base64Data) {
+                // If it's a data URL (e.g., data:application/pdf;base64,...), strip the prefix
+                const base64String = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data
+                buffer = Buffer.from(base64String, 'base64')
+            } else {
+                const response = await fetch(fileUrl)
+                if (!response.ok) {
+                    throw new Error(`Failed to download file from URL: ${response.statusText}`)
+                }
+                const arrayBuffer = await response.arrayBuffer()
+                buffer = Buffer.from(arrayBuffer)
+            }
+
+            // 5. Upload to Google Drive
+            // For service accounts, we must ALWAYS pass a parentId so the file goes to the shared folder, not the invisible service account root
+            const driveFileId = await uploadFileToDrive(drive, buffer, fileName, mimeType || 'application/octet-stream', currentParentId)
+
+            return { success: true, driveFileId }
+
+        } catch (error) {
+            console.error('Error uploading to Google Drive:', error)
+            throw new functions.https.HttpsError('internal', 'Failed to upload to Google Drive')
+        }
+    })
+
+export const testGoogleDriveConnection = functions
+    .region(region)
+    .runWith({ timeoutSeconds: 60, memory: '256MB' })
+    .https.onCall(async (data, context) => {
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated')
+        }
+
+        const { folderId } = data
+        if (!folderId) {
+            throw new functions.https.HttpsError('invalid-argument', 'Missing folderId')
+        }
+
+        try {
+            console.log(`Testing Google Drive connection for folderId: ${folderId}`);
+
+            const orgRef = db.collection('organizations').where('settings.googleDriveFolderId', '==', folderId).limit(1)
+            const orgSnap = await orgRef.get()
+            if (orgSnap.empty) return { success: false, error: 'Organization not found for this folder.' }
+
+            const orgData = orgSnap.docs[0].data()
+            const googleDriveTokens = orgData?.settings?.googleDriveTokens
+
+            if (!googleDriveTokens?.refresh_token) {
+                return { success: false, error: 'Google Drive not connected. Please login first.' }
+            }
+
+            const clientId = functions.config().google?.client_id
+            const clientSecret = functions.config().google?.client_secret
+
+            const drive = await getDriveClient({
+                clientId,
+                clientSecret,
+                refreshToken: googleDriveTokens.refresh_token
+            })
+            console.log(`Drive client initialized.`);
+            const result = await checkFolderAccess(drive, folderId)
+            console.log(`Check folder access result:`, result);
+            return result
+        } catch (error: any) {
+            console.error('CRITICAL INTERNAL ERROR testing Google Drive connection:', error)
+            return { success: false, error: `Internal Server Error: ${error.message}` }
+        }
+    })
+
+/**
+ * Exchange OAuth2 Code for Tokens
+ */
+export const exchangeGoogleDriveCode = functions
+    .region(region)
+    .runWith({ timeoutSeconds: 60, memory: '256MB' })
+    .https.onCall(async (data, context) => {
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated')
+        }
+
+        const { code, orgId } = data
+        if (!code || !orgId) {
+            throw new functions.https.HttpsError('invalid-argument', 'Missing code or orgId')
+        }
+
+        try {
+            const clientId = functions.config().google?.client_id
+            const clientSecret = functions.config().google?.client_secret
+
+            if (!clientId || !clientSecret) {
+                throw new Error('Google Client configuration missing in functions')
+            }
+
+            const oauth2Client = new google.auth.OAuth2(
+                clientId,
+                clientSecret,
+                'postmessage' // Special value for GSI code client
+            )
+
+            const { tokens } = await oauth2Client.getToken(code)
+
+            if (!tokens.refresh_token) {
+                // If it's a reconnection, we might not get a refresh token unless we forced consent
+                console.warn('No refresh token returned. User might already be connected.')
+            }
+
+            // Update organization settings
+            const updateDoc: any = {
+                'settings.googleDriveTokens': {
+                    refresh_token: tokens.refresh_token,
+                    access_token: tokens.access_token,
+                    expiry_date: tokens.expiry_date,
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                }
+            }
+
+            await db.collection('organizations').doc(orgId).update(updateDoc)
+
+            return { success: true }
+        } catch (error: any) {
+            console.error('Error exchanging Google Drive code:', error)
+            throw new functions.https.HttpsError('internal', `Failed to exchange code: ${error.message}`)
         }
     })
 

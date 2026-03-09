@@ -184,6 +184,7 @@ export interface User {
     theme?: string // Theme Preference (Light/Dark/System)
     organizations?: { orgId: string, role: string }[] // New SaaS Structure
     settings?: {
+        googleDriveFolderId?: string
         theme?: any // Avoid circular dependency, typed as AppTheme in usage
     }
     hasOnboarded?: boolean // New flag for onboarding flow

@@ -3,8 +3,11 @@
 import { useState, useEffect, useRef } from "react"
 import { Contract, useProjects } from "@/context/project-context"
 import { useSettings } from "@/context/settings-context"
-import { Printer, X, ZoomIn, ZoomOut } from "lucide-react"
+import { Printer, X, ZoomIn, ZoomOut, UploadCloud } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
+import { toast } from "sonner"
+import { getFunctions, httpsCallable } from "firebase/functions"
+import { useOrganization } from "@/context/organization-context"
 
 interface Installment {
     id: string
@@ -26,7 +29,9 @@ interface PaymentVoucherDialogProps {
 export function PaymentVoucherDialog({ isOpen, onClose, contract, installment, installmentIndex }: PaymentVoucherDialogProps) {
     const { projects, workers } = useProjects()
     const { orgProfile } = useSettings()
+    const { currentOrg } = useOrganization()
     const { t } = useTranslation()
+    const [isSavingToDrive, setIsSavingToDrive] = useState(false)
 
     const project = projects.find(p => p.id === contract.projectId)
     const worker = workers.find(w => w.id === contract.workerId)
@@ -99,6 +104,82 @@ export function PaymentVoucherDialog({ isOpen, onClose, contract, installment, i
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, contract.id, installment.id, orgProfile])
+
+    const handleSaveToDrive = async () => {
+        if (!currentOrg) return
+
+        try {
+            setIsSavingToDrive(true)
+            const toastId = toast.loading("กำลังเตรียมเอกสาร...")
+
+            // Dynamic imports for PDF generation
+            const { pdf } = await import('@react-pdf/renderer')
+            const { VoucherDocument } = await import('./voucher-document')
+
+            // Generate PDF Blob
+            const blob = await pdf(
+                <VoucherDocument
+                    formData={formData}
+                    orgProfile={orgProfile as any}
+                />
+            ).toBlob()
+
+            toast.loading("กำลังอัปโหลดไปยัง Google Drive...", { id: toastId })
+
+            // Convert Blob to Base64
+            const base64String: string = await new Promise((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onloadend = () => {
+                    const result = reader.result as string
+                    resolve(result.split(',')[1])
+                }
+                reader.onerror = reject
+                reader.readAsDataURL(blob)
+            })
+
+            const functions = getFunctions(undefined, 'asia-southeast1')
+            const uploadToDrive = httpsCallable(functions, 'uploadToGoogleDrive')
+
+            // Prepare folder path: [Vouchers] / [Project Name] / [Year] / [Month]
+            // We use request date for folders
+            const dateParts = formData.requestDate.split('/')
+            let dateObj = new Date()
+            if (dateParts.length === 3) {
+                // Assuming DD/MM/YYYY or DD/MM/BB
+                const day = parseInt(dateParts[0])
+                const month = parseInt(dateParts[1]) - 1
+                let year = parseInt(dateParts[2])
+                if (year > 2500) year -= 543 // Convert BE to AD for Date object if needed
+                dateObj = new Date(year, month, day)
+            }
+
+            const yearStr = (dateObj.getFullYear() + 543).toString() // Thai Year
+            const monthStr = dateObj.toLocaleString('th-TH', { month: 'long' })
+
+            const folderPath = ["Vouchers", project?.name || "General", yearStr, monthStr]
+            const fileName = `ใบสำคัญจ่าย - ${formData.docNumber} - ${worker?.name || ''}.pdf`.replace(/[:/\\?*]/g, '_')
+
+            const response = await uploadToDrive({
+                base64Data: base64String,
+                fileName: fileName,
+                mimeType: 'application/pdf',
+                orgId: currentOrg.id,
+                folderPath: folderPath
+            })
+
+            const result = response.data as any
+            if (result.success) {
+                toast.success("บันทึกใบสำคัญจ่ายลง Google Drive เรียบร้อย!", { id: toastId })
+            } else {
+                toast.error(result.reason || "ไม่สามารถบันทึกได้", { id: toastId })
+            }
+        } catch (error) {
+            console.error('Error saving voucher to drive:', error)
+            toast.error("เกิดข้อผิดพลาดในการบันทึก")
+        } finally {
+            setIsSavingToDrive(false)
+        }
+    }
 
     const handlePrint = () => {
         const printWindow = window.open('', '_blank')
@@ -289,13 +370,22 @@ export function PaymentVoucherDialog({ isOpen, onClose, contract, installment, i
                     </div>
 
                     <button
+                        onClick={handleSaveToDrive}
+                        disabled={isSavingToDrive}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow active:scale-95 disabled:opacity-50 disabled:scale-100"
+                    >
+                        <UploadCloud className={`w-4 h-4 ${isSavingToDrive ? 'animate-bounce' : ''}`} />
+                        <span>{isSavingToDrive ? 'บันทึก...' : 'บันทึกลง Drive'}</span>
+                    </button>
+
+                    <button
                         onClick={handlePrint}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-bold shadow active:scale-95"
                     >
                         <Printer className="w-4 h-4" /> พิมพ์
                     </button>
 
-                    <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg transition-colors">
+                    <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg transition-colors text-foreground">
                         <X className="w-5 h-5" />
                     </button>
                 </div>

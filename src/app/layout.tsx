@@ -104,6 +104,7 @@ export default function RootLayout({
             })
           }}
         />
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

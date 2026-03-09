@@ -20,6 +20,7 @@ export interface Organization {
         currency: string
         locale: string
         googleSheetId?: string
+        googleDriveFolderId?: string
         logoUrl?: string
         taxId?: string
         address?: string
@@ -48,6 +49,12 @@ export interface Organization {
             notifyOnTaskAssignment: boolean
             notifyOnOverdue: boolean
             notifyOnPaymentDue: boolean
+        }
+        googleDriveTokens?: {
+            refresh_token: string
+            access_token: string
+            expiry_date: number
+            updatedAt: any
         }
     }
     members?: OrgMember[]

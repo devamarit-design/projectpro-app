@@ -93,10 +93,17 @@ export const onExpenseCreated = functions
                 return null
             }
 
+            // Get org name
+            const db2 = admin.firestore()
+            const orgSnap = await db2.collection('organizations').doc(orgId).get()
+            const orgName = orgSnap.data()?.name || ''
+            const orgTag = orgName ? ` (${orgName})` : ''
+            const finalTitle = `${notificationTitle.replace(/[🌸💸🧾✅💰]/g, '').trim()}${orgTag} ${notificationTitle.match(/[🌸💸🧾✅💰]/g)?.[0] || ''}`
+
             const payload: admin.messaging.MulticastMessage = {
                 tokens: tokens,
                 notification: {
-                    title: notificationTitle,
+                    title: finalTitle,
                     body: notificationBody,
                 },
                 data: {
@@ -117,7 +124,7 @@ export const onExpenseCreated = functions
 
             // Create In-App Notification (One for all admins - simpler than one per user for now, or use target: 'admin')
             await db.collection('notifications').add({
-                title: notificationTitle,
+                title: finalTitle,
                 message: notificationBody,
                 type: expense.status === 'Paid' ? 'success' : 'info',
                 date: new Date().toISOString(),
@@ -176,7 +183,7 @@ export const onExpenseStatusChanged = functions
                 const payload: admin.messaging.MulticastMessage = {
                     tokens: tokens,
                     notification: {
-                        title: 'Expense Paid ✅',
+                        title: `Expense Paid (${newData.orgId ? ((await admin.firestore().collection('organizations').doc(newData.orgId).get()).data()?.name || '') : ''}) ✅`,
                         body: `Your request "${newData.title}" has been paid.`,
                     },
                     data: {
@@ -195,7 +202,6 @@ export const onExpenseStatusChanged = functions
                 }
 
 
-                // Create In-App Notification
                 await db.collection('notifications').add({
                     title: 'Expense Paid ✅',
                     message: `Your request "${newData.title}" has been paid.`,
@@ -239,10 +245,15 @@ export const onIncomeCreated = functions
             const tokens = await getOrgAdminTokens(orgId)
             if (tokens.length === 0) return null
 
+            const orgSnap = await db.collection('organizations').doc(orgId).get()
+            const orgName = orgSnap.data()?.name || ''
+            const orgTag = orgName ? ` (${orgName})` : ''
+            const incomeTitle = `New Income Recorded${orgTag} 💰`
+
             const payload: admin.messaging.MulticastMessage = {
                 tokens: tokens,
                 notification: {
-                    title: 'New Income Recorded 💰',
+                    title: incomeTitle,
                     body: `${income.documentNumber} - ${income.total?.toLocaleString()} THB`,
                 },
                 data: {
@@ -263,7 +274,7 @@ export const onIncomeCreated = functions
 
             // Create In-App Notification
             await db.collection('notifications').add({
-                title: 'New Income Recorded 💰',
+                title: incomeTitle,
                 message: `${income.documentNumber} - ${income.total?.toLocaleString()} THB`,
                 type: 'success',
                 date: new Date().toISOString(),

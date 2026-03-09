@@ -1,9 +1,11 @@
 import { IncomeDocument, useProjects, Customer, Project } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { useSettings } from "@/context/settings-context"
-import { X, Printer, Download, Settings, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, Edit, FileEdit, Image as ImageIcon, Globe, Scissors, FileText } from "lucide-react"
+import { useOrganization } from "@/context/organization-context"
+import { X, Printer, Download, Settings, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, Edit, FileEdit, Image as ImageIcon, Globe, Scissors, FileText, UploadCloud } from "lucide-react"
 import { useState, useRef, useEffect, useMemo } from "react"
 import { cn } from "@/lib/utils"
+import { getFunctions, httpsCallable } from "firebase/functions"
 // Import shared pagination logic
 import { flattenDocumentItems, paginateItems } from "@/lib/pagination-utils"
 
@@ -22,6 +24,7 @@ const A4_HEIGHT_MM = 297
 export function DocumentPreview({ document, onClose, onEdit, onUpdate }: DocumentPreviewProps) {
     const { customers, projects } = useProjects()
     const { orgProfile, documentSettings, updateDocumentTemplate } = useSettings()
+    const { currentOrg } = useOrganization()
     const { t } = useTranslation()
     const customer = customers.find(c => c.id === document.customerId)
     const project = projects.find(p => p.id === document.projectId)
@@ -428,6 +431,93 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
         }
     }
 
+    const handleSaveToDrive = async () => {
+        setIsExporting(true)
+        setShowDownloadMenu(false)
+        try {
+            // Process images and logic just like handleExport
+            const processedOrgProfile = { ...orgProfile }
+
+            if (orgProfile.logo) {
+                processedOrgProfile.logo = await processLogoFromDOM(orgProfile.logo) as string
+            }
+
+            const processedDoc = { ...document }
+            processedDoc.sections = await Promise.all((document.sections || []).map(async (section) => ({
+                ...section,
+                coverImage: await processImageForPDF(section.coverImage),
+                items: await Promise.all((section.items || []).map(async (item) => ({
+                    ...item,
+                    image: await processImageForPDF(item.image)
+                })))
+            })))
+
+            const { generatePDFBlob } = await import('@/components/income/pdf-document')
+
+            const pdfBlob = await generatePDFBlob({
+                document: processedDoc,
+                customer: customer,
+                project: project,
+                themeColor: themeColor,
+                lang: lang,
+                manualPageBreaks: manualBreaks,
+                orgProfile: processedOrgProfile,
+                columns: visibleColumns,
+                template: template,
+                showLogo: showLogo,
+                receiptType: receiptType
+            })
+
+            // Convert Blob to Base64 (browser-safe, no Buffer)
+            const base64String: string = await new Promise((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onloadend = () => {
+                    const result = reader.result as string
+                    // Strip the data URL prefix to get raw base64
+                    const base64 = result.split(',')[1]
+                    resolve(base64)
+                }
+                reader.onerror = reject
+                reader.readAsDataURL(pdfBlob)
+            })
+
+            // Call Cloud Function
+            const functions = getFunctions(undefined, 'asia-southeast1')
+            const uploadToDrive = httpsCallable(functions, 'uploadToGoogleDrive')
+
+            // Prepare folder path: [Project Name] / [Year] / [Month]
+            const dateObj = new Date(document.date)
+            const yearStr = (dateObj.getFullYear() + 543).toString() // Thai Year
+            const monthStr = dateObj.toLocaleString('th-TH', { month: 'long' })
+
+            const folderPath = ["Incomes", project?.name || "General", yearStr, monthStr]
+            const docTypeName = txt.docTypes[document.type as keyof typeof txt.docTypes] || document.type
+            const customerNameSafe = customer?.name?.substring(0, 30) || 'Unknown'
+            const fileName = `${docTypeName} - ${document.documentNumber} - ${customerNameSafe}.pdf`.replace(/[:/\\?*]/g, '_')
+
+            const response = await uploadToDrive({
+                base64Data: base64String,
+                fileName: fileName,
+                mimeType: 'application/pdf',
+                folderPath: folderPath,
+                orgId: currentOrg?.id
+            })
+
+            const result = response.data as any
+            if (result.success) {
+                alert(`✅ บันทึกเอกสารลง Google Drive สำเร็จ!`)
+            } else {
+                throw new Error(result.reason || 'Failed to sync to Drive')
+            }
+
+        } catch (error) {
+            console.error('Drive Upload Error:', error)
+            alert(`❌ บันทึกลง Drive ไม่สำเร็จ: ${error instanceof Error ? error.message : 'Unknown error'}\n\nโปรดตรวจสอบการตั้งค่า Folder ID ในเมนู Settings > Google Drive`)
+        } finally {
+            setIsExporting(false)
+        }
+    }
+
     // Print to PDF via browser (supports Thai fonts perfectly)
     const handlePrint = () => {
         window.print()
@@ -738,6 +828,19 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                             <div>
                                                 <div className="text-sm font-medium">{txt.zipDoc}</div>
                                                 <div className="text-[10px] text-gray-400">{txt.zipDesc}</div>
+                                            </div>
+                                        </button>
+                                        <div className="h-px bg-white/10" />
+                                        <button
+                                            onClick={handleSaveToDrive}
+                                            className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors flex items-center gap-3 text-white"
+                                        >
+                                            <div className="p-1.5 bg-green-500/20 text-green-400 rounded-lg">
+                                                <UploadCloud className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-medium">Save to Drive</div>
+                                                <div className="text-[10px] text-gray-400">สำรองไฟล์ลง Google Drive</div>
                                             </div>
                                         </button>
                                     </div>

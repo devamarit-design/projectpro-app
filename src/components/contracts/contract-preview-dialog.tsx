@@ -3,8 +3,11 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { Contract, useProjects } from "@/context/project-context"
 import { useSettings } from "@/context/settings-context"
-import { Printer, Edit, X, FileText, ZoomIn, ZoomOut } from "lucide-react"
+import { Printer, Edit, X, FileText, ZoomIn, ZoomOut, UploadCloud } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
+import { toast } from "sonner"
+import { getFunctions, httpsCallable } from "firebase/functions"
+import { useOrganization } from "@/context/organization-context"
 
 interface ContractPreviewDialogProps {
     isOpen: boolean
@@ -15,8 +18,10 @@ interface ContractPreviewDialogProps {
 
 export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: ContractPreviewDialogProps) {
     const { projects, workers } = useProjects()
-    const { orgProfile } = useSettings()
+    const { orgProfile, documentSettings } = useSettings()
+    const { currentOrg } = useOrganization()
     const { t } = useTranslation()
+    const [isSavingToDrive, setIsSavingToDrive] = useState(false)
 
     const project = projects.find(p => p.id === contract.projectId)
     const worker = workers.find(w => w.id === contract.workerId)
@@ -118,6 +123,92 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
         window.addEventListener('resize', handleAutoSize)
         return () => window.removeEventListener('resize', handleAutoSize)
     }, [])
+
+    const handleSaveToDrive = async () => {
+        if (!currentOrg) return
+
+        try {
+            setIsSavingToDrive(true)
+            const toastId = toast.loading("กำลังเตรียมเอกสาร...")
+
+            // Dynamic imports for PDF generation
+            const { pdf } = await import('@react-pdf/renderer')
+            const { ContractDocument } = await import('./contract-document')
+
+            // Create a modified contract object based on form data
+            const modifiedContract: Contract = {
+                ...contract,
+                documentNumber: formData.contractNumber,
+                scope: formData.scope,
+                totalAmount: formData.contractValue,
+                installments: formData.installments.map((inst, idx) => ({
+                    id: `inst-${idx}`,
+                    description: inst.name,
+                    amount: inst.amount,
+                    dueDate: inst.dueDate,
+                    status: (inst.status as any) || "Pending",
+                    paymentDetails: inst.paymentDetails
+                })),
+                startDate: formData.date.split('T')[0] // Only date part
+            }
+
+            // Generate PDF Blob
+            const blob = await pdf(
+                <ContractDocument
+                    contract={modifiedContract}
+                    project={project}
+                    worker={worker}
+                    orgProfile={orgProfile as any}
+                    settings={documentSettings as any}
+                    dictionary={t} // Pass the dictionary directly
+                />
+            ).toBlob()
+
+            toast.loading("กำลังอัปโหลดไปยัง Google Drive...", { id: toastId })
+
+            // Convert Blob to Base64
+            const base64String: string = await new Promise((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onloadend = () => {
+                    const result = reader.result as string
+                    resolve(result.split(',')[1])
+                }
+                reader.onerror = reject
+                reader.readAsDataURL(blob)
+            })
+
+            const functions = getFunctions(undefined, 'asia-southeast1')
+            const uploadToDrive = httpsCallable(functions, 'uploadToGoogleDrive')
+
+            // Prepare folder path: [Project Name] / [Year] / [Month]
+            const dateObj = new Date(formData.date)
+            const yearStr = (dateObj.getFullYear() + 543).toString() // Thai Year
+            const monthStr = dateObj.toLocaleString('th-TH', { month: 'long' })
+
+            const folderPath = ["Contracts", project?.name || "General", yearStr, monthStr]
+            const fileName = `สัญญาจ้าง - ${project?.name || ''} - ${worker?.name || ''}.pdf`.replace(/[:/\\?*]/g, '_')
+
+            const response = await uploadToDrive({
+                base64Data: base64String,
+                fileName: fileName,
+                mimeType: 'application/pdf',
+                orgId: currentOrg.id,
+                folderPath: folderPath
+            })
+
+            const result = response.data as any
+            if (result.success) {
+                toast.success("บันทึกสัญญาลง Google Drive เรียบร้อย!", { id: toastId })
+            } else {
+                toast.error(result.reason || "ไม่สามารถบันทึกได้", { id: toastId })
+            }
+        } catch (error) {
+            console.error('Error saving contract to drive:', error)
+            toast.error("เกิดข้อผิดพลาดในการบันทึก")
+        } finally {
+            setIsSavingToDrive(false)
+        }
+    }
 
     const handlePrint = () => {
         // Dynamic import to avoid SSR issues
@@ -255,6 +346,14 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                             className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 rounded-lg text-sm font-bold transition-all shadow-sm active:scale-95"
                         >
                             <Edit className="w-4 h-4" /> {t.common.edit}
+                        </button>
+                        <button
+                            onClick={handleSaveToDrive}
+                            disabled={isSavingToDrive}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full transition-all text-sm font-bold shadow-lg active:scale-95 disabled:opacity-50 disabled:scale-100"
+                        >
+                            <UploadCloud className={`w-4 h-4 ${isSavingToDrive ? 'animate-bounce' : ''}`} />
+                            <span>{isSavingToDrive ? 'กำลังบันทึก...' : 'บันทึกลง Drive'}</span>
                         </button>
                         <button
                             onClick={handlePrint}

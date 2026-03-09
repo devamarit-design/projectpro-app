@@ -14,6 +14,8 @@ import { NotificationSettings } from "@/components/settings/notifications-settin
 import { TelegramSettings } from "@/components/settings/telegram-settings"
 import { PerformanceSettings } from "@/components/settings/performance-settings"
 import { GoogleSheetsSettings } from "@/components/settings/google-sheets-settings"
+import { GoogleDriveSettings } from "@/components/settings/google-drive-settings"
+import { Cloud } from "lucide-react"
 
 
 export default function SettingsPage() {
@@ -41,6 +43,7 @@ export default function SettingsPage() {
         { id: "theme", label: t.settings.menu.theme, icon: Palette },
         { id: "performance", label: t.settings.menu.performance, icon: MonitorSmartphone },
         { id: "google-sheets", label: "Google Sheets", icon: FileText },
+        { id: "google-drive", label: "Google Drive", icon: Cloud },
     ]
 
     return (
@@ -85,6 +88,7 @@ export default function SettingsPage() {
                         {activeSection === "team" && isAdmin && <TeamSettings />}
                         {activeSection === "security" && <SecuritySettings />}
                         {activeSection === "google-sheets" && <GoogleSheetsSettings />}
+                        {activeSection === "google-drive" && <GoogleDriveSettings isAdmin={isAdmin} />}
 
                     </div>
                 </main>
