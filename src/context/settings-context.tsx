@@ -290,9 +290,22 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             }
         }
 
-        load('documentSettings', setDocumentSettings)
-        load('teamSettings', setTeamSettings)
-        load('documentSettings', setDocumentSettings)
+        // Load documentSettings — merge with defaults to preserve new fields not in old localStorage
+        const savedDocSettings = localStorage.getItem('hipslothproject_settings_documentSettings')
+        if (savedDocSettings) {
+            try {
+                const parsed = JSON.parse(savedDocSettings) as Record<string, Partial<DocumentTemplate>>
+                setDocumentSettings(prev => {
+                    const merged: Record<string, DocumentTemplate> = { ...prev }
+                    for (const type of Object.keys(prev)) {
+                        merged[type] = { ...prev[type], ...(parsed[type] || {}) }
+                    }
+                    return merged
+                })
+            } catch (e) {
+                console.error('Failed to parse documentSettings from localStorage', e)
+            }
+        }
         load('teamSettings', setTeamSettings)
         // Notification settings are now org-scoped/driven, but load legacy/local as backup
         // load('notificationSettings', setNotificationSettings)
