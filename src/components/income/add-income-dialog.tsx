@@ -608,7 +608,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                                                 <div className="col-span-2 text-right">Total</div>
                                             </div>
                                             {section.items.map((item, iIndex) => (
-                                                <div key={item.id} className="grid grid-cols-12 gap-2 items-start">
+                                                <div key={item.id || `item-${section.id}-${iIndex}`} className="grid grid-cols-12 gap-2 items-start">
                                                     <div className="col-span-1 flex justify-center py-2.5 text-muted-foreground text-sm">{iIndex + 1}</div>
                                                     <div className="col-span-5 flex gap-2">
                                                         <div className="relative shrink-0">

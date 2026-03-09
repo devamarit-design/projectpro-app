@@ -19,7 +19,11 @@ export type DocumentTemplate = {
         label: string
         visible: boolean
         order: number
+        align?: 'left' | 'center' | 'right'
+        width?: string // e.g. '60px', '10%', 'auto'
     }[]
+    customerFields?: string[] // e.g. ['name','taxId','address','phone','email','contactPerson']
+    projectFields?: string[]  // e.g. ['name','location','description','status','startDate','endDate','budget']
 }
 
 // Re-export or Alias for compatibility
@@ -138,6 +142,8 @@ const defaultDocumentTemplate: DocumentTemplate = {
     signatureVisible: true,
     accentColor: "#f97316", // Orange default
     font: "Kanit",
+    customerFields: ['name', 'taxId', 'address'],
+    projectFields: ['name', 'location'],
     columns: [
         { id: "item", label: "Item", visible: true, order: 1 },
         { id: "description", label: "Description", visible: true, order: 2 },

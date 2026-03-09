@@ -177,6 +177,78 @@ export function DocumentSettings() {
                     </div>
                 </div>
 
+                {/* Customer & Project Fields */}
+                <div className="space-y-4 md:col-span-2">
+                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">ข้อมูลลูกค้า &amp; โครงการ</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Customer Fields */}
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold text-muted-foreground">ลูกค้า (Customer)</p>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { id: 'name', label: 'ชื่อ' },
+                                    { id: 'taxId', label: 'Tax ID' },
+                                    { id: 'address', label: 'ที่อยู่' },
+                                    { id: 'phone', label: 'เบอร์โทร' },
+                                    { id: 'email', label: 'Email' },
+                                    { id: 'contactPerson', label: 'ผู้ติดต่อ' },
+                                    { id: 'lineId', label: 'Line ID' },
+                                ].map(field => {
+                                    const active = (currentTemplate.customerFields ?? ['name', 'taxId', 'address']).includes(field.id)
+                                    return (
+                                        <button
+                                            key={field.id}
+                                            onClick={() => {
+                                                const current = currentTemplate.customerFields ?? ['name', 'taxId', 'address']
+                                                const updated = active
+                                                    ? current.filter(f => f !== field.id)
+                                                    : [...current, field.id]
+                                                updateDocumentTemplate(activeTab, { customerFields: updated })
+                                            }}
+                                            className={`px-3 py-1 text-xs rounded-full border transition-colors ${active ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}
+                                        >
+                                            {field.label}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Project Fields */}
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold text-muted-foreground">โครงการ (Project)</p>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { id: 'name', label: 'ชื่อโครงการ' },
+                                    { id: 'location', label: 'สถานที่' },
+                                    { id: 'description', label: 'รายละเอียด' },
+                                    { id: 'status', label: 'สถานะ' },
+                                    { id: 'startDate', label: 'วันเริ่ม' },
+                                    { id: 'endDate', label: 'วันสิ้นสุด' },
+                                    { id: 'budget', label: 'งบประมาณ' },
+                                ].map(field => {
+                                    const active = (currentTemplate.projectFields ?? ['name', 'location']).includes(field.id)
+                                    return (
+                                        <button
+                                            key={field.id}
+                                            onClick={() => {
+                                                const current = currentTemplate.projectFields ?? ['name', 'location']
+                                                const updated = active
+                                                    ? current.filter(f => f !== field.id)
+                                                    : [...current, field.id]
+                                                updateDocumentTemplate(activeTab, { projectFields: updated })
+                                            }}
+                                            className={`px-3 py-1 text-xs rounded-full border transition-colors ${active ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}
+                                        >
+                                            {field.label}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="space-y-2">
                     <label className="text-sm font-medium flex items-center gap-2">
                         <Type className="w-4 h-4" />
@@ -199,65 +271,105 @@ export function DocumentSettings() {
                     <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">{t.settings.documents.columns}</h4>
                     <div className="space-y-2">
                         {currentTemplate.columns?.sort((a, b) => a.order - b.order).map((col, index, arr) => (
-                            <div key={col.id} className="flex items-center gap-2 p-2 border rounded-lg bg-background">
-                                <div className="flex flex-col gap-1 text-muted-foreground">
-                                    <button
-                                        disabled={index === 0}
-                                        onClick={() => {
-                                            const newCols = [...currentTemplate.columns!]
-                                            const currIndex = newCols.findIndex(c => c.id === col.id)
-                                            if (currIndex > 0) {
-                                                const temp = newCols[currIndex].order
-                                                newCols[currIndex].order = newCols[currIndex - 1].order
-                                                newCols[currIndex - 1].order = temp
-                                                updateDocumentTemplate(activeTab, { columns: newCols })
-                                            }
+                            <div key={col.id} className="border rounded-xl bg-background overflow-hidden">
+                                {/* Row 1: Order controls, Label, Visibility */}
+                                <div className="flex items-center gap-2 p-2">
+                                    <div className="flex flex-col gap-1 text-muted-foreground">
+                                        <button
+                                            disabled={index === 0}
+                                            onClick={() => {
+                                                const newCols = [...currentTemplate.columns!]
+                                                const currIndex = newCols.findIndex(c => c.id === col.id)
+                                                if (currIndex > 0) {
+                                                    const temp = newCols[currIndex].order
+                                                    newCols[currIndex].order = newCols[currIndex - 1].order
+                                                    newCols[currIndex - 1].order = temp
+                                                    updateDocumentTemplate(activeTab, { columns: newCols })
+                                                }
+                                            }}
+                                            className="hover:text-foreground disabled:opacity-30"
+                                        >
+                                            <ArrowUp className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                            disabled={index === arr.length - 1}
+                                            onClick={() => {
+                                                const newCols = [...currentTemplate.columns!]
+                                                const currIndex = newCols.findIndex(c => c.id === col.id)
+                                                if (currIndex < newCols.length - 1) {
+                                                    const temp = newCols[currIndex].order
+                                                    newCols[currIndex].order = newCols[currIndex + 1].order
+                                                    newCols[currIndex + 1].order = temp
+                                                    updateDocumentTemplate(activeTab, { columns: newCols })
+                                                }
+                                            }}
+                                            className="hover:text-foreground disabled:opacity-30"
+                                        >
+                                            <ArrowDown className="w-3 h-3" />
+                                        </button>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        value={col.label}
+                                        onChange={(e) => {
+                                            const newCols = currentTemplate.columns!.map(c => c.id === col.id ? { ...c, label: e.target.value } : c)
+                                            updateDocumentTemplate(activeTab, { columns: newCols })
                                         }}
-                                        className="hover:text-foreground disabled:opacity-30"
-                                    >
-                                        <ArrowUp className="w-3 h-3" />
-                                    </button>
+                                        className="flex-1 h-8 text-sm px-2 rounded border border-transparent hover:border-border focus:border-primary focus:outline-none font-medium"
+                                    />
+
                                     <button
-                                        disabled={index === arr.length - 1}
                                         onClick={() => {
-                                            const newCols = [...currentTemplate.columns!]
-                                            const currIndex = newCols.findIndex(c => c.id === col.id)
-                                            if (currIndex < newCols.length - 1) {
-                                                const temp = newCols[currIndex].order
-                                                newCols[currIndex].order = newCols[currIndex + 1].order
-                                                newCols[currIndex + 1].order = temp
-                                                updateDocumentTemplate(activeTab, { columns: newCols })
-                                            }
+                                            const newCols = currentTemplate.columns!.map(c => c.id === col.id ? { ...c, visible: !c.visible } : c)
+                                            updateDocumentTemplate(activeTab, { columns: newCols })
                                         }}
-                                        className="hover:text-foreground disabled:opacity-30"
+                                        className={`p-1 rounded ${col.visible ? 'text-primary' : 'text-muted-foreground opacity-40'}`}
                                     >
-                                        <ArrowDown className="w-3 h-3" />
+                                        {col.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                                     </button>
                                 </div>
 
-                                <input
-                                    type="text"
-                                    value={col.label}
-                                    onChange={(e) => {
-                                        const newCols = currentTemplate.columns!.map(c => c.id === col.id ? { ...c, label: e.target.value } : c)
-                                        updateDocumentTemplate(activeTab, { columns: newCols })
-                                    }}
-                                    className="flex-1 h-8 text-sm px-2 rounded border border-transparent hover:border-border focus:border-primary focus:outline-none"
-                                />
+                                {/* Row 2: Alignment + Width */}
+                                <div className="flex items-center gap-3 px-3 pb-2 pt-1 border-t border-border/40 bg-muted/20">
+                                    {/* Alignment */}
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground w-16 shrink-0">Alignment</span>
+                                        {(['left', 'center', 'right'] as const).map(a => (
+                                            <button
+                                                key={a}
+                                                onClick={() => {
+                                                    const newCols = currentTemplate.columns!.map(c => c.id === col.id ? { ...c, align: a } : c)
+                                                    updateDocumentTemplate(activeTab, { columns: newCols })
+                                                }}
+                                                className={`px-2 py-0.5 text-xs rounded border transition-colors ${(col.align || 'left') === a ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}
+                                            >
+                                                {a === 'left' ? '⇤' : a === 'center' ? '↔' : '⇥'}
+                                            </button>
+                                        ))}
+                                    </div>
 
-                                <button
-                                    onClick={() => {
-                                        const newCols = currentTemplate.columns!.map(c => c.id === col.id ? { ...c, visible: !c.visible } : c)
-                                        updateDocumentTemplate(activeTab, { columns: newCols })
-                                    }}
-                                    className={`p-1 rounded ${col.visible ? 'text-primary' : 'text-muted-foreground'}`}
-                                >
-                                    {col.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                                </button>
+                                    {/* Width */}
+                                    <div className="flex items-center gap-1 flex-1">
+                                        <span className="text-xs text-muted-foreground w-10 shrink-0">Width</span>
+                                        <input
+                                            type="text"
+                                            placeholder="auto"
+                                            value={col.width || ''}
+                                            onChange={(e) => {
+                                                const newCols = currentTemplate.columns!.map(c => c.id === col.id ? { ...c, width: e.target.value || undefined } : c)
+                                                updateDocumentTemplate(activeTab, { columns: newCols })
+                                            }}
+                                            className="w-20 h-6 text-xs px-2 rounded border border-border bg-background focus:outline-none focus:border-primary placeholder:text-muted-foreground/40"
+                                        />
+                                        <span className="text-xs text-muted-foreground/40">px / % / auto</span>
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
+
             </div>
 
             <div className="space-y-4">
@@ -276,11 +388,31 @@ export function DocumentSettings() {
                         <div className="whitespace-pre-wrap mb-4 text-gray-600">{currentTemplate.header}</div>
 
                         <div className="bg-gray-50 mb-4 rounded border border-gray-100 overflow-hidden">
-                            <div className="flex items-center gap-2 p-2 border-b bg-gray-100 text-[8px] font-bold text-gray-500">
-                                {currentTemplate.columns?.filter(c => c.visible).sort((a, b) => a.order - b.order).map(col => (
-                                    <div key={col.id} className="flex-1 text-center truncate">{col.label}</div>
-                                ))}
-                            </div>
+                            <table className="w-full border-collapse">
+                                <thead>
+                                    <tr className="border-b bg-gray-100 text-[8px] font-bold text-gray-500">
+                                        {currentTemplate.columns?.filter(c => c.visible).sort((a, b) => a.order - b.order).map(col => {
+                                            const defaultAlign = col.id === 'item' ? 'center'
+                                                : (col.id === 'unitPrice' || col.id === 'total' || col.id === 'price') ? 'right'
+                                                    : col.id === 'qty' || col.id === 'unit' ? 'center'
+                                                        : 'left'
+                                            return (
+                                                <th
+                                                    key={col.id}
+                                                    className="px-1 py-1 truncate font-bold"
+                                                    style={{
+                                                        textAlign: col.align || defaultAlign,
+                                                        width: col.width || undefined,
+                                                        color: currentTemplate.accentColor,
+                                                    }}
+                                                >
+                                                    {col.label}
+                                                </th>
+                                            )
+                                        })}
+                                    </tr>
+                                </thead>
+                            </table>
                             <div className="p-2 text-center text-gray-300 text-[8px] italic">
                                 Item content...
                             </div>

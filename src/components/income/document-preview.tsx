@@ -797,7 +797,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                             <div className="flex gap-4 text-left">
                                                 {showLogo && (
                                                     <div className="relative group">
-                                                        {orgProfile.logo ? (
+                                                        {orgProfile.logo && (orgProfile.logo.startsWith('http') || orgProfile.logo.startsWith('data:') || orgProfile.logo.startsWith('blob:') || orgProfile.logo.startsWith('/')) ? (
                                                             <img
                                                                 id="preview-doc-logo"
                                                                 src={orgProfile.logo}
@@ -808,16 +808,17 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                                         ) : (
                                                             <div
                                                                 className={cn(
-                                                                    "w-16 h-16 flex items-center justify-center text-white font-bold text-2xl shadow-sm",
+                                                                    "w-16 h-16 flex items-center justify-center font-bold text-2xl shadow-sm",
                                                                     template === 'modern' ? "rounded-xl" : "rounded-none"
                                                                 )}
-                                                                style={{ backgroundColor: themeColor }}
+                                                                style={{ backgroundColor: orgProfile.logo ? 'transparent' : themeColor, color: orgProfile.logo ? 'inherit' : 'white' }}
                                                             >
-                                                                {orgProfile.name.charAt(0)}
+                                                                {orgProfile.logo || orgProfile.name.charAt(0)}
                                                             </div>
                                                         )}
                                                     </div>
                                                 )}
+
                                                 <div className="space-y-1">
                                                     <h2 className="font-bold text-lg text-gray-800 leading-tight">
                                                         {(lang === 'en' && orgProfile.nameEn) ? orgProfile.nameEn : orgProfile.name}
@@ -855,22 +856,42 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                                 <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
                                                     {txt.customer}
                                                 </h4>
-                                                <div className="space-y-1">
-                                                    <p className="font-bold text-gray-800 text-sm">{customer?.name}</p>
-                                                    <p className="text-xs text-gray-500">{customer?.address}</p>
-                                                    <p className="text-xs text-gray-500">Tax ID: {customer?.taxId || '-'}</p>
-                                                </div>
+                                                {(() => {
+                                                    const fields = docSetting?.customerFields ?? ['name', 'taxId', 'address']
+                                                    return (
+                                                        <div className="space-y-1">
+                                                            {fields.includes('name') && <p className="font-bold text-gray-800 text-sm">{customer?.name}</p>}
+                                                            {fields.includes('address') && customer?.address && <p className="text-xs text-gray-500">{customer.address}</p>}
+                                                            {fields.includes('taxId') && <p className="text-xs text-gray-500">Tax ID: {customer?.taxId || '-'}</p>}
+                                                            {fields.includes('phone') && customer?.phone && <p className="text-xs text-gray-500">Tel: {customer.phone}</p>}
+                                                            {fields.includes('email') && customer?.email && <p className="text-xs text-gray-500">Email: {customer.email}</p>}
+                                                            {fields.includes('contactPerson') && customer?.contactPerson && <p className="text-xs text-gray-500">ผู้ติดต่อ: {customer.contactPerson}</p>}
+                                                            {fields.includes('lineId') && customer?.lineId && <p className="text-xs text-gray-500">Line: {customer.lineId}</p>}
+                                                        </div>
+                                                    )
+                                                })()}
                                             </div>
                                             <div className={currentStyle.box}>
                                                 <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
                                                     {txt.projectRef}
                                                 </h4>
-                                                <div className="space-y-1">
-                                                    <p className="font-bold text-gray-800 text-sm">{project?.name}</p>
-                                                    <p className="text-xs text-gray-500">{project?.location}</p>
-                                                </div>
+                                                {(() => {
+                                                    const fields = docSetting?.projectFields ?? ['name', 'location']
+                                                    return (
+                                                        <div className="space-y-1">
+                                                            {fields.includes('name') && <p className="font-bold text-gray-800 text-sm">{project?.name}</p>}
+                                                            {fields.includes('location') && project?.location && <p className="text-xs text-gray-500">{project.location}</p>}
+                                                            {fields.includes('description') && project?.description && <p className="text-xs text-gray-500">{project.description}</p>}
+                                                            {fields.includes('status') && <p className="text-xs text-gray-500">สถานะ: {project?.status}</p>}
+                                                            {fields.includes('startDate') && project?.startDate && <p className="text-xs text-gray-500">เริ่ม: {project.startDate}</p>}
+                                                            {fields.includes('endDate') && project?.endDate && <p className="text-xs text-gray-500">สิ้นสุด: {project.endDate}</p>}
+                                                            {fields.includes('budget') && project?.budget && <p className="text-xs text-gray-500">งบ: {project.budget}</p>}
+                                                        </div>
+                                                    )
+                                                })()}
                                             </div>
                                         </div>
+
                                     </div>
                                 ) : ( // Subsequent Pages Header
                                     <div className="flex justify-between items-end border-b border-gray-100 pb-4 mb-4">
@@ -891,20 +912,33 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                 <table className="w-full text-left text-sm relative" >
                                     <thead>
                                         <tr className={currentStyle.tableHead} style={{ borderColor: template !== 'classic' ? themeColor : undefined }}>
-                                            {visibleColumns.map(col => (
-                                                <th
-                                                    key={col.id}
-                                                    className={cn("py-3 px-2 font-bold",
-                                                        col.id === 'item' && "w-12 text-center",
-                                                        col.id === 'qty' && "w-20 text-center",
-                                                        col.id === 'unit' && "w-16 text-center",
-                                                        (col.id === 'unitPrice' || col.id === 'total' || col.id === 'price') && "w-32 text-right"
-                                                    )}
-                                                    style={{ color: template !== 'classic' ? themeColor : 'inherit' }}
-                                                >
-                                                    {col.label}
-                                                </th>
-                                            ))}
+                                            {visibleColumns.map(col => {
+                                                // Per-column align: use saved setting, or fall back to defaults by col id
+                                                const defaultAlign = col.id === 'item' ? 'center'
+                                                    : (col.id === 'unitPrice' || col.id === 'total' || col.id === 'price') ? 'right'
+                                                        : col.id === 'qty' || col.id === 'unit' ? 'center'
+                                                            : 'left'
+                                                const align = col.align || defaultAlign
+                                                const defaultWidth = col.id === 'item' ? '48px'
+                                                    : col.id === 'qty' ? '60px'
+                                                        : col.id === 'unit' ? '56px'
+                                                            : (col.id === 'unitPrice' || col.id === 'total' || col.id === 'price') ? '96px'
+                                                                : undefined
+                                                return (
+                                                    <th
+                                                        key={col.id}
+                                                        className="py-3 px-2 font-bold"
+                                                        style={{
+                                                            color: template !== 'classic' ? themeColor : 'inherit',
+                                                            textAlign: align,
+                                                            width: col.width || defaultWidth,
+                                                        }}
+                                                    >
+                                                        {col.label}
+                                                    </th>
+                                                )
+                                            })}
+
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
@@ -922,7 +956,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                                     <tr key={`header-${i}`} className="bg-gray-50/50 print:bg-gray-100">
                                                         <td colSpan={visibleColumns.length} className="p-0">
                                                             {coverImage ? (
-                                                                <div className="w-full h-40 overflow-hidden relative">
+                                                                <div className="w-full h-36 max-h-36 overflow-hidden relative">
                                                                     <img
                                                                         src={coverImage}
                                                                         className="w-full h-full object-cover"

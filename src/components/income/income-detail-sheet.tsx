@@ -5,6 +5,7 @@ import { X, Calendar, User, Briefcase, FileText, Download, Printer, Send, CheckC
 import { useState, useEffect } from "react"
 import { DocumentPreview } from "./document-preview"
 import { AddIncomeDialog } from "./add-income-dialog"
+import { generateNextDocumentNumber } from "@/lib/utils"
 
 interface IncomeDetailSheetProps {
     documentId: string | null
@@ -40,27 +41,31 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
 
     const handleCreateNext = (targetType: IncomeType) => {
         // Generate new document number
-        const prefix = targetType === 'Invoice' ? 'INV' : 'REC'
-        const docNumber = `${prefix}-${Date.now().toString(36).toUpperCase()}`
+        const docNumber = generateNextDocumentNumber(targetType, incomes, new Date().toISOString().split('T')[0])
 
         // Create the new income document automatically
-        const newDoc: Omit<IncomeDocument, 'id'> = {
+        // Strip undefined fields — Firestore rejects them (e.g. items is undefined in zone/section mode)
+        const rawDoc = {
             type: targetType,
             documentNumber: docNumber,
             date: new Date().toISOString().split('T')[0],
             customerId: document.customerId,
             projectId: document.projectId,
-            status: 'Draft',
+            status: 'Draft' as const,
             mode: document.mode,
-            items: document.items,
-            sections: document.sections,
+            items: document.items ?? [],
+            sections: document.sections ?? [],
             subtotal: document.subtotal,
             discount: document.discount || 0,
             total: document.total || document.subtotal,
-            tax: document.tax,
-            grandTotal: document.grandTotal,
+            tax: document.tax ?? 0,
+            grandTotal: document.grandTotal ?? document.total ?? document.subtotal,
             referenceDocumentId: document.id,
+            vatIncluded: document.vatIncluded ?? false,
         }
+        const newDoc: Omit<IncomeDocument, 'id'> = Object.fromEntries(
+            Object.entries(rawDoc).filter(([, v]) => v !== undefined)
+        ) as unknown as Omit<IncomeDocument, 'id'>
 
         // Add the new document
         addIncome(newDoc)
@@ -86,7 +91,7 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
 
         // If it's an Invoice, also create a Receipt
         if (document.type === 'Invoice') {
-            const docNumber = `REC-${Date.now().toString(36).toUpperCase()}`
+            const docNumber = generateNextDocumentNumber('Receipt', incomes, new Date().toISOString().split('T')[0])
 
             const newReceipt: Omit<IncomeDocument, 'id'> = {
                 type: 'Receipt',
@@ -104,6 +109,7 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
                 tax: document.tax,
                 grandTotal: document.grandTotal,
                 referenceDocumentId: document.id,
+                vatIncluded: document.vatIncluded,
             }
 
             addIncome(newReceipt)
