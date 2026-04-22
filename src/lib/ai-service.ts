@@ -28,7 +28,7 @@ export async function analyzeReceipt(base64Image: string): Promise<AnalyzeReceip
         return { success: false, error: "Missing API Key configuration. Please check Vercel settings." };
     }
 
-    const MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    const MODELS_TO_TRY = ["gemini-1.5-flash", "gemini-2.0-flash-lite"];
 
     // Remove header if present (server-side clean up if passed full data URL)
     const base64Data = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
@@ -112,8 +112,8 @@ export async function analyzeReceipt(base64Image: string): Promise<AnalyzeReceip
         return { success: true, data };
 
     } catch (error: any) {
-        const is429 = error?.message?.includes("429") || error?.status === 429;
-        if (is429 && modelName !== MODELS_TO_TRY[MODELS_TO_TRY.length - 1]) {
+        const isRetryable = error?.message?.includes("429") || error?.message?.includes("404") || error?.status === 429 || error?.status === 404;
+        if (isRetryable && modelName !== MODELS_TO_TRY[MODELS_TO_TRY.length - 1]) {
             console.warn(`Model ${modelName} returned 429, trying next model...`);
             continue; // Try next model
         }
