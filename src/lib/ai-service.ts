@@ -28,7 +28,7 @@ export async function analyzeReceipt(base64Image: string): Promise<AnalyzeReceip
         return { success: false, error: "Missing API Key configuration. Please check Vercel settings." };
     }
 
-    const MODELS_TO_TRY = ["gemini-2.5-flash-preview-04-17", "gemini-1.5-flash"];
+    const MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-2.0-flash"];
 
     // Remove header if present (server-side clean up if passed full data URL)
     const base64Data = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
