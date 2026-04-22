@@ -28,10 +28,15 @@ export async function analyzeReceipt(base64Image: string): Promise<AnalyzeReceip
         return { success: false, error: "Missing API Key configuration. Please check Vercel settings." };
     }
 
+    const MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash"];
+
+    // Remove header if present (server-side clean up if passed full data URL)
+    const base64Data = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
+
+    for (const modelName of MODELS_TO_TRY) {
     try {
-        // Use Gemini 2.0 Flash (Verified working model)
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
+            model: modelName,
             generationConfig: {
                 temperature: 0.1, // Low temp for deterministic OCR
                 topP: 0.95,
@@ -40,8 +45,7 @@ export async function analyzeReceipt(base64Image: string): Promise<AnalyzeReceip
             }
         });
 
-        // Remove header if present (server-side clean up if passed full data URL)
-        const base64Data = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
+        console.log(`Trying model: ${modelName}`);
 
         const prompt = `
         คุณเป็น AI ที่เชี่ยวชาญในการอ่านใบเสร็จ/บิลภาษาไทย
@@ -108,7 +112,15 @@ export async function analyzeReceipt(base64Image: string): Promise<AnalyzeReceip
         return { success: true, data };
 
     } catch (error: any) {
-        console.error("Server-Side AI Service Error:", error);
+        const is429 = error?.message?.includes("429") || error?.status === 429;
+        if (is429 && modelName !== MODELS_TO_TRY[MODELS_TO_TRY.length - 1]) {
+            console.warn(`Model ${modelName} returned 429, trying next model...`);
+            continue; // Try next model
+        }
+        console.error(`AI Service Error (${modelName}):`, error);
         return { success: false, error: error.message || "Failed to analyze receipt" };
     }
+    } // end for loop
+
+    return { success: false, error: "All AI models are currently unavailable. Please try again later." };
 }
