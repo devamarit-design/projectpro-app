@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Copy, Mail, Check, Link as LinkIcon, Smartphone, Send } from "lucide-react"
+import { X, Copy, Mail, Check, Link as LinkIcon, Smartphone, Send, Loader2 } from "lucide-react"
 import { useOrganization } from "@/context/organization-context"
 import { useProjects } from "@/context/project-context"
 import { cn } from "@/lib/utils"
@@ -15,7 +15,7 @@ interface InviteMemberDialogProps {
 }
 
 export default function InviteMemberDialog({ isOpen, onClose }: InviteMemberDialogProps) {
-    const { currentOrg } = useOrganization()
+    const { currentOrg, ensureInviteCode } = useOrganization()
     const { addUser } = useProjects()
     const { t } = useTranslation()
     const [email, setEmail] = React.useState("")
@@ -23,10 +23,32 @@ export default function InviteMemberDialog({ isOpen, onClose }: InviteMemberDial
     const [isSending, setIsSending] = React.useState(false)
     const [activeTab, setActiveTab] = React.useState<"email" | "link" | "qr">("link")
     const [hasCopied, setHasCopied] = React.useState(false)
+    const [inviteCode, setInviteCode] = React.useState<string | null>(null)
+    const [isLoadingCode, setIsLoadingCode] = React.useState(false)
+
+    // เมื่อ dialog เปิด ให้ดึง/สร้าง invite code จาก Firestore
+    React.useEffect(() => {
+        if (isOpen && currentOrg?.id && !inviteCode) {
+            setIsLoadingCode(true)
+            ensureInviteCode(currentOrg.id)
+                .then((code) => setInviteCode(code))
+                .catch((err) => {
+                    console.error("Failed to ensure invite code:", err)
+                    // fallback to orgId
+                    setInviteCode(currentOrg.id)
+                })
+                .finally(() => setIsLoadingCode(false))
+        }
+        if (!isOpen) {
+            setInviteCode(null)
+        }
+    }, [isOpen, currentOrg?.id])
 
     if (!isOpen) return null
 
-    const inviteLink = `${window.location.origin}/org/join?code=${currentOrg?.id}`
+    const inviteLink = inviteCode
+        ? `${window.location.origin}/org/join?code=${inviteCode}`
+        : `${window.location.origin}/org/join?code=${currentOrg?.id}`
 
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text)
@@ -177,12 +199,15 @@ export default function InviteMemberDialog({ isOpen, onClose }: InviteMemberDial
                             <div className="space-y-2">
                                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.dialogs.invitations.link_label}</label>
                                 <div className="flex gap-2">
-                                    <div className="flex-1 bg-muted/50 border border-input rounded-xl px-4 py-2.5 text-sm text-muted-foreground truncate font-mono">
-                                        {inviteLink}
+                                    <div className="flex-1 bg-muted/50 border border-input rounded-xl px-4 py-2.5 text-sm text-muted-foreground truncate font-mono flex items-center gap-2">
+                                        {isLoadingCode ? (
+                                            <><Loader2 className="w-3 h-3 animate-spin shrink-0" /><span className="text-xs">กำลังสร้าง invite link...</span></>
+                                        ) : inviteLink}
                                     </div>
                                     <button
                                         onClick={() => handleCopy(inviteLink)}
-                                        className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                                        disabled={isLoadingCode}
+                                        className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5 transition-all flex items-center gap-2 disabled:opacity-50"
                                     >
                                         {hasCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                                         {hasCopied ? t.dialogs.invitations.copied : t.dialogs.invitations.copy}

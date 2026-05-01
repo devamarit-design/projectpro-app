@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { User as FirebaseUser } from "firebase/auth"
-import { doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, writeBatch } from "firebase/firestore"
+import { doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, writeBatch, addDoc } from "firebase/firestore"
 import { db, auth } from "@/lib/firebase"
 
 
@@ -77,6 +77,7 @@ interface OrganizationContextType {
     joinOrganizationByCode: (code: string) => Promise<string> // Returns Team Name
     getOrganizationPreview: (code: string) => Promise<{ id: string, name: string, memberCount: number } | null>
     deleteOrganization: (orgId: string) => Promise<void>
+    ensureInviteCode: (orgId: string) => Promise<string> // Returns invite code
 }
 
 
@@ -464,6 +465,34 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         return null
     }, [])
 
+    const ensureInviteCode = React.useCallback(async (orgId: string): Promise<string> => {
+        if (!firebaseUser) throw new Error("Not authenticated")
+
+        // 1. ลองหา invite ที่มีอยู่แล้วสำหรับ org นี้
+        const q = query(
+            collection(db, "invites"),
+            where("code", "==", orgId)
+        )
+        const snap = await getDocs(q)
+
+        if (!snap.empty) {
+            // มีแล้ว คืน code กลับ
+            return snap.docs[0].data().code as string
+        }
+
+        // 2. ถ้าไม่มี สร้างใหม่
+        const inviteData = {
+            code: orgId,           // ใช้ orgId เป็น code เพื่อ simplicity
+            teamId: orgId,         // org ที่จะ join
+            createdBy: firebaseUser.uid,
+            createdAt: new Date().toISOString(),
+        }
+
+        await addDoc(collection(db, "invites"), inviteData)
+
+        return orgId
+    }, [firebaseUser])
+
     const deleteOrganization = React.useCallback(async (orgId: string): Promise<void> => {
         if (!firebaseUser) throw new Error("Not authenticated")
 
@@ -522,7 +551,8 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         joinOrganization,
         joinOrganizationByCode,
         getOrganizationPreview,
-        deleteOrganization
+        deleteOrganization,
+        ensureInviteCode
     }), [
         currentOrg,
         userOrgs,
@@ -533,7 +563,8 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         joinOrganization,
         joinOrganizationByCode,
         getOrganizationPreview,
-        deleteOrganization
+        deleteOrganization,
+        ensureInviteCode
     ])
 
     return (
