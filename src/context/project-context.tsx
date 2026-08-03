@@ -1350,11 +1350,13 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
     const addProject = useCallback(async (project: Omit<Project, "id">) => {
         if (!currentTeam) return
         try {
-            await addDoc(collection(db, "projects"), {
+            const docRef = await addDoc(collection(db, "projects"), {
                 ...project,
                 orgId: currentTeam.id,
                 createdAt: new Date().toISOString()
             })
+
+            setProjects(prev => [{ ...project, id: docRef.id } as Project, ...prev])
 
             // Log Activity
             await logActivity(db, currentTeam.id, {
@@ -1377,6 +1379,7 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
     }, [currentTeam, currentUser])
 
     const updateProject = useCallback(async (id: string, updates: Partial<Project>) => {
+        setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
         try {
             await updateDoc(doc(db, "projects", id), { ...updates, updatedAt: new Date().toISOString() })
         } catch (e) {

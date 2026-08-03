@@ -9,6 +9,7 @@ import { uploadImage } from "@/lib/upload"
 import Link from "next/link"
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 import { getExpenseAmountForProject } from "@/lib/project-utils"
+import { toast } from "sonner"
 
 import { useSearchParams } from "next/navigation"
 
@@ -16,7 +17,7 @@ export default function EditProjectClient() {
     const searchParams = useSearchParams()
     const id = searchParams.get("id") || ""
     const { t } = useTranslation()
-    const { updateProject, getProject, expenses, incomes, customers } = useProjects()
+    const { updateProject, getProject, expenses, incomes, customers, currentTeam } = useProjects()
     const router = useRouter()
     // const { id } = use(params) // Removed
     const project = getProject(id)
@@ -68,10 +69,24 @@ export default function EditProjectClient() {
 
         setIsUploading(true)
         try {
-            const url = await uploadImage(file, "projects/covers")
+            let url = ""
+            const uploadPath = currentTeam?.id ? `organizations/${currentTeam.id}/projects/covers` : "projects/covers"
+            try {
+                url = await uploadImage(file, uploadPath)
+            } catch (err) {
+                console.warn("Storage upload failed, falling back to DataURL", err)
+                url = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader()
+                    reader.onload = () => resolve(reader.result as string)
+                    reader.onerror = reject
+                    reader.readAsDataURL(file)
+                })
+            }
             setFormData(prev => ({ ...prev, image: url }))
+            toast.success("อัปโหลดรูปภาพหน้าปกสำเร็จ")
         } catch (error) {
             console.error("Upload failed", error)
+            toast.error("ไม่สามารถอัปโหลดรูปภาพได้")
         } finally {
             setIsUploading(false)
         }
@@ -102,14 +117,18 @@ export default function EditProjectClient() {
         return <div className="p-8 text-center">Project not found</div>
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        updateProject(id, {
-            ...formData,
-            // Keep existing status and progress or allow editing them too? 
-            // For now, simpler to just update details.
-        })
-        router.push(`/projects/detail?id=${id}`)
+        try {
+            await updateProject(id, {
+                ...formData,
+            })
+            toast.success("บันทึกข้อมูลโปรเจกต์เรียบร้อย")
+            router.push(`/projects/detail?id=${id}`)
+        } catch (err) {
+            console.error("Submit failed", err)
+            toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล")
+        }
     }
 
 
@@ -315,7 +334,7 @@ export default function EditProjectClient() {
                             </div>
                         ) : formData.image ? (
                             <>
-                                <img src={formData.image} alt="Cover" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-40 transition-opacity" />
+                                <img src={formData.image} alt="Cover" className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-60 transition-opacity" />
                                 <div className="z-10 flex flex-col items-center gap-2">
                                     <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
                                         <Upload className="w-5 h-5 text-white" />

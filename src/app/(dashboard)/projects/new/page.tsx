@@ -50,7 +50,19 @@ export default function NewProjectPage() {
 
         setIsUploading(true)
         try {
-            const url = await uploadImage(file, "projects/covers")
+            let url = ""
+            const uploadPath = currentTeam?.id ? `organizations/${currentTeam.id}/projects/covers` : "projects/covers"
+            try {
+                url = await uploadImage(file, uploadPath)
+            } catch (err) {
+                console.warn("Storage upload failed, falling back to DataURL", err)
+                url = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader()
+                    reader.onload = () => resolve(reader.result as string)
+                    reader.onerror = reject
+                    reader.readAsDataURL(file)
+                })
+            }
             setFormData(prev => ({ ...prev, image: url }))
         } catch (error) {
             console.error("Upload failed", error)
