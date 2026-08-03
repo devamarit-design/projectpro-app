@@ -8,6 +8,7 @@ import { ArrowLeft, Upload, Calendar, MapPin, DollarSign, User, FileText, Loader
 import { uploadImage } from "@/lib/upload"
 import Link from "next/link"
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
+import { getExpenseAmountForProject } from "@/lib/project-utils"
 
 import { useSearchParams } from "next/navigation"
 
@@ -30,7 +31,7 @@ export default function EditProjectClient() {
     const calculatedExpenses = useMemo(() => {
         return expenses
             .filter(e => e.projectId === id || e.items?.some(item => item.projectId === id))
-            .reduce((sum, e) => sum + e.totalValue, 0)
+            .reduce((sum, e) => sum + getExpenseAmountForProject(e, id), 0)
     }, [expenses, id])
 
     const [formData, setFormData] = useState({

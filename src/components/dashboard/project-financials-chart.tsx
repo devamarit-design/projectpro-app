@@ -3,6 +3,7 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts"
 import { useProjects } from "@/context/project-context"
 import { useRouter } from "next/navigation"
+import { getExpenseAmountForProject } from "@/lib/project-utils"
 
 export function ProjectFinancialsChart() {
     const { projects, expenses, incomes } = useProjects()
@@ -10,8 +11,8 @@ export function ProjectFinancialsChart() {
 
     const data = projects.map(p => {
         const projectExpenses = expenses
-            .filter(e => e.projectId === p.id)
-            .reduce((sum, e) => sum + e.totalValue, 0)
+            .filter(e => e.projectId === p.id || e.items?.some(i => i.projectId === p.id))
+            .reduce((sum, e) => sum + getExpenseAmountForProject(e, p.id), 0)
 
         // Use incomeDocuments for verified income
         const projectIncome = incomes

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 
 import { useProjects } from "@/context/project-context"
 import { ProjectCard } from "@/components/projects/project-card"
+import { getExpensesByProject } from "@/lib/project-utils"
 
 export default function ProjectsPage() {
     const { t } = useTranslation()
@@ -44,19 +45,7 @@ export default function ProjectsPage() {
 
     // Calculate total expenses per project from actual expense data
     const getProjectExpenses = useMemo(() => {
-        const expensesByProject: Record<string, number> = {}
-        expenses.forEach(expense => {
-            if (expense.projectId) {
-                expensesByProject[expense.projectId] = (expensesByProject[expense.projectId] || 0) + (expense.totalValue || 0)
-            }
-            // Also check item-level projectIds
-            expense.items?.forEach(item => {
-                if (item.projectId) {
-                    expensesByProject[item.projectId] = (expensesByProject[item.projectId] || 0) + (item.amount || 0)
-                }
-            })
-        })
-        return expensesByProject
+        return getExpensesByProject(expenses)
     }, [expenses])
 
     // Calculate task count per project

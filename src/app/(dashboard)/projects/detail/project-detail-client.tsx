@@ -38,6 +38,7 @@ import { IncomeDocument } from "@/context/project-context"
 import Link from "next/link"
 import { ProjectHeader } from "@/components/projects/project-header"
 import { cn, getGoogleMapsUrl } from "@/lib/utils"
+import { getExpenseAmountForProject, getCategoryExpenseForProject } from "@/lib/project-utils"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 // Components
 import AddExpenseDialog from "@/components/expenses/add-expense-dialog"
@@ -293,12 +294,12 @@ export default function ProjectDetailClient() {
         : allProjectIncomes.filter(i => i.date.startsWith(monthFilter))
 
     // 4. Calculate Totals
-    const totalExpenses = projectExpenses.reduce((sum, e) => sum + e.totalValue, 0)
+    const totalExpenses = projectExpenses.reduce((sum, e) => sum + getExpenseAmountForProject(e, id), 0)
     const totalIncome = projectIncomes.reduce((sum, i) => sum + i.grandTotal, 0)
     const totalProfit = totalIncome - totalExpenses
 
     // Calculate All-Time Expenses specifically for the Header (ignoring month filters)
-    const allTimeExpenses = allProjectExpenses.reduce((sum, e) => sum + e.totalValue, 0)
+    const allTimeExpenses = allProjectExpenses.reduce((sum, e) => sum + getExpenseAmountForProject(e, id), 0)
 
     useEffect(() => {
         // Scroll to top of both window and our custom scroll container
@@ -684,7 +685,7 @@ export default function ProjectDetailClient() {
                                                 <p className="text-xs font-bold text-orange-400 uppercase tracking-wider">{t.projects.detail.financials.material}</p>
                                             </div>
                                             <p className="text-lg font-black text-orange-500">
-                                                ฿{projectExpenses.filter(e => e.category === 'Material').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
+                                                ฿{getCategoryExpenseForProject(projectExpenses, id, 'Material').toLocaleString()}
                                             </p>
                                             <p className="text-[10px] text-muted-foreground mt-1">
                                                 {projectExpenses.filter(e => e.category === 'Material').length} txn
@@ -699,7 +700,7 @@ export default function ProjectDetailClient() {
                                                 <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">{t.projects.detail.financials.labor}</p>
                                             </div>
                                             <p className="text-lg font-black text-blue-500">
-                                                ฿{projectExpenses.filter(e => e.category === 'Labor').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
+                                                ฿{getCategoryExpenseForProject(projectExpenses, id, 'Labor').toLocaleString()}
                                             </p>
                                             <p className="text-[10px] text-muted-foreground mt-1">
                                                 {projectExpenses.filter(e => e.category === 'Labor').length} txn
@@ -714,7 +715,7 @@ export default function ProjectDetailClient() {
                                                 <p className="text-xs font-bold text-purple-400 uppercase tracking-wider">{t.projects.detail.financials.subcontract}</p>
                                             </div>
                                             <p className="text-lg font-black text-purple-500">
-                                                ฿{projectExpenses.filter(e => e.category === 'Sub-contract').reduce((sum, e) => sum + e.totalValue, 0).toLocaleString()}
+                                                ฿{getCategoryExpenseForProject(projectExpenses, id, 'Sub-contract').toLocaleString()}
                                             </p>
                                             <p className="text-[10px] text-muted-foreground mt-1">
                                                 {projectExpenses.filter(e => e.category === 'Sub-contract').length} txn
