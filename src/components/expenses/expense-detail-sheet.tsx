@@ -126,6 +126,14 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                 }
             }
 
+            // Ensure item categories match top-level category if category was updated
+            if (updates.category && updates.items && updates.items.length > 0) {
+                updates.items = updates.items.map(item => ({
+                    ...item,
+                    category: updates.category as ExpenseCategory
+                }))
+            }
+
             await updateExpense(expenseId, updates)
             setIsEditing(false)
             setEditImageFile(null)
@@ -389,7 +397,14 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                 {isEditing ? (
                                     <select
                                         value={editForm.category}
-                                        onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value as any }))}
+                                        onChange={(e) => {
+                                            const newCat = e.target.value as ExpenseCategory
+                                            setEditForm(prev => ({
+                                                ...prev,
+                                                category: newCat,
+                                                items: prev.items ? prev.items.map(item => ({ ...item, category: newCat })) : prev.items
+                                            }))
+                                        }}
                                         className="w-full bg-transparent text-sm font-medium focus:outline-none"
                                     >
                                         <option value="Material">Material</option>
