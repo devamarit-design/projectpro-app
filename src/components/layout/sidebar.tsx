@@ -55,7 +55,7 @@ export function Sidebar({ className }: { className?: string }) {
         {
             title: "COMMUNICATION",
             items: [
-                { href: "https://chat.hipsloth.app", label: "Chat Hub (External)", icon: MessageSquare },
+                { href: "https://paa-project-assistant-ai.vercel.app", label: "Chat Hub (External)", icon: MessageSquare },
             ]
         },
         {
@@ -156,16 +156,16 @@ export function Sidebar({ className }: { className?: string }) {
                                                     document.body.style.cursor = 'default';
 
                                                     if (result.token) {
-                                                        window.location.href = `https://chat.hipsloth.app/login?token=${result.token}`;
+                                                        window.location.href = `https://paa-project-assistant-ai.vercel.app/login?token=${result.token}`;
                                                     } else {
                                                         console.error("Failed to get token", result.error);
                                                         // Fallback
-                                                        window.open("https://chat.hipsloth.app", "_blank");
+                                                        window.open("https://paa-project-assistant-ai.vercel.app", "_blank");
                                                     }
                                                 } catch (err) {
                                                     console.error("Error navigating to chat hub", err);
                                                     document.body.style.cursor = 'default';
-                                                    window.open("https://chat.hipsloth.app", "_blank");
+                                                    window.open("https://paa-project-assistant-ai.vercel.app", "_blank");
                                                 }
                                             }}
                                             className={cn(
