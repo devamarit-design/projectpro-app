@@ -15,10 +15,12 @@ interface AddIncomeDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     defaultType?: IncomeType
+    defaultProjectId?: string
+    defaultCustomerId?: string
     initialData?: any // For Edit Mode
 }
 
-export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation", initialData }: AddIncomeDialogProps) {
+export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation", defaultProjectId, defaultCustomerId, initialData }: AddIncomeDialogProps) {
     const { incomes, customers, projects, addIncome, updateIncome, currentUser } = useProjects()
     const { t } = useTranslation()
     const { currentOrg } = useOrganization()
@@ -26,8 +28,8 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
     // Form State
     const [step, setStep] = useState<1 | 2>(1)
     const [type, setType] = useState<IncomeType>(initialData?.type || defaultType)
-    const [selectedProject, setSelectedProject] = useState(initialData?.projectId || "")
-    const [selectedCustomer, setSelectedCustomer] = useState(initialData?.customerId || "")
+    const [selectedProject, setSelectedProject] = useState(initialData?.projectId || defaultProjectId || "")
+    const [selectedCustomer, setSelectedCustomer] = useState(initialData?.customerId || defaultCustomerId || "")
     const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0])
     const [docNumber, setDocNumber] = useState(initialData?.documentNumber || "")
     const [mode, setMode] = useState<"Simple" | "Zone">(initialData?.mode || "Simple")
@@ -60,7 +62,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
         }
     }, [projects])
 
-    // Sync State with initialData when dialog opens
+    // Sync State with initialData/defaultProps when dialog opens
     useEffect(() => {
         if (open) {
             if (initialData) {
@@ -81,6 +83,8 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
                 // Add New Mode
                 resetForm()
                 setType(defaultType)
+                if (defaultProjectId) setSelectedProject(defaultProjectId)
+                if (defaultCustomerId) setSelectedCustomer(defaultCustomerId)
                 const today = new Date().toISOString().split('T')[0]
                 setDate(today)
                 setDocNumber(generateNextDocumentNumber(defaultType, incomes, today))
@@ -89,7 +93,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, initialData, defaultType]) // Removed 'incomes' to prevent form reset on context updates
+    }, [open, initialData, defaultType, defaultProjectId, defaultCustomerId]) // Removed 'incomes' to prevent form reset on context updates
 
     // Auto-generate document number when type or date changes (only in Add mode)
     useEffect(() => {
@@ -320,7 +324,7 @@ export function AddIncomeDialog({ open, onOpenChange, defaultType = "Quotation",
     }, [selectedCustomer, projects, customers])
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={onOpenChange} confirmBeforeClose>
             <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0 bg-background/95 backdrop-blur-xl border-white/10">
                 {/* Header */}
                 {/* Header */}

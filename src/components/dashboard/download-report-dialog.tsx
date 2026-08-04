@@ -289,7 +289,7 @@ export function DownloadReportDialog({ open, onOpenChange }: DownloadReportDialo
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={onOpenChange} confirmBeforeClose>
             <DialogContent className="w-[90%] sm:w-full sm:max-w-lg bg-zinc-950 border border-white/10 text-white p-6 sm:p-8 rounded-3xl">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold flex items-center gap-2">

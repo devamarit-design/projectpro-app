@@ -13,6 +13,7 @@ import SearchableCombobox from "@/components/ui/searchable-combobox"
 import { useOrganization } from "@/context/organization-context"
 import { sendExpenseNotification } from "@/lib/functions-client"
 import Image from "next/image"
+import { SafeBackdrop } from "@/components/ui/safe-backdrop"
 
 interface AddExpenseDialogProps {
     isOpen: boolean
@@ -596,10 +597,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     onScanComplete={handleScanComplete}
                 />
 
-                <div
-                    className="absolute inset-0 bg-background/60 backdrop-blur-sm transition-opacity"
-                    onClick={onClose}
-                />
+                <SafeBackdrop onClose={onClose} className="absolute inset-0 bg-background/60 backdrop-blur-sm transition-opacity" />
 
                 <div className="relative glass-card w-full max-w-2xl h-[90vh] md:h-auto md:max-h-[90vh] mx-4 p-0 rounded-2xl shadow-2xl border border-white/10 flex flex-col animate-in fade-in zoom-in-95 duration-200">
 

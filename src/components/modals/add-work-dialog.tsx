@@ -118,7 +118,7 @@ export function AddWorkDialog({ isOpen, onOpenChange, projectId, initialData }: 
     const selectedProjectName = projects.find(p => p.id === selectedProjectId)?.name || "เลือกโปรเจกต์"
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <Dialog open={isOpen} onOpenChange={onOpenChange} confirmBeforeClose>
             {/* Removed overflow-hidden to fix clipping on hover effects */}
             <DialogContent className={cn(
                 "sm:max-w-[600px] bg-[#020617] text-white rounded-[32px] p-0 shadow-2xl overflow-visible border-2",

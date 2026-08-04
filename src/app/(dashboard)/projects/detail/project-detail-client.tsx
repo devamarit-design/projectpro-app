@@ -45,6 +45,7 @@ import AddExpenseDialog from "@/components/expenses/add-expense-dialog"
 import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
 import AddTaskDialog from "@/components/tasks/add-task-dialog"
 import { AddWorkDialog } from "@/components/modals/add-work-dialog"
+import { AddIncomeDialog } from "@/components/income/add-income-dialog"
 
 import { TaskBoard } from "@/components/tasks/task-board"
 import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
@@ -146,6 +147,7 @@ export default function ProjectDetailClient() {
     const [userFilter, setUserFilter] = useState<string>("all")
     const [monthFilter, setMonthFilter] = useState<string>("all")
     const [activeFinancialTab, setActiveFinancialTab] = useState<'expenses' | 'incomes'>('expenses')
+    const [isAddIncomeOpen, setIsAddIncomeOpen] = useState(false)
     const [deleteSubProjectConfirm, setDeleteSubProjectConfirm] = useState<{ isOpen: boolean; subProjectId: string | null }>({
         isOpen: false,
         subProjectId: null
@@ -276,7 +278,7 @@ export default function ProjectDetailClient() {
     const allProjectExpenses = hasPermission(currentTeam?.role, "FINANCIAL_VIEW")
         ? rawProjectExpenses
         : rawProjectExpenses.filter(e => e.payee === currentUser?.name || e.paidBy === currentUser?.name)
-    const allProjectIncomes = allIncomesForProject.filter(i => i.type === 'Receipt' && i.status === 'Paid') // Only count Receipts that are Paid for "Received" total
+    const allProjectIncomes = allIncomesForProject.filter(i => i.status === 'Paid' || (i.type === 'Receipt' && i.status !== 'Cancelled')) // Count Paid incomes & Receipts for "Received" total
 
     // 2. Extract available months from both expenses and incomes
     const availableMonths = Array.from(new Set([
@@ -380,18 +382,6 @@ export default function ProjectDetailClient() {
                     {t.projects.detail.tabs.overview}
                 </button>
                 <button
-                    onClick={() => setActiveTab("schedule")}
-                    className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
-                        activeTab === "schedule"
-                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                            : "bg-background/50 hover:bg-muted/50 text-muted-foreground"
-                    )}
-                >
-                    <Calendar className="w-4 h-4" />
-                    Schedule
-                </button>
-                <button
                     onClick={() => setActiveTab("sub_projects")}
                     className={cn(
                         "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
@@ -426,6 +416,18 @@ export default function ProjectDetailClient() {
                 >
                     <CheckSquare className="w-4 h-4" />
                     {t.projects.detail.tabs.tasks}
+                </button>
+                <button
+                    onClick={() => setActiveTab("schedule")}
+                    className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
+                        activeTab === "schedule"
+                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                            : "bg-background/50 hover:bg-muted/50 text-muted-foreground"
+                    )}
+                >
+                    <Calendar className="w-4 h-4" />
+                    Schedule
                 </button>
                 <button
                     onClick={() => setActiveTab("files")}
@@ -776,7 +778,7 @@ export default function ProjectDetailClient() {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-3">
+                                        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
                                             {projectExpenses.length > 0 ? (
                                                 projectExpenses.map((expense) => (
                                                     <div
@@ -875,18 +877,18 @@ export default function ProjectDetailClient() {
                                                         <Download className="w-4 h-4" />
                                                     </button>
                                                 )}
-                                                <Link
-                                                    href="/income"
+                                                <button
+                                                    onClick={() => setIsAddIncomeOpen(true)}
                                                     className="w-9 h-9 flex items-center justify-center bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all shadow-sm"
                                                     title="New Document"
                                                 >
                                                     <Plus className="w-5 h-5" />
-                                                </Link>
+                                                </button>
                                             </div>
                                         </div>
 
                                         {/* All Income Documents List */}
-                                        <div className="space-y-3">
+                                        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
                                             {/* Use allIncomesForProject to include backward compatible project matching */}
                                             {allIncomesForProject.length > 0 ? (
                                                 groupIncomes(allIncomesForProject).map((group) => (
@@ -1319,6 +1321,13 @@ export default function ProjectDetailClient() {
                 initialData={editingWork}
             />
 
+            <AddIncomeDialog
+                open={isAddIncomeOpen}
+                onOpenChange={setIsAddIncomeOpen}
+                defaultProjectId={project.id}
+                defaultCustomerId={project.customerId}
+            />
+
             <ExpenseDetailSheet
                 expenseId={selectedExpenseId}
                 onClose={() => {
@@ -1430,8 +1439,9 @@ export default function ProjectDetailClient() {
                                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                                 onClick={() => setSelectedSubProjectId(null)}
                             />
-                            <div className="relative bg-background border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 animate-in slide-in-from-bottom-4">
-                                <div className="flex items-center justify-between">
+                            <div className="relative bg-background border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md lg:max-w-3xl max-h-[85vh] flex flex-col animate-in slide-in-from-bottom-4">
+                                {/* Header - Fixed */}
+                                <div className="flex items-center justify-between p-6 pb-4 border-b border-white/10 shrink-0">
                                     <h3 className="text-lg font-bold">{isGeneral ? (locale === 'th' ? "รายละเอียด" : "Details") : "Sub-project Details"}</h3>
                                     <button
                                         onClick={() => setSelectedSubProjectId(null)}
@@ -1441,70 +1451,69 @@ export default function ProjectDetailClient() {
                                     </button>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <div>
-                                        <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Name</p>
-                                        <p className="font-semibold text-lg">{selectedSP.name}</p>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-
-                                        {selectedSP.budget && (
+                                {/* Scrollable Content */}
+                                <div className="flex-1 overflow-y-auto p-6">
+                                    <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-4 lg:space-y-0">
+                                        {/* Left Column: Info + Tasks */}
+                                        <div className="space-y-4">
                                             <div>
-                                                <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Budget</p>
-                                                <p className="font-medium">{selectedSP.budget}</p>
+                                                <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Name</p>
+                                                <p className="font-semibold text-lg">{selectedSP.name}</p>
                                             </div>
-                                        )}
-                                    </div>
 
-                                    {selectedSP.description && (
-                                        <div>
-                                            <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Description</p>
-                                            <p className="text-sm text-muted-foreground">{selectedSP.description}</p>
+                                            {selectedSP.budget && (
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Budget</p>
+                                                    <p className="font-medium">{selectedSP.budget}</p>
+                                                </div>
+                                            )}
+
+                                            {selectedSP.description && (
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Description</p>
+                                                    <p className="text-sm text-muted-foreground">{selectedSP.description}</p>
+                                                </div>
+                                            )}
+
+                                            {/* Tasks */}
+                                            <div className="pt-2 border-t border-white/10">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h4 className="text-sm font-bold flex items-center gap-2">
+                                                        <CheckSquare className="w-3 h-3 text-primary" /> Tasks
+                                                    </h4>
+                                                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                                                        {subProjectTasks.length}
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    {subProjectTasks.length > 0 ? (
+                                                        subProjectTasks.map(task => (
+                                                            <div
+                                                                key={task.id}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    setSelectedSubProjectId(null)
+                                                                    setActiveTab('tasks')
+                                                                    router.push(`${pathname}?${createQueryString('taskId', task.id)}`, { scroll: false })
+                                                                }}
+                                                                className="text-xs p-2 bg-muted/30 rounded-lg flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors group"
+                                                            >
+                                                                <span className="truncate group-hover:text-primary transition-colors">{task.title}</span>
+                                                                <span className={cn(
+                                                                    "px-1.5 py-0.5 rounded text-[10px]",
+                                                                    task.status === 'Done' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'
+                                                                )}>{task.status}</span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <p className="text-xs text-muted-foreground italic">No tasks assigned</p>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                    )}
 
-                                    {/* Linked Content: Tasks & Expenses */}
-                                    <div className="pt-2 space-y-4 border-t border-white/10">
-                                        {/* Tasks */}
-                                        <div>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h4 className="text-sm font-bold flex items-center gap-2">
-                                                    <CheckSquare className="w-3 h-3 text-primary" /> Tasks
-                                                </h4>
-                                                <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                                                    {subProjectTasks.length}
-                                                </span>
-                                            </div>
-                                            <div className="space-y-1">
-                                                {subProjectTasks.length > 0 ? (
-                                                    subProjectTasks.map(task => (
-                                                        <div
-                                                            key={task.id}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation()
-                                                                setSelectedSubProjectId(null)
-                                                                setActiveTab('tasks')
-                                                                router.push(`${pathname}?${createQueryString('taskId', task.id)}`, { scroll: false })
-                                                            }}
-                                                            className="text-xs p-2 bg-muted/30 rounded-lg flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors group"
-                                                        >
-                                                            <span className="truncate group-hover:text-primary transition-colors">{task.title}</span>
-                                                            <span className={cn(
-                                                                "px-1.5 py-0.5 rounded text-[10px]",
-                                                                task.status === 'Done' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'
-                                                            )}>{task.status}</span>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-xs text-muted-foreground italic">No tasks assigned</p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Expenses */}
-
-                                        <div>
+                                        {/* Right Column: Expenses */}
+                                        <div className="pt-4 border-t border-white/10 lg:pt-0 lg:border-t-0 lg:border-l lg:border-white/10 lg:pl-6">
                                             <div className="flex items-center justify-between mb-3">
                                                 <h4 className="text-sm font-bold flex items-center gap-2">
                                                     <DollarSign className="w-4 h-4 text-primary" /> Expenses
@@ -1605,7 +1614,8 @@ export default function ProjectDetailClient() {
                                     </div>
                                 </div>
 
-                                <div className="flex gap-3 pt-4">
+                                {/* Footer - Fixed */}
+                                <div className="flex gap-3 p-6 pt-4 border-t border-white/10 shrink-0">
                                     {!isGeneral && (
                                         <button
                                             onClick={() => setDeleteSubProjectConfirm({ isOpen: true, subProjectId: selectedSP.id })}

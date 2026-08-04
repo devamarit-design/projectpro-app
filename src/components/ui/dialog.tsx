@@ -3,22 +3,51 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { useBackNavigation } from "@/hooks/use-back-navigation"
+import { ConfirmDialog } from "./confirm-dialog"
 
 const Dialog = ({
     open,
     children,
     onOpenChange,
+    confirmBeforeClose = false,
 }: {
     open?: boolean
     children: React.ReactNode
     onOpenChange?: (open: boolean) => void
+    confirmBeforeClose?: boolean
 }) => {
+    const [showConfirm, setShowConfirm] = React.useState(false)
+
     // Disabled useBackNavigation as it causes immediate closing of dialogs in some contexts
     // useBackNavigation(!!open, (val) => onOpenChange?.(val))
     if (!open) return null
+
+    const handleBackdropClick = () => {
+        if (confirmBeforeClose) {
+            setShowConfirm(true)
+        } else {
+            onOpenChange?.(false)
+        }
+    }
+
     return (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={() => onOpenChange?.(false)}>
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={handleBackdropClick}>
             {children}
+            {confirmBeforeClose && (
+                <ConfirmDialog
+                    isOpen={showConfirm}
+                    onClose={() => setShowConfirm(false)}
+                    onConfirm={() => {
+                        setShowConfirm(false)
+                        onOpenChange?.(false)
+                    }}
+                    title="ปิดหน้าต่างนี้?"
+                    message="ข้อมูลที่กรอกอยู่จะไม่ถูกบันทึก"
+                    confirmText="ปิดทิ้ง"
+                    cancelText="กรอกต่อ"
+                    variant="warning"
+                />
+            )}
         </div>
     )
 }
@@ -80,3 +109,4 @@ const DialogDescription = React.forwardRef<
 DialogDescription.displayName = "DialogDescription"
 
 export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription }
+
