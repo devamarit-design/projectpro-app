@@ -32,9 +32,9 @@ export function DownloadReportDialog({ open, onOpenChange }: DownloadReportDialo
     const handleDownload = async () => {
         setIsGenerating(true)
         try {
-            // 1. Prepare Data
+            // 1. Prepare Data (Invoices only to avoid double counting with Receipts)
             let filteredProjects = [...projects]
-            let filteredIncomes = [...incomes]
+            let filteredIncomes = incomes.filter(i => i.type === 'Invoice' && i.status !== 'Void' && i.status !== 'Draft')
             let filteredExpenses = [...expenses]
             let reportTitle = "Company Performance Report"
 

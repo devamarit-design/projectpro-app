@@ -29,7 +29,7 @@ export function CashFlowChart() {
                     .reduce((sum, e) => sum + e.totalValue, 0)
 
                 const monthIncome = incomes
-                    .filter(i => (i.status === 'Paid' || i.status === 'Accepted') && isSameMonth(parseISO(i.date), month))
+                    .filter(i => i.type === 'Invoice' && (i.status === 'Paid' || i.status === 'Accepted' || i.status === 'Invoiced') && isSameMonth(parseISO(i.date), month))
                     .reduce((sum, i) => sum + (i.grandTotal || 0), 0)
 
                 return {
@@ -50,7 +50,7 @@ export function CashFlowChart() {
                     .reduce((sum, e) => sum + e.totalValue, 0)
 
                 const weekIncome = incomes
-                    .filter(i => (i.status === 'Paid' || i.status === 'Accepted') && isSameWeek(parseISO(i.date), week))
+                    .filter(i => i.type === 'Invoice' && (i.status === 'Paid' || i.status === 'Accepted' || i.status === 'Invoiced') && isSameWeek(parseISO(i.date), week))
                     .reduce((sum, i) => sum + (i.grandTotal || 0), 0)
 
                 const weekEnd = endOfWeek(week)

@@ -21,7 +21,7 @@ export function MonthlySummary() {
             .reduce((sum, e) => sum + e.totalValue, 0)
 
         const monthIncome = incomes
-            .filter(i => (i.status === 'Paid' || i.status === 'Accepted') && isSameMonth(parseISO(i.date), month))
+            .filter(i => i.type === 'Invoice' && (i.status === 'Paid' || i.status === 'Accepted' || i.status === 'Invoiced') && isSameMonth(parseISO(i.date), month))
             .reduce((sum, i) => sum + (i.grandTotal || 0), 0)
 
         const net = monthIncome - monthExpenses

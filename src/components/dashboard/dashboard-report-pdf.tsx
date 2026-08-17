@@ -121,8 +121,8 @@ const formatDate = (dateStr: string) => {
 
 export const DashboardReportPDF = ({ projects, incomes, expenses, companyProfile, dateRange }: DashboardReportProps) => {
 
-    // 1. Calculate Summary
-    const validIncomes = incomes.filter(i => (i.type === 'Invoice' || i.type === 'Receipt') && i.status !== 'Void' && i.status !== 'Draft')
+    // 1. Calculate Summary (Invoices only)
+    const validIncomes = incomes.filter(i => i.type === 'Invoice' && i.status !== 'Void' && i.status !== 'Draft')
     const totalRevenue = validIncomes.reduce((sum, item) => sum + item.grandTotal, 0)
 
     const totalExpenses = expenses.reduce((sum, item) => sum + item.totalValue, 0)

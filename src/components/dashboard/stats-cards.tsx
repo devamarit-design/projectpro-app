@@ -6,9 +6,9 @@ export function StatsCards() {
     const { t } = useTranslation()
     const { expenses, incomes, projects } = useProjects()
 
-    // 1. Calculate Total Revenue (Paid or Accepted Incomes)
+    // 1. Calculate Total Revenue (Paid or Invoiced Incomes - Invoices only)
     const totalRevenue = incomes
-        .filter(i => i.status === 'Paid' || i.status === 'Accepted')
+        .filter(i => i.type === 'Invoice' && (i.status === 'Paid' || i.status === 'Accepted' || i.status === 'Invoiced'))
         .reduce((sum, i) => sum + (i.grandTotal || 0), 0)
 
     // 2. Calculate Total Expenses

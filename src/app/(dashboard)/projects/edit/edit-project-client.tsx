@@ -25,7 +25,7 @@ export default function EditProjectClient() {
     // Calculate income and expenses from actual data
     const calculatedIncome = useMemo(() => {
         return incomes
-            .filter(i => i.projectId === id && (i.status === 'Paid' || i.status === 'Accepted'))
+            .filter(i => i.projectId === id && i.type === 'Invoice' && (i.status === 'Paid' || i.status === 'Accepted' || i.status === 'Invoiced'))
             .reduce((sum, i) => sum + i.grandTotal, 0)
     }, [incomes, id])
 

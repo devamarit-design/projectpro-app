@@ -278,7 +278,7 @@ export default function ProjectDetailClient() {
     const allProjectExpenses = hasPermission(currentTeam?.role, "FINANCIAL_VIEW")
         ? rawProjectExpenses
         : rawProjectExpenses.filter(e => e.payee === currentUser?.name || e.paidBy === currentUser?.name)
-    const allProjectIncomes = allIncomesForProject.filter(i => i.status === 'Paid' || (i.type === 'Receipt' && i.status !== 'Cancelled')) // Count Paid incomes & Receipts for "Received" total
+    const allProjectIncomes = allIncomesForProject.filter(i => i.type === 'Invoice' && (i.status === 'Paid' || i.status === 'Invoiced' || i.status === 'Accepted')) // Only count Invoices to avoid double counting with Receipts
 
     // 2. Extract available months from both expenses and incomes
     const availableMonths = Array.from(new Set([

@@ -14,9 +14,9 @@ export function ProjectFinancialsChart() {
             .filter(e => e.projectId === p.id || e.items?.some(i => i.projectId === p.id))
             .reduce((sum, e) => sum + getExpenseAmountForProject(e, p.id), 0)
 
-        // Use incomeDocuments for verified income
+        // Use incomeDocuments for verified income (Invoices only)
         const projectIncome = incomes
-            .filter(i => i.projectId === p.id && (i.status === 'Paid' || i.status === 'Accepted'))
+            .filter(i => i.projectId === p.id && i.type === 'Invoice' && (i.status === 'Paid' || i.status === 'Accepted' || i.status === 'Invoiced'))
             .reduce((sum, i) => sum + (i.grandTotal || 0), 0)
 
         // Fallback to project manual input if 0

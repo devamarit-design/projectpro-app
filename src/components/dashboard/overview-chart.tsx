@@ -36,9 +36,9 @@ export function OverviewChart() {
             .filter(e => e.date.startsWith(m.key))
             .reduce((sum, e) => sum + e.totalValue, 0)
 
-        // Calculate Income for this month
+        // Calculate Income for this month (Invoices only)
         const monthlyIncome = incomes
-            .filter(i => (i.status === 'Paid' || i.status === 'Accepted') && i.date.startsWith(m.key))
+            .filter(i => i.type === 'Invoice' && (i.status === 'Paid' || i.status === 'Accepted' || i.status === 'Invoiced') && i.date.startsWith(m.key))
             .reduce((sum, i) => sum + (i.grandTotal || 0), 0)
 
         return {
