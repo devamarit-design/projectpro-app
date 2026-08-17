@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, Plus, Store, Wrench, Truck, Phone, MapPin, Star, MoreHorizontal, User, Filter, Building, Archive } from "lucide-react"
+import { Search, Plus, Store, Wrench, Truck, Phone, MapPin, Star, MoreHorizontal, User, Filter, Building, Archive, Wallet } from "lucide-react"
 import { useProjects } from "@/context/project-context"
 
 import { cn, getGoogleMapsUrl } from "@/lib/utils"
@@ -13,7 +13,7 @@ import PartnerDetailSheet from "@/components/partners/partner-detail-sheet"
 type FilterType = "All" | "Technician" | "Store" | "Contractor"
 
 export default function PartnersPage() {
-    const { workers, vendors } = useProjects()
+    const { workers, vendors, expenses } = useProjects()
     const { t } = useTranslation()
     const [activeTab, setActiveTab] = React.useState<FilterType>("All")
     const [searchQuery, setSearchQuery] = React.useState("")
@@ -25,6 +25,31 @@ export default function PartnersPage() {
 
     const [selectedPartnerId, setSelectedPartnerId] = React.useState<string | null>(null)
     const [selectedPartnerType, setSelectedPartnerType] = React.useState<"Worker" | "Vendor" | null>(null)
+
+    // Calculate total paid & transaction count for each partner
+    const partnerTotals = React.useMemo(() => {
+        const totals: Record<string, { totalPaid: number; count: number }> = {}
+
+        const getPartnerTotal = (name: string) => {
+            if (!name) return { totalPaid: 0, count: 0 }
+            const partnerExpenses = expenses.filter(e =>
+                e.payee === name || e.vendor === name
+            )
+            const total = partnerExpenses
+                .filter(e => e.status === "Paid")
+                .reduce((sum, e) => sum + (e.totalValue || 0), 0)
+            return { totalPaid: total, count: partnerExpenses.length }
+        }
+
+        workers.forEach(w => {
+            totals[`Worker-${w.id}`] = getPartnerTotal(w.name)
+        })
+        vendors.forEach(v => {
+            totals[`Vendor-${v.id}`] = getPartnerTotal(v.name)
+        })
+
+        return totals
+    }, [workers, vendors, expenses])
 
     // Combined and Filtered Data
     const displayData = React.useMemo(() => {
@@ -142,78 +167,98 @@ export default function PartnersPage() {
 
             {/* Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {displayData.map((partner) => (
-                    <div
-                        key={`${partner.type}-${partner.id}`}
-                        onClick={() => handlePartnerClick(partner.id, partner.type)}
-                        className="group glass-card rounded-2xl p-5 border border-white/5 hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer relative overflow-hidden"
-                    >
-                        {/* Background Decoration */}
-                        <div className="absolute top-0 right-0 p-16 bg-gradient-to-br from-primary/5 to-transparent rounded-bl-full -mr-8 -mt-8 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {displayData.map((partner) => {
+                    const partnerTotal = partnerTotals[`${partner.type}-${partner.id}`] || { totalPaid: 0, count: 0 }
 
-                        <div className="relative z-10 space-y-4">
-                            <div className="flex items-start justify-between">
-                                <div className="flex gap-4">
-                                    <div className={cn(
-                                        "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner overflow-hidden",
-                                        partner.type === 'Vendor' ? "bg-orange-500/10 text-orange-500" : "bg-blue-500/10 text-blue-500"
-                                    )}>
-                                        {partner.avatar ? (
-                                            <img src={partner.avatar} alt={partner.name} className="w-full h-full object-cover" />
+                    return (
+                        <div
+                            key={`${partner.type}-${partner.id}`}
+                            onClick={() => handlePartnerClick(partner.id, partner.type)}
+                            className="group glass-card rounded-2xl p-5 border border-white/5 hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between"
+                        >
+                            {/* Background Decoration */}
+                            <div className="absolute top-0 right-0 p-16 bg-gradient-to-br from-primary/5 to-transparent rounded-bl-full -mr-8 -mt-8 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                            <div className="relative z-10 space-y-4">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex gap-4">
+                                        <div className={cn(
+                                            "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner overflow-hidden",
+                                            partner.type === 'Vendor' ? "bg-orange-500/10 text-orange-500" : "bg-blue-500/10 text-blue-500"
+                                        )}>
+                                            {partner.avatar ? (
+                                                <img src={partner.avatar} alt={partner.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                partner.type === 'Vendor' ? <Store className="w-6 h-6" /> : <User className="w-6 h-6" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">{partner.name}</h3>
+                                            <span className="inline-flex items-center px-2 py-0.5 mt-1 rounded-md text-xs font-medium bg-muted text-muted-foreground">
+                                                {partner.subType}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-1 text-yellow-500">
+                                        <Star className="w-4 h-4 fill-current" />
+                                        <span className="text-sm font-bold">{partner.rating || "-"}</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 text-sm pt-2">
+                                    <div className="flex items-center gap-3 text-muted-foreground">
+                                        <Phone className="w-4 h-4 shrink-0 opacity-70" />
+                                        <span className="truncate">{partner.phone || t.partners.no_phone}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-muted-foreground">
+                                        <MapPin className="w-4 h-4 shrink-0 opacity-70" />
+                                        {getGoogleMapsUrl(partner.location) ? (
+                                            <a
+                                                href={getGoogleMapsUrl(partner.location)!}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="truncate hover:text-primary hover:underline underline-offset-4"
+                                            >
+                                                {partner.location || t.partners.no_location}
+                                            </a>
                                         ) : (
-                                            partner.type === 'Vendor' ? <Store className="w-6 h-6" /> : <User className="w-6 h-6" />
+                                            <span className="truncate">{partner.location || t.partners.no_location}</span>
                                         )}
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">{partner.name}</h3>
-                                        <span className="inline-flex items-center px-2 py-0.5 mt-1 rounded-md text-xs font-medium bg-muted text-muted-foreground">
-                                            {partner.subType}
-                                        </span>
+                                </div>
+                            </div>
+
+                            {/* Amount & Footer */}
+                            <div className="relative z-10 pt-4 mt-3 border-t border-white/5 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <Wallet className="w-3.5 h-3.5" />
+                                        <span className="text-xs font-medium">ยอดจ่ายสะสม:</span>
                                     </div>
+                                    <span className={cn(
+                                        "font-mono font-bold text-sm",
+                                        partnerTotal.totalPaid > 0 ? "text-green-400" : "text-muted-foreground"
+                                    )}>
+                                        ฿{partnerTotal.totalPaid.toLocaleString()}
+                                    </span>
                                 </div>
-                                <div className="flex gap-1 text-yellow-500">
-                                    <Star className="w-4 h-4 fill-current" />
-                                    <span className="text-sm font-bold">{partner.rating || "-"}</span>
-                                </div>
-                            </div>
 
-                            <div className="space-y-2 text-sm pt-2">
-                                <div className="flex items-center gap-3 text-muted-foreground">
-                                    <Phone className="w-4 h-4 shrink-0 opacity-70" />
-                                    <span className="truncate">{partner.phone || t.partners.no_phone}</span>
+                                <div className="flex items-center justify-between pt-1">
+                                    <span className={cn(
+                                        "text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full",
+                                        partner.status === 'Active' ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                                    )}>
+                                        {partner.status}
+                                    </span>
+                                    <button className="text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">
+                                        {t.partners.view_details} →
+                                    </button>
                                 </div>
-                                <div className="flex items-center gap-3 text-muted-foreground">
-                                    <MapPin className="w-4 h-4 shrink-0 opacity-70" />
-                                    {getGoogleMapsUrl(partner.location) ? (
-                                        <a
-                                            href={getGoogleMapsUrl(partner.location)!}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="truncate hover:text-primary hover:underline underline-offset-4"
-                                        >
-                                            {partner.location || t.partners.no_location}
-                                        </a>
-                                    ) : (
-                                        <span className="truncate">{partner.location || t.partners.no_location}</span>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="pt-4 mt-2 border-t border-white/5 flex items-center justify-between">
-                                <span className={cn(
-                                    "text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full",
-                                    partner.status === 'Active' ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
-                                )}>
-                                    {partner.status}
-                                </span>
-                                <button className="text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">
-                                    {t.partners.view_details} →
-                                </button>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    )
+                })}
             </div>
 
             {/* Components */}
