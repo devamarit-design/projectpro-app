@@ -1,9 +1,11 @@
 import * as React from "react"
-import { X, Phone, MapPin, Star, User, Building, History, CheckSquare, MessageCircle, MoreHorizontal, Mail, Calendar, DollarSign, Wallet, Check, Edit, Trash2, Archive } from "lucide-react"
+import { X, Phone, MapPin, Star, User, Building, History, CheckSquare, MessageCircle, MoreHorizontal, Mail, Calendar, DollarSign, Wallet, Check, Edit, Trash2, Archive, ChevronRight } from "lucide-react"
 import { useProjects, User as UserType, Vendor as VendorType, Worker as WorkerType, Expense } from "@/context/project-context"
 import { cn, getGoogleMapsUrl } from "@/lib/utils"
 // Reuse AddPartnerDialog for editing
 import AddPartnerDialog from "./add-partner-dialog"
+import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
+import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
 import Image from "next/image"
 
 interface PartnerDetailSheetProps {
@@ -15,6 +17,10 @@ interface PartnerDetailSheetProps {
 export default function PartnerDetailSheet({ partnerId, type, onClose }: PartnerDetailSheetProps) {
     const { workers, vendors, expenses, projects, deleteWorker, deleteVendor, updateWorker, updateVendor } = useProjects()
     const [activeTab, setActiveTab] = React.useState<"history" | "tasks">("history")
+
+    // Selected Detail States for Sub-sheets
+    const [selectedExpenseId, setSelectedExpenseId] = React.useState<string | null>(null)
+    const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
 
     // Edit State
     const [isEditOpen, setIsEditOpen] = React.useState(false)
@@ -266,22 +272,29 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                                         <p className="text-center text-muted-foreground py-8">No transaction history</p>
                                     ) : (
                                         relevantExpenses.map(item => (
-                                            <div key={item.id} className="flex items-center justify-between p-3 bg-card border border-white/5 rounded-xl">
+                                            <div
+                                                key={item.id}
+                                                onClick={() => setSelectedExpenseId(item.id)}
+                                                className="flex items-center justify-between p-3 bg-card border border-white/5 rounded-xl cursor-pointer hover:bg-white/5 hover:border-white/15 transition-all active:scale-[0.99] group"
+                                            >
                                                 <div className="flex items-center gap-3">
                                                     <div className={cn(
-                                                        "w-10 h-10 rounded-lg flex items-center justify-center text-xl",
+                                                        "w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-transform group-hover:scale-105",
                                                         item.category === 'Labor' ? "bg-orange-500/10" : "bg-blue-500/10"
                                                     )}>
                                                         {item.category === 'Labor' ? "👷" : "📝"}
                                                     </div>
                                                     <div>
-                                                        <p className="font-medium text-sm">{item.title}</p>
+                                                        <p className="font-medium text-sm group-hover:text-primary transition-colors">{item.title}</p>
                                                         <p className="text-xs text-muted-foreground">{item.date} • {projects.find(p => p.id === item.projectId)?.name || "General"}</p>
                                                     </div>
                                                 </div>
-                                                <span className="font-mono font-bold text-sm">
-                                                    ฿{item.totalValue.toLocaleString()}
-                                                </span>
+                                                <div className="text-right flex items-center gap-2">
+                                                    <span className="font-mono font-bold text-sm">
+                                                        ฿{item.totalValue.toLocaleString()}
+                                                    </span>
+                                                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                                                </div>
                                             </div>
                                         ))
                                     )}
@@ -295,9 +308,13 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                                         <p className="text-center text-muted-foreground py-8">No active tasks</p>
                                     ) : (
                                         relevantTasks.map(({ task, project }) => (
-                                            <div key={task.id} className="p-3 bg-card border border-white/5 rounded-xl space-y-2">
+                                            <div
+                                                key={task.id}
+                                                onClick={() => setSelectedTaskId(task.id)}
+                                                className="p-3 bg-card border border-white/5 rounded-xl space-y-2 cursor-pointer hover:bg-white/5 hover:border-white/15 transition-all active:scale-[0.99] group"
+                                            >
                                                 <div className="flex justify-between items-start">
-                                                    <p className="font-medium text-sm">{task.title}</p>
+                                                    <p className="font-medium text-sm group-hover:text-primary transition-colors">{task.title}</p>
                                                     <span className={cn(
                                                         "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase",
                                                         task.priority === 'High' ? "bg-red-500/10 text-red-500" :
@@ -324,6 +341,17 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                     </div>
                 </div>
             </div>
+
+            {/* Sub Detail Sheets */}
+            <ExpenseDetailSheet
+                expenseId={selectedExpenseId}
+                onClose={() => setSelectedExpenseId(null)}
+            />
+
+            <TaskDetailSheet
+                taskId={selectedTaskId}
+                onClose={() => setSelectedTaskId(null)}
+            />
 
             {/* Edit Dialog reuse */}
             <AddPartnerDialog
