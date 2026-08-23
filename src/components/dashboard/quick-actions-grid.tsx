@@ -4,14 +4,11 @@ import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
 import {
     FolderKanban,
-    CheckSquare,
     Receipt,
-    Users,
     FileText,
     Store,
-    CalendarDays,
-    Settings,
-    GanttChartSquare
+    Users,
+    Settings
 } from "lucide-react"
 
 export function QuickActionsGrid() {
@@ -26,13 +23,6 @@ export function QuickActionsGrid() {
             bg: "bg-blue-500/10"
         },
         {
-            label: t.common?.tasks || "Tasks",
-            icon: CheckSquare,
-            href: "/tasks",
-            color: "text-orange-500",
-            bg: "bg-orange-500/10"
-        },
-        {
             label: t.expenses?.title || "Expenses",
             icon: Receipt,
             href: "/expenses",
@@ -40,18 +30,11 @@ export function QuickActionsGrid() {
             bg: "bg-red-500/10"
         },
         {
-            label: t.schedule?.title || "Global Schedule",
-            icon: GanttChartSquare,
-            href: "/schedule",
-            color: "text-indigo-500",
-            bg: "bg-indigo-500/10"
-        },
-        {
-            label: t.calendar?.title || "Calendar",
-            icon: CalendarDays,
-            href: "/calendar",
-            color: "text-green-500",
-            bg: "bg-green-500/10"
+            label: t.common?.customers || "Customers",
+            icon: Users,
+            href: "/customers",
+            color: "text-orange-500",
+            bg: "bg-orange-500/10"
         },
         {
             label: t.settings?.menu?.documents || "Documents",
@@ -77,7 +60,7 @@ export function QuickActionsGrid() {
     ]
 
     return (
-        <div className="grid grid-cols-4 md:grid-cols-8 gap-y-6 gap-x-4 mb-8">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-y-6 gap-x-4 mb-8">
             {actions.map((action, index) => {
                 const Icon = action.icon
                 return (

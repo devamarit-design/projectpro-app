@@ -39,9 +39,6 @@ export function DashboardFiles() {
                     <Folder className="w-5 h-5 text-primary" />
                     Recent Files
                 </h3>
-                <Link href="/storage" className="text-xs font-medium text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
-                    Storage <ArrowRight className="w-3 h-3" />
-                </Link>
             </div>
 
             {/* Simple Project Filter Tabs */}

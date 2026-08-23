@@ -406,30 +406,6 @@ export default function ProjectDetailClient() {
                     {t.projects.detail.tabs.financials}
                 </button>
                 <button
-                    onClick={() => setActiveTab("tasks")}
-                    className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
-                        activeTab === "tasks"
-                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                            : "bg-background/50 hover:bg-muted/50 text-muted-foreground"
-                    )}
-                >
-                    <CheckSquare className="w-4 h-4" />
-                    {t.projects.detail.tabs.tasks}
-                </button>
-                <button
-                    onClick={() => setActiveTab("schedule")}
-                    className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
-                        activeTab === "schedule"
-                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                            : "bg-background/50 hover:bg-muted/50 text-muted-foreground"
-                    )}
-                >
-                    <Calendar className="w-4 h-4" />
-                    Schedule
-                </button>
-                <button
                     onClick={() => setActiveTab("files")}
                     className={cn(
                         "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
@@ -499,13 +475,6 @@ export default function ProjectDetailClient() {
                                                 </div>
                                             </div>
                                         )}
-                                        <div className="p-3 bg-muted/30 rounded-xl space-y-1">
-                                            <p className="text-xs text-muted-foreground font-medium uppercase">Total Tasks</p>
-                                            <div className="flex items-center gap-2 font-semibold">
-                                                <CheckSquare className="w-4 h-4 text-blue-500" />
-                                                {project.tasks?.length || 0} Tasks
-                                            </div>
-                                        </div>
                                     </div>
 
                                     <div className="pt-2 border-t border-white/5">
@@ -547,23 +516,6 @@ export default function ProjectDetailClient() {
                                             )}>
                                                 {project.status}
                                             </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Mini Task Stats */}
-                                    <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
-                                        <p className="text-xs text-muted-foreground font-medium uppercase">Task Progress</p>
-                                        <div className="flex gap-2">
-                                            <div className="flex-1 bg-muted/30 h-2 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-green-500"
-                                                    style={{ width: `${(project.tasks?.filter(t => t.status === 'Done').length || 0) / (project.tasks?.length || 1) * 100}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="flex justify-between text-xs text-muted-foreground">
-                                            <span>{project.tasks?.filter(t => t.status === 'Done').length || 0} Done</span>
-                                            <span>{project.tasks?.length || 0} Total</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1475,41 +1427,6 @@ export default function ProjectDetailClient() {
                                                 </div>
                                             )}
 
-                                            {/* Tasks */}
-                                            <div className="pt-2 border-t border-white/10">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h4 className="text-sm font-bold flex items-center gap-2">
-                                                        <CheckSquare className="w-3 h-3 text-primary" /> Tasks
-                                                    </h4>
-                                                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                                                        {subProjectTasks.length}
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    {subProjectTasks.length > 0 ? (
-                                                        subProjectTasks.map(task => (
-                                                            <div
-                                                                key={task.id}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation()
-                                                                    setSelectedSubProjectId(null)
-                                                                    setActiveTab('tasks')
-                                                                    router.push(`${pathname}?${createQueryString('taskId', task.id)}`, { scroll: false })
-                                                                }}
-                                                                className="text-xs p-2 bg-muted/30 rounded-lg flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors group"
-                                                            >
-                                                                <span className="truncate group-hover:text-primary transition-colors">{task.title}</span>
-                                                                <span className={cn(
-                                                                    "px-1.5 py-0.5 rounded text-[10px]",
-                                                                    task.status === 'Done' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'
-                                                                )}>{task.status}</span>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <p className="text-xs text-muted-foreground italic">No tasks assigned</p>
-                                                    )}
-                                                </div>
-                                            </div>
                                         </div>
 
                                         {/* Right Column: Expenses */}

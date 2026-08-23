@@ -78,11 +78,8 @@ export function MobileNav() {
 
     const moreGroups = React.useMemo(() => [
         {
-            title: "งาน", // Work
+            title: "เอกสาร", // Documents
             items: [
-                { href: "/calendar", label: t.calendar?.title || "ปฏิทิน", icon: CalendarDays, color: "text-teal-500 bg-teal-500/10" },
-                { href: "/schedule", label: t.schedule?.title || "แผนงาน", icon: GanttChartSquare, color: "text-indigo-500 bg-indigo-500/10" },
-                { href: "/tasks", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 bg-blue-500/10" },
                 { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 bg-amber-500/10" },
             ]
         },
@@ -91,7 +88,6 @@ export function MobileNav() {
             items: [
                 { href: "/customers", label: t.common.customers, icon: Users, color: "text-orange-500 bg-orange-500/10" },
                 { href: "/partners", label: t.common.partners, icon: Handshake, color: "text-cyan-500 bg-cyan-500/10" },
-                { href: "/storage", label: t.common.storage, icon: HardDrive, color: "text-purple-500 bg-purple-500/10" },
             ]
         },
         {
@@ -122,7 +118,6 @@ export function MobileNav() {
     const addItems = React.useMemo(() => [
         ...(hasPermission(currentTeam?.role, "INCOME_CREATE") ? [{ href: "/income?action=new", label: t.finance.income, icon: FileText, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
         { href: "/expenses?action=new", label: t.finance.expense, icon: CreditCard, color: "text-red-500 from-red-500/20 to-red-500/5" },
-        { href: "/tasks?action=new", label: t.common.tasks, icon: CheckSquare, color: "text-blue-500 from-blue-500/20 to-blue-500/5" },
         // { href: "/storage?action=new", label: "Media", icon: HardDrive, color: "text-purple-500 from-purple-500/20 to-purple-500/5" },
         { href: "/wall?action=new", label: "Post", icon: Newspaper, color: "text-pink-500 from-pink-500/20 to-pink-500/5" },
     ], [currentTeam?.role, t])

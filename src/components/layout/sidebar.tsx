@@ -59,13 +59,9 @@ export function Sidebar({ className }: { className?: string }) {
             ]
         },
         {
-            title: "งาน", // Work
+            title: "เอกสาร", // Documents
             items: [
-                { href: "/calendar", label: t.calendar?.title || "ปฏิทิน", icon: Calendar },
-                { href: "/schedule", label: t.schedule?.title || "แผนงาน", icon: GanttChartSquare },
-                { href: "/tasks", label: t.common.tasks, icon: CheckSquare },
                 { href: "/contracts", label: t.common.contracts, icon: FileText },
-                { href: "/storage", label: t.common.storage, icon: HardDrive },
             ]
         },
         {

@@ -3,7 +3,6 @@
 import * as React from "react"
 import Link from "next/link"
 import { useProjects } from "@/context/project-context"
-import { DashboardTasks } from "./dashboard-tasks"
 import { DashboardActivity } from "./dashboard-activity"
 import { DashboardFiles } from "./dashboard-files"
 import { WeatherCard } from "./weather-card"
@@ -79,20 +78,16 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Content: Tasks & Activity (2/3 width on large screens) */}
+                {/* Main Content: Activity (2/3 width on large screens) */}
                 <div className="lg:col-span-2 space-y-6">
-                    <DashboardTasks />
-                    {/* Activity Feed */}
-                    <div className="col-span-1 lg:col-span-2 h-[500px]">
-                        <DashboardActivity limit={12} showViewAll={true} />
+                    <div className="h-[600px]">
+                        <DashboardActivity limit={15} showViewAll={true} />
                     </div>
                 </div>
 
-                {/* Sidebar: Files & Wall (1/3 width) */}
+                {/* Sidebar: Files (1/3 width) */}
                 <div className="space-y-6">
                     <DashboardFiles />
-
-
                 </div>
             </div>
         </div>

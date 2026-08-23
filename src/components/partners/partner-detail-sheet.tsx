@@ -233,9 +233,9 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                                 </p>
                             </div>
                             <div className="bg-card border border-white/5 p-4 rounded-2xl space-y-1">
-                                <p className="text-xs text-muted-foreground font-bold uppercase">Jobs / Txns</p>
+                                <p className="text-xs text-muted-foreground font-bold uppercase">Transactions</p>
                                 <p className="text-xl font-mono font-bold">
-                                    {relevantExpenses.length + relevantTasks.length}
+                                    {relevantExpenses.length}
                                 </p>
                             </div>
                         </div>
@@ -245,24 +245,10 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                             <div className="flex border-b border-white/10 mb-4">
                                 <button
                                     onClick={() => setActiveTab("history")}
-                                    className={cn(
-                                        "flex-1 pb-3 text-sm font-bold uppercase tracking-wider border-b-2 transition-colors",
-                                        activeTab === "history" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"
-                                    )}
+                                    className="flex-1 pb-3 text-sm font-bold uppercase tracking-wider border-b-2 border-primary text-foreground transition-colors text-left"
                                 >
-                                    History
+                                    Payment History
                                 </button>
-                                {type === "Worker" && (
-                                    <button
-                                        onClick={() => setActiveTab("tasks")}
-                                        className={cn(
-                                            "flex-1 pb-3 text-sm font-bold uppercase tracking-wider border-b-2 transition-colors",
-                                            activeTab === "tasks" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"
-                                        )}
-                                    >
-                                        Active Tasks
-                                    </button>
-                                )}
                             </div>
 
                             {/* History Tab */}

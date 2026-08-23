@@ -6,7 +6,29 @@ const config: CapacitorConfig = {
   webDir: 'out',
   server: {
     url: 'https://www.hipsloth.app',
-    androidScheme: 'https'
+    androidScheme: 'https',
+    cleartext: false
+  },
+  plugins: {
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"]
+    },
+    Keyboard: {
+      resize: 'body',
+      style: 'dark'
+    },
+    SplashScreen: {
+      launchShowDuration: 1500,
+      launchAutoHide: true,
+      backgroundColor: "#09090b"
+    }
+  },
+  ios: {
+    contentInset: 'always',
+    preferredContentMode: 'mobile'
+  },
+  android: {
+    allowMixedContent: false
   }
 };
 
