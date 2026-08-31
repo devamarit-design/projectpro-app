@@ -7,6 +7,7 @@ import { MoodSettings } from "./mood-settings"
 import { FinancialTargetSettings } from "./financial-target-settings"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { authenticatedFetch } from "@/lib/authenticated-fetch"
 
 import { useTranslation } from "@/lib/i18n-context"
 export function NotificationSettings() {
@@ -241,11 +242,12 @@ export function NotificationSettings() {
 
                                     // 2. Trigger Web Push (Browser)
                                     if (currentUser?.id) {
-                                        fetch('/api/notifications/push/test', {
+                                        authenticatedFetch('/api/notifications/push/test', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
                                                 userId: currentUser.id,
+                                                orgId: currentTeam?.id,
                                                 type: 'summary'
                                             })
                                         }).catch(console.error)
@@ -263,7 +265,7 @@ export function NotificationSettings() {
                                     if (!currentTeam?.id) return toast.error("No Organization ID")
                                     const toastId = toast.loading("Sending Telegram message...")
                                     try {
-                                        const res = await fetch('/api/notifications/telegram/test', {
+                                        const res = await authenticatedFetch('/api/notifications/telegram/test', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({

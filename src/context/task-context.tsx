@@ -6,6 +6,7 @@ import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, delet
 import { useOrganization } from "@/context/organization-context"
 import { logActivity } from "@/lib/activity-logger"
 import { ProjectTask, TaskStatus, Priority, WorkItem, User } from "./project-context"
+import { authenticatedFetch } from "@/lib/authenticated-fetch"
 
 interface TaskContextType {
     tasks: ProjectTask[]
@@ -204,11 +205,12 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
             if (newTask.assignedTo && newTask.assignedTo.length > 0) {
                 const targetUserIds = newTask.assignedTo.filter(id => id !== currentUser?.id)
                 if (targetUserIds.length > 0) {
-                    fetch('/api/notifications/push/send', {
+                    authenticatedFetch('/api/notifications/push/send', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             userIds: targetUserIds,
+                            orgId: currentTeam.id,
                             title: `New Task Assigned: ${newTask.title}`,
                             body: `${currentUser?.name} assigned you to a new task.`,
                             url: `/projects/detail?id=${projectId}&taskId=${docRef.id}`
@@ -264,11 +266,12 @@ export function TaskProvider({ children, currentUser }: { children: React.ReactN
                     )
 
                     if (newAssignees.length > 0) {
-                        fetch('/api/notifications/push/send', {
+                        authenticatedFetch('/api/notifications/push/send', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 userIds: newAssignees,
+                                orgId: currentTeam.id,
                                 title: `Task Assigned: ${updates.title || currentTask?.title || 'Unknown Task'}`,
                                 body: `${currentUser.name} assigned you to this task.`,
                                 url: `/projects/detail?id=${currentTask?.projectId}&taskId=${taskId}`

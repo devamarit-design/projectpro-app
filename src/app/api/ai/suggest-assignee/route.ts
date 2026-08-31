@@ -1,10 +1,12 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import { authErrorResponse, requireOrganizationAccess } from "@/lib/api-auth";
 
 export async function POST(req: Request) {
     try {
-        const { taskTitle, taskDescription, teamMembers, projectContext } = await req.json();
+        const { taskTitle, taskDescription, teamMembers, projectContext, orgId } = await req.json();
+        await requireOrganizationAccess(req, orgId);
 
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
@@ -53,6 +55,8 @@ export async function POST(req: Request) {
 
         return NextResponse.json(suggestion);
     } catch (error) {
+        const authResponse = authErrorResponse(error);
+        if (authResponse) return authResponse;
         console.error("AI Suggestion Error:", error);
         return NextResponse.json(
             { error: "Failed to generate suggestion" },

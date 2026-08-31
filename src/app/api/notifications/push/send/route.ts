@@ -1,13 +1,20 @@
 
 import { NextResponse } from 'next/server'
 import { db, messaging } from '@/lib/firebase-admin'
+import { authErrorResponse, requireAuthenticatedUser, requireOrganizationAccess } from '@/lib/api-auth'
 
 export async function POST(req: Request) {
     try {
-        const { userIds, title, body, url, data } = await req.json()
+        await requireAuthenticatedUser(req)
+        const { userIds, title, body, url, data, orgId } = await req.json()
 
         if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
             return NextResponse.json({ message: 'No user IDs provided' }, { status: 400 })
+        }
+
+        const { memberIds } = await requireOrganizationAccess(req, orgId)
+        if (userIds.some((userId: unknown) => typeof userId !== 'string' || !memberIds.includes(userId))) {
+            return NextResponse.json({ error: 'Notification recipients must belong to this organization' }, { status: 403 })
         }
 
         if (!messaging) {
@@ -64,6 +71,8 @@ export async function POST(req: Request) {
         })
 
     } catch (error: any) {
+        const authResponse = authErrorResponse(error)
+        if (authResponse) return authResponse
         console.error('Error sending push:', error)
         return NextResponse.json({ error: error.message }, { status: 500 })
     }

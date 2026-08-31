@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/firebase"
 import { collection, getDocs, writeBatch, doc } from "firebase/firestore"
+import { authErrorResponse, requireSystemAdmin } from "@/lib/api-auth"
 
 // Collections to migrate
 const COLLECTIONS = [
@@ -17,6 +18,12 @@ const COLLECTIONS = [
 ]
 
 export async function POST(request: NextRequest) {
+    try {
+        await requireSystemAdmin(request)
+    } catch (error) {
+        return authErrorResponse(error) ?? NextResponse.json({ error: "Authentication failed" }, { status: 500 })
+    }
+
     const results: any[] = []
 
     for (const colName of COLLECTIONS) {

@@ -1,14 +1,22 @@
 
 import { NextResponse } from 'next/server'
 import { db, messaging } from '@/lib/firebase-admin'
+import { authErrorResponse, requireAuthenticatedUser, requireOrganizationAccess } from '@/lib/api-auth'
 
 export async function POST(req: Request) {
     try {
+        await requireAuthenticatedUser(req)
         const body = await req.json()
-        const { userId, title, body: messageBody } = body
+        const { userId, title, body: messageBody, orgId } = body
 
         if (!userId) {
             return NextResponse.json({ success: false, error: 'User ID required' }, { status: 400 })
+        }
+
+        const { user, role, memberIds } = await requireOrganizationAccess(req, orgId)
+        const canTestForOthers = role === 'Owner' || role === 'Admin'
+        if (!memberIds.includes(userId) || (userId !== user.uid && !canTestForOthers)) {
+            return NextResponse.json({ error: 'You cannot send a test notification to this user' }, { status: 403 })
         }
 
         // 1. Get User's Tokens
@@ -57,6 +65,8 @@ export async function POST(req: Request) {
         })
 
     } catch (error: any) {
+        const authResponse = authErrorResponse(error)
+        if (authResponse) return authResponse
         console.error("Push API Error:", error)
         return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }

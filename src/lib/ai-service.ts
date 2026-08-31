@@ -1,6 +1,7 @@
 "use server";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { requireOrganizationAccess } from "@/lib/api-auth";
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
@@ -22,7 +23,15 @@ export type AnalyzeReceiptResult =
     | { success: true; data: ExtractedExpenseData }
     | { success: false; error: string };
 
-export async function analyzeReceipt(base64Image: string): Promise<AnalyzeReceiptResult> {
+export async function analyzeReceipt(base64Image: string, authToken: string, orgId: string): Promise<AnalyzeReceiptResult> {
+    try {
+        await requireOrganizationAccess(new Request("http://localhost", {
+            headers: { Authorization: `Bearer ${authToken}` },
+        }), orgId)
+    } catch {
+        return { success: false, error: "Authentication required. Please sign in again." }
+    }
+
     if (!apiKey) {
         console.error("Missing Gemini API Key");
         return { success: false, error: "Missing API Key configuration. Please check Vercel settings." };

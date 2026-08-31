@@ -6,6 +6,7 @@ import { useProjects, Priority, TaskStatus } from "@/context/project-context"
 import { cn } from "@/lib/utils"
 import SearchableCombobox from "@/components/ui/searchable-combobox"
 import Image from "next/image"
+import { authenticatedFetch } from "@/lib/authenticated-fetch"
 
 interface AddTaskDialogProps {
     isOpen: boolean
@@ -17,7 +18,7 @@ interface AddTaskDialogProps {
 import { useTranslation } from "@/lib/i18n-context"
 
 export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defaultDate, taskToEdit }: AddTaskDialogProps & { taskToEdit?: any }) {
-    const { projects, addTask, updateTask, addProject, addSubProject, users, currentUser } = useProjects()
+    const { projects, addTask, updateTask, addProject, addSubProject, users, currentUser, currentTeam } = useProjects()
     const { t } = useTranslation()
     const [title, setTitle] = React.useState("")
     const [selectedProjectId, setSelectedProjectId] = React.useState(defaultProjectId || "")
@@ -68,14 +69,15 @@ export default function AddTaskDialog({ isOpen, onClose, defaultProjectId, defau
         setAiReason(null)
 
         try {
-            const response = await fetch('/api/ai/suggest-assignee', {
+            const response = await authenticatedFetch('/api/ai/suggest-assignee', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     taskTitle: title,
                     taskDescription: description,
                     projectContext: projects.find(p => p.id === selectedProjectId)?.name || "General Project",
-                    teamMembers: users
+                    teamMembers: users,
+                    orgId: currentTeam?.id,
                 })
             })
 

@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { authErrorResponse, requireOrganizationAccess } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
     try {
@@ -13,7 +14,8 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { image } = body;
+        const { image, orgId } = body;
+        await requireOrganizationAccess(req, orgId);
 
         if (!image) {
             return NextResponse.json(
@@ -76,6 +78,8 @@ export async function POST(req: NextRequest) {
         }
 
     } catch (error: any) {
+        const authResponse = authErrorResponse(error);
+        if (authResponse) return authResponse;
         console.error("Scan Error:", error);
         return NextResponse.json(
             { error: error.message || "Failed to scan receipt" },

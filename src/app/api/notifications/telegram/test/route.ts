@@ -3,15 +3,19 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/firebase-admin'
 import { format, isPast, isToday, parseISO, isValid } from 'date-fns'
 import { th } from 'date-fns/locale'
+import { authErrorResponse, requireAuthenticatedUser, requireOrganizationAccess } from '@/lib/api-auth'
 
 export async function POST(req: Request) {
     try {
+        await requireAuthenticatedUser(req)
         const body = await req.json()
         const { orgId, type } = body
 
         if (!orgId) {
             return NextResponse.json({ success: false, error: 'Org ID required' }, { status: 400 })
         }
+
+        await requireOrganizationAccess(req, orgId, ['Owner', 'Admin'])
 
         // 1. Get Org Settings to find Telegram Config
         const orgDoc = await db.collection('organizations').doc(orgId).get()
@@ -118,8 +122,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true })
 
     } catch (error: any) {
+        const authResponse = authErrorResponse(error)
+        if (authResponse) return authResponse
         console.error("Telegram API Error:", error)
         return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 }
-

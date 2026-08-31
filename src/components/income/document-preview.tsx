@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { getFunctions, httpsCallable } from "firebase/functions"
 // Import shared pagination logic
 import { flattenDocumentItems, paginateItems } from "@/lib/pagination-utils"
+import { authenticatedFetch } from "@/lib/authenticated-fetch"
 
 interface DocumentPreviewProps {
     document: IncomeDocument
@@ -230,7 +231,7 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
 
             // Case 3: Remote URL (http/https) -> Use Proxy to bypass CORS
             const proxiedUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
-            const response = await fetch(proxiedUrl);
+            const response = await authenticatedFetch(proxiedUrl);
 
             if (!response.ok) {
                 // Try fallback: fetch directly (might work if CORS allows, e.g. some CDNs)

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
 import { toast } from "sonner"
 import QRCode from "react-qr-code"
+import { authenticatedFetch } from "@/lib/authenticated-fetch"
 
 interface InviteMemberDialogProps {
     isOpen: boolean
@@ -72,24 +73,14 @@ export default function InviteMemberDialog({ isOpen, onClose }: InviteMemberDial
             })
 
             // 2. Send Real Email via API
-            const response = await fetch('/api/send-email', {
+            const response = await authenticatedFetch('/api/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     to: email,
-                    subject: `Join ${currentOrg.name} on ProjectPro`,
-                    html: `
-                        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                            <h2>You have been invited to join ${currentOrg.name}</h2>
-                            <p>Hello,</p>
-                            <p>You have been invited to join <strong>${currentOrg.name}</strong> on ProjectPro.</p>
-                            <p>You can join by clicking the button below:</p>
-                            <a href="${inviteLink}" style="display: inline-block; background-color: #7c3aed; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Join Organization</a>
-                            <p style="margin-top: 24px; color: #666;">Or use this Invite Code: <strong>${currentOrg.id}</strong></p>
-                            <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
-                            <p style="font-size: 12px; color: #999;">If you didn't expect this invitation, you can ignore this email.</p>
-                        </div>
-                    `
+                    orgId: currentOrg.id,
+                    inviteLink,
+                    inviteCode: inviteCode || currentOrg.id,
                 })
             })
 

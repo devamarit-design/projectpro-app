@@ -6,6 +6,7 @@ import { uploadWithThumbnail } from "@/lib/upload"
 import { useOrganization } from "@/context/organization-context"
 import { toast } from "sonner"
 import Image from "next/image"
+import { auth } from "@/lib/firebase"
 
 export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = false }: {
     isOpen: boolean
@@ -83,7 +84,9 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
         try {
             // imageToAnalyze is already compressed if it was large
             const imageToAnalyze = previewUrl
-            const result = await analyzeReceipt(imageToAnalyze)
+            const token = await auth.currentUser?.getIdToken()
+            if (!token || !currentOrg?.id) throw new Error("Please sign in again")
+            const result = await analyzeReceipt(imageToAnalyze, token, currentOrg.id)
 
             if (!result.success) {
                 throw new Error(result.error)

@@ -1,5 +1,7 @@
 'use client'
 
+import { authenticatedFetch } from '@/lib/authenticated-fetch'
+
 /**
  * Sanitize filename to remove non-ASCII characters
  */
@@ -17,7 +19,7 @@ export async function generateServerPDF(html: string, filename: string = 'docume
     const safeFilename = sanitizeFilename(filename)
 
     try {
-        const response = await fetch('/api/pdf/generate', {
+        const response = await authenticatedFetch('/api/pdf/generate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -52,7 +54,7 @@ export async function generateServerPDF(html: string, filename: string = 'docume
  * Generate PDF blob for further processing (e.g. convert to image)
  */
 export async function generateServerPDFBlob(html: string): Promise<Blob> {
-    const response = await fetch('/api/pdf/generate', {
+    const response = await authenticatedFetch('/api/pdf/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html, filename: 'temp.pdf' }),
