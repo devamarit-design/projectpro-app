@@ -69,6 +69,60 @@
                     "order": "ASCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "expenses",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isDeleted",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "orgId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "deletedAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "incomes",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isDeleted",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "orgId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "deletedAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "contracts",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isDeleted",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "orgId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "deletedAt",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []
