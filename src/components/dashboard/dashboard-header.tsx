@@ -157,7 +157,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                         {onDownload && (currentTeam?.role === 'Admin' || currentTeam?.role === 'Owner') && (
                             <button
                                 onClick={onDownload}
-                                className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 backdrop-blur-md px-3 py-2 rounded-xl transition-all text-sm font-medium border border-white/20 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 group"
+                                className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 backdrop-blur-md px-3 py-2 rounded-xl transition-all text-sm font-medium border border-white/20 shadow-lg hover:shadow-xl hover:brightness-110 active:scale-95 group"
                             >
                                 <Download className="w-4 h-4 group-hover:animate-bounce" />
                                 <span className="hidden sm:inline">{t.dashboard.report || "Report"}</span>

@@ -97,14 +97,14 @@ export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
 
                     {/* Top Actions */}
                     <div className="absolute top-4 left-4 right-4 md:top-8 md:left-8 md:right-8 z-[100] flex justify-between items-start pointer-events-none">
-                        <Link href="/projects" className="p-3.5 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-xl transition-all inline-flex pointer-events-auto shadow-2xl hover:scale-110 active:scale-90 border border-white/10">
+                        <Link href="/projects" className="p-3.5 bg-black/50 hover:bg-black/75 hover:border-white/30 text-white rounded-full backdrop-blur-xl transition-all inline-flex pointer-events-auto shadow-2xl active:scale-95 border border-white/10">
                             <ArrowLeft className="w-6 h-6" />
                         </Link>
 
                         <div className="relative pointer-events-auto">
                             <button
                                 onClick={() => setShowMenu(!showMenu)}
-                                className="p-3.5 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-xl transition-all shadow-2xl hover:scale-110 active:scale-90 border border-white/10"
+                                className="p-3.5 bg-black/50 hover:bg-black/75 hover:border-white/30 text-white rounded-full backdrop-blur-xl transition-all shadow-2xl active:scale-95 border border-white/10"
                             >
                                 <MoreHorizontal className="w-6 h-6" />
                             </button>
@@ -173,7 +173,7 @@ export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
                                         <button
                                             onClick={() => setShowStatusPicker(!showStatusPicker)}
                                             className={cn(
-                                                "px-5 py-2 rounded-full text-[10px] md:text-sm font-black uppercase tracking-widest border backdrop-blur-md flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-xl",
+                                                "px-5 py-2 rounded-full text-[10px] md:text-sm font-black uppercase tracking-widest border backdrop-blur-md flex items-center gap-2 transition-all hover:brightness-110 active:scale-95 shadow-xl",
                                                 project.status === 'In Progress' ? "bg-blue-500/40 border-blue-500/50 text-white" :
                                                     project.status === 'Completed' ? "bg-green-500/40 border-green-500/50 text-white" :
                                                         project.status === 'On Hold' ? "bg-yellow-500/40 border-yellow-500/50 text-white" :

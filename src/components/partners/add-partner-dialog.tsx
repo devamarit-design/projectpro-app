@@ -207,7 +207,7 @@ export default function AddPartnerDialog({ isOpen, onClose, defaultType = "Perso
                                     type === "Business" ? <Building className="w-10 h-10" /> : <User className="w-10 h-10" />
                                 )}
                             </div>
-                            <label className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-xl shadow-lg cursor-pointer hover:scale-110 active:scale-95 transition-all">
+                            <label className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-xl shadow-lg cursor-pointer hover:brightness-110 active:scale-95 transition-all">
                                 {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                                 <input
                                     type="file"

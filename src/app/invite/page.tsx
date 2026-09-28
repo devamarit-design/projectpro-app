@@ -179,7 +179,7 @@ function InviteContent() {
                         <div className="w-full space-y-3">
                             <button
                                 onClick={handleJoin}
-                                className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:brightness-110 active:scale-[0.98] transition-all"
                             >
                                 {t.invite.join_workspace}
                             </button>

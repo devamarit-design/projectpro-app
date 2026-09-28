@@ -300,35 +300,44 @@ html[data-theme-gradient="true"] [class*="bg-muted"]:not(body):not(.bg-muted\/20
     inset 0 0 20px rgba(255, 255, 255, 0.03) !important;
 }
 
-/* Borderless Neon Buttons & Primary Actions (Soften glow) */
+/* Modern High-End Neon Buttons & Primary Actions (Zero Boundary Clipping) */
 html[data-theme-gradient="true"] .bg-primary,
 html[data-theme-gradient="true"] .neon-glow-btn {
   background: var(--primary-gradient) !important;
   background-size: 200% 100% !important;
   border: none !important;
-  /* Remove all borders */
   color: #fff !important;
   font-weight: 800 !important;
 
-  /* Refined Colored Box Shadow Glow */
+  /* Refined ambient glow with subtle top specular glass sheen */
   box-shadow:
-    0 0 10px hsl(var(--primary)/0.5),
-    0 0 25px hsl(var(--primary)/0.3),
-    inset 0 0 10px rgba(255, 255, 255, 0.15) !important;
+    0 2px 8px -1px hsl(var(--primary)/0.4),
+    0 0 16px hsl(var(--primary)/0.25),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.35) !important;
 
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.4) !important;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 html[data-theme-gradient="true"] .bg-primary:hover,
 html[data-theme-gradient="true"] .neon-glow-btn:hover {
   background-position: 100% 0 !important;
+  /* Modern illumination glow without scaling or jumping off edges */
   box-shadow:
-    0 0 20px hsl(var(--primary)/0.8),
-    0 0 40px hsl(var(--primary)/0.5),
-    inset 0 0 20px rgba(255, 255, 255, 0.3) !important;
-  transform: scale(1.05) translateY(-2px);
-  filter: brightness(1.1) saturate(1.1);
+    0 0 22px hsl(var(--primary)/0.65),
+    0 4px 18px rgba(0, 0, 0, 0.25),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.5) !important;
+  transform: none !important;
+  filter: brightness(1.1) saturate(1.08);
+}
+
+html[data-theme-gradient="true"] .bg-primary:active,
+html[data-theme-gradient="true"] .neon-glow-btn:active {
+  transform: scale(0.97) !important;
+  filter: brightness(0.95);
+  box-shadow:
+    0 0 10px hsl(var(--primary)/0.5),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* For elements that should have a transparent background but a gradient border (full box) */
@@ -562,6 +571,17 @@ body.reduce-transparency [class*="bg-black/80"],
 body.reduce-transparency [class*="bg-background/80"] {
   background-color: hsl(var(--background)) !important;
 }
+
+/* Universal Modern Interactive Feedback (Zero Layout Shift / Edge Clipping) */
+button, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active:not(:disabled),
+[role="button"]:active:not([aria-disabled="true"]) {
+  transform: scale(0.98);
+}
+
 
 /* Reduce Motion */
 body.reduce-motion *,

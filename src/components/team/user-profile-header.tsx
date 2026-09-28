@@ -95,7 +95,7 @@ export function UserProfileHeader({ user, stats, onEdit, isCurrentUserOrAdmin }:
                         {isCurrentUserOrAdmin && onEdit && (
                             <button
                                 onClick={onEdit}
-                                className="px-6 py-2 bg-primary text-primary-foreground rounded-full text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all flex items-center gap-2 mt-2"
+                                className="px-6 py-2 bg-primary text-primary-foreground rounded-full text-sm font-bold shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 mt-2"
                             >
                                 <Edit className="w-4 h-4" />
                                 Edit Profile

@@ -55,7 +55,7 @@ export function ExpenseEntrySelectionDialog({
                             <Sparkles className="w-24 h-24 rotate-12" />
                         </div>
 
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/20 group-hover:scale-110 transition-transform duration-300">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/20 group-hover:brightness-125 group-hover:shadow-purple-500/40 transition-all duration-300">
                             <ScanLine className="w-6 h-6 text-white" />
                         </div>
                         <div className="relative z-10 flex-1">
@@ -78,7 +78,7 @@ export function ExpenseEntrySelectionDialog({
                         }}
                         className="w-full group relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all p-5 text-left flex items-start gap-4 hover:border-white/20 active:scale-[0.98]"
                     >
-                        <div className="w-12 h-12 rounded-xl bg-gray-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                        <div className="w-12 h-12 rounded-xl bg-gray-500/20 flex items-center justify-center shrink-0 group-hover:brightness-125 group-hover:bg-white/15 transition-all duration-300">
                             <FileText className="w-6 h-6 text-foreground" />
                         </div>
                         <div className="relative z-10 flex-1">

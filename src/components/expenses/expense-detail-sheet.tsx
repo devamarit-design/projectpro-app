@@ -649,7 +649,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                         )}>
                                             <button
                                                 onClick={() => setIsImageOpen(true)}
-                                                className="px-4 py-2 bg-white text-black rounded-full font-bold text-sm transform transition-transform hover:scale-105"
+                                                className="px-4 py-2 bg-white hover:bg-white/90 text-black rounded-full font-bold text-sm transition-all active:scale-95 shadow-lg"
                                             >
                                                 View Full Screen
                                             </button>

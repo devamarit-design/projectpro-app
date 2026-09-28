@@ -425,7 +425,7 @@ export function CalendarView() {
                                         <div
                                             key={task.id}
                                             onClick={() => setSelectedEvent(task)}
-                                            className="flex-shrink-0 bg-background/60 hover:bg-background border border-red-500/20 rounded-xl p-3 min-w-[200px] max-w-[250px] cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-red-500/10"
+                                            className="flex-shrink-0 bg-background/60 hover:bg-background border border-red-500/20 hover:border-red-500/50 rounded-xl p-3 min-w-[200px] max-w-[250px] cursor-pointer transition-all hover:shadow-lg hover:shadow-red-500/10 active:scale-[0.98]"
                                         >
                                             <div className="flex justify-between items-start mb-1">
                                                 <span className="text-[10px] font-bold uppercase text-red-500 tracking-wider bg-red-500/10 px-1.5 py-0.5 rounded">

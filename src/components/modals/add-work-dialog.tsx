@@ -315,7 +315,7 @@ export function AddWorkDialog({ isOpen, onOpenChange, projectId, initialData }: 
                         <Button
                             disabled={loading}
                             className={cn(
-                                "text-white rounded-2xl h-14 px-8 font-bold text-base uppercase tracking-widest shadow-xl shadow-primary/20 flex-1 hover:scale-[1.02] transition-transform active:scale-[0.98]",
+                                "text-white rounded-2xl h-14 px-8 font-bold text-base uppercase tracking-widest shadow-xl shadow-primary/20 flex-1 hover:brightness-110 transition-all active:scale-[0.98]",
                                 formData.color
                             )}
                         >

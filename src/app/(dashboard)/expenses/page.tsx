@@ -471,7 +471,7 @@ function ExpensesContent() {
                             )}
                         >
                             <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 rounded-lg bg-amber-500/20 text-amber-500 group-hover:scale-110 transition-transform">
+                                <div className="p-2 rounded-lg bg-amber-500/20 text-amber-500 group-hover:bg-amber-500/30 group-hover:shadow-[0_0_12px_rgba(245,158,11,0.3)] transition-all">
                                     <Wallet className="w-4 h-4" />
                                 </div>
                                 <p className="text-sm font-bold text-amber-400 uppercase tracking-wider">รอชำระ / Pending</p>
@@ -489,7 +489,7 @@ function ExpensesContent() {
                             )}
                         >
                             <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 rounded-lg bg-purple-500/20 text-purple-500 group-hover:scale-110 transition-transform">
+                                <div className="p-2 rounded-lg bg-purple-500/20 text-purple-500 group-hover:bg-purple-500/30 group-hover:shadow-[0_0_12px_rgba(168,85,247,0.3)] transition-all">
                                     <Wallet className="w-4 h-4" />
                                 </div>
                                 <p className="text-sm font-bold text-purple-400 uppercase tracking-wider">{t.expenses.advanced}</p>
@@ -507,7 +507,7 @@ function ExpensesContent() {
                             )}
                         >
                             <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 rounded-lg bg-blue-500/20 text-blue-500 group-hover:scale-110 transition-transform">
+                                <div className="p-2 rounded-lg bg-blue-500/20 text-blue-500 group-hover:bg-blue-500/30 group-hover:shadow-[0_0_12px_rgba(59,130,246,0.3)] transition-all">
                                     <CreditCard className="w-4 h-4" />
                                 </div>
                                 <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">{t.expenses.credit}</p>
@@ -710,7 +710,7 @@ function ExpensesContent() {
                                 className="flex items-center justify-between cursor-pointer py-2 px-1 hover:bg-muted/10 rounded-lg transition-colors group"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                                    <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
                                         {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                                     </div>
                                     <h2 className="text-lg font-bold text-foreground">{monthDisplay}</h2>
@@ -748,7 +748,7 @@ function ExpensesContent() {
                                                     )}
                                                 >
                                                     <div className="flex gap-4 items-center w-full sm:w-auto min-w-0">
-                                                        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors group-hover:scale-110 duration-200",
+                                                        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all group-hover:brightness-125 group-hover:shadow-md duration-200",
                                                             expense.category === 'Material' ? 'bg-orange-500/10 text-orange-500' :
                                                                 expense.category === 'Labor' ? 'bg-blue-500/10 text-blue-500' :
                                                                     'bg-purple-500/10 text-purple-500'

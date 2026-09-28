@@ -363,7 +363,7 @@ export default function EditProjectClient() {
                     </Link>
                     <button
                         type="submit"
-                        className="px-8 py-3 bg-primary text-primary-foreground rounded-xl shadow-lg shadow-primary/25 font-bold hover:scale-105 transition-transform"
+                        className="px-8 py-3 bg-primary text-primary-foreground rounded-xl shadow-lg shadow-primary/25 font-bold hover:brightness-110 active:scale-95 transition-all"
                     >
                         {t.common.save}
                     </button>
