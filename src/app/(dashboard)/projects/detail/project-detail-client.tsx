@@ -405,6 +405,7 @@ export default function ProjectDetailClient() {
                     <Receipt className="w-4 h-4" />
                     {t.projects.detail.tabs.financials}
                 </button>
+                {/* Files tab - temporarily disabled
                 <button
                     onClick={() => setActiveTab("files")}
                     className={cn(
@@ -417,6 +418,7 @@ export default function ProjectDetailClient() {
                     <Folder className="w-4 h-4" />
                     {t.projects.detail.tabs.files}
                 </button>
+                */}
             </div>
 
             {/* Tab Contents */}
@@ -996,6 +998,7 @@ export default function ProjectDetailClient() {
                 }
 
 
+                {/* Files tab content - temporarily disabled
                 {
                     activeTab === 'files' && (
                         <div className="space-y-6">
@@ -1065,6 +1068,7 @@ export default function ProjectDetailClient() {
                         </div>
                     )
                 }
+                */}
                 {
                     activeTab === 'sub_projects' && (
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">

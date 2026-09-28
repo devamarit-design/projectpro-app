@@ -4,7 +4,6 @@ import * as React from "react"
 import Link from "next/link"
 import { useProjects } from "@/context/project-context"
 import { DashboardActivity } from "./dashboard-activity"
-import { DashboardFiles } from "./dashboard-files"
 import { WeatherCard } from "./weather-card"
 import { DashboardHeader } from "./dashboard-header"
 import { useTranslation } from "@/lib/i18n-context"
@@ -77,17 +76,10 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
                 </>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Content: Activity (2/3 width on large screens) */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="h-[600px]">
-                        <DashboardActivity limit={15} showViewAll={true} />
-                    </div>
-                </div>
-
-                {/* Sidebar: Files (1/3 width) */}
-                <div className="space-y-6">
-                    <DashboardFiles />
+            {/* Main Content: Activity */}
+            <div className="space-y-6">
+                <div className="h-[600px]">
+                    <DashboardActivity limit={15} showViewAll={true} />
                 </div>
             </div>
         </div>

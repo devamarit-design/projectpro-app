@@ -2,11 +2,10 @@
 
 import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
-import { Search, Plus, Filter, Calendar, MapPin, MoreHorizontal, Archive, RefreshCcw, ChevronDown, LayoutList, LayoutGrid, Grid3x3 } from "lucide-react"
+import { Search, Plus, Archive, ChevronDown, LayoutList, LayoutGrid, Grid3x3, CheckCircle2, PauseCircle, Hammer, FileText, Layers, FolderKanban } from "lucide-react"
 import { useState, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
-import { hasPermission } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 
 import { useProjects } from "@/context/project-context"
@@ -23,9 +22,7 @@ export default function ProjectsPage() {
     const searchQuery = searchParams.get("q") || ""
     const statusFilter = searchParams.get("status") || null
     const showArchived = searchParams.get("archived") === "true"
-    const [showFilters, setShowFilters] = useState(false) // UI toggle can remain local
     const [columns, setColumns] = useState<1 | 2 | 3 | 'auto'>(2)
-
 
     const [archiveConfirm, setArchiveConfirm] = useState<{ isOpen: boolean; projectId: string | null }>({
         isOpen: false,
@@ -93,10 +90,30 @@ export default function ProjectsPage() {
         }
     })
 
-    const statuses = [
-        { label: t.projects.status.in_progress, value: "In Progress" },
-        { label: t.projects.status.completed, value: "Completed" },
-        { label: t.projects.status.on_hold, value: "On Hold" }
+    // Counts per status
+    const statusCounts = useMemo(() => {
+        const base = sourceProjects.filter(project => {
+            if (!searchQuery) return true
+            return project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                project.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                project.location.toLowerCase().includes(searchQuery.toLowerCase())
+        })
+
+        return {
+            All: base.length,
+            "In Progress": base.filter(p => p.status === "In Progress").length,
+            "Planning": base.filter(p => p.status === "Planning").length,
+            "On Hold": base.filter(p => p.status === "On Hold").length,
+            "Completed": base.filter(p => p.status === "Completed").length,
+        }
+    }, [sourceProjects, searchQuery])
+
+    const statusTabs = [
+        { id: null, value: null, label: t.projects.status.all, icon: Layers, count: statusCounts.All },
+        { id: "In Progress", value: "In Progress", label: t.projects.status.in_progress, icon: Hammer, count: statusCounts["In Progress"], color: "text-blue-500" },
+        { id: "Planning", value: "Planning", label: t.projects.status.planning, icon: FileText, count: statusCounts["Planning"], color: "text-purple-500" },
+        { id: "On Hold", value: "On Hold", label: t.projects.status.on_hold, icon: PauseCircle, count: statusCounts["On Hold"], color: "text-amber-500" },
+        { id: "Completed", value: "Completed", label: t.projects.status.completed, icon: CheckCircle2, count: statusCounts["Completed"], color: "text-emerald-500" },
     ]
 
     const handleArchiveConfirm = async () => {
@@ -138,7 +155,46 @@ export default function ProjectsPage() {
 
             {/* Filter & Search */}
             <div className="space-y-4">
-                <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+                {/* Row 1: Status Tabs Bar */}
+                <div className="overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+                    <div className="flex p-1 bg-muted/30 border border-white/5 rounded-2xl w-fit min-w-full sm:min-w-0">
+                        <div className="flex items-center gap-1">
+                            {statusTabs.map((tab) => {
+                                const isActive = (statusFilter === null && tab.value === null) || statusFilter === tab.value
+                                const Icon = tab.icon
+
+                                return (
+                                    <button
+                                        key={tab.id || "all"}
+                                        onClick={() => updateUrl("status", tab.value)}
+                                        className={cn(
+                                            "group flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap shrink-0",
+                                            isActive
+                                                ? "bg-foreground text-background shadow-md shadow-black/10 font-semibold"
+                                                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                        )}
+                                    >
+                                        <Icon className={cn("w-4 h-4 transition-colors shrink-0", isActive ? "text-background" : tab.color || "text-muted-foreground")} />
+                                        <span>{tab.label}</span>
+                                        <span
+                                            className={cn(
+                                                "px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums transition-colors",
+                                                isActive
+                                                    ? "bg-background/20 text-background"
+                                                    : "bg-white/10 text-muted-foreground group-hover:text-foreground group-hover:bg-white/15"
+                                            )}
+                                        >
+                                            {tab.count}
+                                        </span>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Row 2: Search & Controls */}
+                <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
                     {/* Search */}
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -147,52 +203,45 @@ export default function ProjectsPage() {
                             placeholder={t.projects.search_placeholder}
                             value={searchQuery}
                             onChange={(e) => updateUrl("q", e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                            className="w-full pl-9 pr-4 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
                         />
                     </div>
 
                     {/* Controls Row */}
-                    <div className="flex items-center justify-between gap-2">
-                        {/* Left: Sort, Filter, Archive */}
-                        <div className="flex items-center gap-2">
-                            {/* Sort Dropdown */}
-                            <div className="relative shrink-0">
-                                <select
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value as any)}
-                                    className="pl-3 pr-8 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none cursor-pointer text-sm font-medium"
-                                >
-                                    <option value="recent">Recently Active</option>
-                                    <option value="name">Name (A-Z)</option>
-                                    <option value="start_date">Start Date</option>
-                                    <option value="end_date">End Date</option>
-                                </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                                    <ChevronDown className="w-4 h-4" />
-                                </div>
+                    <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+                        {/* Sort Dropdown */}
+                        <div className="relative shrink-0">
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value as any)}
+                                className="pl-3 pr-8 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none cursor-pointer text-sm font-medium"
+                            >
+                                <option value="recent">Recently Active</option>
+                                <option value="name">Name (A-Z)</option>
+                                <option value="start_date">Start Date</option>
+                                <option value="end_date">End Date</option>
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                <ChevronDown className="w-4 h-4" />
                             </div>
-
-                            <button
-                                onClick={() => setShowFilters(!showFilters)}
-                                className={`px-3 py-2 border rounded-xl transition-all duration-300 shrink-0 ${showFilters || statusFilter ? 'bg-primary text-primary-foreground border-primary' : 'bg-background/50 border-white/10 hover:bg-muted/50 text-muted-foreground'}`}
-                            >
-                                <Filter className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={() => updateUrl("archived", showArchived ? null : "true")}
-                                className={cn(
-                                    "px-3 py-2 border rounded-xl transition-all duration-300 flex items-center gap-2 shrink-0",
-                                    showArchived
-                                        ? "bg-gray-500/20 text-gray-500 border-gray-500/50"
-                                        : "bg-background/50 border-white/10 hover:bg-muted/50 text-muted-foreground"
-                                )}
-                                title={showArchived ? "Show Active Projects" : "Show Archived Projects"}
-                            >
-                                <Archive className="w-5 h-5" />
-                            </button>
                         </div>
 
-                        {/* Right: Column Layout Buttons */}
+                        {/* Archive Toggle Button */}
+                        <button
+                            onClick={() => updateUrl("archived", showArchived ? null : "true")}
+                            className={cn(
+                                "px-3 py-2 border rounded-xl transition-all duration-300 flex items-center gap-2 shrink-0",
+                                showArchived
+                                    ? "bg-gray-500/20 text-gray-500 border-gray-500/50"
+                                    : "bg-background/50 border-white/10 hover:bg-muted/50 text-muted-foreground"
+                            )}
+                            title={showArchived ? "Show Active Projects" : "Show Archived Projects"}
+                        >
+                            <Archive className="w-4 h-4" />
+                            {showArchived && <span className="text-sm font-semibold">Archived</span>}
+                        </button>
+
+                        {/* Column Layout Buttons */}
                         <div className="flex items-center gap-1 bg-muted/30 rounded-xl p-1">
                             <button
                                 onClick={() => setColumns(1)}
@@ -215,34 +264,6 @@ export default function ProjectsPage() {
                             >
                                 <Grid3x3 className="w-4 h-4" />
                             </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Filter Chips - Expandable */}
-                <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${showFilters ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                    <div className="overflow-hidden">
-                        <div className="flex flex-wrap gap-2 pt-1">
-                            {/* ... chips ... */}
-                            <button
-                                onClick={() => updateUrl("status", null)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${statusFilter === null
-                                    ? 'bg-primary/20 text-primary border-primary/20'
-                                    : 'bg-muted/30 text-muted-foreground border-transparent hover:bg-muted/50'}`}
-                            >
-                                {t.projects.status.all}
-                            </button>
-                            {statuses.map(status => (
-                                <button
-                                    key={status.value}
-                                    onClick={() => updateUrl("status", status.value === statusFilter ? null : status.value)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${statusFilter === status.value
-                                        ? 'bg-primary/20 text-primary border-primary/20'
-                                        : 'bg-muted/30 text-muted-foreground border-transparent hover:bg-muted/50'}`}
-                                >
-                                    {status.label}
-                                </button>
-                            ))}
                         </div>
                     </div>
                 </div>
@@ -308,9 +329,18 @@ export default function ProjectsPage() {
                         )
                     })
                 ) : (
-                    <div className="col-span-full py-12 text-center text-muted-foreground">
-                        <Filter className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                        <p>{t.projects.empty}</p>
+                    <div className="col-span-full py-16 text-center text-muted-foreground">
+                        <FolderKanban className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                        <p className="text-base font-medium">{t.projects.empty}</p>
+                        {statusFilter && (
+                            <button
+                                onClick={() => updateUrl("status", null)}
+                                className="mt-4 px-4 py-2 rounded-xl text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors inline-flex items-center gap-2"
+                            >
+                                <Layers className="w-4 h-4" />
+                                <span>{t.projects.status.all} ({statusCounts.All})</span>
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
