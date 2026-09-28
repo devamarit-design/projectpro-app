@@ -3,7 +3,7 @@
 import * as React from "react"
 import { db } from "@/lib/firebase"
 import { collection, addDoc } from "firebase/firestore"
-import { X, Receipt, ScanLine, Plus, Trash2, Layers, User, Building, Camera, Upload, CheckCircle2 } from "lucide-react"
+import { X, Receipt, ScanLine, Plus, Trash2, Layers, User, Building, Camera, Upload, CheckCircle2, ChevronDown, ChevronUp, Check, ArrowRight, ArrowLeft, Sparkles, Image as ImageIcon } from "lucide-react"
 import { useProjects, ExpenseCategory, ExpenseItem } from "@/context/project-context"
 import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
 import { toast } from "sonner"
@@ -50,6 +50,20 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     const [isUploading, setIsUploading] = React.useState(false)
     const [receiptExpanded, setReceiptExpanded] = React.useState(false)
 
+    // 3-Step Accordion Section State (1: หัวบิล, 2: รายการบิล, 3: รูปสลิป)
+    const [openSections, setOpenSections] = React.useState<{ [key: number]: boolean }>({
+        1: true,
+        2: false,
+        3: false,
+    })
+
+    const toggleSection = (step: number) => {
+        setOpenSections(prev => ({
+            ...prev,
+            [step]: !prev[step]
+        }))
+    }
+
     // Split Bill Logic
     const [billType, setBillType] = React.useState<"combine" | "split">("combine")
     const [globalProjectId, setGlobalProjectId] = React.useState("")
@@ -81,12 +95,8 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     const payeeRef = React.useRef<HTMLButtonElement>(null) // Combobox trigger
     const amountRef = React.useRef<HTMLInputElement>(null)
 
-
     const [uploadStatus, setUploadStatus] = React.useState<string>("")
-
-    // Scroll tracking for receipt section auto-expand/collapse
     const scrollRef = React.useRef<HTMLDivElement>(null)
-    const lastScrollY = React.useRef(0)
 
     // Reset when opening
     React.useEffect(() => {
@@ -114,14 +124,15 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     setReceiptImage(null)
                     setReceiptExpanded(false)
                 }
+                setOpenSections({ 1: true, 2: true, 3: Boolean(initialData.receiptImage) })
             } else {
                 setItems([{ id: "1", description: "", amount: 0, quantity: 1, unitPrice: 0, category: "Material", projectId: defaultProjectId }])
                 setTitle("")
-                // Use defaultDate if provided, otherwise today
                 setDate(defaultDate || new Date().toISOString().split('T')[0])
                 setPayee("")
                 setReceiptImage(null)
                 setReceiptExpanded(false)
+                setOpenSections({ 1: true, 2: true, 3: false })
             }
 
             setStatus("Paid")
@@ -139,26 +150,6 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             }
         }
     }, [isOpen, defaultProjectId, startScanning, defaultDate, initialData])
-
-    // Scroll listener for auto-expand/collapse receipt section
-    React.useEffect(() => {
-        const scrollElement = scrollRef.current
-        if (!scrollElement) return
-
-        const handleScroll = () => {
-            const currentScrollY = scrollElement.scrollTop
-            const isScrollingDown = currentScrollY > lastScrollY.current
-
-            // Only change state if there's enough scroll delta
-            if (Math.abs(currentScrollY - lastScrollY.current) > 30) {
-                setReceiptExpanded(isScrollingDown)
-                lastScrollY.current = currentScrollY
-            }
-        }
-
-        scrollElement.addEventListener('scroll', handleScroll, { passive: true })
-        return () => scrollElement.removeEventListener('scroll', handleScroll)
-    }, [])
 
     if (!isOpen) return null
 
@@ -242,6 +233,8 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             setReceiptImage(data.receiptImage)
             setReceiptExpanded(true) // Show the image
         }
+        // Expand step 2 & 3 so user can review scanned items & slip
+        setOpenSections({ 1: false, 2: true, 3: true })
     }
 
     const addItem = () => {
@@ -315,22 +308,24 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
         if (!title.trim()) {
             newErrors.title = true
+            setOpenSections(prev => ({ ...prev, 1: true }))
             if (!firstErrorField) firstErrorField = titleRef
         }
         if (!date) {
             newErrors.date = true
+            setOpenSections(prev => ({ ...prev, 1: true }))
             if (!firstErrorField) firstErrorField = dateRef
         }
         if (!payee && !newItemName) { // Check if payee selected OR quick adding
             newErrors.payee = true
-            // Focus logic for combobox might be tricky, usually we focus the container or just show red border
-            // if (!firstErrorField) firstErrorField = payeeRef 
+            setOpenSections(prev => ({ ...prev, 1: true }))
         }
 
         // Check Items (At least one item with amount > 0)
         const subtotal = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
         if (subtotal <= 0) {
             newErrors.amount = true
+            setOpenSections(prev => ({ ...prev, 2: true }))
             // Try to focus the first amount field
             if (!firstErrorField) firstErrorField = { current: document.getElementById(`amount-${items[0].id}`) }
         }
@@ -502,6 +497,74 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         return tasks.filter(t => t.projectId === pid)
     }
 
+    const renderReceiptContent = () => {
+        if (receiptImage) {
+            return (
+                <div className="space-y-2 pt-1">
+                    <div className="relative rounded-xl overflow-hidden border border-white/10 group aspect-video sm:aspect-[4/3] lg:aspect-auto lg:h-64 bg-black/40 w-full">
+                        <Image
+                            src={receiptImage}
+                            alt="Receipt Preview"
+                            fill
+                            sizes="(max-width: 768px) 100vw, 600px"
+                            className="object-contain"
+                            unoptimized={receiptImage.startsWith('data:') || receiptImage.startsWith('blob:')}
+                        />
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                removeImage()
+                                setReceiptFile(null)
+                            }}
+                            className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-red-500 text-white rounded-full transition-colors shadow-lg"
+                            title="ลบรูป"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="text-emerald-400 font-medium flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> แนบรูปภาพแล้ว
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                removeImage()
+                                setReceiptFile(null)
+                            }}
+                            className="text-red-400 hover:underline"
+                        >
+                            เปลี่ยนรูปใหม่
+                        </button>
+                    </div>
+                </div>
+            )
+        }
+
+        return (
+            <div className="space-y-3 pt-1">
+                <label className="flex flex-col items-center justify-center w-full h-36 lg:h-44 border-2 border-dashed border-white/15 rounded-xl hover:bg-white/5 hover:border-primary/50 transition-all cursor-pointer group">
+                    <div className="flex flex-col items-center justify-center p-4 text-center">
+                        <div className="p-3 rounded-full bg-white/5 group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-2">
+                            <Upload className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+                        </div>
+                        <p className="text-xs text-muted-foreground group-hover:text-foreground font-medium">
+                            {t.expenses.dialog.upload_hint || "แตะเพื่อเลือกรูปใบเสร็จ หรือถ่ายรูปสลิป"}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">รองรับ JPG, PNG (ไม่บังคับ)</p>
+                    </div>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                    />
+                </label>
+            </div>
+        )
+    }
+
     return (
         <>
             {/* Quick Add Dialog Overlay */}
@@ -590,7 +653,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 </div>
             )}
 
-            <div className="fixed inset-0 z-[100] flex items-center justify-center font-sans overflow-hidden">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center font-sans overflow-hidden p-2 sm:p-4">
                 <SmartScanDialog
                     isOpen={isScanOpen}
                     onClose={() => setIsScanOpen(false)}
@@ -599,566 +662,853 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                 <SafeBackdrop onClose={onClose} className="absolute inset-0 bg-background/60 backdrop-blur-sm transition-opacity" />
 
-                <div className="relative glass-card w-full max-w-2xl h-[90vh] md:h-auto md:max-h-[90vh] mx-4 p-0 rounded-2xl shadow-2xl border border-white/10 flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                <div className="relative glass-card w-full max-w-[calc(100vw-1rem)] sm:max-w-2xl lg:max-w-5xl xl:max-w-6xl h-[90vh] max-h-[90vh] p-0 rounded-2xl shadow-2xl border border-white/10 flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
 
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-white/10 shrink-0">
+                    {/* Dialog Header */}
+                    <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/10 shrink-0">
                         <div>
-                            <h2 className="text-2xl font-bold tracking-tight">{t.expenses.dialog.title}</h2>
-                            <p className="text-sm text-muted-foreground mr-4">{t.expenses.dialog.subtitle}</p>
+                            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t.expenses.dialog.title}</h2>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{t.expenses.dialog.subtitle}</p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <button
+                            onClick={onClose}
+                            className="p-2 rounded-full hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                            aria-label="Close"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* 3-Step Navigation Pills (Mobile only, hidden on Desktop since desktop shows side-by-side) */}
+                    <div className="px-4 sm:px-5 pt-3 shrink-0 lg:hidden">
+                        <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/5 rounded-xl border border-white/10 text-xs">
                             <button
-                                onClick={onClose}
-                                className="p-2 rounded-full hover:bg-white/5 text-muted-foreground transition-colors"
+                                type="button"
+                                onClick={() => toggleSection(1)}
+                                className={cn(
+                                    "py-2 px-1.5 rounded-lg font-medium flex items-center justify-center gap-1.5 transition-all min-w-0",
+                                    openSections[1]
+                                        ? "bg-primary text-primary-foreground font-bold shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                )}
                             >
-                                <X className="w-5 h-5" />
+                                <span className={cn(
+                                    "w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0",
+                                    openSections[1] ? "bg-white/20" : "bg-white/10"
+                                )}>
+                                    {title && payee ? <Check className="w-2.5 h-2.5" /> : "1"}
+                                </span>
+                                <span className="truncate">1. หัวบิล</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => toggleSection(2)}
+                                className={cn(
+                                    "py-2 px-1.5 rounded-lg font-medium flex items-center justify-center gap-1.5 transition-all min-w-0",
+                                    openSections[2]
+                                        ? "bg-primary text-primary-foreground font-bold shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                )}
+                            >
+                                <span className={cn(
+                                    "w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0",
+                                    openSections[2] ? "bg-white/20" : "bg-white/10"
+                                )}>
+                                    {subtotal > 0 ? <Check className="w-2.5 h-2.5" /> : "2"}
+                                </span>
+                                <span className="truncate">2. รายการ</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => toggleSection(3)}
+                                className={cn(
+                                    "py-2 px-1.5 rounded-lg font-medium flex items-center justify-center gap-1.5 transition-all min-w-0",
+                                    openSections[3]
+                                        ? "bg-primary text-primary-foreground font-bold shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                )}
+                            >
+                                <span className={cn(
+                                    "w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0",
+                                    openSections[3] ? "bg-white/20" : "bg-white/10"
+                                )}>
+                                    {receiptImage ? <Check className="w-2.5 h-2.5" /> : "3"}
+                                </span>
+                                <span className="truncate">3. รูปสลิป</span>
                             </button>
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
+                    <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden min-w-0 w-full">
+                        {/* Main Body: Single column on mobile, 2-column grid on Desktop (lg:) */}
+                        <div className="flex-1 min-h-0 overflow-hidden flex flex-col lg:grid lg:grid-cols-12 min-w-0 w-full">
 
-                            {/* Smart Scan Quick Access */}
-                            <div className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-2xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
-                                <div className="flex items-center gap-3 text-purple-500">
-                                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                                        <ScanLine className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold leading-none">{t.expenses.smart_scan}</p>
-                                        <p className="text-[10px] opacity-70 mt-1">สแกนบิลเพื่อกรอกข้อมูลอัตโนมัติ</p>
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsScanOpen(true)}
-                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95"
-                                >
-                                    เริ่มสแกน / Start Scan
-                                </button>
-                            </div>
-                            {/* Top Metadata */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.bill_title}</label>
-                                    <input
-                                        ref={titleRef}
-                                        required
-                                        value={title}
-                                        onChange={(e) => {
-                                            setTitle(e.target.value)
-                                            if (errors.title) setErrors({ ...errors, title: false })
-                                        }}
-                                        placeholder={t.expenses.dialog.bill_placeholder}
-                                        className={cn(
-                                            "w-full bg-background/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors",
-                                            errors.title ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10"
-                                        )}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.date}</label>
-                                    <input
-                                        type="date"
-                                        ref={dateRef}
-                                        value={date}
-                                        onChange={(e) => {
-                                            setDate(e.target.value)
-                                            if (errors.date) setErrors({ ...errors, date: false })
-                                        }}
-                                        className={cn(
-                                            "w-full bg-background/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors",
-                                            errors.date ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10"
-                                        )}
-                                    />
-                                </div>
-                            </div>
+                            {/* ======================================================== */}
+                            {/* LEFT PANE (Mobile: full width, Desktop: 7 cols)           */}
+                            {/* Contains Step 1 (Header) & Step 2 (Line Items)           */}
+                            {/* ======================================================== */}
+                            <div ref={scrollRef} className="lg:col-span-7 xl:col-span-7 flex flex-col h-full overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 space-y-3.5 min-w-0 w-full lg:border-r lg:border-white/10 custom-scrollbar overscroll-contain min-h-0">
 
-                            {/* Category & Payee Selection */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.category}</label>
-                                    <select
-                                        value={items[0]?.category || "Material"}
-                                        onChange={(e) => {
-                                            const newCat = e.target.value as ExpenseCategory
-                                            setItems(items.map(i => ({ ...i, category: newCat })))
-                                            // Reset payee when category changes to avoid mismatched data types
-                                            setPayee("")
-                                        }}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
+                                {/* Mobile Smart Scan Quick Access Banner */}
+                                <div className="lg:hidden shrink-0 bg-purple-500/10 border border-purple-500/20 p-3 sm:p-3.5 rounded-xl flex items-center justify-between gap-3 min-w-0 w-full">
+                                    <div className="flex items-center gap-2.5 text-purple-400 min-w-0">
+                                        <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+                                            <ScanLine className="w-4 h-4 text-purple-400" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-xs sm:text-sm font-bold truncate leading-tight">{t.expenses.smart_scan}</p>
+                                            <p className="text-[10px] text-muted-foreground truncate">สแกนใบเสร็จกรอกข้อมูลให้อัตโนมัติ</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsScanOpen(true)}
+                                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold transition-all shadow-md active:scale-95 shrink-0 whitespace-nowrap"
                                     >
-                                        <option value="Material">Material (ค่าวัสดุ)</option>
-                                        <option value="Labor">Labor (ค่าแรง)</option>
-                                        <option value="Sub-contract">Sub-contract (ค่าเหมา)</option>
-                                        <option value="Other">Other (อื่นๆ)</option>
-                                    </select>
+                                        เริ่มสแกนบิล
+                                    </button>
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className={cn("text-xs font-bold uppercase tracking-wider", errors.payee ? "text-red-500" : "text-muted-foreground")}>
-                                        {(items[0]?.category === 'Labor') ? t.expenses.dialog.payee_labor : t.expenses.dialog.payee}
-                                    </label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
-                                        <div className="pl-9">
-                                            <SearchableCombobox
-                                                options={items[0]?.category === 'Labor' ? [
-                                                    ...workers
-                                                        .filter(w => w.status !== 'Inactive')
-                                                        .sort((a, b) => a.name.localeCompare(b.name, 'th'))
-                                                        .map(w => ({ value: w.name, label: w.name, description: w.role })),
-                                                    { value: "NEW", label: `➕ ${t.expenses.dialog.add_new_person} `, description: "เพิ่มคนงานใหม่" }
-                                                ] : [
-                                                    ...vendors
-                                                        .filter(v => {
-                                                            if (v.status === 'Inactive') return false
-                                                            const cat = items[0]?.category || "Material"
-                                                            if (cat === 'Sub-contract') return v.category === 'Sub-contract'
-                                                            if (cat === 'Material') return v.category === 'Material'
-                                                            return true
-                                                        })
-                                                        .sort((a, b) => a.name.localeCompare(b.name, 'th'))
-                                                        .map(v => ({ value: v.name, label: v.name, description: v.category })),
-                                                    { value: "NEW", label: `➕ ${t.expenses.dialog.add_new_vendor} `, description: "เพิ่มร้านค้า/ผู้รับเหมาใหม่" }
-                                                ]}
-                                                value={payee}
-                                                onChange={(val) => {
-                                                    const currentCat = items[0]?.category || "Material"
-
-                                                    if (val === 'NEW') {
-                                                        if (currentCat === 'Labor') {
-                                                            handleSelectChange('NEW', setPayee, 'worker')
-                                                        } else {
-                                                            handleSelectChange('NEW', setPayee, 'vendor')
-                                                            setNewItemSecondary(currentCat)
-                                                        }
-                                                    } else {
-                                                        setPayee(val)
-                                                    }
-                                                }}
-                                                placeholder={items[0]?.category === 'Labor' ? t.expenses.dialog.select_person : t.expenses.dialog.select_vendor}
-                                                searchPlaceholder="ค้นหา..."
-                                                className="border-none p-0"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Bill Assignment Logic */}
-                            <div className="space-y-3 p-4 rounded-xl bg-white/5 border border-white/10">
-                                <div className="flex items-center gap-4 mb-2">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="billType"
-                                            checked={billType === 'combine'}
-                                            onChange={() => setBillType('combine')}
-                                            className="text-primary focus:ring-primary"
-                                        />
-                                        <span className="text-sm font-bold">{t.expenses.dialog.combine_bill}</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="billType"
-                                            checked={billType === 'split'}
-                                            onChange={() => setBillType('split')}
-                                            className="text-primary focus:ring-primary"
-                                        />
-                                        <span className="text-sm font-bold">{t.expenses.dialog.split_bill}</span>
-                                    </label>
-                                </div>
-
-                                {billType === 'combine' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
-
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.project}</label>
-                                            <SearchableCombobox
-                                                options={[
-                                                    { value: "NEW", label: "+ Add New Project...", description: "สร้างโปรเจคใหม่" },
-                                                    ...projects
-                                                        .sort((a, b) => a.name.localeCompare(b.name, 'th'))
-                                                        .map(p => ({ value: p.id, label: p.name, description: p.customer }))
-                                                ]}
-                                                value={globalProjectId}
-                                                onChange={(val) => handleSelectChange(val, setGlobalProjectId, 'project')}
-                                                placeholder="Select Project..."
-                                                searchPlaceholder="ค้นหาโปรเจค..."
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.task} / Sub-project</label>
-                                            <SearchableCombobox
-                                                options={[
-                                                    { value: "NEW", label: t.expenses.dialog.add_new_sub_project, description: "สร้างงานย่อยใหม่" },
-                                                    ...(projects.find(p => p.id === globalProjectId)?.subProjects?.map(sp => ({ value: sp.id, label: sp.name })) || [])
-                                                ]}
-                                                value={globalSubProjectId}
-                                                onChange={(val) => handleSelectChange(val, setGlobalSubProjectId, 'sub-project', globalProjectId)}
-                                                disabled={!globalProjectId}
-                                                placeholder="General Project Expense"
-                                                searchPlaceholder="ค้นหางานย่อย..."
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Itemization Section */}
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                                        <Layers className="w-4 h-4" /> {t.expenses.dialog.item_breakdown}
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer group">
-                                        <input
-                                            type="checkbox"
-                                            checked={vatIncluded}
-                                            onChange={(e) => setVatIncluded(e.target.checked)}
-                                            className="w-4 h-4 rounded border-white/10 bg-background/50 text-primary focus:ring-primary/50 transition-all"
-                                        />
-                                        <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">{t.expenses.dialog.vat_included}</span>
-                                    </label>
-                                </div>
-
-                                <div className="bg-muted/10 border border-white/5 rounded-2xl p-4 space-y-3">
-                                    {items.map((item, index) => (
-                                        <div key={item.id} className="grid grid-cols-12 gap-3 items-start animate-in fade-in slide-in-from-left-2 duration-300 border-b border-white/5 pb-4 last:border-0 last:pb-0">
-                                            <div className="col-span-1 flex items-center justify-center pt-3 text-xs text-muted-foreground font-medium">
-                                                {index + 1}
+                                {/* STEP 1: หัวบิล (Bill Header, Date, Store, Project, Status) */}
+                                <div className="shrink-0 bg-muted/10 border border-white/10 rounded-2xl overflow-hidden transition-all min-w-0 w-full">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSection(1)}
+                                        className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-2.5 text-left hover:bg-white/5 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className={cn(
+                                                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors",
+                                                title && payee ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-primary/20 text-primary border border-primary/30"
+                                            )}>
+                                                {title && payee ? <Check className="w-3.5 h-3.5" /> : "1"}
                                             </div>
-                                            <div className="col-span-11 grid grid-cols-1 sm:grid-cols-12 gap-3">
-                                                {/* Description & Amount */}
-                                                {/* Description, Qty, Price, Total */}
-                                                <div className="sm:col-span-12 grid grid-cols-12 gap-2">
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-foreground">1. หัวบิล & โครงการ</span>
+                                                    <span className="text-[9px] text-muted-foreground uppercase px-1.5 py-0.5 rounded bg-white/5 border border-white/5">Header</span>
+                                                </div>
+                                                {!openSections[1] && (
+                                                    <p className="text-xs text-muted-foreground truncate mt-0.5 max-w-[200px] sm:max-w-md">
+                                                        {title || payee ? `${title || "บิลไม่มีชื่อ"} • ${payee || "ไม่ระบุผู้รับ"} • ${date}` : "คลิกเพื่อแก้ไขข้อมูลหัวบิล, ร้านค้า, โครงการ"}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
+                                                {openSections[1] ? "ย่อส่วนนี้" : "ขยายส่วนนี้"}
+                                            </span>
+                                            {openSections[1] ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                                        </div>
+                                    </button>
+
+                                    {openSections[1] && (
+                                        <div className="p-3.5 sm:p-4 pt-0 space-y-3.5 border-t border-white/5 min-w-0 w-full animate-in fade-in duration-200">
+                                            {/* Bill Title & Date */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0 w-full">
+                                                <div className="space-y-1 min-w-0">
+                                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block truncate">
+                                                        {t.expenses.dialog.bill_title} <span className="text-red-400">*</span>
+                                                    </label>
                                                     <input
-                                                        placeholder={t.expenses.dialog.item_desc}
-                                                        value={item.description}
-                                                        onChange={(e) => updateItem(item.id, { description: e.target.value })}
-                                                        className="col-span-12 sm:col-span-5 bg-background border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                                    />
-                                                    <input
-                                                        type="number"
-                                                        placeholder={t.expenses.dialog.quantity || "Qty"}
-                                                        value={item.quantity || ""}
+                                                        ref={titleRef}
+                                                        required
+                                                        value={title}
                                                         onChange={(e) => {
-                                                            const qty = parseFloat(e.target.value)
-                                                            const price = item.unitPrice || 0
-                                                            updateItem(item.id, {
-                                                                quantity: qty,
-                                                                amount: qty * price
-                                                            })
+                                                            setTitle(e.target.value)
+                                                            if (errors.title) setErrors({ ...errors, title: false })
                                                         }}
-                                                        className="col-span-4 sm:col-span-2 bg-background border border-white/10 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                        placeholder={t.expenses.dialog.bill_placeholder}
+                                                        className={cn(
+                                                            "w-full min-w-0 bg-background/50 border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors",
+                                                            errors.title ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10"
+                                                        )}
                                                     />
+                                                </div>
+                                                <div className="space-y-1 min-w-0">
+                                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block truncate">
+                                                        {t.expenses.dialog.date} <span className="text-red-400">*</span>
+                                                    </label>
                                                     <input
-                                                        type="number"
-                                                        placeholder={t.expenses.dialog.unit_price || "Price"}
-                                                        value={item.unitPrice || ""}
+                                                        type="date"
+                                                        ref={dateRef}
+                                                        value={date}
                                                         onChange={(e) => {
-                                                            const price = parseFloat(e.target.value)
-                                                            const qty = item.quantity || 0
-                                                            updateItem(item.id, {
-                                                                unitPrice: price,
-                                                                amount: qty * price
-                                                            })
+                                                            setDate(e.target.value)
+                                                            if (errors.date) setErrors({ ...errors, date: false })
                                                         }}
-                                                        className="col-span-4 sm:col-span-2 bg-background border border-white/10 rounded-lg px-2 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                        className={cn(
+                                                            "w-full min-w-0 bg-background/50 border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors",
+                                                            errors.date ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10"
+                                                        )}
                                                     />
-                                                    <div className="col-span-4 sm:col-span-3 relative">
-                                                        <input
-                                                            id={`amount-${item.id}`}
-                                                            type="number"
-                                                            placeholder="0.00"
-                                                            value={item.amount || ""}
-                                                            onChange={(e) => {
-                                                                updateItem(item.id, { amount: parseFloat(e.target.value) })
-                                                                if (errors.amount) setErrors({ ...errors, amount: false })
-                                                            }}
-                                                            className={cn(
-                                                                "w-full bg-background border rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-right font-bold text-primary transition-colors",
-                                                                errors.amount ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10"
-                                                            )}
-                                                        />
-                                                        <span className="absolute left-2 top-2 text-xs text-muted-foreground">฿</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Category & Payee */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0 w-full">
+                                                <div className="space-y-1 min-w-0">
+                                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block truncate">
+                                                        {t.expenses.dialog.category}
+                                                    </label>
+                                                    <select
+                                                        value={items[0]?.category || "Material"}
+                                                        onChange={(e) => {
+                                                            const newCat = e.target.value as ExpenseCategory
+                                                            setItems(items.map(i => ({ ...i, category: newCat })))
+                                                            setPayee("")
+                                                        }}
+                                                        className="w-full min-w-0 bg-background/50 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+                                                    >
+                                                        <option value="Material">Material (ค่าวัสดุ)</option>
+                                                        <option value="Labor">Labor (ค่าแรง)</option>
+                                                        <option value="Sub-contract">Sub-contract (ค่าเหมา)</option>
+                                                        <option value="Other">Other (อื่นๆ)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className="space-y-1 min-w-0">
+                                                    <label className={cn("text-xs font-bold uppercase tracking-wider block truncate", errors.payee ? "text-red-400" : "text-muted-foreground")}>
+                                                        {(items[0]?.category === 'Labor') ? t.expenses.dialog.payee_labor : t.expenses.dialog.payee} <span className="text-red-400">*</span>
+                                                    </label>
+                                                    <div className="relative min-w-0 w-full">
+                                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
+                                                        <div className="pl-9 min-w-0 w-full">
+                                                            <SearchableCombobox
+                                                                options={items[0]?.category === 'Labor' ? [
+                                                                    ...workers
+                                                                        .filter(w => w.status !== 'Inactive')
+                                                                        .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+                                                                        .map(w => ({ value: w.name, label: w.name, description: w.role })),
+                                                                    { value: "NEW", label: `➕ ${t.expenses.dialog.add_new_person} `, description: "เพิ่มคนงานใหม่" }
+                                                                ] : [
+                                                                    ...vendors
+                                                                        .filter(v => {
+                                                                            if (v.status === 'Inactive') return false
+                                                                            const cat = items[0]?.category || "Material"
+                                                                            if (cat === 'Sub-contract') return v.category === 'Sub-contract'
+                                                                            if (cat === 'Material') return v.category === 'Material'
+                                                                            return true
+                                                                        })
+                                                                        .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+                                                                        .map(v => ({ value: v.name, label: v.name, description: v.category })),
+                                                                    { value: "NEW", label: `➕ ${t.expenses.dialog.add_new_vendor} `, description: "เพิ่มร้านค้า/ผู้รับเหมาใหม่" }
+                                                                ]}
+                                                                value={payee}
+                                                                onChange={(val) => {
+                                                                    const currentCat = items[0]?.category || "Material"
+                                                                    if (val === 'NEW') {
+                                                                        if (currentCat === 'Labor') {
+                                                                            handleSelectChange('NEW', setPayee, 'worker')
+                                                                        } else {
+                                                                            handleSelectChange('NEW', setPayee, 'vendor')
+                                                                            setNewItemSecondary(currentCat)
+                                                                        }
+                                                                    } else {
+                                                                        setPayee(val)
+                                                                        if (errors.payee) setErrors({ ...errors, payee: false })
+                                                                    }
+                                                                }}
+                                                                placeholder={items[0]?.category === 'Labor' ? t.expenses.dialog.select_person : t.expenses.dialog.select_vendor}
+                                                                searchPlaceholder="ค้นหา..."
+                                                                className="border-none p-0 w-full"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                {/* Categories & Split Project Selection */}
-                                                <div className="sm:col-span-11 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                                    <select
-                                                        value={item.category}
-                                                        onChange={(e) => updateItem(item.id, { category: e.target.value as ExpenseCategory })}
-                                                        className="bg-background border border-white/10 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none truncate"
-                                                    >
-                                                        <option value="Material">Material</option>
-                                                        <option value="Labor">Labor</option>
-                                                        <option value="Sub-contract">Sub-con</option>
-                                                        <option value="Other">Other</option>
-                                                    </select>
-
-                                                    {billType === 'split' && (
-                                                        <>
-                                                            <select
-                                                                value={item.projectId || ""}
-                                                                onChange={(e) => handleSelectChange(
-                                                                    e.target.value,
-                                                                    (val) => updateItem(item.id, { projectId: val, taskId: "" }),
-                                                                    'project'
-                                                                )}
-                                                                className="bg-background border border-white/10 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none truncate"
-                                                            >
-                                                                <option value="">Select Project...</option>
-                                                                {projects.map(p => (
-                                                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                                                ))}
-                                                                <option value="NEW" className="font-bold text-primary">+ Add New...</option>
-                                                            </select>
-                                                            <select
-                                                                value={item.taskId || ""}
-                                                                onChange={(e) => handleSelectChange(
-                                                                    e.target.value,
-                                                                    (val) => updateItem(item.id, { taskId: val }),
-                                                                    'task',
-                                                                    item.projectId
-                                                                )}
-                                                                disabled={!item.projectId}
-                                                                className="bg-background border border-white/10 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none truncate disabled:opacity-50"
-                                                            >
-                                                                <option value="">- Sub-project -</option>
-                                                                {getProjectTasks(item.projectId).map(t => (
-                                                                    <option key={t.id} value={t.id}>{t.title}</option>
-                                                                ))}
-                                                                <option value="NEW" className="font-bold text-primary">+ Add New...</option>
-                                                            </select>
-                                                        </>
-                                                    )}
+                                            {/* Project Assignment Mode (Combine vs Split) */}
+                                            <div className="space-y-2.5 p-3 rounded-xl bg-white/5 border border-white/10 min-w-0 w-full">
+                                                <div className="flex items-center gap-4">
+                                                    <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold">
+                                                        <input
+                                                            type="radio"
+                                                            name="billType"
+                                                            checked={billType === 'combine'}
+                                                            onChange={() => setBillType('combine')}
+                                                            className="text-primary focus:ring-primary"
+                                                        />
+                                                        <span>{t.expenses.dialog.combine_bill}</span>
+                                                    </label>
+                                                    <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold">
+                                                        <input
+                                                            type="radio"
+                                                            name="billType"
+                                                            checked={billType === 'split'}
+                                                            onChange={() => setBillType('split')}
+                                                            className="text-primary focus:ring-primary"
+                                                        />
+                                                        <span>{t.expenses.dialog.split_bill}</span>
+                                                    </label>
                                                 </div>
 
-                                                {/* Sub-project Selector for Split Bill */}
-                                                {billType === 'split' && item.projectId && (
-                                                    <div className="sm:col-span-12">
+                                                {billType === 'combine' && (
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 min-w-0 w-full animate-in fade-in duration-150">
+                                                        <div className="space-y-1 min-w-0">
+                                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block truncate">
+                                                                {t.expenses.dialog.project}
+                                                            </label>
+                                                            <SearchableCombobox
+                                                                options={[
+                                                                    { value: "NEW", label: "+ Add New Project...", description: "สร้างโปรเจคใหม่" },
+                                                                    ...projects
+                                                                        .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+                                                                        .map(p => ({ value: p.id, label: p.name, description: p.customer }))
+                                                                ]}
+                                                                value={globalProjectId}
+                                                                onChange={(val) => handleSelectChange(val, setGlobalProjectId, 'project')}
+                                                                placeholder="Select Project..."
+                                                                searchPlaceholder="ค้นหาโปรเจค..."
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1 min-w-0">
+                                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block truncate">
+                                                                {t.expenses.dialog.task} / Sub-project
+                                                            </label>
+                                                            <SearchableCombobox
+                                                                options={[
+                                                                    { value: "NEW", label: t.expenses.dialog.add_new_sub_project, description: "สร้างงานย่อยใหม่" },
+                                                                    ...(projects.find(p => p.id === globalProjectId)?.subProjects?.map(sp => ({ value: sp.id, label: sp.name })) || [])
+                                                                ]}
+                                                                value={globalSubProjectId}
+                                                                onChange={(val) => handleSelectChange(val, setGlobalSubProjectId, 'sub-project', globalProjectId)}
+                                                                disabled={!globalProjectId}
+                                                                placeholder="General Project Expense"
+                                                                searchPlaceholder="ค้นหางานย่อย..."
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Payment Status & Advanced Fields */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0 w-full pt-1">
+                                                <div className="space-y-1 min-w-0">
+                                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block truncate">
+                                                        {t.expenses.dialog.payment_status}
+                                                    </label>
+                                                    <div className="relative min-w-0">
+                                                        <Receipt className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                                                         <select
-                                                            value={item.subProjectId || ""}
-                                                            onChange={(e) => handleSelectChange(
-                                                                e.target.value,
-                                                                (val) => updateItem(item.id, { subProjectId: val }),
-                                                                'sub-project',
-                                                                item.projectId
-                                                            )}
-                                                            className="w-full bg-background border border-white/10 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none truncate"
+                                                            value={status}
+                                                            onChange={(e) => setStatus(e.target.value as any)}
+                                                            className="w-full min-w-0 bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
                                                         >
-                                                            <option value="">- Select Sub-project (Optional) -</option>
-                                                            {projects.find(p => p.id === item.projectId)?.subProjects?.map(sp => (
-                                                                <option key={sp.id} value={sp.id}>{sp.name}</option>
-                                                            ))}
-                                                            <option value="NEW" className="font-bold text-primary">+ Add New...</option>
+                                                            <option value="Paid">Paid (ชำระแล้ว)</option>
+                                                            <option value="Pending">Pending (รอชำระ)</option>
+                                                            <option value="Advanced">Advanced (สำรองจ่าย)</option>
+                                                            <option value="Credit">Credit (ติดไว้ก่อน)</option>
+                                                            <option value="Unpaid">Cancel (ยกเลิก)</option>
                                                         </select>
                                                     </div>
+                                                </div>
+
+                                                {status === 'Advanced' && (
+                                                    <div className="space-y-1 min-w-0 animate-in fade-in duration-150">
+                                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block truncate">
+                                                            {t.expenses.dialog.paid_by}
+                                                        </label>
+                                                        <div className="relative min-w-0">
+                                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                                            <select
+                                                                value={paidBy}
+                                                                onChange={(e) => handleSelectChange(e.target.value, setPaidBy, 'user')}
+                                                                className="w-full min-w-0 bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+                                                            >
+                                                                <option value="">Select User...</option>
+                                                                {currentUser && (
+                                                                    <option value={currentUser.name} className="font-bold text-primary">Assign to Me ({currentUser.name})</option>
+                                                                )}
+                                                                {users.map(u => (
+                                                                    <option key={u.id} value={u.name}>{u.name} ({u.role})</option>
+                                                                ))}
+                                                                <option value="NEW" className="font-bold text-primary">+ Add New User...</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
                                                 )}
 
-                                                {/* Delete */}
-                                                <div className="sm:col-span-1 flex justify-end">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => deleteItem(item.id)}
-                                                        className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <button
-                                        type="button"
-                                        onClick={addItem}
-                                        className="w-full py-2 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 border border-dashed border-white/10 rounded-xl transition-all"
-                                    >
-                                        <Plus className="w-4 h-4" /> {t.expenses.dialog.add_line_item}
-                                    </button>
-                                </div>
-
-                                {/* Receipt Upload - Compact */}
-                                <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setReceiptExpanded(!receiptExpanded)}
-                                        className="w-full flex items-center justify-between gap-3 group"
-                                    >
-                                        <div className="flex items-center gap-3 text-zinc-400 group-hover:text-white transition-colors">
-                                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
-                                                <Camera className="w-4 h-4" />
-                                            </div>
-                                            <div className="text-left">
-                                                <span className="text-sm font-medium block">Receipt / Slip</span>
-                                                {!receiptFile && <span className="text-[10px] text-zinc-500">Tap to upload image</span>}
-                                            </div>
-                                        </div>
-
-                                        {receiptFile ? (
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs text-green-500 font-medium truncate max-w-[100px]">{receiptFile.name}</span>
-                                                <X
-                                                    className="w-4 h-4 text-zinc-500 hover:text-red-500 transition-colors"
-                                                    onClick={(e) => {
-                                                        setReceiptFile(null)
-                                                        setReceiptImage(null)
-                                                    }}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="text-zinc-600">
-                                                <Upload className="w-4 h-4" />
-                                            </div>
-                                        )}
-                                        <span className={`transition-transform duration-300 ml-auto ${receiptExpanded ? 'rotate-180 text-primary' : 'opacity-50 text-muted-foreground'}`}>▼</span>
-                                    </button>
-
-                                    {/* Expanded Inline Preview */}
-                                    {receiptExpanded && (
-                                        <div className="mt-3 animate-in fade-in slide-in-from-top-2">
-                                            {receiptImage ? (
-                                                <div className="relative rounded-xl overflow-hidden border border-white/10 group aspect-video bg-black/40">
-                                                    <Image src={receiptImage} alt="Receipt Preview" fill sizes="(max-width: 768px) 100vw, 400px" className="object-contain" unoptimized={receiptImage.startsWith('data:') || receiptImage.startsWith('blob:')} />
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            removeImage()
-                                                        }}
-                                                        className="absolute top-2 right-2 p-2 bg-black/60 text-white rounded-full hover:bg-red-500/80 transition-colors"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/10 rounded-xl hover:bg-white/5 hover:border-primary/50 transition-all cursor-pointer group">
-                                                    <div className="flex flex-col items-center justify-center pt-4 pb-5">
-                                                        <div className="p-3 rounded-full bg-white/5 group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-2">
-                                                            <Upload className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+                                                {status === 'Credit' && (
+                                                    <div className="space-y-1 min-w-0 animate-in fade-in duration-150">
+                                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block truncate">
+                                                            {t.expenses.dialog.vendor}
+                                                        </label>
+                                                        <div className="relative min-w-0">
+                                                            <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                                            <select
+                                                                value={vendor}
+                                                                onChange={(e) => handleSelectChange(e.target.value, setVendor, 'vendor')}
+                                                                className="w-full min-w-0 bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+                                                            >
+                                                                <option value="">Select Vendor...</option>
+                                                                {vendors.map(v => (
+                                                                    <option key={v.id} value={v.name}>{v.name} ({v.category})</option>
+                                                                ))}
+                                                                <option value="NEW" className="font-bold text-primary">+ Add New Vendor...</option>
+                                                            </select>
                                                         </div>
-                                                        <p className="text-xs text-muted-foreground group-hover:text-foreground font-medium">{t.expenses.dialog.upload_hint}</p>
                                                     </div>
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        className="hidden"
-                                                        onChange={handleImageUpload}
-                                                    />
-                                                </label>
-                                            )}
+                                                )}
+                                            </div>
+
+                                            {/* Step 1 Next Button (Mobile only) */}
+                                            <div className="flex justify-end pt-2 lg:hidden">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setOpenSections(prev => ({ ...prev, 1: false, 2: true }))}
+                                                    className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95"
+                                                >
+                                                    ถัดไป: ใส่รายการบิล (Step 2)
+                                                    <ArrowRight className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
+                                </div>
 
-                                    {/* Totals */}
-                                    <div className="flex justify-end gap-8 text-sm">
-                                        {vatIncluded && (
-                                            <div className="text-muted-foreground text-right">
-                                                <p>{t.expenses.dialog.subtotal}: ฿{(subtotal - vatAmount).toLocaleString()}</p>
-                                                <p>{t.expenses.dialog.vat}: ฿{vatAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                                {/* STEP 2: รายการบิล & ยอดเงิน (Line Items, VAT, Totals) */}
+                                <div className="shrink-0 bg-muted/10 border border-white/10 rounded-2xl overflow-hidden transition-all min-w-0 w-full">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSection(2)}
+                                        className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-2.5 text-left hover:bg-white/5 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className={cn(
+                                                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors",
+                                                subtotal > 0 ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-primary/20 text-primary border border-primary/30"
+                                            )}>
+                                                {subtotal > 0 ? <Check className="w-3.5 h-3.5" /> : "2"}
                                             </div>
-                                        )}
-                                        <div className="text-right">
-                                            <p className="text-muted-foreground font-bold tracking-wider">{t.expenses.dialog.grand_total}</p>
-                                            <p className="text-2xl font-black text-primary">฿{subtotal.toLocaleString()}</p>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-foreground">2. รายการบิล & ยอดเงิน</span>
+                                                    <span className="text-[9px] text-muted-foreground uppercase px-1.5 py-0.5 rounded bg-white/5 border border-white/5">
+                                                        {items.length} รายการ
+                                                    </span>
+                                                </div>
+                                                {!openSections[2] && (
+                                                    <p className="text-xs text-muted-foreground truncate mt-0.5 max-w-[200px] sm:max-w-md">
+                                                        {items.length} รายการ • รวม ฿{subtotal.toLocaleString()}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <span className="text-xs font-bold text-primary font-mono hidden sm:inline">฿{subtotal.toLocaleString()}</span>
+                                            {openSections[2] ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                                        </div>
+                                    </button>
+
+                                    {openSections[2] && (
+                                        <div className="p-3.5 sm:p-4 pt-0 space-y-3.5 border-t border-white/5 min-w-0 w-full animate-in fade-in duration-200">
+                                            {/* VAT Toggle & Header Info */}
+                                            <div className="flex items-center justify-between min-w-0 w-full pt-1">
+                                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                                    <Layers className="w-3.5 h-3.5" /> รายการสินค้า / ค่าบริการ
+                                                </span>
+                                                <label className="flex items-center gap-2 cursor-pointer group shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={vatIncluded}
+                                                        onChange={(e) => setVatIncluded(e.target.checked)}
+                                                        className="w-4 h-4 rounded border-white/10 bg-background/50 text-primary focus:ring-primary/50 transition-all"
+                                                    />
+                                                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                                                        {t.expenses.dialog.vat_included}
+                                                    </span>
+                                                </label>
+                                            </div>
+
+                                            {/* Desktop Column Header */}
+                                            <div className="hidden md:flex items-center gap-2 px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                                                <span className="w-6 text-center">#</span>
+                                                <span className="flex-1">รายละเอียดสินค้า / บริการ</span>
+                                                <span className="w-20 text-center">จำนวน</span>
+                                                <span className="w-28 text-right">ราคา/หน่วย</span>
+                                                <span className="w-32 text-right">ยอดรวม</span>
+                                                {items.length > 1 && <span className="w-8"></span>}
+                                            </div>
+
+                                            {/* Items List - Fully responsive for both Desktop & Mobile */}
+                                            <div className="space-y-2.5 min-w-0 w-full">
+                                                {items.map((item, index) => (
+                                                    <div
+                                                        key={item.id}
+                                                        className="bg-background/40 border border-white/10 rounded-xl p-3 space-y-2.5 min-w-0 w-full animate-in fade-in duration-150"
+                                                    >
+                                                        {/* Responsive Item Layout: Single row on desktop, 2-row on mobile */}
+                                                        <div className="flex flex-col md:flex-row md:items-center gap-2.5 min-w-0 w-full">
+                                                            {/* Item Description with Index */}
+                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                <span className="w-6 h-6 rounded-md bg-white/5 border border-white/10 flex items-center justify-center text-[11px] font-bold text-muted-foreground shrink-0">
+                                                                    {index + 1}
+                                                                </span>
+                                                                <input
+                                                                    placeholder={t.expenses.dialog.item_desc || "รายละเอียดรายการ..."}
+                                                                    value={item.description}
+                                                                    onChange={(e) => updateItem(item.id, { description: e.target.value })}
+                                                                    className="flex-1 min-w-0 bg-background border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                />
+                                                            </div>
+
+                                                            {/* Numbers: Quantity, Unit Price, Amount */}
+                                                            <div className="grid grid-cols-3 md:flex md:items-center gap-2 min-w-0 shrink-0">
+                                                                <div className="min-w-0 md:w-20">
+                                                                    <label className="text-[10px] font-semibold text-muted-foreground block truncate mb-1 md:hidden">
+                                                                        {t.expenses.dialog.quantity || "จำนวน"}
+                                                                    </label>
+                                                                    <input
+                                                                        type="number"
+                                                                        inputMode="decimal"
+                                                                        placeholder="1"
+                                                                        value={item.quantity || ""}
+                                                                        onChange={(e) => {
+                                                                            const qty = parseFloat(e.target.value) || 0
+                                                                            const price = item.unitPrice || 0
+                                                                            updateItem(item.id, {
+                                                                                quantity: qty,
+                                                                                amount: qty * price
+                                                                            })
+                                                                        }}
+                                                                        className="w-full min-w-0 bg-background border border-white/10 rounded-lg px-2.5 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                    />
+                                                                </div>
+
+                                                                <div className="min-w-0 md:w-28">
+                                                                    <label className="text-[10px] font-semibold text-muted-foreground block truncate mb-1 md:hidden">
+                                                                        {t.expenses.dialog.unit_price || "ราคา/หน่วย"}
+                                                                    </label>
+                                                                    <input
+                                                                        type="number"
+                                                                        inputMode="decimal"
+                                                                        placeholder="0.00"
+                                                                        value={item.unitPrice || ""}
+                                                                        onChange={(e) => {
+                                                                            const price = parseFloat(e.target.value) || 0
+                                                                            const qty = item.quantity || 0
+                                                                            updateItem(item.id, {
+                                                                                unitPrice: price,
+                                                                                amount: qty * price
+                                                                            })
+                                                                        }}
+                                                                        className="w-full min-w-0 bg-background border border-white/10 rounded-lg px-2.5 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                    />
+                                                                </div>
+
+                                                                <div className="min-w-0 md:w-32">
+                                                                    <label className="text-[10px] font-bold text-primary block truncate mb-1 md:hidden">
+                                                                        ยอดรวม (฿)
+                                                                    </label>
+                                                                    <div className="relative min-w-0">
+                                                                        <input
+                                                                            id={`amount-${item.id}`}
+                                                                            type="number"
+                                                                            inputMode="decimal"
+                                                                            placeholder="0.00"
+                                                                            value={item.amount || ""}
+                                                                            onChange={(e) => {
+                                                                                updateItem(item.id, { amount: parseFloat(e.target.value) || 0 })
+                                                                                if (errors.amount) setErrors({ ...errors, amount: false })
+                                                                            }}
+                                                                            className={cn(
+                                                                                "w-full min-w-0 bg-background border rounded-lg pl-5 pr-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-right font-bold text-primary transition-colors",
+                                                                                errors.amount ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10"
+                                                                            )}
+                                                                        />
+                                                                        <span className="absolute left-1.5 top-2 text-xs text-muted-foreground pointer-events-none">฿</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {items.length > 1 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => deleteItem(item.id)}
+                                                                        className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors shrink-0 self-center hidden md:block"
+                                                                        title="ลบรายการ"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {items.length > 1 && (
+                                                                <div className="flex justify-end md:hidden">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => deleteItem(item.id)}
+                                                                        className="p-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-1"
+                                                                    >
+                                                                        <Trash2 className="w-3.5 h-3.5" /> ลบรายการ
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Split bill selectors if split mode */}
+                                                        {billType === 'split' && (
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-white/5 min-w-0 w-full">
+                                                                <select
+                                                                    value={item.projectId || ""}
+                                                                    onChange={(e) => handleSelectChange(
+                                                                        e.target.value,
+                                                                        (val) => updateItem(item.id, { projectId: val, taskId: "" }),
+                                                                        'project'
+                                                                    )}
+                                                                    className="w-full min-w-0 bg-background border border-white/10 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+                                                                >
+                                                                    <option value="">Select Project...</option>
+                                                                    {projects.map(p => (
+                                                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                                                    ))}
+                                                                    <option value="NEW" className="font-bold text-primary">+ Add New Project...</option>
+                                                                </select>
+
+                                                                <select
+                                                                    value={item.subProjectId || ""}
+                                                                    onChange={(e) => handleSelectChange(
+                                                                        e.target.value,
+                                                                        (val) => updateItem(item.id, { subProjectId: val }),
+                                                                        'sub-project',
+                                                                        item.projectId
+                                                                    )}
+                                                                    className="w-full min-w-0 bg-background border border-white/10 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+                                                                >
+                                                                    <option value="">- Sub-project (Optional) -</option>
+                                                                    {projects.find(p => p.id === item.projectId)?.subProjects?.map(sp => (
+                                                                        <option key={sp.id} value={sp.id}>{sp.name}</option>
+                                                                    ))}
+                                                                    <option value="NEW" className="font-bold text-primary">+ Add New...</option>
+                                                                </select>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+
+                                                {/* Add Item Button */}
+                                                <button
+                                                    type="button"
+                                                    onClick={addItem}
+                                                    className="w-full py-2.5 flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-white/5 border border-dashed border-white/10 rounded-xl transition-all"
+                                                >
+                                                    <Plus className="w-4 h-4 text-primary" /> {t.expenses.dialog.add_line_item}
+                                                </button>
+                                            </div>
+
+                                            {/* Totals Summary (Mobile view) */}
+                                            <div className="p-3 rounded-xl bg-white/5 border border-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-w-0 w-full lg:hidden">
+                                                {vatIncluded ? (
+                                                    <div className="text-xs text-muted-foreground space-y-0.5">
+                                                        <div>{t.expenses.dialog.subtotal}: <span className="font-mono text-foreground font-semibold">฿{(subtotal - vatAmount).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+                                                        <div>{t.expenses.dialog.vat} (7%): <span className="font-mono text-foreground font-semibold">฿{vatAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-xs text-muted-foreground">ยอดก่อนภาษี / ไม่รวม VAT</div>
+                                                )}
+                                                <div className="text-right sm:text-right">
+                                                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mr-2">{t.expenses.dialog.grand_total}:</span>
+                                                    <span className="text-lg font-black text-primary font-mono">฿{subtotal.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Step 2 Navigation Buttons (Mobile only) */}
+                                            <div className="flex justify-between items-center pt-2 lg:hidden">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setOpenSections(prev => ({ ...prev, 1: true, 2: false }))}
+                                                    className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all text-muted-foreground hover:text-foreground active:scale-95"
+                                                >
+                                                    <ArrowLeft className="w-3.5 h-3.5" />
+                                                    ย้อนกลับหัวบิล
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setOpenSections(prev => ({ ...prev, 2: false, 3: true }))}
+                                                    className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95"
+                                                >
+                                                    ถัดไป: แนบรูปสลิป (Step 3)
+                                                    <ArrowRight className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* STEP 3: รูปสลิป / บิล (On Mobile only, embedded in left column) */}
+                                <div className="lg:hidden shrink-0 bg-muted/10 border border-white/10 rounded-2xl overflow-hidden transition-all min-w-0 w-full">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSection(3)}
+                                        className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-2.5 text-left hover:bg-white/5 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className={cn(
+                                                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors",
+                                                receiptImage ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-primary/20 text-primary border border-primary/30"
+                                            )}>
+                                                {receiptImage ? <Check className="w-3.5 h-3.5" /> : "3"}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-foreground">3. แนบรูปสลิป / บิล</span>
+                                                    <span className="text-[9px] text-muted-foreground uppercase px-1.5 py-0.5 rounded bg-white/5 border border-white/5">Receipt</span>
+                                                </div>
+                                                {!openSections[3] && (
+                                                    <p className="text-xs text-muted-foreground truncate mt-0.5 max-w-[200px] sm:max-w-md">
+                                                        {receiptImage ? "✓ มีรูปสลิปแล้ว" : "ยังไม่ได้แนบรูปสลิป (ไม่บังคับ)"}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {receiptImage && <span className="text-[11px] text-emerald-400 font-medium">แนบแล้ว</span>}
+                                            {openSections[3] ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                                        </div>
+                                    </button>
+
+                                    {openSections[3] && (
+                                        <div className="p-3.5 sm:p-4 pt-0 space-y-3.5 border-t border-white/5 min-w-0 w-full animate-in fade-in duration-200">
+                                            {renderReceiptContent()}
+
+                                            <div className="flex justify-between items-center pt-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setOpenSections(prev => ({ ...prev, 2: true, 3: false }))}
+                                                    className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all text-muted-foreground hover:text-foreground active:scale-95"
+                                                >
+                                                    <ArrowLeft className="w-3.5 h-3.5" />
+                                                    ย้อนกลับรายการบิล
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                             </div>
 
-                            <div className="h-px bg-white/10" />
+                            {/* ======================================================== */}
+                            {/* RIGHT PANE (Desktop only, 5 cols)                        */}
+                            {/* Contains Smart Scan AI, Receipt Preview & Bill Summary   */}
+                            {/* ======================================================== */}
+                            <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col h-full overflow-y-auto overflow-x-hidden p-5 space-y-4 bg-white/[0.02] min-w-0 custom-scrollbar overscroll-contain min-h-0">
 
-                            {/* Payment Details */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.payment_status}</label>
-                                    <div className="relative">
-                                        <Receipt className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                        <select
-                                            value={status}
-                                            onChange={(e) => setStatus(e.target.value as any)}
-                                            className="w-full bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
-                                        >
-                                            <option value="Paid">Paid</option>
-                                            <option value="Pending">Pending (รอชำระ)</option>
-                                            <option value="Advanced">Advanced (สำรองจ่าย)</option>
-                                            <option value="Credit">Credit (ติดไว้ก่อน)</option>
-                                            <option value="Unpaid">Cancel (ยกเลิก)</option>
-                                        </select>
+                                {/* Smart Scan AI Desktop Banner */}
+                                <div className="shrink-0 bg-purple-500/10 border border-purple-500/20 p-4 rounded-2xl flex items-center justify-between gap-3 min-w-0">
+                                    <div className="flex items-center gap-3 text-purple-400 min-w-0">
+                                        <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
+                                            <ScanLine className="w-5 h-5 text-purple-400" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-bold truncate leading-tight">{t.expenses.smart_scan}</p>
+                                            <p className="text-xs text-muted-foreground truncate mt-0.5">สแกนใบเสร็จกรอกข้อมูลให้อัตโนมัติ</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsScanOpen(true)}
+                                        className="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 shrink-0 whitespace-nowrap"
+                                    >
+                                        เริ่มสแกนบิล
+                                    </button>
+                                </div>
+
+                                {/* Step 3: Receipt Upload & Preview on Desktop */}
+                                <div className="shrink-0 bg-muted/10 border border-white/10 rounded-2xl p-4 space-y-3 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className={cn(
+                                                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                                                receiptImage ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-primary/20 text-primary border border-primary/30"
+                                            )}>
+                                                {receiptImage ? <Check className="w-3.5 h-3.5" /> : "3"}
+                                            </div>
+                                            <span className="text-sm font-bold text-foreground truncate">รูปใบเสร็จ / สลิป (Receipt)</span>
+                                        </div>
+                                        {receiptImage && (
+                                            <span className="text-[11px] text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+                                                แนบแล้ว
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {renderReceiptContent()}
+                                </div>
+
+                                {/* Live Breakdown & Summary Card */}
+                                <div className="shrink-0 bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3 mt-auto min-w-0">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                                        สรุปยอดค่าใช้จ่าย (Summary)
+                                    </span>
+                                    <div className="space-y-1.5 text-xs text-muted-foreground">
+                                        <div className="flex justify-between">
+                                            <span>จำนวนรายการ</span>
+                                            <span className="font-semibold text-foreground">{items.length} รายการ</span>
+                                        </div>
+                                        {vatIncluded && (
+                                            <>
+                                                <div className="flex justify-between">
+                                                    <span>ยอดก่อนภาษี</span>
+                                                    <span className="font-mono text-foreground">฿{(subtotal - vatAmount).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>ภาษีมูลค่าเพิ่ม (7%)</span>
+                                                    <span className="font-mono text-foreground">฿{vatAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                    <div className="h-px bg-white/10 pt-1" />
+                                    <div className="flex justify-between items-baseline pt-1">
+                                        <span className="text-sm font-bold text-foreground">ยอดรวมสุทธิ</span>
+                                        <span className="text-2xl font-black text-primary font-mono">฿{subtotal.toLocaleString()}</span>
                                     </div>
                                 </div>
 
-                                {status === 'Advanced' && (
-                                    <div className="space-y-1 animate-in fade-in slide-in-from-top-2">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.paid_by}</label>
-                                        <div className="relative">
-                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                            <select
-                                                value={paidBy}
-                                                onChange={(e) => handleSelectChange(e.target.value, setPaidBy, 'user')}
-                                                className="w-full bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
-                                            >
-                                                <option value="">Select User...</option>
-                                                {currentUser && (
-                                                    <option value={currentUser.name} className="font-bold text-primary">Assign to Me ({currentUser.name})</option>
-                                                )}
-                                                {users.map(u => (
-                                                    <option key={u.id} value={u.name}>{u.name} ({u.role})</option>
-                                                ))}
-                                                <option value="NEW" className="font-bold text-primary">+ Add New User...</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {status === 'Credit' && (
-                                    <div className="space-y-1 animate-in fade-in slide-in-from-top-2">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.expenses.dialog.vendor}</label>
-                                        <div className="relative">
-                                            <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                            <select
-                                                value={vendor}
-                                                onChange={(e) => handleSelectChange(e.target.value, setVendor, 'vendor')}
-                                                className="w-full bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
-                                            >
-                                                <option value="">Select Vendor...</option>
-                                                {vendors.map(v => (
-                                                    <option key={v.id} value={v.name}>{v.name} ({v.category})</option>
-                                                ))}
-                                                <option value="NEW" className="font-bold text-primary">+ Add New Vendor...</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
                         </div>
 
+                        {/* Full-width Sticky Footer with Live Grand Total & Save Button */}
+                        <div className="p-3.5 sm:p-5 border-t border-white/10 bg-background/80 backdrop-blur-md shrink-0 flex items-center justify-between gap-3 min-w-0 w-full">
+                            <div className="min-w-0 flex items-center gap-3">
+                                <div>
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block leading-tight">ยอดรวมทั้งสิ้น</span>
+                                    <span className="text-xl sm:text-2xl font-black text-primary font-mono truncate block">
+                                        ฿{subtotal.toLocaleString()}
+                                    </span>
+                                </div>
+                                <span className="hidden sm:inline-block text-xs text-muted-foreground bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
+                                    {items.length} รายการ
+                                </span>
+                            </div>
 
-
-                        {/* Footer Actions */}
-                        <div className="p-6 border-t border-white/10 bg-background/20 backdrop-blur-md shrink-0">
-                            <button
-                                type="submit"
-                                disabled={isUploading}
-                                className="w-full bg-primary text-primary-foreground hover:opacity-90 rounded-xl py-3 font-bold uppercase tracking-wider shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isUploading ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white/90 rounded-full animate-spin" />
-                                        <span>{uploadStatus || "Saving..."}</span>
-                                    </>
-                                ) : (
-                                    t.expenses.dialog.save
-                                )}
-                            </button>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="hidden sm:inline-flex px-4 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all active:scale-95"
+                                >
+                                    ยกเลิก
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isUploading}
+                                    className="min-w-[140px] sm:min-w-[180px] bg-primary text-primary-foreground hover:opacity-90 rounded-xl py-3 px-5 font-bold text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 active:scale-95"
+                                >
+                                    {isUploading ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white/90 rounded-full animate-spin" />
+                                            <span className="truncate">{uploadStatus || "Saving..."}</span>
+                                        </>
+                                    ) : (
+                                        t.expenses.dialog.save
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -1166,3 +1516,4 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         </>
     )
 }
+
