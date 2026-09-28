@@ -523,8 +523,9 @@ function ExpensesContent() {
             {/* Filters & Search - Glass Component */}
             <div className="overflow-hidden">
                 <div className="z-30 pt-4 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-                    <div className="bg-background/80 backdrop-blur-xl border border-white/10 p-3 rounded-2xl shadow-xl flex flex-col xl:flex-row gap-4 justify-between">
-                        <div className="flex gap-4 items-center overflow-x-auto no-scrollbar">
+                    <div className="bg-background/80 backdrop-blur-xl border border-white/10 p-3 sm:p-4 rounded-2xl shadow-xl flex flex-col gap-3 sm:gap-4">
+                        {/* Row 1: Category Filter Tabs */}
+                        <div className="flex gap-2 sm:gap-3 items-center overflow-x-auto no-scrollbar w-full pb-0.5">
                             <button
                                 onClick={() => setShowArchived(!showArchived)}
                                 className={cn(
@@ -539,7 +540,7 @@ function ExpensesContent() {
                                 {showArchived && <span className="text-sm font-semibold">Archived</span>}
                             </button>
                             {/* Filter Tabs */}
-                            <div className="flex p-1 bg-muted/30 rounded-xl overflow-x-auto no-scrollbar min-w-0 shrink-0">
+                            <div className="flex p-1 bg-muted/30 rounded-xl overflow-x-auto no-scrollbar shrink-0">
                                 <div className="flex items-center gap-1">
                                     {[
                                         { id: 'All', icon: LayoutGrid, label: t.expenses.categories.all },
@@ -552,7 +553,7 @@ function ExpensesContent() {
                                             key={tab.id}
                                             onClick={() => setCategoryFilter(tab.id as any)}
                                             className={cn(
-                                                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative whitespace-nowrap",
+                                                "flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm font-medium transition-all duration-300 relative whitespace-nowrap shrink-0",
                                                 categoryFilter === tab.id
                                                     ? "bg-foreground text-background shadow-sm"
                                                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -566,104 +567,106 @@ function ExpensesContent() {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap w-full xl:w-auto">
-                            {/* Month Filter */}
-                            <div className="relative min-w-[140px]">
-                                <select
-                                    value={monthFilter}
-                                    onChange={(e) => setMonthFilter(e.target.value)}
-                                    className="w-full pl-3 pr-8 py-2 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
-                                >
-                                    <option value="all">All Months</option>
-                                    {availableMonths.map(month => (
-                                        <option key={month} value={month}>
-                                            {new Date(month + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                        {/* Row 2: Secondary Dropdown Filters & Search */}
+                        <div className="flex flex-col xl:flex-row gap-3 items-stretch xl:items-center justify-between pt-2 border-t border-white/5">
+                            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar flex-nowrap sm:flex-wrap">
+                                {/* Month Filter */}
+                                <div className="relative min-w-[130px] sm:min-w-[140px] shrink-0">
+                                    <select
+                                        value={monthFilter}
+                                        onChange={(e) => setMonthFilter(e.target.value)}
+                                        className="w-full pl-3 pr-8 py-2 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
+                                    >
+                                        <option value="all">All Months</option>
+                                        {availableMonths.map(month => (
+                                            <option key={month} value={month}>
+                                                {new Date(month + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                            {/* Status Filter */}
-                            <div className="relative min-w-[120px]">
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full pl-3 pr-8 py-2 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
-                                >
-                                    <option value="All">All Status</option>
-                                    <option value="Paid">Paid</option>
-                                    <option value="Pending">Pending (รอจ่าย)</option>
-                                    <option value="Advanced">Advanced (สำรอง)</option>
-                                    <option value="Credit">Credit</option>
-                                    <option value="Unpaid">Cancel (ยกเลิก)</option>
-                                </select>
-                            </div>
+                                {/* Status Filter */}
+                                <div className="relative min-w-[120px] shrink-0">
+                                    <select
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                        className="w-full pl-3 pr-8 py-2 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
+                                    >
+                                        <option value="All">All Status</option>
+                                        <option value="Paid">Paid</option>
+                                        <option value="Pending">Pending (รอจ่าย)</option>
+                                        <option value="Advanced">Advanced (สำรอง)</option>
+                                        <option value="Credit">Credit</option>
+                                        <option value="Unpaid">Cancel (ยกเลิก)</option>
+                                    </select>
+                                </div>
 
-                            {/* Project Filter */}
-                            <div className="relative min-w-[140px]">
-                                <select
-                                    value={projectFilter}
-                                    onChange={(e) => setProjectFilter(e.target.value)}
-                                    className="w-full pl-3 pr-8 py-2 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
-                                >
-                                    <option value="all">All Projects</option>
-                                    {projects.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name}</option>
-                                    ))}
-                                </select>
-                            </div>
+                                {/* Project Filter */}
+                                <div className="relative min-w-[130px] sm:min-w-[140px] shrink-0">
+                                    <select
+                                        value={projectFilter}
+                                        onChange={(e) => setProjectFilter(e.target.value)}
+                                        className="w-full pl-3 pr-8 py-2 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
+                                    >
+                                        <option value="all">All Projects</option>
+                                        {projects.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                            {/* User Filter */}
-                            <div className="relative min-w-[120px]">
-                                <select
-                                    value={userFilter}
-                                    onChange={(e) => setUserFilter(e.target.value)}
-                                    className="w-full pl-3 pr-8 py-2 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
-                                >
-                                    <option value="all">All Users</option>
-                                    {users.map(u => (
-                                        <option key={u.id} value={u.name}>{u.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                        </div>
-
-                        {/* Search Bar with Sort Icon */}
-                        <div className="flex gap-2 items-center w-full sm:w-auto">
-                            <div className="relative flex-1 sm:w-60 group">
-                                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-xl blur-lg opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-                                <div className="relative bg-muted/30 border border-white/5 rounded-xl flex items-center overflow-hidden transition-colors group-focus-within:bg-background/50 group-focus-within:border-primary/30">
-                                    <Search className="w-4 h-4 text-muted-foreground ml-3 group-focus-within:text-primary transition-colors" />
-                                    <input
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder={t.expenses.filters.search_placeholder}
-                                        className="w-full px-3 py-2.5 bg-transparent border-none text-sm focus:outline-none placeholder:text-muted-foreground/50"
-                                    />
-                                    {searchQuery && (
-                                        <button
-                                            onClick={() => setSearchQuery('')}
-                                            className="p-1 mr-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                        >
-                                            <div className="w-4 h-4 flex items-center justify-center">×</div>
-                                        </button>
-                                    )}
+                                {/* User Filter */}
+                                <div className="relative min-w-[120px] shrink-0">
+                                    <select
+                                        value={userFilter}
+                                        onChange={(e) => setUserFilter(e.target.value)}
+                                        className="w-full pl-3 pr-8 py-2 bg-muted/30 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium text-sm appearance-none"
+                                    >
+                                        <option value="all">All Users</option>
+                                        {users.map(u => (
+                                            <option key={u.id} value={u.name}>{u.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
-                            {/* Sort Dropdown */}
-                            <div className="flex items-center gap-2">
-                                <ArrowDownAZ className="w-4 h-4 text-muted-foreground" />
-                                <select
-                                    value={sortOrder}
-                                    onChange={(e) => setSortOrder(e.target.value as any)}
-                                    className="bg-transparent border-none text-sm text-muted-foreground focus:outline-none cursor-pointer hover:text-foreground transition-colors"
-                                >
-                                    <option value="created">{t.expenses.sort.created}</option>
-                                    <option value="date">{t.expenses.sort.date}</option>
-                                    <option value="alphabetical">{t.expenses.sort.alphabetical}</option>
-                                </select>
+                            {/* Search Bar with Sort Icon */}
+                            <div className="flex gap-2 items-center w-full xl:w-auto shrink-0">
+                                <div className="relative flex-1 sm:w-60 group">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-xl blur-lg opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+                                    <div className="relative bg-muted/30 border border-white/5 rounded-xl flex items-center overflow-hidden transition-colors group-focus-within:bg-background/50 group-focus-within:border-primary/30">
+                                        <Search className="w-4 h-4 text-muted-foreground ml-3 group-focus-within:text-primary transition-colors" />
+                                        <input
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder={t.expenses.filters.search_placeholder}
+                                            className="w-full px-3 py-2.5 bg-transparent border-none text-sm focus:outline-none placeholder:text-muted-foreground/50"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                onClick={() => setSearchQuery('')}
+                                                className="p-1 mr-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                            >
+                                                <div className="w-4 h-4 flex items-center justify-center">×</div>
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Sort Dropdown */}
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <ArrowDownAZ className="w-4 h-4 text-muted-foreground" />
+                                    <select
+                                        value={sortOrder}
+                                        onChange={(e) => setSortOrder(e.target.value as any)}
+                                        className="bg-transparent border-none text-sm text-muted-foreground focus:outline-none cursor-pointer hover:text-foreground transition-colors"
+                                    >
+                                        <option value="created">{t.expenses.sort.created}</option>
+                                        <option value="date">{t.expenses.sort.date}</option>
+                                        <option value="alphabetical">{t.expenses.sort.alphabetical}</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
