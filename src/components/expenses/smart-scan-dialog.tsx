@@ -84,9 +84,10 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
         try {
             // imageToAnalyze is already compressed if it was large
             const imageToAnalyze = previewUrl
-            const token = await auth.currentUser?.getIdToken()
-            if (!token || !currentOrg?.id) throw new Error("Please sign in again")
-            const result = await analyzeReceipt(imageToAnalyze, token, currentOrg.id)
+            const token = await auth.currentUser?.getIdToken(true)
+            const orgId = currentOrg?.id || "default"
+            if (!token) throw new Error("กรุณาเข้าสู่ระบบใหม่อีกครั้ง (Authentication required)")
+            const result = await analyzeReceipt(imageToAnalyze, token, orgId)
 
             if (!result.success) {
                 throw new Error(result.error)
@@ -151,9 +152,10 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
             }
 
             setCompleted(true)
-        } catch (error: any) {
             console.error("Scan failed:", error)
-            alert(`Scan failed: ${error.message}. Please check your API Key.`)
+            const errorMsg = error.message || "Scan failed. Please try again."
+            toast.error(errorMsg)
+            alert(`Scan failed: ${errorMsg}`)
         } finally {
             if (!autoSave) {
                 setScanning(false)

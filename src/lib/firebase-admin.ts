@@ -15,7 +15,7 @@ function getFirebaseAdminApp(): App {
         return apps[0]!;
     }
 
-    // Check if we have a service account key in env
+    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "projectpro-app-76535";
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
     if (serviceAccountKey) {
@@ -23,6 +23,7 @@ function getFirebaseAdminApp(): App {
             const serviceAccount = JSON.parse(serviceAccountKey);
             return initializeApp({
                 credential: cert(serviceAccount),
+                projectId: serviceAccount.project_id || projectId,
             });
         } catch (error) {
             console.error("Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:", error);
@@ -30,8 +31,10 @@ function getFirebaseAdminApp(): App {
         }
     }
 
-    // Fallback to default behavior (relies on GOOGLE_APPLICATION_CREDENTIALS or GCloud CLI)
-    return initializeApp();
+    // Fallback: Always provide projectId so verifyIdToken can verify Google JWT tokens on Vercel
+    return initializeApp({
+        projectId,
+    });
 }
 
 export const adminApp = getFirebaseAdminApp();

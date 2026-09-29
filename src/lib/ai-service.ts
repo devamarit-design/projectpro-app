@@ -24,12 +24,17 @@ export type AnalyzeReceiptResult =
     | { success: false; error: string };
 
 export async function analyzeReceipt(base64Image: string, authToken: string, orgId: string): Promise<AnalyzeReceiptResult> {
+    if (!authToken) {
+        return { success: false, error: "Authentication required. Please sign in again." }
+    }
+
     try {
         await requireOrganizationAccess(new Request("http://localhost", {
             headers: { Authorization: `Bearer ${authToken}` },
         }), orgId)
-    } catch {
-        return { success: false, error: "Authentication required. Please sign in again." }
+    } catch (authErr: any) {
+        console.error("Auth check failed in analyzeReceipt:", authErr)
+        return { success: false, error: authErr?.message || "Authentication required. Please sign in again." }
     }
 
     if (!apiKey) {
