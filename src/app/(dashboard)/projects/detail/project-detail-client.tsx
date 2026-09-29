@@ -33,7 +33,9 @@ import {
     ChevronDown,
     Check,
     Layers,
-    ExternalLink
+    ExternalLink,
+    Search,
+    X
 } from "lucide-react"
 import { IncomeDocument } from "@/context/project-context"
 import Link from "next/link"
@@ -47,6 +49,7 @@ import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
 import AddTaskDialog from "@/components/tasks/add-task-dialog"
 import { AddWorkDialog } from "@/components/modals/add-work-dialog"
 import { AddIncomeDialog } from "@/components/income/add-income-dialog"
+import { IncomeDetailSheet } from "@/components/income/income-detail-sheet"
 
 import { TaskBoard } from "@/components/tasks/task-board"
 import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
@@ -141,6 +144,7 @@ export default function ProjectDetailClient() {
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false)
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
     const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
+    const [selectedIncomeDocId, setSelectedIncomeDocId] = useState<string | null>(null)
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
     const [selectedSubProjectId, setSelectedSubProjectId] = useState<string | null>(null)
     const [isAddSubProjectOpen, setIsAddSubProjectOpen] = useState(false)
@@ -148,6 +152,7 @@ export default function ProjectDetailClient() {
     const [userFilter, setUserFilter] = useState<string>("all")
     const [monthFilter, setMonthFilter] = useState<string>("all")
     const [activeFinancialTab, setActiveFinancialTab] = useState<'expenses' | 'incomes'>('expenses')
+    const [financialSearchQuery, setFinancialSearchQuery] = useState("")
     const [isAddIncomeOpen, setIsAddIncomeOpen] = useState(false)
     const [deleteSubProjectConfirm, setDeleteSubProjectConfirm] = useState<{ isOpen: boolean; subProjectId: string | null }>({
         isOpen: false,
@@ -201,6 +206,15 @@ export default function ProjectDetailClient() {
             setSelectedExpenseId(expenseId)
         } else {
             setSelectedExpenseId(null)
+        }
+
+        const incomeId = searchParams.get("incomeId")
+        if (incomeId) {
+            setSelectedIncomeDocId(incomeId)
+            setActiveTab("financials")
+            setActiveFinancialTab("incomes")
+        } else {
+            setSelectedIncomeDocId(null)
         }
     }, [searchParams])
 
@@ -295,6 +309,36 @@ export default function ProjectDetailClient() {
     const projectIncomes = monthFilter === "all"
         ? allProjectIncomes
         : allProjectIncomes.filter(i => i.date.startsWith(monthFilter))
+
+    // Search filter for Expenses in this project
+    const filteredProjectExpenses = useMemo(() => {
+        if (!financialSearchQuery.trim()) return projectExpenses
+        const q = financialSearchQuery.toLowerCase().trim()
+        return projectExpenses.filter(e =>
+            e.title?.toLowerCase().includes(q) ||
+            e.category?.toLowerCase().includes(q) ||
+            (e.payee && e.payee.toLowerCase().includes(q)) ||
+            (e.paidBy && e.paidBy.toLowerCase().includes(q)) ||
+            (e.amount && e.amount.toString().toLowerCase().includes(q)) ||
+            (e.date && e.date.includes(q)) ||
+            (e.items && e.items.some(item => item.description?.toLowerCase().includes(q)))
+        )
+    }, [projectExpenses, financialSearchQuery])
+
+    // Search filter for Incomes in this project
+    const filteredProjectIncomes = useMemo(() => {
+        if (!financialSearchQuery.trim()) return allIncomesForProject
+        const q = financialSearchQuery.toLowerCase().trim()
+        return allIncomesForProject.filter(i =>
+            i.documentNumber?.toLowerCase().includes(q) ||
+            i.type?.toLowerCase().includes(q) ||
+            i.status?.toLowerCase().includes(q) ||
+            (i.date && i.date.includes(q)) ||
+            (i.grandTotal !== undefined && i.grandTotal.toString().includes(q)) ||
+            (i.sections && i.sections.some(s => s.name?.toLowerCase().includes(q))) ||
+            (i.items && i.items.some(item => item.description?.toLowerCase().includes(q)))
+        )
+    }, [allIncomesForProject, financialSearchQuery])
 
     // 4. Calculate Totals
     const totalExpenses = projectExpenses.reduce((sum, e) => sum + getExpenseAmountForProject(e, id), 0)
@@ -683,8 +727,34 @@ export default function ProjectDetailClient() {
                                     </div>
 
                                     <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <h4 className="font-bold text-lg">{t.projects.detail.financials.history}</h4>
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <h4 className="font-bold text-lg whitespace-nowrap">{t.projects.detail.financials.history}</h4>
+                                                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-muted-foreground font-medium">
+                                                    {filteredProjectExpenses.length} รายการ
+                                                </span>
+                                            </div>
+
+                                            {/* Search in Project Expenses */}
+                                            <div className="relative flex-1 max-w-sm">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                                <input
+                                                    type="text"
+                                                    value={financialSearchQuery}
+                                                    onChange={(e) => setFinancialSearchQuery(e.target.value)}
+                                                    placeholder="ค้นหารายจ่าย (ชื่อ, ผู้รับเงิน, หมวดหมู่...)"
+                                                    className="w-full pl-9 pr-8 py-1.5 text-xs bg-muted/40 border border-white/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all placeholder:text-muted-foreground/60"
+                                                />
+                                                {financialSearchQuery && (
+                                                    <button
+                                                        onClick={() => setFinancialSearchQuery("")}
+                                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                            </div>
+
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => handleExportCSV('Expense')}
@@ -701,7 +771,7 @@ export default function ProjectDetailClient() {
                                                                 const { generateServerPDF, generateExpenseReportHTML } = await import('@/lib/server-pdf')
                                                                 const html = generateExpenseReportHTML(
                                                                     project?.name || 'Project',
-                                                                    projectExpenses.map(e => ({
+                                                                    filteredProjectExpenses.map(e => ({
                                                                         date: e.date,
                                                                         category: e.category,
                                                                         title: e.title,
@@ -736,8 +806,8 @@ export default function ProjectDetailClient() {
                                         </div>
 
                                         <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-                                            {projectExpenses.length > 0 ? (
-                                                projectExpenses.map((expense) => (
+                                            {filteredProjectExpenses.length > 0 ? (
+                                                filteredProjectExpenses.map((expense) => (
                                                     <div
                                                         key={expense.id}
                                                         onClick={() => router.push(`${pathname}?${createQueryString('expenseId', expense.id)}`, { scroll: false })}
@@ -781,6 +851,17 @@ export default function ProjectDetailClient() {
                                                         </div>
                                                     </div>
                                                 ))
+                                            ) : financialSearchQuery ? (
+                                                <div className="glass-card p-8 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 border border-white/5">
+                                                    <Search className="w-8 h-8 text-muted-foreground/50 mb-1" />
+                                                    <p className="text-sm font-medium text-foreground">ไม่พบรายจ่ายที่ตรงกับ "{financialSearchQuery}"</p>
+                                                    <button
+                                                        onClick={() => setFinancialSearchQuery("")}
+                                                        className="text-xs text-primary hover:underline mt-1 font-medium"
+                                                    >
+                                                        ล้างการค้นหา
+                                                    </button>
+                                                </div>
                                             ) : (
                                                 <div className="glass-card p-8 rounded-3xl min-h-[200px] flex flex-col items-center justify-center text-center space-y-4 border border-white/5">
                                                     <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
@@ -800,8 +881,34 @@ export default function ProjectDetailClient() {
                             {activeFinancialTab === 'incomes' && hasPermission(currentTeam?.role, "INCOME_CREATE") && (
                                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                     <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <h4 className="font-bold text-lg">Income Documents (เอกสารรายรับ)</h4>
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <h4 className="font-bold text-lg whitespace-nowrap">Income Documents (เอกสารรายรับ)</h4>
+                                                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-muted-foreground font-medium">
+                                                    {filteredProjectIncomes.length} เอกสาร
+                                                </span>
+                                            </div>
+
+                                            {/* Search in Project Incomes */}
+                                            <div className="relative flex-1 max-w-sm">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                                <input
+                                                    type="text"
+                                                    value={financialSearchQuery}
+                                                    onChange={(e) => setFinancialSearchQuery(e.target.value)}
+                                                    placeholder="ค้นหารายรับ (เลขเอกสาร, ประเภท, สถานะ...)"
+                                                    className="w-full pl-9 pr-8 py-1.5 text-xs bg-muted/40 border border-white/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all placeholder:text-muted-foreground/60"
+                                                />
+                                                {financialSearchQuery && (
+                                                    <button
+                                                        onClick={() => setFinancialSearchQuery("")}
+                                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                            </div>
+
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => handleExportCSV('Income')}
@@ -814,10 +921,9 @@ export default function ProjectDetailClient() {
                                                     <button
                                                         onClick={async () => {
                                                             const { generateServerPDF, generateExpenseReportHTML } = await import('@/lib/server-pdf')
-                                                            const projectIncomes = incomes.filter(i => i.projectId === id)
                                                             const html = generateExpenseReportHTML(
                                                                 project?.name || 'Project',
-                                                                projectIncomes.map(i => ({
+                                                                filteredProjectIncomes.map(i => ({
                                                                     date: i.date,
                                                                     category: i.type,
                                                                     title: i.documentNumber,
@@ -846,9 +952,9 @@ export default function ProjectDetailClient() {
 
                                         {/* All Income Documents List */}
                                         <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-                                            {/* Use allIncomesForProject to include backward compatible project matching */}
-                                            {allIncomesForProject.length > 0 ? (
-                                                groupIncomes(allIncomesForProject).map((group) => (
+                                            {/* Use filteredProjectIncomes to include backward compatible project matching and search */}
+                                            {filteredProjectIncomes.length > 0 ? (
+                                                groupIncomes(filteredProjectIncomes).map((group) => (
                                                     <div key={group.id} className="glass-card rounded-xl border border-white/5 overflow-hidden">
                                                         {/* Group Header */}
                                                         <div
@@ -894,9 +1000,9 @@ export default function ProjectDetailClient() {
                                                                 {group.documents.map((doc) => (
                                                                     <div
                                                                         key={doc.id}
-                                                                        // Link to income page or open preview? For now, we can link or use a dialog trigger if available
-                                                                        // Since specific handlers aren't passed down, we'll keep it as a visual list or simple link
-                                                                        className="p-3 rounded-lg hover:bg-white/5 flex items-center justify-between transition-colors ml-4 border-l-2 border-white/10"
+                                                                        onClick={() => setSelectedIncomeDocId(doc.id)}
+                                                                        role="button"
+                                                                        className="p-3 rounded-lg hover:bg-white/10 flex items-center justify-between transition-colors ml-4 border-l-2 border-white/10 cursor-pointer group"
                                                                     >
                                                                         <div className="flex items-center gap-3">
                                                                             <span className={cn(
@@ -908,7 +1014,7 @@ export default function ProjectDetailClient() {
                                                                                 {doc.type === 'Quotation' ? 'QT' : doc.type === 'Invoice' ? 'INV' : 'REC'}
                                                                             </span>
                                                                             <div>
-                                                                                <p className="text-sm font-medium">{doc.documentNumber}</p>
+                                                                                <p className="text-sm font-medium group-hover:text-primary transition-colors">{doc.documentNumber}</p>
                                                                                 <p className="text-[10px] text-muted-foreground">{doc.date}</p>
                                                                             </div>
                                                                         </div>
@@ -923,6 +1029,7 @@ export default function ProjectDetailClient() {
                                                                                 {doc.status}
                                                                             </span>
                                                                             <span className="text-sm font-medium w-24 text-right">฿{doc.grandTotal?.toLocaleString()}</span>
+                                                                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -930,12 +1037,23 @@ export default function ProjectDetailClient() {
                                                         )}
                                                     </div>
                                                 ))
+                                            ) : financialSearchQuery ? (
+                                                <div className="glass-card p-8 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 border border-white/5">
+                                                    <Search className="w-8 h-8 text-muted-foreground/50 mb-1" />
+                                                    <p className="text-sm font-medium text-foreground">ไม่พบเอกสารรายรับที่ตรงกับ "{financialSearchQuery}"</p>
+                                                    <button
+                                                        onClick={() => setFinancialSearchQuery("")}
+                                                        className="text-xs text-primary hover:underline mt-1 font-medium"
+                                                    >
+                                                        ล้างการค้นหา
+                                                    </button>
+                                                </div>
                                             ) : (
                                                 <div className="glass-card p-8 rounded-3xl min-h-[200px] flex flex-col items-center justify-center text-center space-y-4 border border-white/5">
                                                     <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
                                                         <FileText className="w-8 h-8 text-muted-foreground" />
                                                     </div>
-                                                    <p className="text-sm text-muted-foreground">No income documents for this project yet.</p>
+                                                    <p className="text-sm text-muted-foreground">ยังไม่มีเอกสารรายรับในโครงการนี้</p>
                                                 </div>
                                             )}
                                         </div>
@@ -1292,6 +1410,14 @@ export default function ProjectDetailClient() {
                 onClose={() => {
                     if (searchParams.has('expenseId')) router.back()
                     else setSelectedExpenseId(null)
+                }}
+            />
+
+            <IncomeDetailSheet
+                documentId={selectedIncomeDocId}
+                onClose={() => {
+                    if (searchParams.has('incomeId')) router.back()
+                    else setSelectedIncomeDocId(null)
                 }}
             />
 

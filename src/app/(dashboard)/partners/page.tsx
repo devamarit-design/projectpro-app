@@ -10,11 +10,14 @@ import { useTranslation } from "@/lib/i18n-context"
 import AddPartnerDialog from "@/components/partners/add-partner-dialog"
 import PartnerDetailSheet from "@/components/partners/partner-detail-sheet"
 
+import { useSearchParams } from "next/navigation"
+
 type FilterType = "All" | "Technician" | "Store" | "Contractor"
 
-export default function PartnersPage() {
+function PartnersContent() {
     const { workers, vendors, expenses } = useProjects()
     const { t } = useTranslation()
+    const searchParams = useSearchParams()
     const [activeTab, setActiveTab] = React.useState<FilterType>("All")
     const [searchQuery, setSearchQuery] = React.useState("")
     const [showArchived, setShowArchived] = React.useState(false)
@@ -25,6 +28,20 @@ export default function PartnersPage() {
 
     const [selectedPartnerId, setSelectedPartnerId] = React.useState<string | null>(null)
     const [selectedPartnerType, setSelectedPartnerType] = React.useState<"Worker" | "Vendor" | null>(null)
+
+    React.useEffect(() => {
+        const id = searchParams.get('id')
+        const type = searchParams.get('type') as ("Worker" | "Vendor") | null
+        if (id) {
+            setSelectedPartnerId(id)
+            if (type) {
+                setSelectedPartnerType(type)
+            } else {
+                const isWorker = workers.some(w => w.id === id)
+                setSelectedPartnerType(isWorker ? "Worker" : "Vendor")
+            }
+        }
+    }, [searchParams, workers, vendors])
 
     // Calculate total paid & transaction count for each partner
     const partnerTotals = React.useMemo(() => {
@@ -274,6 +291,14 @@ export default function PartnersPage() {
                 onClose={() => setSelectedPartnerId(null)}
             />
         </div>
+    )
+}
+
+export default function PartnersPage() {
+    return (
+        <React.Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading...</div>}>
+            <PartnersContent />
+        </React.Suspense>
     )
 }
 

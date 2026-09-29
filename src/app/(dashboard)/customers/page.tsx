@@ -9,13 +9,23 @@ import { useTranslation } from "@/lib/i18n-context"
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 import CustomerDetailSheet from "@/components/customers/customer-detail-sheet"
 
-export default function CustomersPage() {
+import { useSearchParams } from "next/navigation"
+
+function CustomersContent() {
     const { customers, projects } = useProjects()
     const { t } = useTranslation()
+    const searchParams = useSearchParams()
     const [searchQuery, setSearchQuery] = React.useState("")
     const [isAddOpen, setIsAddOpen] = React.useState(false)
     const [selectedCustomerId, setSelectedCustomerId] = React.useState<string | null>(null)
     const [showArchived, setShowArchived] = React.useState(false)
+
+    React.useEffect(() => {
+        const id = searchParams.get('id')
+        if (id) {
+            setSelectedCustomerId(id)
+        }
+    }, [searchParams])
 
     // Filter Logic
     const filteredCustomers = React.useMemo(() => {
@@ -184,5 +194,13 @@ export default function CustomersPage() {
                 onClose={() => setSelectedCustomerId(null)}
             />
         </div>
+    )
+}
+
+export default function CustomersPage() {
+    return (
+        <React.Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading...</div>}>
+            <CustomersContent />
+        </React.Suspense>
     )
 }

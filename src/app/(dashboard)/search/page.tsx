@@ -18,12 +18,19 @@ import {
     TrendingUp,
     Handshake,
     Gamepad2,
-    UserCircle
+    UserCircle,
+    ChevronRight
 } from "lucide-react"
+import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
+import { IncomeDetailSheet } from "@/components/income/income-detail-sheet"
+import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
 
 function SearchResultsContent() {
     const searchParams = useSearchParams()
     const query = searchParams.get("q") || ""
+    const [selectedExpenseId, setSelectedExpenseId] = React.useState<string | null>(null)
+    const [selectedIncomeId, setSelectedIncomeId] = React.useState<string | null>(null)
+    const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
     const {
         projects,
         customers,
@@ -194,10 +201,17 @@ function SearchResultsContent() {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         {filteredTeams.map((member, idx) => (
-                            <div key={idx} className="p-3 rounded-xl border border-border bg-card">
-                                <h3 className="font-medium text-sm">{member.userId}</h3>
-                                <p className="text-[10px] text-muted-foreground">{member.role}</p>
-                            </div>
+                            <Link
+                                key={idx}
+                                href="/team"
+                                className="p-3 rounded-xl border border-border bg-card hover:border-primary/50 hover:bg-muted/30 transition-all block group"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-medium text-sm group-hover:text-primary transition-colors">{member.userId}</h3>
+                                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">{member.role}</p>
+                            </Link>
                         ))}
                     </div>
                 </section>
@@ -211,15 +225,40 @@ function SearchResultsContent() {
                         {t.finance.expense}
                     </h2>
                     <div className="bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
-                        {filteredExpenses.map(expense => (
-                            <div key={expense.id} className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                                <div>
-                                    <h3 className="font-medium">{expense.title}</h3>
-                                    <p className="text-xs text-muted-foreground">{expense.category} • {expense.date}</p>
+                        {filteredExpenses.map(expense => {
+                            const project = projects.find(p => p.id === expense.projectId)
+                            return (
+                                <div
+                                    key={expense.id}
+                                    onClick={() => setSelectedExpenseId(expense.id)}
+                                    role="button"
+                                    className="p-4 flex items-center justify-between hover:bg-muted/40 transition-all cursor-pointer group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center font-bold text-sm shrink-0">
+                                            {expense.category?.[0] || '฿'}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{expense.title}</h3>
+                                                {project && (
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                                                        {project.name}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                {expense.category} • {expense.date} {expense.payee ? `• ${expense.payee}` : ''}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-mono font-bold text-base text-red-500">฿{expense.amount}</span>
+                                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                                    </div>
                                 </div>
-                                <span className="font-mono font-semibold text-red-500">฿{expense.amount}</span>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 </section>
             )}
@@ -232,15 +271,41 @@ function SearchResultsContent() {
                         {t.finance.income}
                     </h2>
                     <div className="bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
-                        {filteredIncomes.map(income => (
-                            <div key={income.id} className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                                <div>
-                                    <h3 className="font-medium text-primary">{income.documentNumber}</h3>
-                                    <p className="text-xs text-muted-foreground">{income.date} • {income.type}</p>
+                        {filteredIncomes.map(income => {
+                            const project = projects.find(p => p.id === income.projectId)
+                            const customer = customers.find(c => c.id === income.customerId)
+                            return (
+                                <div
+                                    key={income.id}
+                                    onClick={() => setSelectedIncomeId(income.id)}
+                                    role="button"
+                                    className="p-4 flex items-center justify-between hover:bg-muted/40 transition-all cursor-pointer group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-xs shrink-0">
+                                            {income.type === 'Quotation' ? 'QT' : income.type === 'Invoice' ? 'INV' : 'REC'}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h3 className="font-semibold text-primary group-hover:underline transition-colors">{income.documentNumber}</h3>
+                                                {project && (
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                                                        {project.name}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                {income.date} • {income.type} {customer ? `• ${customer.name}` : ''}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-mono font-bold text-base text-emerald-500">฿{(income.grandTotal || 0).toLocaleString()}</span>
+                                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                                    </div>
                                 </div>
-                                <span className="font-mono font-semibold text-green-500">฿{(income.grandTotal || 0).toLocaleString()}</span>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 </section>
             )}
@@ -256,7 +321,7 @@ function SearchResultsContent() {
                         {filteredPartners.map(v => (
                             <Link
                                 key={v.id}
-                                href={`/partners?id=${v.id}`}
+                                href={`/partners?id=${v.id}&type=${(v as any).type || 'Vendor'}`}
                                 className="block p-4 rounded-xl border border-border bg-card hover:bg-muted/30 transition-all"
                             >
                                 <h3 className="font-semibold">{v.name}</h3>
@@ -276,28 +341,54 @@ function SearchResultsContent() {
                     </h2>
                     <div className="bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
                         {filteredTasks.map(task => (
-                            <div key={task.id} className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                                <div>
-                                    <h3 className="font-medium">{task.title}</h3>
-                                    <p className="text-xs text-muted-foreground">
-                                        {t.search.in_project} <span className="font-semibold text-foreground">{task.projectName}</span>
-                                    </p>
+                            <div
+                                key={task.id}
+                                onClick={() => setSelectedTaskId(task.id)}
+                                role="button"
+                                className="p-4 flex items-center justify-between hover:bg-muted/40 transition-all cursor-pointer group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                                        <CheckSquare className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{task.title}</h3>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                            {t.search.in_project} <span className="font-medium text-foreground">{task.projectName}</span>
+                                            {task.assignedTo ? ` • ${task.assignedTo}` : ''}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-3">
                                     <span className={cn(
-                                        "text-[10px] px-2 py-0.5 rounded-full",
-                                        task.priority === 'High' ? "bg-red-500/10 text-red-500" :
-                                            task.priority === 'Medium' ? "bg-yellow-500/10 text-yellow-500" :
-                                                "bg-blue-500/10 text-blue-500"
+                                        "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                                        task.priority === 'High' ? "bg-red-500/10 text-red-500 border border-red-500/20" :
+                                            task.priority === 'Medium' ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20" :
+                                                "bg-blue-500/10 text-blue-500 border border-blue-500/20"
                                     )}>
                                         {task.priority}
                                     </span>
+                                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
                                 </div>
                             </div>
                         ))}
                     </div>
                 </section>
             )}
+
+            {/* Detail Sheets */}
+            <ExpenseDetailSheet
+                expenseId={selectedExpenseId}
+                onClose={() => setSelectedExpenseId(null)}
+            />
+            <IncomeDetailSheet
+                documentId={selectedIncomeId}
+                onClose={() => setSelectedIncomeId(null)}
+            />
+            <TaskDetailSheet
+                taskId={selectedTaskId}
+                onClose={() => setSelectedTaskId(null)}
+            />
 
             {totalResults === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
