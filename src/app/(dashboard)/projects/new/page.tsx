@@ -12,7 +12,7 @@ import SearchableCombobox from "@/components/ui/searchable-combobox"
 
 export default function NewProjectPage() {
     const { t } = useTranslation()
-    const { addProject, customers } = useProjects()
+    const { addProject, customers, currentTeam } = useProjects()
     const router = useRouter()
 
     const [isUploading, setIsUploading] = useState(false) // Added state

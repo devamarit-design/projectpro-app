@@ -41,7 +41,7 @@ import { IncomeDocument } from "@/context/project-context"
 import Link from "next/link"
 import { ProjectHeader } from "@/components/projects/project-header"
 import { cn, getGoogleMapsUrl, formatLocationDisplay } from "@/lib/utils"
-import { getExpenseAmountForProject, getCategoryExpenseForProject } from "@/lib/project-utils"
+import { getExpenseAmountForProject, getCategoryExpenseForProject, matchesExpenseSearch, getExpenseMatchedDetailSnippet, matchesIncomeSearch, getIncomeMatchedDetailSnippet } from "@/lib/project-utils"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 // Components
 import AddExpenseDialog from "@/components/expenses/add-expense-dialog"
@@ -310,35 +310,31 @@ export default function ProjectDetailClient() {
         ? allProjectIncomes
         : allProjectIncomes.filter(i => i.date.startsWith(monthFilter))
 
-    // Search filter for Expenses in this project
+    // Search filter for Expenses in this project (searches title, items/details, payee, vendor, notes, etc.)
     const filteredProjectExpenses = useMemo(() => {
         if (!financialSearchQuery.trim()) return projectExpenses
-        const q = financialSearchQuery.toLowerCase().trim()
-        return projectExpenses.filter(e =>
-            e.title?.toLowerCase().includes(q) ||
-            e.category?.toLowerCase().includes(q) ||
-            (e.payee && e.payee.toLowerCase().includes(q)) ||
-            (e.paidBy && e.paidBy.toLowerCase().includes(q)) ||
-            (e.amount && e.amount.toString().toLowerCase().includes(q)) ||
-            (e.date && e.date.includes(q)) ||
-            (e.items && e.items.some(item => item.description?.toLowerCase().includes(q)))
-        )
-    }, [projectExpenses, financialSearchQuery])
+        return projectExpenses.filter(e => {
+            const subProjectName = project?.subProjects?.find(sp => sp.id === e.subProjectId)?.name
+            const createdByName = users.find(u => u.id === e.createdBy)?.name
+            return matchesExpenseSearch(e, financialSearchQuery, {
+                projectName: project?.name,
+                subProjectName,
+                createdByName
+            })
+        })
+    }, [projectExpenses, financialSearchQuery, project, users])
 
-    // Search filter for Incomes in this project
+    // Search filter for Incomes in this project (searches docNumber, sections, items/details, notes, customer, etc.)
     const filteredProjectIncomes = useMemo(() => {
         if (!financialSearchQuery.trim()) return allIncomesForProject
-        const q = financialSearchQuery.toLowerCase().trim()
-        return allIncomesForProject.filter(i =>
-            i.documentNumber?.toLowerCase().includes(q) ||
-            i.type?.toLowerCase().includes(q) ||
-            i.status?.toLowerCase().includes(q) ||
-            (i.date && i.date.includes(q)) ||
-            (i.grandTotal !== undefined && i.grandTotal.toString().includes(q)) ||
-            (i.sections && i.sections.some(s => s.name?.toLowerCase().includes(q))) ||
-            (i.items && i.items.some(item => item.description?.toLowerCase().includes(q)))
-        )
-    }, [allIncomesForProject, financialSearchQuery])
+        return allIncomesForProject.filter(i => {
+            const customerName = customers.find(c => c.id === i.customerId)?.name
+            return matchesIncomeSearch(i, financialSearchQuery, {
+                customerName,
+                projectName: project?.name
+            })
+        })
+    }, [allIncomesForProject, financialSearchQuery, customers, project])
 
     // 4. Calculate Totals
     const totalExpenses = projectExpenses.reduce((sum, e) => sum + getExpenseAmountForProject(e, id), 0)
@@ -742,7 +738,7 @@ export default function ProjectDetailClient() {
                                                     type="text"
                                                     value={financialSearchQuery}
                                                     onChange={(e) => setFinancialSearchQuery(e.target.value)}
-                                                    placeholder="ค้นหารายจ่าย (ชื่อ, ผู้รับเงิน, หมวดหมู่...)"
+                                                    placeholder="ค้นหารายจ่าย (ชื่อ, รายละเอียด, ผู้รับเงิน, ร้านค้า, หมวดหมู่...)"
                                                     className="w-full pl-9 pr-8 py-1.5 text-xs bg-muted/40 border border-white/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all placeholder:text-muted-foreground/60"
                                                 />
                                                 {financialSearchQuery && (
@@ -807,50 +803,63 @@ export default function ProjectDetailClient() {
 
                                         <div className="space-y-3 max-h-[60vh] overflow-y-auto">
                                             {filteredProjectExpenses.length > 0 ? (
-                                                filteredProjectExpenses.map((expense) => (
-                                                    <div
-                                                        key={expense.id}
-                                                        onClick={() => router.push(`${pathname}?${createQueryString('expenseId', expense.id)}`, { scroll: false })}
-                                                        className="glass-card p-4 rounded-xl border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer group"
-                                                    >
-                                                        <div className="flex items-center gap-4">
-                                                            <div className={cn(
-                                                                "w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold",
-                                                                expense.category === 'Material' ? "bg-blue-500/10 text-blue-500" :
-                                                                    expense.category === 'Labor' ? "bg-orange-500/10 text-orange-500" :
-                                                                        expense.category === 'Sub-contract' ? "bg-purple-500/10 text-purple-500" :
-                                                                            "bg-gray-500/10 text-gray-500"
-                                                            )}>
-                                                                {expense.category[0]}
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-bold group-hover:text-primary transition-colors">{expense.title}</p>
-                                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                                    <span>{expense.date}</span>
-                                                                    <span>•</span>
-                                                                    {expense.paidBy && (
-                                                                        <>
-                                                                            <span className="text-primary font-medium">By {expense.paidBy}</span>
-                                                                            <span>•</span>
-                                                                        </>
+                                                filteredProjectExpenses.map((expense) => {
+                                                    const matchedDetail = financialSearchQuery.trim()
+                                                        ? getExpenseMatchedDetailSnippet(expense, financialSearchQuery)
+                                                        : null
+                                                    return (
+                                                        <div
+                                                            key={expense.id}
+                                                            onClick={() => router.push(`${pathname}?${createQueryString('expenseId', expense.id)}`, { scroll: false })}
+                                                            className="glass-card p-4 rounded-xl border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer group"
+                                                        >
+                                                            <div className="flex items-center gap-4 min-w-0">
+                                                                <div className={cn(
+                                                                    "w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shrink-0",
+                                                                    expense.category === 'Material' ? "bg-blue-500/10 text-blue-500" :
+                                                                        expense.category === 'Labor' ? "bg-orange-500/10 text-orange-500" :
+                                                                            expense.category === 'Sub-contract' ? "bg-purple-500/10 text-purple-500" :
+                                                                                "bg-gray-500/10 text-gray-500"
+                                                                )}>
+                                                                    {expense.category[0]}
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <p className="font-bold group-hover:text-primary transition-colors truncate">{expense.title}</p>
+                                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                                                                        <span>{expense.date}</span>
+                                                                        <span>•</span>
+                                                                        {expense.paidBy && (
+                                                                            <>
+                                                                                <span className="text-primary font-medium">By {expense.paidBy}</span>
+                                                                                <span>•</span>
+                                                                            </>
+                                                                        )}
+                                                                        <span>{expense.payee || t.projects.detail.financials.no_payee}</span>
+                                                                    </div>
+                                                                    {matchedDetail && (
+                                                                        <div className="flex items-center gap-1.5 mt-1 text-xs text-primary/90 font-medium">
+                                                                            <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
+                                                                                รายละเอียด
+                                                                            </span>
+                                                                            <span className="truncate max-w-[240px] sm:max-w-[420px] text-muted-foreground">{matchedDetail}</span>
+                                                                        </div>
                                                                     )}
-                                                                    <span>{expense.payee || t.projects.detail.financials.no_payee}</span>
                                                                 </div>
                                                             </div>
+                                                            <div className="text-right shrink-0">
+                                                                <p className="font-bold text-base">{expense.amount}</p>
+                                                                <span className={cn(
+                                                                    "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                                                                    expense.status === 'Paid' ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                                                                        expense.status === 'Pending' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
+                                                                            "bg-red-500/10 text-red-500 border-red-500/20"
+                                                                )}>
+                                                                    {expense.status}
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className="font-bold text-base">{expense.amount}</p>
-                                                            <span className={cn(
-                                                                "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
-                                                                expense.status === 'Paid' ? "bg-green-500/10 text-green-500 border-green-500/20" :
-                                                                    expense.status === 'Pending' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
-                                                                        "bg-red-500/10 text-red-500 border-red-500/20"
-                                                            )}>
-                                                                {expense.status}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                ))
+                                                    )
+                                                })
                                             ) : financialSearchQuery ? (
                                                 <div className="glass-card p-8 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 border border-white/5">
                                                     <Search className="w-8 h-8 text-muted-foreground/50 mb-1" />
@@ -896,7 +905,7 @@ export default function ProjectDetailClient() {
                                                     type="text"
                                                     value={financialSearchQuery}
                                                     onChange={(e) => setFinancialSearchQuery(e.target.value)}
-                                                    placeholder="ค้นหารายรับ (เลขเอกสาร, ประเภท, สถานะ...)"
+                                                    placeholder="ค้นหารายรับ (เลขเอกสาร, รายละเอียด, ประเภท, โซน, สถานะ...)"
                                                     className="w-full pl-9 pr-8 py-1.5 text-xs bg-muted/40 border border-white/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all placeholder:text-muted-foreground/60"
                                                 />
                                                 {financialSearchQuery && (
@@ -990,49 +999,62 @@ export default function ProjectDetailClient() {
                                                                     <p className="font-bold text-base">฿{group.totalAmount.toLocaleString()}</p>
                                                                     <p className="text-xs text-muted-foreground">{group.documents.length} Document{group.documents.length > 1 ? 's' : ''}</p>
                                                                 </div>
-                                                                {expandedGroups[group.id] ? <ChevronDown className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
+                                                                {expandedGroups[group.id] || Boolean(financialSearchQuery.trim()) ? <ChevronDown className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
                                                             </div>
                                                         </div>
 
-                                                        {/* Expanded Content */}
-                                                        {expandedGroups[group.id] && (
+                                                        {/* Expanded Content (auto-expanded if search query is active) */}
+                                                        {(expandedGroups[group.id] || Boolean(financialSearchQuery.trim())) && (
                                                             <div className="border-t border-white/5 bg-black/20 p-2 space-y-1">
-                                                                {group.documents.map((doc) => (
-                                                                    <div
-                                                                        key={doc.id}
-                                                                        onClick={() => setSelectedIncomeDocId(doc.id)}
-                                                                        role="button"
-                                                                        className="p-3 rounded-lg hover:bg-white/10 flex items-center justify-between transition-colors ml-4 border-l-2 border-white/10 cursor-pointer group"
-                                                                    >
-                                                                        <div className="flex items-center gap-3">
-                                                                            <span className={cn(
-                                                                                "text-[10px] font-bold px-2 py-0.5 rounded w-12 text-center",
-                                                                                doc.type === 'Quotation' ? "bg-blue-500/10 text-blue-500" :
-                                                                                    doc.type === 'Invoice' ? "bg-orange-500/10 text-orange-500" :
-                                                                                        "bg-green-500/10 text-green-500"
-                                                                            )}>
-                                                                                {doc.type === 'Quotation' ? 'QT' : doc.type === 'Invoice' ? 'INV' : 'REC'}
-                                                                            </span>
-                                                                            <div>
-                                                                                <p className="text-sm font-medium group-hover:text-primary transition-colors">{doc.documentNumber}</p>
-                                                                                <p className="text-[10px] text-muted-foreground">{doc.date}</p>
+                                                                {group.documents.map((doc) => {
+                                                                    const matchedIncomeDetail = financialSearchQuery.trim()
+                                                                        ? getIncomeMatchedDetailSnippet(doc, financialSearchQuery)
+                                                                        : null
+                                                                    return (
+                                                                        <div
+                                                                            key={doc.id}
+                                                                            onClick={() => setSelectedIncomeDocId(doc.id)}
+                                                                            role="button"
+                                                                            className="p-3 rounded-lg hover:bg-white/10 flex items-center justify-between transition-colors ml-4 border-l-2 border-white/10 cursor-pointer group"
+                                                                        >
+                                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                                <span className={cn(
+                                                                                    "text-[10px] font-bold px-2 py-0.5 rounded w-12 text-center shrink-0",
+                                                                                    doc.type === 'Quotation' ? "bg-blue-500/10 text-blue-500" :
+                                                                                        doc.type === 'Invoice' ? "bg-orange-500/10 text-orange-500" :
+                                                                                            "bg-green-500/10 text-green-500"
+                                                                                )}>
+                                                                                    {doc.type === 'Quotation' ? 'QT' : doc.type === 'Invoice' ? 'INV' : 'REC'}
+                                                                                </span>
+                                                                                <div className="min-w-0">
+                                                                                    <p className="text-sm font-medium group-hover:text-primary transition-colors truncate">{doc.documentNumber}</p>
+                                                                                    <p className="text-[10px] text-muted-foreground">{doc.date}</p>
+                                                                                    {matchedIncomeDetail && (
+                                                                                        <div className="flex items-center gap-1.5 mt-1 text-xs text-primary/90 font-medium">
+                                                                                            <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
+                                                                                                รายละเอียด
+                                                                                            </span>
+                                                                                            <span className="truncate max-w-[200px] sm:max-w-[360px] text-muted-foreground">{matchedIncomeDetail}</span>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-3 shrink-0">
+                                                                                <span className={cn(
+                                                                                    "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                                                                                    doc.status === 'Paid' || doc.status === 'Accepted' ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                                                                                        doc.status === 'Sent' || doc.status === 'Invoiced' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
+                                                                                            doc.status === 'Draft' ? "bg-slate-500/10 text-slate-500 border-slate-500/20" :
+                                                                                                "bg-red-500/10 text-red-500 border-red-500/20"
+                                                                                )}>
+                                                                                    {doc.status}
+                                                                                </span>
+                                                                                <span className="text-sm font-medium w-24 text-right">฿{doc.grandTotal?.toLocaleString()}</span>
+                                                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                                                                             </div>
                                                                         </div>
-                                                                        <div className="flex items-center gap-3">
-                                                                            <span className={cn(
-                                                                                "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
-                                                                                doc.status === 'Paid' || doc.status === 'Accepted' ? "bg-green-500/10 text-green-500 border-green-500/20" :
-                                                                                    doc.status === 'Sent' || doc.status === 'Invoiced' ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
-                                                                                        doc.status === 'Draft' ? "bg-slate-500/10 text-slate-500 border-slate-500/20" :
-                                                                                            "bg-red-500/10 text-red-500 border-red-500/20"
-                                                                            )}>
-                                                                                {doc.status}
-                                                                            </span>
-                                                                            <span className="text-sm font-medium w-24 text-right">฿{doc.grandTotal?.toLocaleString()}</span>
-                                                                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
+                                                                    )
+                                                                })}
                                                             </div>
                                                         )}
                                                     </div>
@@ -1402,7 +1424,7 @@ export default function ProjectDetailClient() {
                 open={isAddIncomeOpen}
                 onOpenChange={setIsAddIncomeOpen}
                 defaultProjectId={project.id}
-                defaultCustomerId={project.customerId}
+                defaultCustomerId={(project as any)?.customerId || ""}
             />
 
             <ExpenseDetailSheet

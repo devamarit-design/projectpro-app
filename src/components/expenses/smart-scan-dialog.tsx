@@ -152,8 +152,9 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
             }
 
             setCompleted(true)
+        } catch (error: any) {
             console.error("Scan failed:", error)
-            const errorMsg = error.message || "Scan failed. Please try again."
+            const errorMsg = error?.message || "Scan failed. Please try again."
             toast.error(errorMsg)
             alert(`Scan failed: ${errorMsg}`)
         } finally {

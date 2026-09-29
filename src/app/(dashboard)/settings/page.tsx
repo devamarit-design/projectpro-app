@@ -88,7 +88,7 @@ export default function SettingsPage() {
                         {activeSection === "team" && isAdmin && <TeamSettings />}
                         {activeSection === "security" && <SecuritySettings />}
                         {activeSection === "google-sheets" && <GoogleSheetsSettings />}
-                        {activeSection === "google-drive" && <GoogleDriveSettings isAdmin={isAdmin} />}
+                        {activeSection === "google-drive" && <GoogleDriveSettings />}
 
                     </div>
                 </main>

@@ -5,6 +5,7 @@ import { Plus, Search, Filter, Camera, ScanLine, Tag, Wallet, TrendingDown, Layo
 import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
 import { useProjects, ExpenseCategory } from "@/context/project-context"
 import { cn } from "@/lib/utils"
+import { matchesExpenseSearch, getExpenseMatchedDetailSnippet } from "@/lib/project-utils"
 import AddExpenseDialog from "@/components/expenses/add-expense-dialog"
 import { ExpenseEntrySelectionDialog } from "@/components/expenses/expense-entry-selection-dialog"
 import ExpenseDetailSheet from "@/components/expenses/expense-detail-sheet"
@@ -123,8 +124,15 @@ function ExpensesContent() {
 
     const baseFilteredExpenses = React.useMemo(() => {
         return sourceExpenses.filter(expense => {
-            const matchesSearch = expense.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                expense.payee?.toLowerCase().includes(searchQuery.toLowerCase())
+            const project = projects.find(p => p.id === expense.projectId)
+            const subProjectName = project?.subProjects?.find(sp => sp.id === expense.subProjectId)?.name
+            const createdByName = users.find(u => u.id === expense.createdBy)?.name
+
+            const matchesSearch = matchesExpenseSearch(expense, searchQuery, {
+                projectName: project?.name,
+                subProjectName,
+                createdByName
+            })
             const matchesCategory = categoryFilter === "All" || expense.category === categoryFilter
 
             // Check Project Filter
@@ -140,7 +148,7 @@ function ExpensesContent() {
 
             return matchesSearch && matchesCategory && matchesProject && matchesUser && matchesMonth
         })
-    }, [sourceExpenses, searchQuery, categoryFilter, projectFilter, userFilter, monthFilter])
+    }, [sourceExpenses, searchQuery, categoryFilter, projectFilter, userFilter, monthFilter, projects, users])
 
     // Step 2: Final Filter (Base + Status) - used for List View
     const [sortOrder, setSortOrder] = React.useState<'created' | 'date' | 'alphabetical'>('created')
@@ -768,6 +776,18 @@ function ExpensesContent() {
                                                                 <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                                                                 <span>{expense.date}</span>
                                                             </div>
+                                                            {searchQuery.trim() && (() => {
+                                                                const matchedDetail = getExpenseMatchedDetailSnippet(expense, searchQuery)
+                                                                if (!matchedDetail) return null
+                                                                return (
+                                                                    <div className="flex items-center gap-1.5 mt-1 text-xs text-primary/90 font-medium">
+                                                                        <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
+                                                                            รายละเอียด
+                                                                        </span>
+                                                                        <span className="truncate max-w-[240px] sm:max-w-[420px] text-muted-foreground">{matchedDetail}</span>
+                                                                    </div>
+                                                                )
+                                                            })()}
                                                         </div>
                                                     </div>
 

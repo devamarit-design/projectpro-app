@@ -8,6 +8,7 @@ import { useTranslation } from "@/lib/i18n-context"
 import { Suspense } from "react"
 import Link from "next/link"
 import { formatLocationDisplay } from "@/lib/utils"
+import { matchesExpenseSearch, getExpenseMatchedDetailSnippet, matchesIncomeSearch, getIncomeMatchedDetailSnippet } from "@/lib/project-utils"
 import {
     FolderKanban,
     CheckSquare,
@@ -58,7 +59,7 @@ function SearchResultsContent() {
         const allTasks = projects.flatMap(p => p.tasks?.map(t => ({ ...t, projectName: p.name, projectId: p.id })) || [])
         return allTasks.filter(t =>
             t.title.toLowerCase().includes(lowerQuery) ||
-            t.assignedTo?.toLowerCase().includes(lowerQuery)
+            (Array.isArray(t.assignedTo) ? t.assignedTo.some(a => a.toLowerCase().includes(lowerQuery)) : (t.assignedTo as any)?.toLowerCase().includes(lowerQuery))
         )
     }, [projects, lowerQuery, query])
 
@@ -81,21 +82,27 @@ function SearchResultsContent() {
 
     const filteredExpenses = React.useMemo(() => {
         if (!query) return []
-        return (expenses || []).filter(e =>
-            e.title.toLowerCase().includes(lowerQuery) ||
-            e.category.toLowerCase().includes(lowerQuery) ||
-            e.payee?.toLowerCase().includes(lowerQuery) ||
-            e.vendor?.toLowerCase().includes(lowerQuery)
-        )
-    }, [expenses, lowerQuery, query])
+        return (expenses || []).filter(e => {
+            const project = projects.find(p => p.id === e.projectId)
+            const subProjectName = project?.subProjects?.find(sp => sp.id === e.subProjectId)?.name
+            return matchesExpenseSearch(e, query, {
+                projectName: project?.name,
+                subProjectName
+            })
+        })
+    }, [expenses, projects, query])
 
     const filteredIncomes = React.useMemo(() => {
         if (!query) return []
-        return (incomes || []).filter(i =>
-            i.documentNumber.toLowerCase().includes(lowerQuery) ||
-            i.customerId.toLowerCase().includes(lowerQuery)
-        )
-    }, [incomes, lowerQuery, query])
+        return (incomes || []).filter(i => {
+            const project = projects.find(p => p.id === i.projectId)
+            const customerName = customers.find(c => c.id === i.customerId)?.name
+            return matchesIncomeSearch(i, query, {
+                projectName: project?.name,
+                customerName
+            })
+        })
+    }, [incomes, projects, customers, query])
 
     const filteredTeams = React.useMemo(() => {
         if (!query || !currentOrg?.members) return []
@@ -250,6 +257,18 @@ function SearchResultsContent() {
                                             <p className="text-xs text-muted-foreground mt-0.5">
                                                 {expense.category} • {expense.date} {expense.payee ? `• ${expense.payee}` : ''}
                                             </p>
+                                            {(() => {
+                                                const matched = getExpenseMatchedDetailSnippet(expense, query)
+                                                if (!matched) return null
+                                                return (
+                                                    <div className="flex items-center gap-1.5 mt-1 text-xs text-primary/90 font-medium">
+                                                        <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
+                                                            รายละเอียด
+                                                        </span>
+                                                        <span className="truncate max-w-[240px] sm:max-w-[420px] text-muted-foreground">{matched}</span>
+                                                    </div>
+                                                )
+                                            })()}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
@@ -297,6 +316,18 @@ function SearchResultsContent() {
                                             <p className="text-xs text-muted-foreground mt-0.5">
                                                 {income.date} • {income.type} {customer ? `• ${customer.name}` : ''}
                                             </p>
+                                            {(() => {
+                                                const matched = getIncomeMatchedDetailSnippet(income, query)
+                                                if (!matched) return null
+                                                return (
+                                                    <div className="flex items-center gap-1.5 mt-1 text-xs text-primary/90 font-medium">
+                                                        <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
+                                                            รายละเอียด
+                                                        </span>
+                                                        <span className="truncate max-w-[240px] sm:max-w-[420px] text-muted-foreground">{matched}</span>
+                                                    </div>
+                                                )
+                                            })()}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">

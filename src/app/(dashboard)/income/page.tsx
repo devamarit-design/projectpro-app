@@ -14,6 +14,7 @@ import { saveAs } from "file-saver"
 import { pdf } from "@react-pdf/renderer"
 import { IncomePDF } from "@/components/income/income-pdf"
 import { cn } from "@/lib/utils"
+import { matchesIncomeSearch, getIncomeMatchedDetailSnippet } from "@/lib/project-utils"
 
 const documents = [] // Removed hardcoded data
 
@@ -36,7 +37,7 @@ function IncomeLoading() {
 }
 
 export default function IncomePage() {
-    const { incomes, customers, projects, workers, users, incomesLoading, currentUser, currentTeam } = useProjects()
+    const { incomes, customers, projects, workers, users, isFinanceLoading: incomesLoading, currentUser, currentTeam } = useProjects()
     const { t } = useTranslation()
     const router = useRouter() // Import useRouter
     const searchParams = useSearchParams()
@@ -136,9 +137,11 @@ export default function IncomePage() {
         return incomes.filter((doc: IncomeDocument) => {
             // 1. Basic Filters
             const matchesType = filter === "All" || doc.type === filter
-            const matchesSearch = search === "" ||
-                (doc.documentNumber?.toLowerCase() || "").includes(search.toLowerCase()) ||
-                (getCustomerName(doc.customerId) || "").toLowerCase().includes(search.toLowerCase())
+            const project = projects.find(p => p.id === doc.projectId)
+            const matchesSearch = matchesIncomeSearch(doc, search, {
+                customerName: getCustomerName(doc.customerId),
+                projectName: project?.name
+            })
 
             // 2. Advanced Filters
             const matchesProject = projectFilter === "all" || doc.projectId === projectFilter
@@ -154,7 +157,7 @@ export default function IncomePage() {
                     // Logic: Does this project have tasks assigned to this user? 
                     const project = projects.find(p => p.id === doc.projectId)
                     if (project) {
-                        matchesTechnician = project.tasks?.some(t => t.assignedTo === userName) || false
+                        matchesTechnician = project.tasks?.some(t => Array.isArray(t.assignedTo) ? t.assignedTo.includes(userName) : (t.assignedTo as any) === userName) || false
                     } else {
                         matchesTechnician = false
                     }
@@ -474,7 +477,21 @@ export default function IncomePage() {
                                                 onClick={() => router.push(`?incomeId=${doc.id}`, { scroll: false })}
                                                 className="border-b border-white/5 hover:bg-muted/30 transition-colors cursor-pointer"
                                             >
-                                                <td className="px-6 py-4 font-medium">{doc.documentNumber}</td>
+                                                <td className="px-6 py-4 font-medium">
+                                                    <div>{doc.documentNumber}</div>
+                                                    {search.trim() && (() => {
+                                                        const matchedDetail = getIncomeMatchedDetailSnippet(doc, search)
+                                                        if (!matchedDetail) return null
+                                                        return (
+                                                            <div className="flex items-center gap-1.5 mt-1 text-xs text-primary/90 font-medium">
+                                                                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
+                                                                    รายละเอียด
+                                                                </span>
+                                                                <span className="truncate max-w-[200px] text-muted-foreground">{matchedDetail}</span>
+                                                            </div>
+                                                        )
+                                                    })()}
+                                                </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${doc.type === 'Quotation' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
                                                         doc.type === 'Invoice' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
