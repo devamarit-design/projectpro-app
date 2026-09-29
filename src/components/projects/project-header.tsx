@@ -1,6 +1,6 @@
 "use client"
 
-import { MapPin, Calendar, MoreHorizontal, ArrowLeft, Edit, Trash2, Check, ChevronDown, Archive, Download } from "lucide-react"
+import { MapPin, Calendar, MoreHorizontal, ArrowLeft, Edit, Trash2, Check, ChevronDown, Archive, Download, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n-context"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { exportProjectToExcel } from "@/lib/export-project"
-import { getGoogleMapsUrl } from "@/lib/utils"
+import { getGoogleMapsUrl, formatLocationDisplay } from "@/lib/utils"
 
 interface ProjectHeaderProps {
     project: Project
@@ -211,14 +211,16 @@ export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
                                     <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-white/70 text-sm md:text-xl font-medium">
                                         <span className="flex items-center gap-2">
                                             <MapPin className="w-5 h-5 text-primary" />
-                                            {getGoogleMapsUrl(project.location) ? (
+                                            {getGoogleMapsUrl(project.location, project.mapUrl) ? (
                                                 <a
-                                                    href={getGoogleMapsUrl(project.location)!}
+                                                    href={getGoogleMapsUrl(project.location, project.mapUrl)!}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="hover:text-primary hover:underline underline-offset-4"
+                                                    className="hover:text-primary hover:underline underline-offset-4 inline-flex items-center gap-1.5 transition-colors"
+                                                    title={project.location}
                                                 >
-                                                    {project.location}
+                                                    <span>{formatLocationDisplay(project.location, "ดูพิกัดแผนที่ (Google Maps)")}</span>
+                                                    <ExternalLink className="w-3.5 h-3.5 opacity-70" />
                                                 </a>
                                             ) : (
                                                 project.location

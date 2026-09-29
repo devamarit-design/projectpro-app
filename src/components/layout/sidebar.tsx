@@ -128,7 +128,9 @@ export function Sidebar({ className }: { className?: string }) {
                                     return null
                                 }
 
-                                const isActive = pathname === item.href || (pathname !== "/" && pathname?.startsWith(item.href))
+                                const isActive = item.href === "/"
+                                    ? (pathname === "/" || pathname === "/financial")
+                                    : (pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href)))
 
                                 // Special handling for Chat Hub (External)
                                 if (item.label === "Chat Hub (External)") {

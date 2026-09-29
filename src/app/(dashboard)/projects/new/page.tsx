@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useTranslation } from "@/lib/i18n-context"
-import { ArrowLeft, Upload, Calendar as CalendarIcon, User, Loader2 } from "lucide-react" // Added Loader2
+import { ArrowLeft, Upload, Calendar as CalendarIcon, User, Loader2, MapPin, Globe, ExternalLink } from "lucide-react" // Added Loader2
 import Link from "next/link"
 import { useProjects } from "@/context/project-context"
 import { uploadImage } from "@/lib/upload" // Added import
@@ -21,6 +21,7 @@ export default function NewProjectPage() {
         name: "",
         customer: "",
         location: "",
+        mapUrl: "",
         description: "",
         budget: "",
         // income: "", // Removed
@@ -79,10 +80,14 @@ export default function NewProjectPage() {
             return
         }
 
+        const cleanMapUrl = formData.mapUrl?.trim() || ""
+        const cleanLocation = formData.location?.trim() || (cleanMapUrl ? (formData.name || "เปิดแผนที่ Google Maps") : "")
+
         addProject({
             name: formData.name,
             customer: formData.customer,
-            location: formData.location,
+            location: cleanLocation,
+            mapUrl: cleanMapUrl,
             description: formData.description,
             status: "Planning",
             progress: 0,
@@ -150,15 +155,58 @@ export default function NewProjectPage() {
                                 </div>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">{t.projects.edit.fields.location}</label>
-                            <input
-                                type="text"
-                                placeholder="Link Google Maps หรือชื่อสถานที่"
-                                className="w-full h-11 px-4 rounded-xl bg-background/50 border border-input focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                value={formData.location}
-                                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium flex items-center gap-1.5">
+                                    <MapPin className="w-4 h-4 text-primary" />
+                                    ชื่อสถานที่ / พิกัดที่ตั้ง (แสดงในหน้าโปรเจกต์)
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="เช่น มะขาม จันทบุรี หรือ 123 ถ.มิตรภาพ"
+                                        className="w-full h-11 pl-10 pr-4 rounded-xl bg-background/50 border border-input focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
+                                        value={formData.location}
+                                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                    />
+                                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                </div>
+                                <p className="text-[11px] text-muted-foreground">
+                                    ชื่อข้อความที่จะแสดงเป็นปุ่มหรือลิงก์ให้คลิก
+                                </p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium flex items-center gap-1.5">
+                                        <Globe className="w-4 h-4 text-blue-400" />
+                                        ลิงก์ Google Maps (ถ้ามี)
+                                    </label>
+                                    {formData.mapUrl && (formData.mapUrl.startsWith("http://") || formData.mapUrl.startsWith("https://")) && (
+                                        <a
+                                            href={formData.mapUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-[11px] text-blue-400 hover:underline inline-flex items-center gap-1"
+                                        >
+                                            ทดสอบเปิดแผนที่ <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    )}
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        type="url"
+                                        placeholder="วางลิงก์ เช่น https://maps.app.goo.gl/..."
+                                        className="w-full h-11 pl-10 pr-4 rounded-xl bg-background/50 border border-input focus:ring-2 focus:ring-primary/20 outline-none transition-all text-xs font-mono"
+                                        value={formData.mapUrl}
+                                        onChange={(e) => setFormData({ ...formData, mapUrl: e.target.value })}
+                                    />
+                                    <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                </div>
+                                <p className="text-[11px] text-muted-foreground">
+                                    เมื่อคลิกที่ชื่อสถานที่ ระบบจะเปิดลิงก์แผนที่นี้ทันที
+                                </p>
+                            </div>
                         </div>
                     </div>
 

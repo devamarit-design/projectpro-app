@@ -7,6 +7,7 @@ import { useOrganization } from "@/context/organization-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { Suspense } from "react"
 import Link from "next/link"
+import { formatLocationDisplay } from "@/lib/utils"
 import {
     FolderKanban,
     CheckSquare,
@@ -153,7 +154,7 @@ function SearchResultsContent() {
                                     </span>
                                 </div>
                                 <div className="mt-4 flex items-center text-xs text-muted-foreground gap-4">
-                                    <span>{project.location}</span>
+                                    <span className="truncate max-w-[200px]">{formatLocationDisplay(project.location, "ดูพิกัดแผนที่ (Google Maps)")}</span>
                                     <span>{project.progress}% Complete</span>
                                 </div>
                             </Link>

@@ -32,12 +32,13 @@ import {
     ChevronRight,
     ChevronDown,
     Check,
-    Layers
+    Layers,
+    ExternalLink
 } from "lucide-react"
 import { IncomeDocument } from "@/context/project-context"
 import Link from "next/link"
 import { ProjectHeader } from "@/components/projects/project-header"
-import { cn, getGoogleMapsUrl } from "@/lib/utils"
+import { cn, getGoogleMapsUrl, formatLocationDisplay } from "@/lib/utils"
 import { getExpenseAmountForProject, getCategoryExpenseForProject } from "@/lib/project-utils"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 // Components
@@ -454,14 +455,16 @@ export default function ProjectDetailClient() {
                                             <p className="text-xs text-muted-foreground font-medium uppercase">Location</p>
                                             <div className="flex items-center gap-2 font-semibold">
                                                 <MapPin className="w-4 h-4 text-primary" />
-                                                {getGoogleMapsUrl(project.location) ? (
+                                                {getGoogleMapsUrl(project.location, project.mapUrl) ? (
                                                     <a
-                                                        href={getGoogleMapsUrl(project.location)!}
+                                                        href={getGoogleMapsUrl(project.location, project.mapUrl)!}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="text-primary hover:underline underline-offset-4"
+                                                        className="text-primary hover:underline underline-offset-4 inline-flex items-center gap-1.5 transition-colors"
+                                                        title={project.location}
                                                     >
-                                                        {project.location}
+                                                        <span>{formatLocationDisplay(project.location, "ดูพิกัดแผนที่ (Google Maps)")}</span>
+                                                        <ExternalLink className="w-3.5 h-3.5 opacity-70" />
                                                     </a>
                                                 ) : (
                                                     project.location

@@ -147,6 +147,7 @@ export interface Project {
     name: string
     customer: string
     location: string
+    mapUrl?: string // Direct link to Google Maps
     status: ProjectStatus
     progress: number
     budget: string // Keeping as string for now to match UI, ideally number

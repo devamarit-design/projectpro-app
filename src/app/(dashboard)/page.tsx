@@ -16,6 +16,16 @@ import Link from "next/link"
 
 import dynamic from "next/dynamic"
 
+const CashFlowChart = dynamic(() => import("@/components/dashboard/cash-flow-chart").then(mod => mod.CashFlowChart), {
+  ssr: false,
+  loading: () => <div className="h-[300px] w-full animate-pulse bg-muted/10 rounded-2xl" />
+})
+
+const ProjectFinancialsChart = dynamic(() => import("@/components/dashboard/project-financials-chart").then(mod => mod.ProjectFinancialsChart), {
+  ssr: false,
+  loading: () => <div className="h-[320px] w-full animate-pulse bg-muted/10 rounded-2xl" />
+})
+
 
 
 function AdminDashboard() {
@@ -79,6 +89,58 @@ function AdminDashboard() {
         <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto py-2 pb-4 scrollbar-hide">
           <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 min-w-[300px] sm:min-w-0">
             <StatsCards />
+          </div>
+        </div>
+      </div>
+
+      {/* 6. Financial & Projects Analytics Overview */}
+      <div className="space-y-4 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+          <div>
+            <h3 className="font-semibold text-xl flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-blue-400">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4"
+                >
+                  <line x1="12" x2="12" y1="20" y2="10" />
+                  <line x1="18" x2="18" y1="20" y2="4" />
+                  <line x1="6" x2="6" y1="20" y2="16" />
+                </svg>
+              </div>
+              ภาพรวมการเงินและโครงการ (Financial & Projects)
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              วิเคราะห์กระแสเงินสดและผลประกอบการเปรียบเทียบแต่ละโครงการ
+            </p>
+          </div>
+          <Link
+            href="/financial"
+            className="text-xs font-semibold text-primary hover:underline flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 px-3.5 py-1.5 rounded-xl transition-all self-start sm:self-auto"
+          >
+            ดูการวิเคราะห์เชิงลึกแยกตามโครงการ &rarr;
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors">
+            <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-blue-500/10 transition-colors duration-700" />
+            <div className="relative z-10">
+              <CashFlowChart />
+            </div>
+          </div>
+
+          <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors">
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-purple-500/10 transition-colors duration-700" />
+            <div className="relative z-10">
+              <ProjectFinancialsChart />
+            </div>
           </div>
         </div>
       </div>

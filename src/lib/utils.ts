@@ -57,8 +57,20 @@ export function generateNextDocumentNumber(
     return `${prefix}-${dateStr}-${next.toString().padStart(3, '0')}`
 }
 
-export function getGoogleMapsUrl(address: string | undefined | null) {
+export function getGoogleMapsUrl(address: string | undefined | null, mapUrl?: string | null) {
+    if (mapUrl && (mapUrl.startsWith("http://") || mapUrl.startsWith("https://"))) {
+        return mapUrl
+    }
     if (!address || address === "-" || address === "ไม่มีที่อยู่") return null
     if (address.startsWith("http://") || address.startsWith("https://")) return address
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+}
+
+export function formatLocationDisplay(location: string | undefined | null, fallbackLabel = "เปิดแผนที่ Google Maps"): string {
+    if (!location) return ""
+    const trimmed = location.trim()
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.includes("maps.google.com") || trimmed.includes("goo.gl/maps")) {
+        return fallbackLabel
+    }
+    return trimmed
 }
