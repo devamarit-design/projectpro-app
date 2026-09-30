@@ -261,10 +261,15 @@ export function JobSheetPreviewModal({
                         {/* Title & Project Meta Box */}
                         <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 mb-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
                             <div>
-                                <span className="text-zinc-500 block mb-0.5 font-medium">โครงการ / Project:</span>
-                                <span className="font-bold text-zinc-900 text-sm">{jobsheet.projectName}</span>
+                                <span className="text-zinc-500 block mb-0.5 font-medium">ขอบเขตงาน / โครงการ:</span>
+                                <span className="font-bold text-zinc-900 text-sm block leading-tight">{jobsheet.projectName}</span>
                                 {jobsheet.subProjectName && (
                                     <span className="text-zinc-600 block mt-0.5">({jobsheet.subProjectName})</span>
+                                )}
+                                {jobsheet.isMultiProject && (
+                                    <span className="inline-block mt-1 text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-semibold border border-amber-200">
+                                        บันทึกรวมหลายโครงการ / งานทั่วไป
+                                    </span>
                                 )}
                             </div>
                             <div>
@@ -297,50 +302,65 @@ export function JobSheetPreviewModal({
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-zinc-100 border-b border-zinc-300 text-zinc-700 font-semibold">
-                                            <th className="py-2 px-2.5 w-10 text-center">#</th>
-                                            <th className="py-2 px-3">รายการงาน / กิจกรรม</th>
-                                            <th className="py-2 px-3 w-28">พื้นที่ / โซน</th>
-                                            <th className="py-2 px-3 w-20 text-center">ปริมาณ</th>
-                                            <th className="py-2 px-3 w-24 text-center">สถานะ</th>
-                                            <th className="py-2 px-3 w-32">หมายเหตุ</th>
+                                            <th className="py-2 px-2 w-8 text-center">#</th>
+                                            <th className="py-2 px-2.5 w-36">โครงการ / หมวดงาน</th>
+                                            <th className="py-2 px-2.5">รายการงาน / กิจกรรม</th>
+                                            <th className="py-2 px-2 w-24">พื้นที่ / โซน</th>
+                                            <th className="py-2 px-2 w-16 text-center">ปริมาณ</th>
+                                            <th className="py-2 px-2 w-20 text-center">สถานะ</th>
+                                            <th className="py-2 px-2 w-28">หมายเหตุ</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-200">
                                         {jobsheet.workItems && jobsheet.workItems.length > 0 ? (
-                                            jobsheet.workItems.map((item, idx) => (
-                                                <tr key={item.id || idx} className="hover:bg-zinc-50/50">
-                                                    <td className="py-2 px-2.5 text-center text-zinc-500 font-mono">{idx + 1}</td>
-                                                    <td className="py-2 px-3 font-medium text-zinc-900">{item.task}</td>
-                                                    <td className="py-2 px-3 text-zinc-600">{item.location || "-"}</td>
-                                                    <td className="py-2 px-3 text-center text-zinc-800 font-medium">{item.quantity || "-"}</td>
-                                                    <td className="py-2 px-3 text-center">
-                                                        {item.status === "completed" && (
-                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">
-                                                                <Check className="w-3 h-3" /> เสร็จสิ้น
-                                                            </span>
-                                                        )}
-                                                        {item.status === "in_progress" && (
-                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-800">
-                                                                <Clock className="w-3 h-3" /> ดำเนินการ
-                                                            </span>
-                                                        )}
-                                                        {item.status === "pending" && (
-                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">
-                                                                รอดำเนินการ
-                                                            </span>
-                                                        )}
-                                                        {item.status === "delayed" && (
-                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-800">
-                                                                ล่าช้า
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="py-2 px-3 text-zinc-500 text-[11px]">{item.notes || "-"}</td>
-                                                </tr>
-                                            ))
+                                            jobsheet.workItems.map((item, idx) => {
+                                                const isGeneral = !item.projectId && (!item.projectName || item.projectName.includes("ทั่วไป") || item.projectName.includes("จัดซื้อ") || item.projectName.includes("โรงงาน"));
+                                                return (
+                                                    <tr key={item.id || idx} className="hover:bg-zinc-50/50">
+                                                        <td className="py-2 px-2 text-center text-zinc-500 font-mono">{idx + 1}</td>
+                                                        <td className="py-2 px-2.5">
+                                                            {isGeneral ? (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
+                                                                    📦 {item.projectName || "งานทั่วไป / นอกโครงการ"}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-200 truncate max-w-[130px]" title={item.projectName || jobsheet.projectName}>
+                                                                    🏢 {item.projectName || jobsheet.projectName}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-2 px-2.5 font-medium text-zinc-900">{item.task}</td>
+                                                        <td className="py-2 px-2 text-zinc-600">{item.location || "-"}</td>
+                                                        <td className="py-2 px-2 text-center text-zinc-800 font-medium">{item.quantity || "-"}</td>
+                                                        <td className="py-2 px-2 text-center">
+                                                            {item.status === "completed" && (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">
+                                                                    <Check className="w-3 h-3" /> เสร็จสิ้น
+                                                                </span>
+                                                            )}
+                                                            {item.status === "in_progress" && (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-800">
+                                                                    <Clock className="w-3 h-3" /> ดำเนินการ
+                                                                </span>
+                                                            )}
+                                                            {item.status === "pending" && (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">
+                                                                    รอดำเนินการ
+                                                                </span>
+                                                            )}
+                                                            {item.status === "delayed" && (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-800">
+                                                                    ล่าช้า
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-2 px-2 text-zinc-500 text-[11px]">{item.notes || "-"}</td>
+                                                    </tr>
+                                                );
+                                            })
                                         ) : (
                                             <tr>
-                                                <td colSpan={6} className="py-4 text-center text-zinc-400">
+                                                <td colSpan={7} className="py-4 text-center text-zinc-400">
                                                     ไม่มีรายการงานที่บันทึก
                                                 </td>
                                             </tr>

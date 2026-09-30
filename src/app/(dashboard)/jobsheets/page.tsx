@@ -104,8 +104,18 @@ export default function JobSheetsPage() {
             }
 
             // Project filter
-            if (selectedProjectFilter !== "all" && sheet.projectId !== selectedProjectFilter && sheet.projectName !== selectedProjectFilter) {
-                return false;
+            if (selectedProjectFilter !== "all") {
+                if (selectedProjectFilter === "general") {
+                    const hasGeneral = !sheet.projectId || sheet.projectName?.includes("ทั่วไป") || sheet.workItems?.some(w => !w.projectId || w.projectName?.includes("ทั่วไป") || w.projectName?.includes("จัดซื้อ") || w.projectName?.includes("โรงงาน"));
+                    if (!hasGeneral) return false;
+                } else {
+                    const matchPrimary = sheet.projectId === selectedProjectFilter || sheet.projectName === selectedProjectFilter;
+                    const matchArray = sheet.projectIds?.includes(selectedProjectFilter);
+                    const matchItems = sheet.workItems?.some(w => w.projectId === selectedProjectFilter);
+                    if (!matchPrimary && !matchArray && !matchItems) {
+                        return false;
+                    }
+                }
             }
 
             // Date filter
@@ -324,14 +334,17 @@ export default function JobSheetsPage() {
                             <select
                                 value={selectedProjectFilter}
                                 onChange={(e) => setSelectedProjectFilter(e.target.value)}
-                                className="h-9 px-3 rounded-lg bg-zinc-950 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                className="h-9 px-3 rounded-lg bg-zinc-950 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
                             >
-                                <option value="all">ทุกโครงการ</option>
-                                {projects.map((p) => (
-                                    <option key={p.id} value={p.id}>
-                                        {p.name}
-                                    </option>
-                                ))}
+                                <option value="all">ทุกโครงการ & งานทั้งหมด</option>
+                                <option value="general">📦 งานทั่วไป / นอกโครงการ</option>
+                                <optgroup label="🏢 โครงการก่อสร้าง">
+                                    {projects.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            🏢 {p.name}
+                                        </option>
+                                    ))}
+                                </optgroup>
                             </select>
 
                             {/* Date Filter */}
@@ -411,6 +424,13 @@ export default function JobSheetsPage() {
 
                                             {/* Title & Project */}
                                             <div>
+                                                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                                    {sheet.isMultiProject && (
+                                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                                            🗂️ หลายโครงการ & งานทั่วไป
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <h3 className="font-bold text-white text-base group-hover:text-amber-300 transition-colors line-clamp-1">
                                                     {sheet.title}
                                                 </h3>
@@ -448,7 +468,14 @@ export default function JobSheetsPage() {
                                                     </span>
                                                     {sheet.workItems.slice(0, 2).map((item, idx) => (
                                                         <div key={idx} className="flex items-center justify-between text-[11px] truncate">
-                                                            <span className="truncate">• {item.task}</span>
+                                                            <span className="truncate">
+                                                                {item.projectName ? (
+                                                                    <strong className="text-amber-400/90 font-normal mr-1">
+                                                                        [{item.projectName}]
+                                                                    </strong>
+                                                                ) : null}
+                                                                {item.task}
+                                                            </span>
                                                             <span className="text-white/40 shrink-0 text-[10px] ml-2">
                                                                 {item.quantity}
                                                             </span>

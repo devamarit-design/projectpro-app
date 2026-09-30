@@ -50,16 +50,15 @@ const DEFAULT_MANPOWER_ROLES = [
 ];
 
 const QUICK_TASK_PRESETS = [
-    "งานเทคอนกรีต",
-    "งานผูกเหล็กคาน/เสา",
-    "งานเข้าแบบหล่อ",
-    "งานก่ออิฐมวลเบา",
-    "งานฉาบปูนผนัง",
-    "งานเดินท่อร้อยสายไฟ",
-    "งานเดินท่อประปา",
-    "งานปูกระเบื้อง",
-    "งานติดตั้งฝ้าเพดาน",
-    "งานทาสีรองพื้น"
+    { label: "เทคอนกรีต", task: "งานเทคอนกรีตเสาและคาน", category: "" },
+    { label: "ผูกเหล็กคาน/เสา", task: "งานผูกเหล็กโครงสร้างคาน/เสา", category: "" },
+    { label: "ฉาบปูนผนัง", task: "งานฉาบปูนผนังภายใน/ภายนอก", category: "" },
+    { label: "ตรวจระบบไฟ/ประปา", task: "ตรวจเช็คงานเดินท่อร้อยสายไฟและประปา", category: "" },
+    { label: "ปูกระเบื้อง", task: "งานปูกระเบื้องพื้นและผนัง", category: "" },
+    { label: "📦 ประชุมทีม/พบลูกค้า", task: "ประชุมติดตามงานกับทีมงานและสรุปงานกับลูกค้า", category: "งานทั่วไป / ธุรการ" },
+    { label: "🚚 สั่งซื้อ/ตรวจรับวัสดุ", task: "ประสานงานร้านค้า สั่งซื้อและตรวจรับวัสดุก่อสร้าง", category: "จัดซื้อ / จัดส่งวัสดุ" },
+    { label: "🏭 โกดัง/ซ่อมบำรุง", task: "จัดระเบียบสต็อก ตรวจเช็คและบำรุงรักษาเครื่องมือในโกดัง", category: "โรงงาน / โกดัง / ซ่อมบำรุง" },
+    { label: "📑 เคลียร์เอกสาร/งวดงาน", task: "จัดทำเอกสารเบิกงวดงาน จัดทำใบเสนอราคาและสัญญา", category: "งานทั่วไป / ธุรการ" }
 ];
 
 export function JobSheetForm({
@@ -77,8 +76,12 @@ export function JobSheetForm({
         initialData?.reportNumber || `JS-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-01`
     );
     const [title, setTitle] = useState(initialData?.title || "บันทึกการทำงานประจำวัน");
-    const [selectedProjectId, setSelectedProjectId] = useState(initialData?.projectId || "");
-    const [projectName, setProjectName] = useState(initialData?.projectName || "");
+    const [selectedProjectId, setSelectedProjectId] = useState(
+        initialData?.isMultiProject ? "multi" : initialData?.projectId || (projects.length > 0 ? "multi" : "general")
+    );
+    const [projectName, setProjectName] = useState(
+        initialData?.projectName || "ปฏิบัติงานหลายโครงการ & งานทั่วไป"
+    );
     const [subProjectName, setSubProjectName] = useState(initialData?.subProjectName || "");
 
     // Weather
@@ -97,6 +100,8 @@ export function JobSheetForm({
                   {
                       id: "1",
                       task: "งานเทคอนกรีตเสาและคาน",
+                      projectId: projects[0]?.id || "",
+                      projectName: projects[0]?.name || "โครงการหลัก",
                       quantity: "15 ตร.ม.",
                       location: "ชั้น 2 โซน A",
                       status: "completed",
@@ -129,7 +134,11 @@ export function JobSheetForm({
 
     // When project changes, update projectName
     useEffect(() => {
-        if (selectedProjectId) {
+        if (selectedProjectId === "multi") {
+            setProjectName("ปฏิบัติงานหลายโครงการ & งานทั่วไป");
+        } else if (selectedProjectId === "general") {
+            setProjectName("งานทั่วไป / ธุรการ / ไม่ระบุโครงการ");
+        } else if (selectedProjectId) {
             const found = projects.find((p) => p.id === selectedProjectId);
             if (found) {
                 setProjectName(found.name);
@@ -138,10 +147,28 @@ export function JobSheetForm({
     }, [selectedProjectId, projects]);
 
     // Work item handlers
-    const addWorkItem = (presetTask?: string) => {
+    const addWorkItem = (presetTask?: string, presetCategory?: string) => {
+        let initialProjId = selectedProjectId && selectedProjectId !== "multi" && selectedProjectId !== "general" ? selectedProjectId : "";
+        let initialProjName = "";
+
+        if (presetCategory) {
+            initialProjName = presetCategory;
+            initialProjId = "";
+        } else if (selectedProjectId === "general") {
+            initialProjName = "งานทั่วไป / ธุรการ";
+        } else if (initialProjId) {
+            const f = projects.find((p) => p.id === initialProjId);
+            if (f) initialProjName = f.name;
+        } else if (projects.length > 0) {
+            initialProjId = projects[0].id;
+            initialProjName = projects[0].name;
+        }
+
         const newItem: JobSheetWorkItem = {
-            id: String(Date.now()),
+            id: String(Date.now() + Math.random()),
             task: presetTask || "",
+            projectId: initialProjId,
+            projectName: initialProjName,
             quantity: "",
             location: "",
             status: "in_progress",
@@ -225,12 +252,41 @@ export function JobSheetForm({
 
     // Construct sheet object
     const getPayload = () => {
+        // Collect all unique projectIds involved
+        const involvedProjectIds = Array.from(
+            new Set(
+                [
+                    selectedProjectId && selectedProjectId !== "multi" && selectedProjectId !== "general" ? selectedProjectId : null,
+                    ...workItems.map((w) => w.projectId).filter(Boolean)
+                ].filter(Boolean)
+            )
+        ) as string[];
+
+        // Build composite projectName
+        let displayProjectName = projectName;
+        if (!displayProjectName || selectedProjectId === "multi") {
+            const projectNames = Array.from(
+                new Set(
+                    workItems
+                        .map((w) => w.projectName || (w.projectId ? projects.find((p) => p.id === w.projectId)?.name : ""))
+                        .filter(Boolean)
+                )
+            );
+            if (projectNames.length > 0) {
+                displayProjectName = projectNames.join(" • ");
+            } else {
+                displayProjectName = "ปฏิบัติงานหลายโครงการ & งานทั่วไป";
+            }
+        }
+
         return {
             reportNumber,
             title,
             date,
-            projectId: selectedProjectId,
-            projectName: projectName || "ไม่ระบุโครงการ",
+            projectId: selectedProjectId === "multi" || selectedProjectId === "general" ? "" : selectedProjectId,
+            projectName: displayProjectName || "ปฏิบัติงานหลายโครงการ & งานทั่วไป",
+            projectIds: involvedProjectIds,
+            isMultiProject: involvedProjectIds.length > 1 || selectedProjectId === "multi" || workItems.some((w) => !w.projectId || w.projectName?.includes("ทั่วไป")),
             subProjectId: "",
             subProjectName,
             orgId: "", // Will be assigned by service/context
@@ -256,10 +312,6 @@ export function JobSheetForm({
 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!projectName) {
-            toast.error("กรุณาระบุชื่อโครงการ");
-            return;
-        }
         if (workItems.length === 0) {
             toast.error("กรุณาระบุอย่างน้อย 1 รายการงาน");
             return;
@@ -371,33 +423,46 @@ export function JobSheetForm({
                         />
                     </div>
 
-                    {/* Project Selector */}
+                    {/* Project Selector / Mode */}
                     <div>
-                        <label className="text-xs text-white/70 block mb-1.5 font-medium">เลือกโครงการ *</label>
+                        <label className="text-xs text-white/70 block mb-1.5 font-medium flex items-center justify-between">
+                            <span>โครงการหลัก / โหมดงาน</span>
+                            <span className="text-[10px] text-amber-400">แยกรายข้อได้</span>
+                        </label>
                         <select
                             value={selectedProjectId}
                             onChange={(e) => {
-                                setSelectedProjectId(e.target.value);
-                                const found = projects.find((p) => p.id === e.target.value);
-                                if (found) setProjectName(found.name);
+                                const val = e.target.value;
+                                setSelectedProjectId(val);
+                                if (val === "multi") {
+                                    setProjectName("ปฏิบัติงานหลายโครงการ & งานทั่วไป");
+                                } else if (val === "general") {
+                                    setProjectName("งานทั่วไป / ธุรการ / ไม่ระบุโครงการ");
+                                } else {
+                                    const found = projects.find((p) => p.id === val);
+                                    if (found) setProjectName(found.name);
+                                }
                             }}
-                            className="w-full h-10 px-3 rounded-md bg-zinc-950 border border-white/10 text-white text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
+                            className="w-full h-10 px-3 rounded-md bg-zinc-950 border border-white/10 text-white text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
                         >
-                            <option value="">-- เลือกโครงการจากระบบ --</option>
-                            {projects.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                    {p.name}
-                                </option>
-                            ))}
+                            <option value="multi">🗂️ ปฏิบัติงานหลายโครงการ / ทั่วไป (Multi-Project)</option>
+                            <option value="general">📦 งานทั่วไป / ธุรการ / นอกโครงการ (General Tasks)</option>
+                            <optgroup label="โครงการก่อสร้างในระบบ">
+                                {projects.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        🏢 {p.name}
+                                    </option>
+                                ))}
+                            </optgroup>
                         </select>
                     </div>
 
                     {/* SubProject / Zone */}
                     <div>
-                        <label className="text-xs text-white/70 block mb-1.5 font-medium">โครงการย่อย / โซนงาน</label>
+                        <label className="text-xs text-white/70 block mb-1.5 font-medium">โครงการย่อย / โซนงาน / แผนก</label>
                         <Input
                             type="text"
-                            placeholder="เช่น อาคาร A, งานสถาปัตย์"
+                            placeholder="เช่น อาคาร A, จัดซื้อ, งานระบบ"
                             value={subProjectName}
                             onChange={(e) => setSubProjectName(e.target.value)}
                             className="bg-zinc-950 border-white/10 text-white"
@@ -481,16 +546,16 @@ export function JobSheetForm({
 
                 {/* Preset Chips */}
                 <div>
-                    <span className="text-[11px] text-white/40 block mb-1.5">คลิกเพื่อเพิ่มงานสำเร็จรูปอย่างรวดเร็ว:</span>
+                    <span className="text-[11px] text-white/40 block mb-1.5">คลิกเพื่อเพิ่มงานสำเร็จรูป (มีทั้งงานโครงการและงานทั่วไป):</span>
                     <div className="flex flex-wrap gap-1.5">
-                        {QUICK_TASK_PRESETS.map((task) => (
+                        {QUICK_TASK_PRESETS.map((preset, idx) => (
                             <button
-                                key={task}
+                                key={idx}
                                 type="button"
-                                onClick={() => addWorkItem(task)}
+                                onClick={() => addWorkItem(preset.task, preset.category)}
                                 className="text-[11px] px-2.5 py-1 rounded-md bg-white/5 hover:bg-amber-500/10 hover:text-amber-300 border border-white/5 text-white/70 transition-colors"
                             >
-                                + {task}
+                                + {preset.label}
                             </button>
                         ))}
                     </div>
@@ -517,44 +582,95 @@ export function JobSheetForm({
                                 </button>
                             </div>
 
+                            {/* ROW 1: Project Selector & Task Name */}
                             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                                {/* Project / Category Selector */}
+                                <div className="sm:col-span-4">
+                                    <label className="text-[10px] text-white/50 block mb-1">โครงการ / หมวดงาน</label>
+                                    <select
+                                        value={item.projectId || (item.projectName?.includes("ทั่วไป") ? "general" : item.projectName?.includes("จัดซื้อ") ? "procurement" : item.projectName?.includes("โรงงาน") ? "workshop" : "")}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val === "general") {
+                                                updateWorkItem(item.id, "projectId", "");
+                                                updateWorkItem(item.id, "projectName", "งานทั่วไป / ธุรการ");
+                                            } else if (val === "procurement") {
+                                                updateWorkItem(item.id, "projectId", "");
+                                                updateWorkItem(item.id, "projectName", "จัดซื้อ / จัดส่งวัสดุ");
+                                            } else if (val === "workshop") {
+                                                updateWorkItem(item.id, "projectId", "");
+                                                updateWorkItem(item.id, "projectName", "โรงงาน / โกดัง / ซ่อมบำรุง");
+                                            } else if (val === "") {
+                                                updateWorkItem(item.id, "projectId", "");
+                                                updateWorkItem(item.id, "projectName", projectName || "งานทั่วไป");
+                                            } else {
+                                                const found = projects.find((p) => p.id === val);
+                                                updateWorkItem(item.id, "projectId", val);
+                                                updateWorkItem(item.id, "projectName", found ? found.name : "");
+                                            }
+                                        }}
+                                        className="w-full h-9 px-2 rounded-md bg-zinc-900 border border-white/10 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
+                                    >
+                                        <option value="">-- {selectedProjectId && selectedProjectId !== "multi" && selectedProjectId !== "general" ? projectName : "ตามโครงการหลัก"} --</option>
+                                        <optgroup label="🏢 โครงการก่อสร้าง">
+                                            {projects.map((p) => (
+                                                <option key={p.id} value={p.id}>
+                                                    {p.name}
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                        <optgroup label="📦 งานทั่วไป / ไม่ระบุโครงการ">
+                                            <option value="general">📦 งานทั่วไป / ธุรการ / ออฟฟิศ</option>
+                                            <option value="procurement">🚚 จัดซื้อ / จัดส่งวัสดุ</option>
+                                            <option value="workshop">🏭 โรงงาน / โกดัง / ซ่อมบำรุง</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+
                                 {/* Task Name */}
-                                <div className="sm:col-span-5">
+                                <div className="sm:col-span-8">
+                                    <label className="text-[10px] text-white/50 block mb-1">รายละเอียดงานที่ทำ *</label>
                                     <Input
-                                        placeholder="ระบุรายละเอียดงานที่ทำ *"
+                                        placeholder="ระบุรายละเอียดกิจกรรมหรือเนื้องานที่ปฏิบัติ..."
                                         value={item.task}
                                         onChange={(e) => updateWorkItem(item.id, "task", e.target.value)}
-                                        className="bg-zinc-900 border-white/10 text-white text-xs"
+                                        className="bg-zinc-900 border-white/10 text-white text-xs h-9"
                                         required
                                     />
                                 </div>
+                            </div>
 
+                            {/* ROW 2: Location, Quantity, Status, Notes */}
+                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 pt-1">
                                 {/* Location */}
                                 <div className="sm:col-span-3">
+                                    <label className="text-[10px] text-white/50 block mb-1">พื้นที่ / โซน</label>
                                     <Input
-                                        placeholder="พื้นที่/โซน (เช่น ชั้น 2 ห้อง A)"
+                                        placeholder="เช่น ชั้น 2, ออฟฟิศ, โกดัง"
                                         value={item.location}
                                         onChange={(e) => updateWorkItem(item.id, "location", e.target.value)}
-                                        className="bg-zinc-900 border-white/10 text-white text-xs"
+                                        className="bg-zinc-900 border-white/10 text-white text-xs h-8"
                                     />
                                 </div>
 
                                 {/* Quantity */}
-                                <div className="sm:col-span-2">
+                                <div className="sm:col-span-3">
+                                    <label className="text-[10px] text-white/50 block mb-1">ปริมาณงาน / เวลา</label>
                                     <Input
-                                        placeholder="ปริมาณ (เช่น 15 ตร.ม.)"
+                                        placeholder="เช่น 15 ตร.ม., 3 ชม."
                                         value={item.quantity}
                                         onChange={(e) => updateWorkItem(item.id, "quantity", e.target.value)}
-                                        className="bg-zinc-900 border-white/10 text-white text-xs"
+                                        className="bg-zinc-900 border-white/10 text-white text-xs h-8"
                                     />
                                 </div>
 
                                 {/* Status */}
                                 <div className="sm:col-span-2">
+                                    <label className="text-[10px] text-white/50 block mb-1">สถานะ</label>
                                     <select
                                         value={item.status}
                                         onChange={(e) => updateWorkItem(item.id, "status", e.target.value)}
-                                        className="w-full h-9 px-2 rounded-md bg-zinc-900 border border-white/10 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                        className="w-full h-8 px-2 rounded-md bg-zinc-900 border border-white/10 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                                     >
                                         <option value="completed">เสร็จสิ้น (100%)</option>
                                         <option value="in_progress">กำลังดำเนินการ</option>
@@ -562,16 +678,17 @@ export function JobSheetForm({
                                         <option value="delayed">ล่าช้า / ติดปัญหา</option>
                                     </select>
                                 </div>
-                            </div>
 
-                            {/* Item Notes */}
-                            <div>
-                                <Input
-                                    placeholder="หมายเหตุเพิ่มเติมสำหรับรายการนี้..."
-                                    value={item.notes || ""}
-                                    onChange={(e) => updateWorkItem(item.id, "notes", e.target.value)}
-                                    className="bg-zinc-900/60 border-white/5 text-white/80 text-xs h-8"
-                                />
+                                {/* Item Notes */}
+                                <div className="sm:col-span-4">
+                                    <label className="text-[10px] text-white/50 block mb-1">หมายเหตุ</label>
+                                    <Input
+                                        placeholder="รายละเอียดเพิ่มเติม..."
+                                        value={item.notes || ""}
+                                        onChange={(e) => updateWorkItem(item.id, "notes", e.target.value)}
+                                        className="bg-zinc-900/60 border-white/5 text-white/80 text-xs h-8"
+                                    />
+                                </div>
                             </div>
                         </div>
                     ))}

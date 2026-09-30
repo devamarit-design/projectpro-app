@@ -3,6 +3,8 @@ export type JobSheetStatus = 'completed' | 'in_progress' | 'pending' | 'delayed'
 export interface JobSheetWorkItem {
     id: string;
     task: string;
+    projectId?: string;
+    projectName?: string; // Specific project name or "งานทั่วไป / ไม่ระบุโครงการ"
     quantity: string;
     location: string;
     status: JobSheetStatus;
@@ -30,6 +32,8 @@ export interface JobSheet {
     date: string; // YYYY-MM-DD
     projectId?: string;
     projectName: string;
+    projectIds?: string[]; // All projects involved
+    isMultiProject?: boolean;
     subProjectId?: string;
     subProjectName?: string;
     orgId: string;
