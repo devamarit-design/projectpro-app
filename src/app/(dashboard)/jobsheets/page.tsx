@@ -177,7 +177,7 @@ export default function JobSheetsPage() {
     };
 
     return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8 max-w-7xl animate-in fade-in duration-500">
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8 max-w-7xl animate-in fade-in duration-500 pb-32 md:pb-12">
             {/* Header Banner */}
             <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black p-6 sm:p-8 shadow-2xl">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />

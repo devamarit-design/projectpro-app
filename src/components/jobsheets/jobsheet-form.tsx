@@ -868,61 +868,39 @@ export function JobSheetForm({
                 )}
             </div>
 
-            {/* Desktop Bottom Submit Actions */}
-            <div className="hidden sm:flex items-center justify-end gap-3 pt-3 border-t border-white/10">
-                {onCancel && (
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={onCancel}
-                        className="border-white/10 text-white/70 hover:bg-white/5"
-                    >
-                        ยกเลิก
-                    </Button>
-                )}
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleTriggerPreview}
-                    className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-                >
-                    <Eye className="w-4 h-4 mr-1.5" />
-                    ดูตัวอย่าง Sheet / พิมพ์
-                </Button>
-                <Button
-                    type="submit"
-                    disabled={isSaving}
-                    className="bg-amber-500 hover:bg-amber-600 text-black font-bold shadow-lg shadow-amber-500/20 px-6 h-10"
-                >
-                    <Save className="w-4 h-4 mr-1.5" />
-                    {isSaving ? "กำลังบันทึก..." : "บันทึก JobSheet"}
-                </Button>
-            </div>
-
-            {/* MOBILE FLOATING BOTTOM BAR (Always accessible by thumb!) */}
-            <div className="fixed bottom-0 inset-x-0 bg-zinc-950/95 border-t border-white/10 px-4 py-2.5 flex items-center justify-between sm:hidden z-40 backdrop-blur-lg shadow-2xl">
-                <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/15 px-2 py-1 rounded-lg border border-amber-500/20">
-                        {workItems.length} งาน
+            {/* Bottom Submit Actions (Both Desktop & Mobile, Safe from Mobile Navbar!) */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-4 pb-28 sm:pb-8 border-t border-white/10">
+                <div className="flex items-center justify-between sm:justify-start gap-2">
+                    <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/15 px-2.5 py-1.5 rounded-xl border border-amber-500/20 sm:hidden">
+                        รวม {workItems.length} งาน
                     </span>
+                    {onCancel && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onCancel}
+                            className="border-white/10 text-white/70 hover:bg-white/5 h-10 px-4 text-xs"
+                        >
+                            ยกเลิก
+                        </Button>
+                    )}
                     <Button
                         type="button"
                         variant="outline"
-                        size="sm"
                         onClick={handleTriggerPreview}
-                        className="h-9 px-3 text-xs border-white/10 text-white/80"
+                        className="flex-1 sm:flex-initial border-amber-500/30 text-amber-400 hover:bg-amber-500/10 h-10 px-4 text-xs font-medium"
                     >
-                        <Eye className="w-3.5 h-3.5 mr-1" />
-                        ดู Sheet
+                        <Eye className="w-4 h-4 mr-1.5" />
+                        ดูตัวอย่าง Sheet / พิมพ์
                     </Button>
                 </div>
 
                 <Button
                     type="submit"
                     disabled={isSaving}
-                    className="h-10 px-5 text-xs bg-amber-500 hover:bg-amber-600 text-black font-extrabold rounded-xl shadow-lg shadow-amber-500/30"
+                    className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-black font-extrabold shadow-lg shadow-amber-500/20 px-6 h-11 text-sm rounded-xl active:scale-[0.99]"
                 >
-                    <Save className="w-4 h-4 mr-1 stroke-[3]" />
+                    <Save className="w-4 h-4 mr-1.5 stroke-[2.5]" />
                     {isSaving ? "กำลังบันทึก..." : "บันทึก JobSheet"}
                 </Button>
             </div>
