@@ -162,9 +162,8 @@ export function subscribeJobSheets(
                     } as JobSheet;
                 });
 
-                // Deduplicate in memory and identify duplicates to delete
+                // Deduplicate in memory for UI presentation (keeps only the latest updated copy)
                 const uniqueMap = new Map<string, JobSheet>();
-                const duplicateDocIdsToDelete: string[] = [];
 
                 for (const sheet of results) {
                     const key = sheet.reportNumber?.trim() || `${sheet.date}_${sheet.projectName}_${sheet.reportedBy}`;
@@ -174,15 +173,8 @@ export function subscribeJobSheets(
                         const existing = uniqueMap.get(key)!;
                         const existingTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
                         const sheetTime = new Date(sheet.updatedAt || sheet.createdAt || 0).getTime();
-                        if (sheetTime >= existingTime) {
-                            if (existing.id && !existing.id.startsWith("local_")) {
-                                duplicateDocIdsToDelete.push(existing.id);
-                            }
+                        if (sheetTime > existingTime) {
                             uniqueMap.set(key, sheet);
-                        } else {
-                            if (sheet.id && !sheet.id.startsWith("local_")) {
-                                duplicateDocIdsToDelete.push(sheet.id);
-                            }
                         }
                     }
                 }
@@ -199,15 +191,6 @@ export function subscribeJobSheets(
                 // Fast O(1) cache update
                 setLocalJobSheets(deduplicated);
                 onData(deduplicated);
-
-                // Auto-purge redundant duplicate docs in background without re-triggering loops
-                if (duplicateDocIdsToDelete.length > 0 && typeof window !== "undefined") {
-                    Promise.allSettled(
-                        duplicateDocIdsToDelete.map(id => deleteDoc(doc(db, "jobsheets", id)))
-                    ).catch(e => {
-                        console.warn("Background duplicate cleanup warning:", e);
-                    });
-                }
             },
             (error) => {
                 console.warn("Firestore jobsheet subscription warning, falling back to local:", error);
