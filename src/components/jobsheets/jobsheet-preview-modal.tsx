@@ -130,34 +130,44 @@ export function JobSheetPreviewModal({
     };
 
     // Helper to render task details with clear typography & bullet support
-    const renderTaskDetails = (taskText: string) => {
-        if (!taskText) return <span className="text-zinc-400 italic">ไม่ได้ระบุรายละเอียด</span>;
-        const lines = taskText.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
-        if (lines.length <= 1) {
-            return (
-                <div className="font-bold text-zinc-950 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
-                    {taskText}
-                </div>
-            );
+    const renderTaskDetails = (taskTitle: string, taskDetails?: string) => {
+        if (!taskTitle && !taskDetails) return <span className="text-zinc-400 italic">ไม่ได้ระบุรายละเอียด</span>;
+
+        let title = taskTitle?.trim() || "";
+        let details = taskDetails?.trim() || "";
+
+        // Backward compatibility: If no separate details provided, but title has multiple lines, split them
+        if (!details && title.includes("\n")) {
+            const lines = title.split("\n").map((l) => l.trim()).filter(Boolean);
+            title = lines[0] || "";
+            details = lines.slice(1).join("\n");
         }
 
-        const [title, ...subLines] = lines;
+        const subLines = details
+            ? details.split("\n").map((l) => l.trim()).filter((l) => l.length > 0)
+            : [];
+
         return (
             <div className="space-y-1.5 break-words [overflow-wrap:anywhere]">
-                <div className="font-extrabold text-zinc-950 text-sm leading-snug break-words [overflow-wrap:anywhere]">
-                    {title}
+                {/* 1. หัวข้องานหลัก (Bold & Clear) */}
+                <div className="font-bold text-zinc-950 text-sm leading-snug break-words [overflow-wrap:anywhere]">
+                    {title || "รายละเอียดงาน"}
                 </div>
-                <div className="space-y-1 pl-3 border-l-2 border-amber-400">
-                    {subLines.map((line, idx) => {
-                        const cleanLine = line.replace(/^[-•*]\s*/, "");
-                        return (
-                            <div key={idx} className="flex items-start gap-1.5 text-zinc-800 text-xs leading-relaxed break-words [overflow-wrap:anywhere]">
-                                <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
-                                <span className="font-medium break-words [overflow-wrap:anywhere]">{cleanLine}</span>
-                            </div>
-                        );
-                    })}
-                </div>
+
+                {/* 2. รายละเอียดงาน / ข้อย่อย (Indented & Formatted) */}
+                {subLines.length > 0 && (
+                    <div className="space-y-1 pl-2.5 border-l-2 border-amber-400/80 mt-1">
+                        {subLines.map((line, idx) => {
+                            const cleanLine = line.replace(/^[-•*]\s*/, "");
+                            return (
+                                <div key={idx} className="flex items-start gap-1.5 text-zinc-800 text-xs leading-relaxed break-words [overflow-wrap:anywhere]">
+                                    <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
+                                    <span className="font-medium break-words [overflow-wrap:anywhere]">{cleanLine}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         );
     };
@@ -783,7 +793,7 @@ export function JobSheetPreviewModal({
 
                                                             {/* 3. รายละเอียดงานที่ปฏิบัติ */}
                                                             <td className="py-3 px-3.5 align-top border-r border-zinc-200 break-words [overflow-wrap:anywhere]">
-                                                                {renderTaskDetails(item.task)}
+                                                                {renderTaskDetails(item.task, item.details)}
                                                                 {item.quantity && (
                                                                     <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-xs text-zinc-700 font-medium break-words leading-tight whitespace-normal">
                                                                         <span className="text-zinc-500 font-medium text-[11px] shrink-0">ปริมาณ / ขนาด:</span>

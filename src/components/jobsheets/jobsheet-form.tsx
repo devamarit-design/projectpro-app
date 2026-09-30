@@ -134,23 +134,35 @@ export function JobSheetForm({
     );
 
     // Work Items (Task-centric list - Starts completely empty with placeholders)
-    const [workItems, setWorkItems] = useState<JobSheetWorkItem[]>(
-        initialData?.workItems && initialData.workItems.length > 0
-            ? initialData.workItems
-            : [
-                  {
-                      id: "1",
-                      task: "",
-                      projectId: "",
-                      projectName: "",
-                      timeSlot: "",
-                      quantity: "",
-                      location: "",
-                      status: "in_progress",
-                      notes: ""
-                  }
-              ]
-    );
+    const [workItems, setWorkItems] = useState<JobSheetWorkItem[]>(() => {
+        if (initialData?.workItems && initialData.workItems.length > 0) {
+            return initialData.workItems.map((item) => {
+                if (!item.details && item.task && item.task.includes("\n")) {
+                    const lines = item.task.split("\n");
+                    return {
+                        ...item,
+                        task: lines[0].trim(),
+                        details: lines.slice(1).join("\n").trim()
+                    };
+                }
+                return item;
+            });
+        }
+        return [
+            {
+                id: "1",
+                task: "",
+                details: "",
+                projectId: "",
+                projectName: "",
+                timeSlot: "",
+                quantity: "",
+                location: "",
+                status: "in_progress",
+                notes: ""
+            }
+        ];
+    });
 
     // Manpower (Default count 0 to not clutter)
     const [manpower, setManpower] = useState<JobSheetManpower[]>(
@@ -209,9 +221,22 @@ export function JobSheetForm({
             initialProjName = projects[0].name;
         }
 
+        let taskTitle = "";
+        let taskDetails = "";
+        if (presetTask) {
+            if (presetTask.includes("\n")) {
+                const [first, ...rest] = presetTask.split("\n");
+                taskTitle = first.trim();
+                taskDetails = rest.join("\n").trim();
+            } else {
+                taskTitle = presetTask;
+            }
+        }
+
         const newItem: JobSheetWorkItem = {
             id: String(Date.now() + Math.random()),
-            task: presetTask || "",
+            task: taskTitle,
+            details: taskDetails,
             projectId: initialProjId,
             projectName: initialProjName,
             timeSlot: presetTime || (workItems.length === 0 ? "ช่วงเช้า" : workItems.length === 1 ? "ช่วงบ่าย" : "ช่วงเย็น"),
@@ -732,25 +757,60 @@ export function JobSheetForm({
                                     </div>
                                 </div>
 
-                                {/* TASK TITLE & DETAILS (Larger, High-legibility & Supports Multi-line / Bullets) */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <label className="text-xs text-amber-300/90 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                            รายละเอียดงานที่ปฏิบัติ *
-                                        </label>
-                                        <span className="text-[10px] text-white/40">
-                                            (Enter ขึ้นบรรทัดใหม่ / ใส่ - ทำข้อย่อย)
-                                        </span>
+                                {/* TASK TITLE & DETAILS (Separated: Topic + Details) */}
+                                <div className="space-y-3">
+                                    {/* 1. หัวข้องาน */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="text-xs text-amber-300/90 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                                หัวข้องาน *
+                                            </label>
+                                            <span className="text-[10px] text-white/40">
+                                                (ชื่องานหลัก สั้น กระชับ)
+                                            </span>
+                                        </div>
+                                        <Input
+                                            type="text"
+                                            placeholder="เช่น แก้เอกสารและเพิ่มงวดงาน, เทคอนกรีตเสา-คาน, ตรวจงานสถาปัตย์"
+                                            value={item.task}
+                                            onChange={(e) => updateWorkItem(item.id, "task", e.target.value)}
+                                            className="w-full bg-zinc-950 border-white/15 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-sm font-semibold placeholder:text-white/25 h-10 rounded-xl"
+                                            required
+                                        />
                                     </div>
-                                    <textarea
-                                        rows={4}
-                                        placeholder={`ตัวอย่างเช่น:\nเข้าหน้างานตึก\n- เคลียร์เรื่องการปรับพื้น แต่ละชั้น\n- เคลียร์แนววางไฟกับช่างธง`}
-                                        value={item.task}
-                                        onChange={(e) => updateWorkItem(item.id, "task", e.target.value)}
-                                        className="w-full bg-zinc-950 border border-white/15 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 rounded-xl p-3 sm:p-3.5 text-white text-base sm:text-sm font-medium placeholder:text-white/20 focus:outline-none transition-all resize-y min-h-[110px] leading-relaxed shadow-inner"
-                                        required
-                                    />
+
+                                    {/* 2. รายละเอียดงาน / ข้อย่อย */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="text-xs text-white/70 font-semibold flex items-center gap-1.5">
+                                                รายละเอียดงาน / ข้อย่อย (ถ้ามี)
+                                            </label>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const current = item.details || "";
+                                                        const next = current ? (current.endsWith("\n") ? `${current}- ` : `${current}\n- `) : "- ";
+                                                        updateWorkItem(item.id, "details", next);
+                                                    }}
+                                                    className="text-[11px] text-amber-400/90 hover:text-amber-300 bg-amber-400/10 hover:bg-amber-400/20 px-2 py-0.5 rounded border border-amber-400/20 transition-colors"
+                                                >
+                                                    + เพิ่มข้อย่อย (-)
+                                                </button>
+                                                <span className="text-[10px] text-white/40 hidden sm:inline">
+                                                    (Enter ขึ้นบรรทัดใหม่)
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <textarea
+                                            rows={3}
+                                            placeholder={`เช่น:\n- แบ่งเป็น 3 งวดงานตามที่ลูกค้าขอ\n- ปรับปรุงตารางเวลาและสรุปยอดงวดงาน`}
+                                            value={item.details || ""}
+                                            onChange={(e) => updateWorkItem(item.id, "details", e.target.value)}
+                                            className="w-full bg-zinc-950 border border-white/15 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 rounded-xl p-3 text-white text-base sm:text-sm font-normal placeholder:text-white/20 focus:outline-none transition-all resize-y min-h-[85px] leading-relaxed shadow-inner"
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* LOCATION & QUANTITY (2-Column Grid on Mobile) */}

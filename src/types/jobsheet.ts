@@ -2,7 +2,8 @@ export type JobSheetStatus = 'completed' | 'in_progress' | 'pending' | 'delayed'
 
 export interface JobSheetWorkItem {
     id: string;
-    task: string;
+    task: string; // หัวข้องานหลัก (Main Topic)
+    details?: string; // รายละเอียดงานเพิ่มเติม / ข้อย่อย (Details & Subtasks)
     projectId?: string;
     projectName?: string; // Specific project name or "งานทั่วไป / ไม่ระบุโครงการ"
     timeSlot?: string; // e.g. "ช่วงเช้า (09:00 - 12:00)", "ช่วงบ่าย", "13:30 - 16:00"
