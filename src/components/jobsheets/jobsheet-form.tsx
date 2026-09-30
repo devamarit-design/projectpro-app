@@ -360,7 +360,6 @@ export function JobSheetForm({
         setIsSaving(true);
         try {
             await onSave(getPayload());
-            toast.success("บันทึก JobSheet ลงระบบเรียบร้อยแล้ว");
         } catch (error) {
             console.error("Save error:", error);
             toast.error("เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง");

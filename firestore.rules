@@ -95,6 +95,11 @@ service cloud.firestore {
             allow delete: if isAuthenticated() && (resource.data.author.id == request.auth.uid || isOrgOwner(orgId));
         }
       }
+
+      match /jobsheets/{jobsheetId} {
+        allow read: if isAuthenticated() && isOrgMember(orgId);
+        allow create, update, delete: if isAuthenticated() && isOrgMember(orgId);
+      }
     }
 
     // --- Authenticated Resource Rules ---
@@ -183,6 +188,13 @@ service cloud.firestore {
     }
     
     match /workers/{docId} {
+      allow read: if resourceBelongsToUserOrg();
+      allow create: if requestBelongsToUserOrg();
+      allow update: if resourceBelongsToUserOrg();
+      allow delete: if resourceBelongsToUserOrg();
+    }
+
+    match /jobsheets/{docId} {
       allow read: if resourceBelongsToUserOrg();
       allow create: if requestBelongsToUserOrg();
       allow update: if resourceBelongsToUserOrg();

@@ -41,7 +41,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function JobSheetsPage() {
     const { currentTeam, currentUser, projects } = useProjects();
-    const orgId = currentTeam?.id || "default_org";
+    const orgId = currentTeam?.id || currentUser?.orgIds?.[0] || currentUser?.organizations?.[0]?.orgId || "default_org";
     const currentUserId = currentUser?.id || "";
 
     // Data state
@@ -63,7 +63,6 @@ export default function JobSheetsPage() {
 
     // Subscribe to Firestore jobsheets
     useEffect(() => {
-        if (!orgId) return;
         setIsLoading(true);
 
         const unsubscribe = subscribeJobSheets(
@@ -74,7 +73,7 @@ export default function JobSheetsPage() {
                 setIsLoading(false);
             },
             (err) => {
-                console.error("Jobsheet subscription error:", err);
+                console.warn("Jobsheet subscription warning:", err);
                 setIsLoading(false);
             }
         );
@@ -86,8 +85,15 @@ export default function JobSheetsPage() {
     const filteredSheets = useMemo(() => {
         return jobsheets.filter((sheet) => {
             // Scope filter: mine vs all
-            if (filterScope === "mine" && currentUserId && sheet.createdBy && sheet.createdBy !== currentUserId) {
-                return false;
+            if (filterScope === "mine") {
+                const isMine = 
+                    !currentUserId || 
+                    !sheet.createdBy || 
+                    sheet.createdBy === currentUserId || 
+                    sheet.createdBy === "current_user" ||
+                    (currentUser?.name && sheet.reportedBy?.toLowerCase() === currentUser.name.toLowerCase()) ||
+                    (currentUser?.name && sheet.createdByName?.toLowerCase() === currentUser.name.toLowerCase());
+                if (!isMine) return false;
             }
 
             // Search query
@@ -125,39 +131,65 @@ export default function JobSheetsPage() {
 
             return true;
         });
-    }, [jobsheets, filterScope, currentUserId, searchQuery, selectedProjectFilter, selectedDateFilter]);
+    }, [jobsheets, filterScope, currentUserId, currentUser?.name, searchQuery, selectedProjectFilter, selectedDateFilter]);
 
     // Stats
     const totalReports = jobsheets.length;
-    const myReportsCount = jobsheets.filter((s) => s.createdBy === currentUserId).length;
+    const myReportsCount = jobsheets.filter((s) => {
+        return !currentUserId || !s.createdBy || s.createdBy === currentUserId || s.createdBy === "current_user" ||
+            (currentUser?.name && (s.reportedBy?.toLowerCase() === currentUser.name.toLowerCase() || s.createdByName?.toLowerCase() === currentUser.name.toLowerCase()));
+    }).length;
     const totalTasksDone = jobsheets.reduce(
         (acc, s) => acc + (s.workItems?.filter((w) => w.status === "completed").length || 0),
         0
     );
     const latestSheet = jobsheets[0];
 
-    // Handlers
+    // Handlers with Optimistic Updates
     const handleSaveNew = async (data: Omit<JobSheet, "id" | "createdAt" | "updatedAt">) => {
-        if (!orgId) return;
-        await createJobSheet(orgId, {
-            ...data,
-            createdBy: currentUserId,
-            createdByName: currentUser?.name || data.reportedBy
-        });
-        setActiveTab("list");
+        const targetOrgId = orgId || "default_org";
+        try {
+            const saved = await createJobSheet(targetOrgId, {
+                ...data,
+                createdBy: currentUserId || "current_user",
+                createdByName: currentUser?.name || data.reportedBy || "ผู้รายงาน"
+            });
+            // Optimistic update so user sees it in list immediately
+            setJobsheets(prev => [saved, ...prev.filter(s => s.id !== saved.id)]);
+            setActiveTab("list");
+            toast.success("บันทึก JobSheet ลงระบบเรียบร้อยแล้ว");
+        } catch (err) {
+            console.error("Save error:", err);
+            toast.error("บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+        }
     };
 
     const handleSaveEdit = async (data: Omit<JobSheet, "id" | "createdAt" | "updatedAt">) => {
-        if (!orgId || !editingSheet) return;
-        await updateJobSheet(orgId, editingSheet.id, data);
-        setEditingSheet(null);
-        setActiveTab("list");
+        if (!editingSheet) return;
+        const targetOrgId = orgId || "default_org";
+        try {
+            await updateJobSheet(targetOrgId, editingSheet.id, data);
+            const updated: JobSheet = {
+                ...editingSheet,
+                ...data,
+                updatedAt: new Date().toISOString()
+            };
+            setJobsheets(prev => prev.map(s => s.id === editingSheet.id ? updated : s));
+            setEditingSheet(null);
+            setActiveTab("list");
+            toast.success("อัปเดต JobSheet เรียบร้อยแล้ว");
+        } catch (err) {
+            console.error("Update error:", err);
+            toast.error("อัปเดตไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+        }
     };
 
     const handleDelete = async () => {
-        if (!orgId || !deletingSheetId) return;
+        if (!deletingSheetId) return;
+        const targetOrgId = orgId || "default_org";
         try {
-            await deleteJobSheet(orgId, deletingSheetId);
+            await deleteJobSheet(targetOrgId, deletingSheetId);
+            setJobsheets(prev => prev.filter(s => s.id !== deletingSheetId));
             toast.success("ลบรายงานเรียบร้อยแล้ว");
         } catch {
             toast.error("เกิดข้อผิดพลาดในการลบ");

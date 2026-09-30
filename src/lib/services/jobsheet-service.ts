@@ -8,27 +8,49 @@ import {
     deleteDoc,
     query,
     where,
-    orderBy,
     onSnapshot,
-    serverTimestamp,
-    getDocs
+    serverTimestamp
 } from "firebase/firestore";
 
 const LOCAL_STORAGE_KEY = "hipsloth_jobsheets_backup";
 
-function getLocalJobSheets(orgId: string, userId?: string): JobSheet[] {
+/**
+ * Deep sanitize object to remove any `undefined` values which crash Firestore `addDoc` / `updateDoc`
+ */
+function cleanFirestoreData<T>(obj: T): T {
+    if (obj === null || obj === undefined) return "" as any;
+    if (Array.isArray(obj)) {
+        return obj.map(cleanFirestoreData) as any;
+    }
+    if (typeof obj === "object" && !(obj instanceof Date)) {
+        const cleaned: Record<string, any> = {};
+        for (const [key, value] of Object.entries(obj)) {
+            if (value === undefined) {
+                cleaned[key] = "";
+            } else if (value !== null && typeof value === "object" && !(value instanceof Date)) {
+                cleaned[key] = cleanFirestoreData(value);
+            } else {
+                cleaned[key] = value;
+            }
+        }
+        return cleaned as any;
+    }
+    return obj;
+}
+
+export function getLocalJobSheets(orgId?: string, userId?: string): JobSheet[] {
     if (typeof window === "undefined") return [];
     try {
         const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (!raw) return [];
         const all: JobSheet[] = JSON.parse(raw);
-        return all.filter(s => s.orgId === orgId && (!userId || s.createdBy === userId));
+        return all.filter(s => (!orgId || s.orgId === orgId) && (!userId || s.createdBy === userId));
     } catch {
         return [];
     }
 }
 
-function saveLocalJobSheet(sheet: JobSheet) {
+export function saveLocalJobSheet(sheet: JobSheet) {
     if (typeof window === "undefined") return;
     try {
         const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -45,7 +67,7 @@ function saveLocalJobSheet(sheet: JobSheet) {
     }
 }
 
-function removeLocalJobSheet(id: string) {
+export function removeLocalJobSheet(id: string) {
     if (typeof window === "undefined") return;
     try {
         const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -57,6 +79,9 @@ function removeLocalJobSheet(id: string) {
     }
 }
 
+/**
+ * Real-time subscription to JobSheets for an organization
+ */
 export function subscribeJobSheets(
     orgId: string,
     userId: string | null | undefined,
@@ -64,17 +89,20 @@ export function subscribeJobSheets(
     onError?: (err: any) => void
 ) {
     if (!orgId) {
-        onData([]);
+        onData(getLocalJobSheets(undefined, userId || undefined));
         return () => {};
     }
 
-    try {
-        const colRef = collection(db, "organizations", orgId, "jobsheets");
-        let q = query(colRef, orderBy("date", "desc"));
+    // Immediately deliver local data for zero-latency initial UI
+    const local = getLocalJobSheets(orgId, userId || undefined);
+    if (local.length > 0) {
+        onData(local);
+    }
 
-        if (userId) {
-            q = query(colRef, where("createdBy", "==", userId), orderBy("date", "desc"));
-        }
+    try {
+        // Use top-level collection aligned with all other entities in Hipsloth (projects, tasks, expenses)
+        const colRef = collection(db, "jobsheets");
+        const q = query(colRef, where("orgId", "==", orgId));
 
         const unsubscribe = onSnapshot(
             q,
@@ -88,6 +116,8 @@ export function subscribeJobSheets(
                         date: data.date || new Date().toISOString().split("T")[0],
                         projectId: data.projectId || "",
                         projectName: data.projectName || "ไม่ระบุโครงการ",
+                        projectIds: data.projectIds || [],
+                        isMultiProject: !!data.isMultiProject,
                         subProjectId: data.subProjectId || "",
                         subProjectName: data.subProjectName || "",
                         orgId: data.orgId || orgId,
@@ -104,21 +134,36 @@ export function subscribeJobSheets(
                         obstacles: data.obstacles || "",
                         generalNotes: data.generalNotes || "",
                         photos: data.photos || [],
+                        companyName: data.companyName || "",
+                        companyLogo: data.companyLogo || "",
                         reportedBy: data.reportedBy || data.createdByName || "",
+                        reportedByRole: data.reportedByRole || "",
                         inspectedBy: data.inspectedBy || "",
                         createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt || new Date().toISOString(),
                         updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : data.updatedAt || new Date().toISOString()
                     } as JobSheet;
                 });
 
-                // Also merge/backup with local
-                results.forEach(saveLocalJobSheet);
-                onData(results);
+                // Client-side sort: date descending, then createdAt descending (no composite index required)
+                results.sort((a, b) => {
+                    const dateDiff = (b.date || "").localeCompare(a.date || "");
+                    if (dateDiff !== 0) return dateDiff;
+                    return (b.createdAt || "").localeCompare(a.createdAt || "");
+                });
+
+                // Include any temporary local items that haven't settled to Firestore yet
+                const localSheets = getLocalJobSheets(orgId, userId || undefined);
+                const localOnly = localSheets.filter(l => l.id.startsWith("local_") && !results.some(r => r.id === l.id));
+                const merged = [...localOnly, ...results];
+
+                // Cache to localStorage
+                merged.forEach(saveLocalJobSheet);
+                onData(merged);
             },
             (error) => {
                 console.warn("Firestore jobsheet subscription warning, falling back to local:", error);
-                const local = getLocalJobSheets(orgId, userId || undefined);
-                onData(local);
+                const fallback = getLocalJobSheets(orgId, userId || undefined);
+                onData(fallback);
                 if (onError) onError(error);
             }
         );
@@ -126,79 +171,101 @@ export function subscribeJobSheets(
         return unsubscribe;
     } catch (err) {
         console.warn("Error setting up jobsheet listener, using local:", err);
-        const local = getLocalJobSheets(orgId, userId || undefined);
-        onData(local);
+        const fallback = getLocalJobSheets(orgId, userId || undefined);
+        onData(fallback);
         return () => {};
     }
 }
 
+/**
+ * Create a new JobSheet in Firestore and backup to localStorage
+ */
 export async function createJobSheet(
     orgId: string,
     data: Omit<JobSheet, "id" | "createdAt" | "updatedAt">
-): Promise<string> {
+): Promise<JobSheet> {
     const nowIso = new Date().toISOString();
     const tempId = `local_${Date.now()}`;
-    const newSheet: JobSheet = {
+
+    const cleanedPayload = cleanFirestoreData({
         ...data,
-        id: tempId,
         orgId,
         createdAt: nowIso,
         updatedAt: nowIso
+    });
+
+    const newSheet: JobSheet = {
+        ...cleanedPayload,
+        id: tempId
     };
 
     // Save locally immediately
     saveLocalJobSheet(newSheet);
 
     try {
-        const colRef = collection(db, "organizations", orgId, "jobsheets");
+        const colRef = collection(db, "jobsheets");
         const docRef = await addDoc(colRef, {
-            ...data,
-            orgId,
+            ...cleanedPayload,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         });
 
-        // Update local with real Firestore ID
+        // Update local with the real Firestore ID
         removeLocalJobSheet(tempId);
         newSheet.id = docRef.id;
         saveLocalJobSheet(newSheet);
 
-        return docRef.id;
+        return newSheet;
     } catch (error) {
-        console.warn("Firestore save failed, saved locally:", error);
-        return tempId;
+        console.warn("Firestore save failed, saved locally as fallback:", error);
+        return newSheet;
     }
 }
 
+/**
+ * Update an existing JobSheet
+ */
 export async function updateJobSheet(
     orgId: string,
     id: string,
     data: Partial<JobSheet>
 ): Promise<void> {
     const nowIso = new Date().toISOString();
-    try {
-        const docRef = doc(db, "organizations", orgId, "jobsheets", id);
-        await updateDoc(docRef, {
-            ...data,
-            updatedAt: serverTimestamp()
-        });
-    } catch (error) {
-        console.warn("Firestore update error, updating local only:", error);
-    }
+    const cleanedPayload = cleanFirestoreData({
+        ...data,
+        updatedAt: nowIso
+    });
 
-    // Local update
+    // Update local immediately
     const local = getLocalJobSheets(orgId);
     const existing = local.find(s => s.id === id);
     if (existing) {
-        saveLocalJobSheet({ ...existing, ...data, updatedAt: nowIso });
+        saveLocalJobSheet({ ...existing, ...cleanedPayload, updatedAt: nowIso });
+    }
+
+    try {
+        if (!id.startsWith("local_")) {
+            const docRef = doc(db, "jobsheets", id);
+            await updateDoc(docRef, {
+                ...cleanedPayload,
+                updatedAt: serverTimestamp()
+            });
+        }
+    } catch (error) {
+        console.warn("Firestore update error, updated locally:", error);
     }
 }
 
+/**
+ * Delete a JobSheet
+ */
 export async function deleteJobSheet(orgId: string, id: string): Promise<void> {
     removeLocalJobSheet(id);
     try {
-        const docRef = doc(db, "organizations", orgId, "jobsheets", id);
-        await deleteDoc(docRef);
+        if (!id.startsWith("local_")) {
+            const docRef = doc(db, "jobsheets", id);
+            await deleteDoc(docRef);
+        }
     } catch (error) {
         console.warn("Firestore delete warning:", error);
     }
