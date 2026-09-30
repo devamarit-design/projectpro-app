@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect, useMemo } from "react";
 import { JobSheet } from "@/types/jobsheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { 
     Download, 
@@ -22,9 +22,7 @@ import {
     ShieldCheck,
     Briefcase,
     SlidersHorizontal,
-    CheckCircle2,
-    ZoomIn,
-    Maximize2
+    CheckCircle2
 } from "lucide-react";
 import { toast } from "sonner";
 import { toBlob, toPng } from "html-to-image";
@@ -57,7 +55,7 @@ export function JobSheetPreviewModal({
         typeof window !== "undefined" ? window.innerWidth : 860
     );
     const [viewMode, setViewMode] = useState<"fit" | "actual">("fit");
-    const [sheetHeight, setSheetHeight] = useState(1200);
+    const [sheetHeight, setSheetHeight] = useState(1160);
 
     const { companyProfile, currentUser, currentTeam } = useProjects();
 
@@ -70,7 +68,7 @@ export function JobSheetPreviewModal({
                 setContainerWidth(scrollContainerRef.current.clientWidth);
             }
             if (sheetRef.current) {
-                setSheetHeight(sheetRef.current.offsetHeight || sheetRef.current.scrollHeight || 1200);
+                setSheetHeight(sheetRef.current.scrollHeight || sheetRef.current.offsetHeight || 1160);
             }
         };
 
@@ -94,16 +92,13 @@ export function JobSheetPreviewModal({
         };
     }, [open, jobsheet, showSignatures, viewMode]);
 
-    // Calculate scale factor for mobile preview
+    // Standard A4 width reference is 820px
     const scale = useMemo(() => {
         if (viewMode === "actual") return 1;
-        if (!containerWidth || containerWidth >= 900) return 1;
+        if (!containerWidth || containerWidth >= 860) return 1;
         const availableWidth = Math.max(280, containerWidth - 32);
-        return Math.min(1, availableWidth / 860);
+        return Math.min(1, availableWidth / 820);
     }, [containerWidth, viewMode]);
-
-    const scaledWidth = Math.round(860 * scale);
-    const scaledHeight = Math.round(sheetHeight * scale);
 
     if (!jobsheet) return null;
 
@@ -139,7 +134,7 @@ export function JobSheetPreviewModal({
         const lines = taskText.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
         if (lines.length <= 1) {
             return (
-                <div className="font-bold text-zinc-950 text-sm sm:text-[14px] leading-relaxed">
+                <div className="font-bold text-zinc-950 text-sm leading-relaxed">
                     {taskText}
                 </div>
             );
@@ -148,14 +143,14 @@ export function JobSheetPreviewModal({
         const [title, ...subLines] = lines;
         return (
             <div className="space-y-1.5">
-                <div className="font-extrabold text-zinc-950 text-sm sm:text-[14px] leading-snug">
+                <div className="font-extrabold text-zinc-950 text-sm leading-snug">
                     {title}
                 </div>
                 <div className="space-y-1 pl-3 border-l-2 border-amber-400">
                     {subLines.map((line, idx) => {
                         const cleanLine = line.replace(/^[-•*]\s*/, "");
                         return (
-                            <div key={idx} className="flex items-start gap-2 text-zinc-800 text-[13px] leading-relaxed">
+                            <div key={idx} className="flex items-start gap-1.5 text-zinc-800 text-xs leading-relaxed">
                                 <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
                                 <span className="font-medium">{cleanLine}</span>
                             </div>
@@ -191,18 +186,7 @@ export function JobSheetPreviewModal({
         if (!sheetRef.current) return null;
         const element = sheetRef.current;
 
-        // 1. Temporarily save original styles and set to unscaled static positioning
-        const originalTransform = element.style.transform;
-        const originalPosition = element.style.position;
-        const originalLeft = element.style.left;
-        const originalTop = element.style.top;
-
-        element.style.transform = "none";
-        element.style.position = "static";
-        element.style.left = "auto";
-        element.style.top = "auto";
-
-        // 2. Pre-fetch images to object URLs to bypass CORS during canvas export
+        // Pre-fetch images to object URLs to bypass CORS during canvas export
         const images = element.querySelectorAll("img");
         const originalSrcs = new Map<HTMLImageElement, string>();
 
@@ -227,12 +211,8 @@ export function JobSheetPreviewModal({
         // Wait a frame for DOM repaint
         await new Promise((r) => setTimeout(r, 120));
 
-        // Return cleanup function to restore transform and revoked URLs
+        // Return cleanup function to restore revoked URLs
         return () => {
-            element.style.transform = originalTransform;
-            element.style.position = originalPosition;
-            element.style.left = originalLeft;
-            element.style.top = originalTop;
             originalSrcs.forEach((src, img) => {
                 URL.revokeObjectURL(img.src);
                 img.src = src;
@@ -261,8 +241,8 @@ export function JobSheetPreviewModal({
                 style: {
                     transform: "none",
                     margin: "0",
-                    width: "860px",
-                    maxWidth: "860px"
+                    width: "820px",
+                    maxWidth: "820px"
                 }
             });
 
@@ -302,8 +282,8 @@ export function JobSheetPreviewModal({
                 style: {
                     transform: "none",
                     margin: "0",
-                    width: "860px",
-                    maxWidth: "860px"
+                    width: "820px",
+                    maxWidth: "820px"
                 }
             });
 
@@ -314,19 +294,38 @@ export function JobSheetPreviewModal({
                 format: "a4"
             });
 
-            const imgProps = pdf.getImageProperties(dataUrl);
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            const pageHeight = pdf.internal.pageSize.getHeight();
+            const pdfWidth = pdf.internal.pageSize.getWidth(); // 210
+            const pdfHeight = pdf.internal.pageSize.getHeight(); // 297
 
-            if (pdfHeight > pageHeight) {
-                const ratio = Math.min(pdfWidth / imgProps.width, pageHeight / imgProps.height);
-                const fittedWidth = imgProps.width * ratio;
-                const fittedHeight = imgProps.height * ratio;
-                const marginX = (pdfWidth - fittedWidth) / 2;
-                pdf.addImage(dataUrl, "PNG", marginX, 4, fittedWidth, fittedHeight);
+            const margin = 8; // 8mm margin
+            const printableWidth = pdfWidth - (margin * 2); // 194mm
+            const printableHeight = pdfHeight - (margin * 2); // 281mm
+
+            const imgProps = pdf.getImageProperties(dataUrl);
+            const imgHeightInMm = (imgProps.height * printableWidth) / imgProps.width;
+
+            // If it fits nicely on 1 page (allow slight scaling if within 15%)
+            if (imgHeightInMm <= printableHeight * 1.15) {
+                const finalHeight = Math.min(printableHeight, imgHeightInMm);
+                const finalWidth = (imgProps.width * finalHeight) / imgProps.height;
+                const finalX = margin + ((printableWidth - finalWidth) / 2);
+                const finalY = margin + Math.max(0, (printableHeight - finalHeight) / 4);
+
+                pdf.addImage(dataUrl, "PNG", finalX, finalY, finalWidth, finalHeight, undefined, "FAST");
             } else {
-                pdf.addImage(dataUrl, "PNG", 0, 4, pdfWidth, pdfHeight);
+                // Multi-page handling for very long documents
+                let heightLeft = imgHeightInMm;
+                let position = margin;
+
+                pdf.addImage(dataUrl, "PNG", margin, position, printableWidth, imgHeightInMm, undefined, "FAST");
+                heightLeft -= printableHeight;
+
+                while (heightLeft > 0) {
+                    position = position - printableHeight;
+                    pdf.addPage();
+                    pdf.addImage(dataUrl, "PNG", margin, position, printableWidth, imgHeightInMm, undefined, "FAST");
+                    heightLeft -= printableHeight;
+                }
             }
 
             const pdfBlob = pdf.output("blob");
@@ -437,63 +436,60 @@ export function JobSheetPreviewModal({
                 {/* Printable Document Sheet Scroll Area */}
                 <div 
                     ref={scrollContainerRef}
-                    className="flex-1 overflow-y-auto overflow-x-auto p-3 sm:p-6 bg-zinc-950"
+                    className="flex-1 overflow-y-auto overflow-x-auto p-3 sm:p-6 bg-zinc-950 flex flex-col items-center"
                 >
-                    <div className="w-fit min-w-full flex flex-col items-center">
-                        {/* Mobile View Mode Switcher */}
-                        <div 
-                            style={{ width: `${scaledWidth}px` }}
-                            className="sm:hidden flex items-center justify-between mb-3 px-0.5 text-xs text-white/70 transition-all duration-150"
-                        >
-                            <span className="text-[11px] font-mono">
-                                {viewMode === "fit" ? "🔍 มุมมอง: พอดีจอ (Fit)" : "🔍 มุมมอง: ขนาดจริง A4"}
-                            </span>
-                            <div className="flex items-center gap-1 bg-zinc-900 border border-white/10 p-0.5 rounded-lg shadow-sm">
-                                <button
-                                    type="button"
-                                    onClick={() => setViewMode("fit")}
-                                    className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                                        viewMode === "fit" ? "bg-amber-500 text-black font-bold" : "text-white/60 hover:text-white"
-                                    }`}
-                                >
-                                    พอดีจอ
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setViewMode("actual")}
-                                    className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                                        viewMode === "actual" ? "bg-amber-500 text-black font-bold" : "text-white/60 hover:text-white"
-                                    }`}
-                                >
-                                    100% (A4)
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Scaled Wrapper for mobile */}
-                        <div
-                            style={{
-                                width: `${scaledWidth}px`,
-                                height: scale < 1 ? `${scaledHeight}px` : "auto",
-                                transition: "width 0.15s ease-out, height 0.15s ease-out"
-                            }}
-                            className="relative shrink-0"
-                        >
-                            <div
-                                ref={sheetRef}
-                                id="jobsheet-printable-paper"
-                                className="bg-white text-zinc-900 shadow-2xl rounded-sm p-8 sm:p-10 font-sans print:shadow-none print:p-6 print:m-0 print:w-full print:max-w-none border border-zinc-200"
-                                style={{
-                                    width: "860px",
-                                    minWidth: "860px",
-                                    minHeight: "1200px",
-                                    transform: scale < 1 ? `scale(${scale})` : "none",
-                                    transformOrigin: "top left",
-                                    position: scale < 1 ? "absolute" : "relative",
-                                    left: 0,
-                                    top: 0
-                                }}
+                    {/* Mobile View Mode Switcher */}
+                    <div 
+                        style={{ width: scale < 1 ? `${Math.round(820 * scale)}px` : "820px" }}
+                        className="sm:hidden flex items-center justify-between mb-3 px-1 text-xs text-white/70 transition-all duration-150"
+                    >
+                        <span className="text-[11px] font-mono">
+                            {viewMode === "fit" ? "🔍 มุมมอง: พอดีจอ (Fit)" : "🔍 มุมมอง: ขนาดจริง A4"}
+                        </span>
+                        <div className="flex items-center gap-1 bg-zinc-900 border border-white/10 p-0.5 rounded-lg shadow-sm">
+                            <button
+                                type="button"
+                                onClick={() => setViewMode("fit")}
+                                className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                                    viewMode === "fit" ? "bg-amber-500 text-black font-bold" : "text-white/60 hover:text-white"
+                                }`}
                             >
+                                พอดีจอ
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setViewMode("actual")}
+                                className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                                    viewMode === "actual" ? "bg-amber-500 text-black font-bold" : "text-white/60 hover:text-white"
+                                }`}
+                            >
+                                100% (A4)
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Scaled Wrapper for mobile */}
+                    <div
+                        style={{
+                            width: "820px",
+                            minWidth: "820px",
+                            transform: scale < 1 ? `scale(${scale})` : "none",
+                            transformOrigin: "top center",
+                            marginBottom: scale < 1 ? `-${Math.round(sheetHeight * (1 - scale))}px` : "0px",
+                            transition: "transform 0.15s ease-out"
+                        }}
+                        className="shrink-0 flex justify-center"
+                    >
+                        <div
+                            ref={sheetRef}
+                            id="jobsheet-printable-paper"
+                            className="bg-white text-zinc-900 shadow-2xl rounded-sm p-8 sm:p-10 font-sans print:shadow-none print:p-6 print:m-0 print:w-full print:max-w-none border border-zinc-200"
+                            style={{
+                                width: "820px",
+                                minWidth: "820px",
+                                minHeight: "1160px"
+                            }}
+                        >
                             {/* Company Header (Using User's Company Logo & Name, NOT App Logo) */}
                             <div className="border-b-2 border-zinc-900 pb-4 mb-4">
                                 <div className="flex items-start justify-between gap-4">
@@ -573,24 +569,24 @@ export function JobSheetPreviewModal({
                             {/* MAIN WORK ITEMS TABLE (Wide, Clear, High Legibility, Centered on Tasks) */}
                             <div className="mb-6">
                                 <div className="flex items-center justify-between mb-2">
-                                    <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
-                                        <HardHat className="w-4 h-4 text-amber-600" />
-                                        รายการงานที่ปฏิบัติประจำวัน (Work Activities & Progress)
+                                    <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap">
+                                        <HardHat className="w-4 h-4 text-amber-600 shrink-0" />
+                                        <span>รายการงานที่ปฏิบัติประจำวัน (Work Activities & Progress)</span>
                                     </h3>
-                                    <span className="text-xs font-medium text-zinc-500">
+                                    <span className="text-xs font-medium text-zinc-500 whitespace-nowrap">
                                         จำนวน {jobsheet.workItems?.length || 0} รายการ
                                     </span>
                                 </div>
 
                                 <div className="border border-zinc-400 rounded-sm overflow-hidden">
-                                    <table className="w-full text-left border-collapse">
+                                    <table className="w-full text-left border-collapse table-fixed">
                                         <thead>
                                             <tr className="bg-zinc-900 text-white font-bold text-xs uppercase tracking-wider">
-                                                <th className="py-2.5 px-3 w-12 text-center border-r border-zinc-700">ลำดับ</th>
-                                                <th className="py-2.5 px-3.5 w-56 border-r border-zinc-700">โครงการ / โซน / เวลา</th>
-                                                <th className="py-2.5 px-4 border-r border-zinc-700">รายละเอียดงานที่ปฏิบัติ (Work Activities & Progress)</th>
-                                                <th className="py-2.5 px-2.5 w-24 text-center border-r border-zinc-700">สถานะ</th>
-                                                <th className="py-2.5 px-3 w-32">หมายเหตุ</th>
+                                                <th className="py-2.5 px-2 w-[44px] text-center border-r border-zinc-700">ลำดับ</th>
+                                                <th className="py-2.5 px-3 w-[180px] border-r border-zinc-700">โครงการ / โซน / เวลา</th>
+                                                <th className="py-2.5 px-3.5 border-r border-zinc-700">รายละเอียดงานที่ปฏิบัติ (Work Activities & Progress)</th>
+                                                <th className="py-2.5 px-2 w-[80px] text-center border-r border-zinc-700">สถานะ</th>
+                                                <th className="py-2.5 px-2.5 w-[90px]">หมายเหตุ</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-zinc-300 text-xs">
@@ -613,7 +609,7 @@ export function JobSheetPreviewModal({
                                                                                 📦 {item.projectName || "งานทั่วไป / ส่วนกลาง"}
                                                                             </span>
                                                                         ) : (
-                                                                            <span className="inline-flex items-center gap-1 font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded text-[11px] border border-amber-200">
+                                                                            <span className="inline-flex items-center gap-1 font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded text-[11px] border border-amber-300">
                                                                                 🏢 {item.projectName || jobsheet.projectName}
                                                                             </span>
                                                                         )}
@@ -635,7 +631,7 @@ export function JobSheetPreviewModal({
                                                             </td>
 
                                                             {/* 3. รายละเอียดงานที่ปฏิบัติ */}
-                                                            <td className="py-3.5 px-4 align-top border-r border-zinc-200">
+                                                            <td className="py-3 px-3.5 align-top border-r border-zinc-200">
                                                                 {renderTaskDetails(item.task)}
                                                                 {item.quantity && (
                                                                     <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-xs text-zinc-700 font-medium">
@@ -670,7 +666,7 @@ export function JobSheetPreviewModal({
                                                             </td>
 
                                                             {/* 5. หมายเหตุ */}
-                                                            <td className="py-3 px-3 text-zinc-700 text-xs align-top leading-relaxed">
+                                                            <td className="py-3 px-2.5 text-zinc-700 text-xs align-top leading-relaxed">
                                                                 {item.notes ? (
                                                                     <span className="font-medium text-zinc-800">{item.notes}</span>
                                                                 ) : (
@@ -734,15 +730,15 @@ export function JobSheetPreviewModal({
                             {/* Formal Signatures Footer (Wide & Clean) */}
                             {showSignatures && (
                                 <div className="border-t-2 border-zinc-900 pt-6 mt-8">
-                                    <div className="grid grid-cols-2 gap-10 text-center text-xs">
+                                    <div className="grid grid-cols-2 gap-12 text-center text-xs">
                                         <div>
                                             <div className="h-14 border-b border-dashed border-zinc-400 mb-2 flex items-end justify-center pb-1 font-serif text-sm italic text-zinc-700">
                                                 {reporterName}
                                             </div>
-                                            <span className="font-bold text-zinc-900 block">
+                                            <span className="font-bold text-zinc-900 block text-xs">
                                                 ( {reporterName} )
                                             </span>
-                                            <span className="text-zinc-500 text-[11px] block mt-0.5">
+                                            <span className="text-zinc-600 text-[11px] block mt-0.5">
                                                 ผู้รายงาน / {reporterRole}
                                             </span>
                                             <span className="text-zinc-400 text-[10px] block mt-0.5">
@@ -754,10 +750,10 @@ export function JobSheetPreviewModal({
                                             <div className="h-14 border-b border-dashed border-zinc-400 mb-2 flex items-end justify-center pb-1 font-serif text-sm italic text-zinc-700">
                                                 {jobsheet.inspectedBy || "..................................................."}
                                             </div>
-                                            <span className="font-bold text-zinc-900 block">
+                                            <span className="font-bold text-zinc-900 block text-xs">
                                                 ( {jobsheet.inspectedBy || "ผู้ตรวจสอบ / ผู้จัดการโครงการ"} )
                                             </span>
-                                            <span className="text-zinc-500 text-[11px] block mt-0.5">
+                                            <span className="text-zinc-600 text-[11px] block mt-0.5">
                                                 วิศวกรโครงการ / ตัวแทนผู้ว่าจ้าง
                                             </span>
                                             <span className="text-zinc-400 text-[10px] block mt-0.5">
@@ -771,8 +767,7 @@ export function JobSheetPreviewModal({
                         </div>
                     </div>
                 </div>
-            </div>
-        </DialogContent>
-    </Dialog>
+            </DialogContent>
+        </Dialog>
     );
 }
