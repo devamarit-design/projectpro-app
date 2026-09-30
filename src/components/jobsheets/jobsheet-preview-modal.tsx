@@ -46,8 +46,7 @@ export function JobSheetPreviewModal({
     const [isExportingPng, setIsExportingPng] = useState(false);
     const [isExportingPdf, setIsExportingPdf] = useState(false);
 
-    // Toggles for clean, job-focused output (Default: Manpower OFF as requested by user)
-    const [showManpower, setShowManpower] = useState(false);
+    // Toggles for clean, job-focused output
     const [showSignatures, setShowSignatures] = useState(true);
 
     const { companyProfile, currentUser, currentTeam } = useProjects();
@@ -221,23 +220,6 @@ export function JobSheetPreviewModal({
 
                     {/* Output Controls & Action Buttons */}
                     <div className="flex flex-wrap items-center gap-2">
-                        {/* Toggle: Manpower summary (Default: OFF) */}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowManpower(!showManpower)}
-                            className={`h-8 text-xs border transition-colors ${
-                                showManpower
-                                    ? "bg-amber-500/20 border-amber-500/50 text-amber-300"
-                                    : "border-white/10 text-white/60 hover:bg-white/5"
-                            }`}
-                            title="สลับการแสดงผลกล่องกำลังพลหน้างาน"
-                        >
-                            <Users className="w-3.5 h-3.5 mr-1" />
-                            {showManpower ? "✓ แสดงกำลังพล" : "+ สรุปกำลังพล"}
-                        </Button>
-
                         {/* Toggle: Signatures block */}
                         <Button
                             type="button"
@@ -511,33 +493,7 @@ export function JobSheetPreviewModal({
                             </div>
                         </div>
 
-                        {/* Optional Manpower & Resources Block (Only shown if toggled ON) */}
-                        {showManpower && (
-                            <div className="border border-zinc-300 rounded p-3.5 mb-5 bg-zinc-50/50 text-xs">
-                                <div className="flex items-center justify-between border-b border-zinc-200 pb-2 mb-2">
-                                    <h4 className="font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
-                                        <Users className="w-4 h-4 text-blue-600" />
-                                        สรุปกำลังพล & ทรัพยากร (Manpower & Resources)
-                                    </h4>
-                                    <span className="font-bold text-zinc-900 bg-white px-2 py-0.5 rounded border border-zinc-200">
-                                        รวมกำลังพลทั้งหมด {totalWorkers} คน
-                                    </span>
-                                </div>
 
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-zinc-700">
-                                    {jobsheet.manpower && jobsheet.manpower.length > 0 ? (
-                                        jobsheet.manpower.map((mp, i) => (
-                                            <div key={mp.id || i} className="flex justify-between border-b border-zinc-200/70 pb-1">
-                                                <span>{mp.role}:</span>
-                                                <span className="font-bold text-zinc-900">{mp.count} คน</span>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <span className="text-zinc-400 col-span-2">ไม่ได้ระบุกำลังพลแยกสายงาน</span>
-                                    )}
-                                </div>
-                            </div>
-                        )}
 
                         {/* Obstacles & Safety Notes (Only displayed if non-empty / meaningful) */}
                         {(jobsheet.obstacles || jobsheet.safetyNotes) && (

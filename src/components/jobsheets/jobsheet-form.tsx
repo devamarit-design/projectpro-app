@@ -111,12 +111,6 @@ export function JobSheetForm({
     const { projects, currentUser, companyProfile, currentTeam } = useProjects();
     const [isSaving, setIsSaving] = useState(false);
 
-    // Accordion toggles for mobile compactness
-    const [openManpower, setOpenManpower] = useState(false);
-    const [openEquipment, setOpenEquipment] = useState(false);
-    const [openSafety, setOpenSafety] = useState(false);
-    const [openPhotos, setOpenPhotos] = useState(false);
-
     // Form states
     const [date, setDate] = useState(initialData?.date || new Date().toISOString().split("T")[0]);
     const [reportNumber, setReportNumber] = useState(
@@ -241,19 +235,6 @@ export function JobSheetForm({
             return;
         }
         setWorkItems(workItems.filter((item) => item.id !== id));
-    };
-
-    // Manpower count change
-    const updateManpowerCount = (id: string, delta: number) => {
-        setManpower(
-            manpower.map((mp) => {
-                if (mp.id === id) {
-                    const next = Math.max(0, mp.count + delta);
-                    return { ...mp, count: next };
-                }
-                return mp;
-            })
-        );
     };
 
     // Add photo
@@ -813,256 +794,77 @@ export function JobSheetForm({
                 </button>
             </div>
 
-            {/* COLLAPSIBLE SECONDARY SECTIONS (Mobile-Optimized Accordions) */}
-            <div className="space-y-3 pt-2">
-                {/* 1. Manpower Accordion */}
-                <div className="bg-zinc-900/50 border border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                    <button
-                        type="button"
-                        onClick={() => setOpenManpower(!openManpower)}
-                        className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
-                    >
-                        <div className="flex items-center gap-2.5">
-                            <Users className="w-4 h-4 text-blue-400" />
-                            <div>
-                                <span className="text-xs sm:text-sm font-bold text-white block">กำลังพลหน้างาน (Manpower)</span>
-                                <span className="text-[10px] text-white/50">รวมช่าง/คนงานทั้งหมด {totalManpower} คน</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                                {totalManpower} คน
-                            </span>
-                            {openManpower ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
-                        </div>
-                    </button>
+            {/* SIGNATURE & REPORTER META (Compact & Focused on Document Sign-off) */}
+            <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-4 space-y-3 shadow-md">
+                <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Shield className="w-4 h-4 text-amber-400" />
+                        ข้อมูลผู้จัดทำและลงนามท้ายแผ่น (Signatures)
+                    </span>
+                    <label className="cursor-pointer text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{photos.length > 0 ? `${photos.length} รูปถ่าย` : "+ แนบรูปหน้างาน (ถ้ามี)"}</span>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handlePhotoUpload}
+                            className="hidden"
+                        />
+                    </label>
+                </div>
 
-                    {openManpower && (
-                        <div className="p-4 border-t border-white/5 bg-zinc-950/40 space-y-3 animate-in fade-in duration-200">
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                                {manpower.map((mp) => (
-                                    <div
-                                        key={mp.id}
-                                        className="bg-zinc-900 border border-white/10 rounded-xl p-2.5 flex items-center justify-between gap-1.5"
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                        <label className="text-[10px] text-white/50 block mb-1 font-medium">ชื่อผู้รายงาน *</label>
+                        <Input
+                            value={reportedBy}
+                            onChange={(e) => setReportedBy(e.target.value)}
+                            placeholder="เช่น เบียร์"
+                            className="bg-zinc-950 border-white/10 text-white text-xs h-9 font-medium"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[10px] text-white/50 block mb-1 font-medium">ตำแหน่ง *</label>
+                        <Input
+                            value={reportedByRole}
+                            onChange={(e) => setReportedByRole(e.target.value)}
+                            placeholder="เช่น ผู้ดูแลหน้างาน"
+                            className="bg-zinc-950 border-white/10 text-white text-xs h-9 font-medium"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[10px] text-white/50 block mb-1 font-medium">ผู้ตรวจสอบ / วิศวกรโครงการ</label>
+                        <Input
+                            placeholder="เช่น นายช่างสมศักดิ์ (ถ้ามี)"
+                            value={inspectedBy}
+                            onChange={(e) => setInspectedBy(e.target.value)}
+                            className="bg-zinc-950 border-white/10 text-white text-xs h-9 placeholder:text-white/30"
+                        />
+                    </div>
+                </div>
+
+                {/* Photos thumbnails if uploaded */}
+                {photos.length > 0 && (
+                    <div className="pt-2 border-t border-white/5">
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                            {photos.map((src, idx) => (
+                                <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border border-white/10 group bg-black">
+                                    <img src={src} alt="site" className="w-full h-full object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => removePhoto(idx)}
+                                        className="absolute top-1 right-1 p-0.5 rounded-full bg-black/80 text-white hover:bg-rose-500 transition-colors"
                                     >
-                                        <div className="truncate">
-                                            <span className="text-xs text-white/80 block truncate font-medium">{mp.role}</span>
-                                            <span className="text-[10px] text-white/40">{mp.count} คน</span>
-                                        </div>
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            <button
-                                                type="button"
-                                                onClick={() => updateManpowerCount(mp.id, -1)}
-                                                className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors active:scale-95"
-                                            >
-                                                -
-                                            </button>
-                                            <span className="w-6 text-center text-xs font-bold text-amber-400 font-mono">
-                                                {mp.count}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => updateManpowerCount(mp.id, 1)}
-                                                className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors active:scale-95"
-                                            >
-                                                +
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ))}
                         </div>
-                    )}
-                </div>
-
-                {/* 2. Equipment & Materials Accordion */}
-                <div className="bg-zinc-900/50 border border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                    <button
-                        type="button"
-                        onClick={() => setOpenEquipment(!openEquipment)}
-                        className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
-                    >
-                        <div className="flex items-center gap-2.5">
-                            <Factory className="w-4 h-4 text-purple-400" />
-                            <div>
-                                <span className="text-xs sm:text-sm font-bold text-white block">เครื่องจักร & วัสดุก่อสร้างเข้าไซต์</span>
-                                <span className="text-[10px] text-white/50 truncate block max-w-[240px]">
-                                    {equipment || materialsReceived || "ระบุเครื่องมือหรือวัสดุที่ใช้"}
-                                </span>
-                            </div>
-                        </div>
-                        {openEquipment ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
-                    </button>
-
-                    {openEquipment && (
-                        <div className="p-4 border-t border-white/5 bg-zinc-950/40 space-y-3 animate-in fade-in duration-200">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-[11px] text-white/60 block mb-1">เครื่องจักร / เครื่องมือที่ใช้งาน</label>
-                                    <Textarea
-                                        rows={2}
-                                        placeholder="เช่น รถโม่คอนกรีต 2 คัน, เครื่องตบดิน..."
-                                        value={equipment}
-                                        onChange={(e) => setEquipment(e.target.value)}
-                                        className="bg-zinc-900 border-white/10 text-white text-xs resize-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[11px] text-white/60 block mb-1">วัสดุก่อสร้างที่รับเข้าวันนี้</label>
-                                    <Textarea
-                                        rows={2}
-                                        placeholder="เช่น ปูนซีเมนต์ 50 ถุง, หินทราย 2 คันรถ..."
-                                        value={materialsReceived}
-                                        onChange={(e) => setMaterialsReceived(e.target.value)}
-                                        className="bg-zinc-900 border-white/10 text-white text-xs resize-none"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* 3. Site Photos Accordion */}
-                <div className="bg-zinc-900/50 border border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                    <button
-                        type="button"
-                        onClick={() => setOpenPhotos(!openPhotos)}
-                        className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
-                    >
-                        <div className="flex items-center gap-2.5">
-                            <Upload className="w-4 h-4 text-emerald-400" />
-                            <div>
-                                <span className="text-xs sm:text-sm font-bold text-white block">รูปถ่ายหน้างาน (Site Photos)</span>
-                                <span className="text-[10px] text-white/50">{photos.length} รูปภาพประกอบ</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {photos.length > 0 && (
-                                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                                    {photos.length} รูป
-                                </span>
-                            )}
-                            {openPhotos ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
-                        </div>
-                    </button>
-
-                    {openPhotos && (
-                        <div className="p-4 border-t border-white/5 bg-zinc-950/40 space-y-3 animate-in fade-in duration-200">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs text-white/60">ถ่ายจากกล้องมือถือหรือแนบรูปหน้างาน</span>
-                                <label className="cursor-pointer">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        onChange={handlePhotoUpload}
-                                        className="hidden"
-                                    />
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold border border-amber-500/30 transition-colors">
-                                        <Plus className="w-3.5 h-3.5" />
-                                        แนบรูปเพิ่ม
-                                    </span>
-                                </label>
-                            </div>
-
-                            {photos.length > 0 ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                                    {photos.map((src, idx) => (
-                                        <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border border-white/10 group bg-black">
-                                            <img src={src} alt="site" className="w-full h-full object-cover" />
-                                            <button
-                                                type="button"
-                                                onClick={() => removePhoto(idx)}
-                                                className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/80 text-white hover:bg-rose-500 transition-colors"
-                                            >
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="border border-dashed border-white/10 rounded-xl p-5 text-center text-white/40 text-xs">
-                                    ยังไม่มีรูปภาพประกอบ สามารถกดปุ่มแนบรูปด้านบนได้
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* 4. Safety & Signatures Accordion */}
-                <div className="bg-zinc-900/50 border border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                    <button
-                        type="button"
-                        onClick={() => setOpenSafety(!openSafety)}
-                        className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
-                    >
-                        <div className="flex items-center gap-2.5">
-                            <Shield className="w-4 h-4 text-amber-400" />
-                            <div>
-                                <span className="text-xs sm:text-sm font-bold text-white block">ความปลอดภัย & ผู้จัดทำรายงาน</span>
-                                <span className="text-[10px] text-white/50">ผู้รายงาน: {reportedBy}</span>
-                            </div>
-                        </div>
-                        {openSafety ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
-                    </button>
-
-                    {openSafety && (
-                        <div className="p-4 border-t border-white/5 bg-zinc-950/40 space-y-3 animate-in fade-in duration-200">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-[11px] text-white/60 block mb-1">ปัญหา / อุปสรรคหน้างาน</label>
-                                    <Input
-                                        placeholder="เช่น ฝนตกช่วงบ่าย 1 ชม."
-                                        value={obstacles}
-                                        onChange={(e) => setObstacles(e.target.value)}
-                                        className="bg-zinc-900 border-white/10 text-white text-xs h-9"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[11px] text-white/60 block mb-1">บันทึกความปลอดภัย</label>
-                                    <Input
-                                        placeholder="เช่น สวมหมวกนิรภัย 100% ไม่มีอุบัติเหตุ"
-                                        value={safetyNotes}
-                                        onChange={(e) => setSafetyNotes(e.target.value)}
-                                        className="bg-zinc-900 border-white/10 text-white text-xs h-9"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-white/5">
-                                <div>
-                                    <label className="text-[11px] text-white/60 block mb-1">ชื่อผู้จัดทำรายงาน *</label>
-                                    <Input
-                                        value={reportedBy}
-                                        onChange={(e) => setReportedBy(e.target.value)}
-                                        placeholder="เช่น เบียร์"
-                                        className="bg-zinc-900 border-white/10 text-white text-xs h-9"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[11px] text-white/60 block mb-1">ตำแหน่ง *</label>
-                                    <Input
-                                        value={reportedByRole}
-                                        onChange={(e) => setReportedByRole(e.target.value)}
-                                        placeholder="เช่น ผู้ดูแลหน้างาน"
-                                        className="bg-zinc-900 border-white/10 text-white text-xs h-9"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[11px] text-white/60 block mb-1">ชื่อวิศวกรผู้ตรวจสอบ</label>
-                                    <Input
-                                        placeholder="เช่น นายช่างสมศักดิ์"
-                                        value={inspectedBy}
-                                        onChange={(e) => setInspectedBy(e.target.value)}
-                                        className="bg-zinc-900 border-white/10 text-white text-xs h-9"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* Desktop Bottom Submit Actions */}
