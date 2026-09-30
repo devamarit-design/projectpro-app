@@ -58,15 +58,48 @@ const DEFAULT_MANPOWER_ROLES = [
 ];
 
 const QUICK_TASK_PRESETS = [
-    { label: "เทคอนกรีต", task: "งานเทคอนกรีตเสาและคาน", category: "", time: "ช่วงเช้า" },
-    { label: "ผูกเหล็ก", task: "งานผูกเหล็กโครงสร้างคาน/เสา", category: "", time: "ช่วงเช้า" },
-    { label: "ฉาบปูน", task: "งานฉาบปูนผนังภายใน/ภายนอก", category: "", time: "ช่วงบ่าย" },
-    { label: "ตรวจระบบไฟ/ประปา", task: "ตรวจเช็คงานเดินท่อร้อยสายไฟและประปา", category: "", time: "ช่วงบ่าย" },
-    { label: "ปูกระเบื้อง", task: "งานปูกระเบื้องพื้นและผนัง", category: "", time: "ช่วงบ่าย" },
-    { label: "📦 ประชุมทีม/พบลูกค้า", task: "ประชุมติดตามงานกับทีมงานและสรุปงานกับลูกค้า", category: "งานทั่วไป / ธุรการ", time: "ช่วงเช้า" },
-    { label: "🚚 สั่งซื้อ/ตรวจรับวัสดุ", task: "ประสานงานร้านค้า สั่งซื้อและตรวจรับวัสดุก่อสร้าง", category: "จัดซื้อ / จัดส่งวัสดุ", time: "ช่วงเช้า" },
-    { label: "🏭 โกดัง/ซ่อมบำรุง", task: "จัดระเบียบสต็อก ตรวจเช็คและบำรุงรักษาเครื่องมือในโกดัง", category: "โรงงาน / โกดัง / ซ่อมบำรุง", time: "ช่วงบ่าย" },
-    { label: "📑 เคลียร์เอกสาร/งวดงาน", task: "จัดทำเอกสารเบิกงวดงาน จัดทำใบเสนอราคาและสัญญา", category: "งานทั่วไป / ธุรการ", time: "ช่วงเย็น" }
+    { 
+        label: "เข้าตรวจหน้างาน", 
+        task: "เข้าตรวจหน้างานและประสานช่าง\n- เคลียร์เรื่องระดับและการปรับพื้น แต่ละชั้น\n- เคลียร์แนววางท่อและงานระบบไฟกับช่าง", 
+        category: "", 
+        time: "09:00 - 12:00" 
+    },
+    { 
+        label: "ตรวจงานกระเบื้อง/หน้าจั่ว", 
+        task: "ตรวจงานสถาปัตย์และงานเก็บรอยต่อ\n- ช่วยดูเรื่องการจบงานกระเบื้องและงานหน้าจั่ว\n- กำชับช่างเก็บงานตามมาตรฐาน", 
+        category: "", 
+        time: "09:00 - 12:00" 
+    },
+    { 
+        label: "เทคอนกรีต เสา/คาน", 
+        task: "งานเทคอนกรีตเสาและคาน\n- ตรวจเช็คเหล็กเสริมและระยะลูกปูน\n- ควบคุมการเทและจี้คอนกรีตตามมาตรฐาน", 
+        category: "", 
+        time: "09:00 - 12:00" 
+    },
+    { 
+        label: "ตรวจงานก่ออิฐ/เสาเอ็น", 
+        task: "ตรวจงานก่ออิฐและโครงสร้างย่อย\n- เช็คจุดทำทับหลังและเสริมเสาเอ็นเพิ่ม\n- เตรียมบล็อคช่องลมเข้าหน้างาน", 
+        category: "", 
+        time: "09:00 - 17:00" 
+    },
+    { 
+        label: "โทรเคลียร์งานช่าง", 
+        task: "โทรประสานงานช่างและซัพพลายเออร์\n- โทรเคลียร์เรื่องงานไฟและระบบหน้างาน\n- นัดหมายทีมช่างเข้าพื้นที่", 
+        category: "งานทั่วไป / ธุรการ", 
+        time: "13:00 - 16:30" 
+    },
+    { 
+        label: "ปรับปรุงแอพ/เคลียร์เบิกจ่าย", 
+        task: "งานจัดการระบบและบัญชีเบิกจ่าย\n- แก้ไขและตรวจสอบรายรับ-รายจ่ายให้เห็นต้นทุนชัดเจน\n- สรุปตัวเลขยอดเบิกจ่ายงวดงาน", 
+        category: "งานทั่วไป / ธุรการ", 
+        time: "13:00 - 16:30" 
+    },
+    { 
+        label: "จัดซื้อ/รับส่งวัสดุ", 
+        task: "จัดซื้อและประสานส่งของเข้าไซต์งาน\n- สั่งซื้อวัสดุก่อสร้างและอุปกรณ์\n- ตรวจรับของหน้างาน", 
+        category: "จัดซื้อ / จัดส่งวัสดุ", 
+        time: "09:00 - 17:00" 
+    }
 ];
 
 export function JobSheetForm({
@@ -75,7 +108,7 @@ export function JobSheetForm({
     onPreview,
     onCancel
 }: JobSheetFormProps) {
-    const { projects, currentUser } = useProjects();
+    const { projects, currentUser, companyProfile, currentTeam } = useProjects();
     const [isSaving, setIsSaving] = useState(false);
 
     // Accordion toggles for mobile compactness
@@ -125,24 +158,27 @@ export function JobSheetForm({
               ]
     );
 
-    // Manpower
+    // Manpower (Default count 0 to not clutter)
     const [manpower, setManpower] = useState<JobSheetManpower[]>(
         initialData?.manpower && initialData.manpower.length > 0
             ? initialData.manpower
             : DEFAULT_MANPOWER_ROLES.map((role, idx) => ({
                   id: String(idx + 1),
                   role,
-                  count: idx === 0 ? 1 : idx === 1 ? 4 : idx === 7 ? 4 : 0
+                  count: 0
               }))
     );
 
-    // Other details
-    const [equipment, setEquipment] = useState(initialData?.equipment || "รถโม่คอนกรีต 2 คัน, เครื่องจี้ปูน 2 ตัว, นั่งร้านเหล็ก");
-    const [materialsReceived, setMaterialsReceived] = useState(initialData?.materialsReceived || "ปูนซีเมนต์สำเร็จรูป 50 ถุง, เหล็กข้ออ้อย 12 มม. 40 เส้น");
+    // Other details - clean defaults without fake filler text
+    const [equipment, setEquipment] = useState(initialData?.equipment || "");
+    const [materialsReceived, setMaterialsReceived] = useState(initialData?.materialsReceived || "");
     const [obstacles, setObstacles] = useState(initialData?.obstacles || "");
-    const [safetyNotes, setSafetyNotes] = useState(initialData?.safetyNotes || "พนักงานทุกคนสวมหมวกนิรภัยและรองเท้าเซฟตี้ 100% ไม่มีอุบัติเหตุ");
+    const [safetyNotes, setSafetyNotes] = useState(initialData?.safetyNotes || "");
     const [reportedBy, setReportedBy] = useState(
-        initialData?.reportedBy || currentUser?.name || "วิศวกรผู้ควบคุมงาน"
+        initialData?.reportedBy || currentUser?.name || "เบียร์"
+    );
+    const [reportedByRole, setReportedByRole] = useState(
+        initialData?.reportedByRole || currentUser?.role || "ผู้ดูแลหน้างาน"
     );
     const [inspectedBy, setInspectedBy] = useState(initialData?.inspectedBy || "");
     const [photos, setPhotos] = useState<string[]>(initialData?.photos || []);
@@ -310,9 +346,11 @@ export function JobSheetForm({
             subProjectId: "",
             subProjectName,
             orgId: "", // Will be assigned by service/context
+            companyName: initialData?.companyName || companyProfile?.name || currentTeam?.name || "บริษัทของคุณ",
+            companyLogo: initialData?.companyLogo || companyProfile?.logo || "",
             createdBy: currentUser?.id || "",
             createdByName: currentUser?.name || reportedBy,
-            createdByRole: currentUser?.role || "",
+            createdByRole: currentUser?.role || reportedByRole,
             weather: {
                 condition: weatherCondition,
                 temperature: Number(temperature) || 30
@@ -325,7 +363,8 @@ export function JobSheetForm({
             safetyNotes,
             generalNotes: "",
             photos,
-            reportedBy,
+            reportedBy: reportedBy || currentUser?.name || "เบียร์",
+            reportedByRole: reportedByRole || "ผู้ดูแลหน้างาน",
             inspectedBy
         };
     };
@@ -634,19 +673,36 @@ export function JobSheetForm({
 
                                     {/* Time Slot & Delete */}
                                     <div className="flex items-center gap-1.5 shrink-0">
-                                        <div className="relative">
-                                            <select
-                                                value={item.timeSlot || "ช่วงเช้า"}
+                                        <div className="flex items-center gap-1">
+                                            <input
+                                                type="text"
+                                                placeholder="เช่น 9:00-12:00"
+                                                value={item.timeSlot || ""}
                                                 onChange={(e) => updateWorkItem(item.id, "timeSlot", e.target.value)}
-                                                className="bg-black/40 border border-white/10 text-[11px] text-white/80 rounded-lg px-2 py-1 pr-5 appearance-none focus:outline-none font-medium"
-                                            >
-                                                <option value="ช่วงเช้า">🌅 เช้า</option>
-                                                <option value="ช่วงบ่าย">☀️ บ่าย</option>
-                                                <option value="ช่วงเย็น">🌆 เย็น</option>
-                                                <option value="ล่วงเวลา / OT">🌙 OT</option>
-                                                <option value="ทั้งวัน">⏱️ ทั้งวัน</option>
-                                            </select>
-                                            <ChevronDown className="w-2.5 h-2.5 text-white/40 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                className="w-24 sm:w-28 bg-black/40 border border-white/10 text-[11px] text-white/90 rounded-lg px-2 py-1 placeholder:text-white/30 focus:border-amber-500/50 focus:outline-none"
+                                            />
+                                            <div className="relative">
+                                                <select
+                                                    value=""
+                                                    onChange={(e) => {
+                                                        if (e.target.value) {
+                                                            updateWorkItem(item.id, "timeSlot", e.target.value);
+                                                        }
+                                                    }}
+                                                    className="bg-zinc-800 text-white/60 text-[10px] rounded px-1.5 py-1 appearance-none focus:outline-none cursor-pointer border border-white/10"
+                                                    title="เลือกช่วงเวลาด่วน"
+                                                >
+                                                    <option value="">▼</option>
+                                                    <option value="09:00 - 12:00">09:00 - 12:00</option>
+                                                    <option value="13:00 - 16:30">13:00 - 16:30</option>
+                                                    <option value="09:00 - 17:00">09:00 - 17:00</option>
+                                                    <option value="ช่วงเช้า">🌅 เช้า</option>
+                                                    <option value="ช่วงบ่าย">☀️ บ่าย</option>
+                                                    <option value="ช่วงเย็น">🌆 เย็น</option>
+                                                    <option value="ล่วงเวลา (OT)">🌙 OT</option>
+                                                    <option value="ทั้งวัน">⏱️ ทั้งวัน</option>
+                                                </select>
+                                            </div>
                                         </div>
 
                                         <button
@@ -660,16 +716,22 @@ export function JobSheetForm({
                                     </div>
                                 </div>
 
-                                {/* TASK TITLE (Big, Thumb-Friendly Input) */}
+                                {/* TASK TITLE & DETAILS (Supports Multi-line / Sub-bullets) */}
                                 <div>
-                                    <label className="text-[10px] text-white/40 block mb-1 font-semibold uppercase tracking-wider">
-                                        รายละเอียดงานที่ทำ *
-                                    </label>
-                                    <Input
-                                        placeholder="ระบุสิ่งที่ทำ เช่น ตรวจเช็คเหล็กคาน, เจรจากับซัพพลายเออร์..."
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="text-[10px] text-white/50 font-bold uppercase tracking-wider">
+                                            รายละเอียดงานที่ปฏิบัติ *
+                                        </label>
+                                        <span className="text-[10px] text-white/40 hidden sm:inline">
+                                            ขึ้นบรรทัดใหม่หรือใส่ - เพื่อทำข้อย่อยได้
+                                        </span>
+                                    </div>
+                                    <textarea
+                                        rows={2}
+                                        placeholder={`ระบุรายละเอียดงาน เช่น:\nเข้าหน้างานตึก\n- เคลียร์เรื่องการปรับพื้น แต่ละชั้น\n- เคลียร์แนววางไฟกับช่าง`}
                                         value={item.task}
                                         onChange={(e) => updateWorkItem(item.id, "task", e.target.value)}
-                                        className="bg-zinc-950 border-white/10 text-white text-xs sm:text-sm h-10 font-medium placeholder:text-white/30 focus:border-amber-500/60"
+                                        className="w-full bg-zinc-950 border border-white/10 rounded-xl p-2.5 text-white text-xs sm:text-sm font-medium placeholder:text-white/20 focus:border-amber-500/60 focus:outline-none transition-all resize-y min-h-[58px]"
                                         required
                                     />
                                 </div>
@@ -967,12 +1029,23 @@ export function JobSheetForm({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-white/5">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-white/5">
                                 <div>
                                     <label className="text-[11px] text-white/60 block mb-1">ชื่อผู้จัดทำรายงาน *</label>
                                     <Input
                                         value={reportedBy}
                                         onChange={(e) => setReportedBy(e.target.value)}
+                                        placeholder="เช่น เบียร์"
+                                        className="bg-zinc-900 border-white/10 text-white text-xs h-9"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[11px] text-white/60 block mb-1">ตำแหน่ง *</label>
+                                    <Input
+                                        value={reportedByRole}
+                                        onChange={(e) => setReportedByRole(e.target.value)}
+                                        placeholder="เช่น ผู้ดูแลหน้างาน"
                                         className="bg-zinc-900 border-white/10 text-white text-xs h-9"
                                         required
                                     />

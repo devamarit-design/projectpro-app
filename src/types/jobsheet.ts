@@ -51,7 +51,10 @@ export interface JobSheet {
     obstacles?: string;
     generalNotes?: string;
     photos?: string[];
+    companyName?: string;
+    companyLogo?: string;
     reportedBy: string;
+    reportedByRole?: string;
     inspectedBy?: string;
     createdAt: string;
     updatedAt: string;
