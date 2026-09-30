@@ -68,10 +68,7 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
                         </div>
                     </div>
 
-                    {/* 3. Promo / Feature Cards */}
-                    <PromoCards />
-
-                    {/* 4. Mood-based Header (Welcome) */}
+                    {/* 3. Hero Section (Real Weather & Financial/Team Bento Grid) */}
                     <DashboardHeader />
                 </>
             )}

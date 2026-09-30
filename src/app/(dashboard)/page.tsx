@@ -43,10 +43,7 @@ function AdminDashboard() {
       {/* 2. Quick Actions Grid (Icons) */}
       <QuickActionsGrid />
 
-      {/* 3. Promo / Feature Cards */}
-      <PromoCards />
-
-      {/* 4. Header Section (Mood Card) */}
+      {/* 3. Hero Section (Real Weather & Financial/Team Bento Grid) */}
       <DashboardHeader onDownload={() => setShowReportDialog(true)} />
 
 

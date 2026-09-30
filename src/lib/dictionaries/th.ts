@@ -530,6 +530,11 @@ export const th = {
             invoice: "ใบแจ้งหนี้",
             receipt: "ใบเสร็จรับเงิน"
         },
+        summary: {
+            paid: "รับชำระแล้ว / Paid",
+            pending: "รอรับชำระ / Invoiced",
+            quotation: "เตรียมเบิก / Quotation"
+        },
         filters: {
             all_projects: "ทุกโครงการ",
             all_months: "ทุกเดือน",

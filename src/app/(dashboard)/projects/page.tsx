@@ -12,9 +12,91 @@ import { useProjects } from "@/context/project-context"
 import { ProjectCard } from "@/components/projects/project-card"
 import { getExpensesByProject } from "@/lib/project-utils"
 
+import type { LucideIcon } from "lucide-react"
+
+interface StatusConfig {
+    key: string
+    labelKey: "in_progress" | "planning" | "on_hold" | "completed"
+    fallbackLabel: string
+    icon: LucideIcon
+    color: string
+    badgeBg: string
+    badgeText: string
+    badgeBorder: string
+    lineGradient: string
+}
+
+const STATUS_SECTIONS: StatusConfig[] = [
+    {
+        key: "In Progress",
+        labelKey: "in_progress",
+        fallbackLabel: "กำลังดำเนินการ",
+        icon: Hammer,
+        color: "text-blue-500",
+        badgeBg: "bg-blue-500/10",
+        badgeText: "text-blue-500 dark:text-blue-400",
+        badgeBorder: "border-blue-500/25",
+        lineGradient: "from-blue-500/70 via-blue-500/25 to-transparent",
+    },
+    {
+        key: "Planning",
+        labelKey: "planning",
+        fallbackLabel: "อยู่ระหว่างการวางแผน",
+        icon: FileText,
+        color: "text-purple-500",
+        badgeBg: "bg-purple-500/10",
+        badgeText: "text-purple-500 dark:text-purple-400",
+        badgeBorder: "border-purple-500/25",
+        lineGradient: "from-purple-500/70 via-purple-500/25 to-transparent",
+    },
+    {
+        key: "On Hold",
+        labelKey: "on_hold",
+        fallbackLabel: "พักโครงการ",
+        icon: PauseCircle,
+        color: "text-amber-500",
+        badgeBg: "bg-amber-500/10",
+        badgeText: "text-amber-500 dark:text-amber-400",
+        badgeBorder: "border-amber-500/25",
+        lineGradient: "from-amber-500/70 via-amber-500/25 to-transparent",
+    },
+    {
+        key: "Completed",
+        labelKey: "completed",
+        fallbackLabel: "เสร็จสิ้น",
+        icon: CheckCircle2,
+        color: "text-emerald-500",
+        badgeBg: "bg-emerald-500/10",
+        badgeText: "text-emerald-500 dark:text-emerald-400",
+        badgeBorder: "border-emerald-500/25",
+        lineGradient: "from-emerald-500/70 via-emerald-500/25 to-transparent",
+    },
+]
+
+type SortOption = 'recent' | 'name' | 'start_date' | 'end_date'
+
+function sortProjectItems<T extends { name: string; startDate: string; endDate: string; updatedAt?: string; createdAt?: string }>(items: T[], sortBy: SortOption): T[] {
+    return [...items].sort((a, b) => {
+        switch (sortBy) {
+            case 'name':
+                return a.name.localeCompare(b.name)
+            case 'start_date':
+                return new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+            case 'end_date':
+                return new Date(a.endDate).getTime() - new Date(b.endDate).getTime()
+            case 'recent':
+            default: {
+                const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime()
+                const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime()
+                return timeB - timeA
+            }
+        }
+    })
+}
+
 export default function ProjectsPage() {
     const { t } = useTranslation()
-    const { projects, archivedProjects, expenses, tasks, isLoading, currentUser, archiveProject, unarchiveProject } = useProjects()
+    const { projects, archivedProjects, expenses, tasks, isLoading, archiveProject, unarchiveProject } = useProjects()
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -22,7 +104,7 @@ export default function ProjectsPage() {
     const searchQuery = searchParams.get("q") || ""
     const statusFilter = searchParams.get("status") || null
     const showArchived = searchParams.get("archived") === "true"
-    const [columns, setColumns] = useState<1 | 2 | 3 | 'auto'>(2)
+    const [columns, setColumns] = useState<1 | 2 | 3 | 'auto'>(3)
 
     const [archiveConfirm, setArchiveConfirm] = useState<{ isOpen: boolean; projectId: string | null }>({
         isOpen: false,
@@ -56,39 +138,83 @@ export default function ProjectsPage() {
         return tasksByProject
     }, [tasks])
 
-    const [sortBy, setSortBy] = useState<'recent' | 'name' | 'start_date' | 'end_date'>('recent')
+    const [sortBy, setSortBy] = useState<SortOption>('recent')
 
-    // Filter logic
+    // Filter base projects by search
     const sourceProjects = showArchived ? archivedProjects : projects
-    const filteredProjects = sourceProjects.filter(project => {
-        const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            project.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            project.location.toLowerCase().includes(searchQuery.toLowerCase())
+    const searchedProjects = useMemo(() => {
+        return sourceProjects.filter(project => {
+            if (!searchQuery) return true
+            return project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                project.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                project.location.toLowerCase().includes(searchQuery.toLowerCase())
+        })
+    }, [sourceProjects, searchQuery])
 
-        const matchesStatus = statusFilter ? project.status === statusFilter : true
+    // Group into sections
+    const projectSections = useMemo(() => {
+        const activeConfigs = statusFilter
+            ? STATUS_SECTIONS.filter(sec => sec.key === statusFilter)
+            : STATUS_SECTIONS
 
-        return matchesSearch && matchesStatus
-    }).sort((a, b) => {
-        // Always prioritize "In Progress" projects first
-        const aInProgress = a.status === "In Progress" ? 0 : 1
-        const bInProgress = b.status === "In Progress" ? 0 : 1
-        if (aInProgress !== bInProgress) return aInProgress - bInProgress
+        const sections: {
+            config: StatusConfig
+            items: typeof projects
+            totalBudget: number
+        }[] = []
 
-        // Then apply the selected sort
-        switch (sortBy) {
-            case 'name':
-                return a.name.localeCompare(b.name)
-            case 'start_date':
-                return new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-            case 'end_date':
-                return new Date(a.endDate).getTime() - new Date(b.endDate).getTime()
-            case 'recent':
-            default:
-                const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime()
-                const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime()
-                return timeB - timeA
+        activeConfigs.forEach(config => {
+            const items = searchedProjects.filter(p => p.status === config.key)
+            // When filtering by specific status, always show section even if 0 items (to show empty state inside it or header)
+            // When viewing All, only show sections that have items > 0
+            if (items.length > 0 || (statusFilter && statusFilter === config.key)) {
+                const sortedItems = sortProjectItems(items, sortBy)
+                const totalBudget = items.reduce((sum, p) => {
+                    const val = parseInt(String(p.budget || "0").replace(/[^0-9]/g, '')) || 0
+                    return sum + val
+                }, 0)
+                sections.push({
+                    config,
+                    items: sortedItems,
+                    totalBudget
+                })
+            }
+        })
+
+        // Catch-all for projects with unknown or other statuses
+        if (!statusFilter) {
+            const knownKeys = new Set(STATUS_SECTIONS.map(s => s.key))
+            const otherItems = searchedProjects.filter(p => !knownKeys.has(p.status))
+            if (otherItems.length > 0) {
+                const sortedItems = sortProjectItems(otherItems, sortBy)
+                const totalBudget = otherItems.reduce((sum, p) => {
+                    const val = parseInt(String(p.budget || "0").replace(/[^0-9]/g, '')) || 0
+                    return sum + val
+                }, 0)
+                sections.push({
+                    config: {
+                        key: "Other",
+                        labelKey: "planning",
+                        fallbackLabel: "อื่นๆ",
+                        icon: Layers,
+                        color: "text-muted-foreground",
+                        badgeBg: "bg-muted",
+                        badgeText: "text-muted-foreground",
+                        badgeBorder: "border-border",
+                        lineGradient: "from-muted-foreground/40 via-muted-foreground/10 to-transparent",
+                    },
+                    items: sortedItems,
+                    totalBudget
+                })
+            }
         }
-    })
+
+        return sections
+    }, [searchedProjects, statusFilter, sortBy])
+
+    const totalVisibleProjects = useMemo(() => {
+        return projectSections.reduce((acc, s) => acc + s.items.length, 0)
+    }, [projectSections])
 
     // Counts per status
     const statusCounts = useMemo(() => {
@@ -213,7 +339,7 @@ export default function ProjectsPage() {
                         <div className="relative shrink-0">
                             <select
                                 value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value as any)}
+                                onChange={(e) => setSortBy(e.target.value as SortOption)}
                                 className="pl-3 pr-8 py-2 bg-background/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none cursor-pointer text-sm font-medium"
                             >
                                 <option value="recent">Recently Active</option>
@@ -269,17 +395,16 @@ export default function ProjectsPage() {
                 </div>
             </div>
 
-            {/* Projects Grid */}
-            <div className={cn(
-                "grid gap-6 transition-all duration-300 ease-in-out",
-                columns === 'auto' && "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
-                columns === 1 && "grid-cols-1",
-                columns === 2 && "grid-cols-2",
-                columns === 3 && "grid-cols-3"
-            )}>
-                {isLoading ? (
-                    // Skeleton Loading State
-                    Array.from({ length: 6 }).map((_, i) => (
+            {/* Projects Sections */}
+            {isLoading ? (
+                <div className={cn(
+                    "grid gap-6 transition-all duration-300 ease-in-out",
+                    columns === 'auto' && "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+                    columns === 1 && "grid-cols-1",
+                    columns === 2 && "grid-cols-1 sm:grid-cols-2",
+                    columns === 3 && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                )}>
+                    {Array.from({ length: 6 }).map((_, i) => (
                         <div key={i} className="rounded-2xl overflow-hidden border border-white/5 bg-muted/10 animate-pulse">
                             <div className="h-40 bg-muted/20 w-full" />
                             <div className="p-4 space-y-4">
@@ -297,53 +422,120 @@ export default function ProjectsPage() {
                                 </div>
                             </div>
                         </div>
-                    ))
-                ) : filteredProjects.length > 0 ? (
-                    filteredProjects.map((project, idx) => {
-                        const budgetValue = parseInt(String(project.budget || "0").replace(/[^0-9]/g, '')) || 0
-                        const projectExpenses = getProjectExpenses[project.id] || 0
-                        const taskCount = getProjectTaskCount[project.id] || 0
+                    ))}
+                </div>
+            ) : totalVisibleProjects > 0 ? (
+                <div className="space-y-12">
+                    {projectSections.map(({ config, items, totalBudget }, sectionIdx) => {
+                        const Icon = config.icon
+                        const statusLabel = ((t.projects?.status as Record<string, string>) || {})[config.labelKey] || config.fallbackLabel
 
                         return (
-                            <div key={project.id} className={cn(
-                                "h-full",
-                                columns === 1 && "h-80",
-                                columns === 2 && "h-72",
-                                columns === 3 && "h-48"
-                            )}>
-                                <ProjectCard
-                                    project={{
-                                        id: project.id,
-                                        name: project.name,
-                                        client: project.customer,
-                                        taskCount: taskCount,
-                                        budget: budgetValue,
-                                        expenses: projectExpenses,
-                                        imageUrl: project.image || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80",
-                                        status: project.status === 'In Progress' ? 'active' : project.status === 'Completed' ? 'completed' : 'pending'
-                                    }}
-                                    columns={columns as 1 | 2 | 3}
-                                    priority={idx < 6}
-                                />
-                            </div>
+                            <section key={config.key} className="space-y-5">
+                                {/* Section Header & Glowing Divider Line */}
+                                <div className="pt-2">
+                                    <div className="flex items-center justify-between gap-3 pb-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className={cn(
+                                                "p-2 rounded-xl border flex items-center justify-center shrink-0 shadow-sm",
+                                                config.badgeBg,
+                                                config.badgeBorder
+                                            )}>
+                                                <Icon className={cn("w-4 h-4", config.color)} />
+                                            </div>
+                                            <div className="flex items-center gap-2.5">
+                                                <h2 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+                                                    {statusLabel}
+                                                </h2>
+                                                <span className={cn(
+                                                    "px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums border shadow-sm",
+                                                    config.badgeBg,
+                                                    config.badgeText,
+                                                    config.badgeBorder
+                                                )}>
+                                                    {items.length} {t.common?.projects || "โครงการ"}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Total Budget Summary for Section */}
+                                        {totalBudget > 0 && (
+                                            <div className="text-xs font-medium text-muted-foreground hidden sm:flex items-center gap-1.5 bg-muted/40 px-3 py-1.5 rounded-xl border border-white/5">
+                                                <span>{t.projects?.budget || "งบประมาณรวม"}:</span>
+                                                <span className="font-semibold text-foreground">฿{totalBudget.toLocaleString()}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Prominent Section Divider Line with colored gradient accent */}
+                                    <div className="relative h-px w-full bg-border/60">
+                                        <div className={cn("absolute left-0 top-0 h-0.5 w-36 rounded-full bg-gradient-to-r", config.lineGradient)} />
+                                    </div>
+                                </div>
+
+                                {/* Section Cards Grid */}
+                                {items.length > 0 ? (
+                                    <div className={cn(
+                                        "grid gap-6 transition-all duration-300 ease-in-out",
+                                        columns === 'auto' && "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+                                        columns === 1 && "grid-cols-1",
+                                        columns === 2 && "grid-cols-1 sm:grid-cols-2",
+                                        columns === 3 && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                                    )}>
+                                        {items.map((project, idx) => {
+                                            const budgetValue = parseInt(String(project.budget || "0").replace(/[^0-9]/g, '')) || 0
+                                            const projectExpenses = getProjectExpenses[project.id] || 0
+                                            const taskCount = getProjectTaskCount[project.id] || 0
+
+                                            return (
+                                                <div key={project.id} className={cn(
+                                                    "h-full",
+                                                    columns === 1 && "h-80",
+                                                    columns === 2 && "h-72",
+                                                    columns === 3 && "h-72"
+                                                )}>
+                                                    <ProjectCard
+                                                        project={{
+                                                            id: project.id,
+                                                            name: project.name,
+                                                            client: project.customer,
+                                                            taskCount: taskCount,
+                                                            budget: budgetValue,
+                                                            expenses: projectExpenses,
+                                                            imageUrl: project.image || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80",
+                                                            status: project.status
+                                                        }}
+                                                        columns={columns as 1 | 2 | 3}
+                                                        priority={sectionIdx === 0 && idx < 4}
+                                                    />
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="py-10 text-center text-muted-foreground bg-muted/10 rounded-2xl border border-dashed border-white/10">
+                                        <p className="text-sm">{t.projects?.empty || "ไม่พบโครงการในหมวดนี้"}</p>
+                                    </div>
+                                )}
+                            </section>
                         )
-                    })
-                ) : (
-                    <div className="col-span-full py-16 text-center text-muted-foreground">
-                        <FolderKanban className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                        <p className="text-base font-medium">{t.projects.empty}</p>
-                        {statusFilter && (
-                            <button
-                                onClick={() => updateUrl("status", null)}
-                                className="mt-4 px-4 py-2 rounded-xl text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors inline-flex items-center gap-2"
-                            >
-                                <Layers className="w-4 h-4" />
-                                <span>{t.projects.status.all} ({statusCounts.All})</span>
-                            </button>
-                        )}
-                    </div>
-                )}
-            </div>
+                    })}
+                </div>
+            ) : (
+                <div className="py-16 text-center text-muted-foreground">
+                    <FolderKanban className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p className="text-base font-medium">{t.projects.empty}</p>
+                    {statusFilter && (
+                        <button
+                            onClick={() => updateUrl("status", null)}
+                            className="mt-4 px-4 py-2 rounded-xl text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors inline-flex items-center gap-2"
+                        >
+                            <Layers className="w-4 h-4" />
+                            <span>{t.projects.status.all} ({statusCounts.All})</span>
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     )
 }

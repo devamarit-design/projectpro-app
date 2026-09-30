@@ -532,6 +532,11 @@ export const en = {
             invoice: "Invoice",
             receipt: "Receipt"
         },
+        summary: {
+            paid: "Paid / Received",
+            pending: "Pending / Invoiced",
+            quotation: "Quotations / Est. Billing"
+        },
         filters: {
             all_projects: "All Projects",
             all_months: "All Months",

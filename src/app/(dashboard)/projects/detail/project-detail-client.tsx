@@ -11,10 +11,11 @@ import {
     Folder,
     Plus,
     Calendar,
-    Info,
     MoreVertical,
     FileText,
     TrendingDown,
+    TrendingUp,
+    ArrowRight,
     ArrowUpRight,
     ArrowDownRight,
     DollarSign,
@@ -29,6 +30,7 @@ import {
     FileSpreadsheet,
     Film,
     AlertCircle,
+    CheckCircle2,
     ChevronRight,
     ChevronDown,
     Check,
@@ -53,6 +55,8 @@ import { IncomeDetailSheet } from "@/components/income/income-detail-sheet"
 
 import { TaskBoard } from "@/components/tasks/task-board"
 import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
+import { CashFlowChart } from "@/components/dashboard/cash-flow-chart"
+import { ExpenseCategoryChart } from "@/components/dashboard/expense-category-chart"
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import dynamic from "next/dynamic"
@@ -344,6 +348,74 @@ export default function ProjectDetailClient() {
     // Calculate All-Time Expenses specifically for the Header (ignoring month filters)
     const allTimeExpenses = allProjectExpenses.reduce((sum, e) => sum + getExpenseAmountForProject(e, id), 0)
 
+    const canViewFinancials = hasPermission(currentTeam?.role, "FINANCIAL_VIEW")
+
+    // Calculations for Project Overview Summary
+    const recentExpensesList = useMemo(() => {
+        return allProjectExpenses
+            .filter(e => !e.isDeleted && e.status !== 'Unpaid')
+            .map(e => ({
+                id: e.id,
+                title: e.title,
+                date: e.date,
+                category: e.category,
+                amount: getExpenseAmountForProject(e, id),
+                payee: e.payee || e.vendor || e.paidBy || "ทั่วไป"
+            }))
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 5)
+    }, [allProjectExpenses, id])
+
+    const recentIncomesList = useMemo(() => {
+        return allIncomesForProject
+            .filter(i => i.type === 'Invoice')
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 5)
+    }, [allIncomesForProject])
+
+    const totalInvoicedAllTime = useMemo(() => {
+        return allIncomesForProject
+            .filter(i => i.type === 'Invoice' && (i.status === 'Paid' || i.status === 'Accepted' || i.status === 'Invoiced'))
+            .reduce((sum, i) => sum + (i.grandTotal || 0), 0)
+    }, [allIncomesForProject])
+
+    const totalPaidAllTime = useMemo(() => {
+        return allIncomesForProject
+            .filter(i => i.type === 'Invoice' && i.status === 'Paid')
+            .reduce((sum, i) => sum + (i.grandTotal || 0), 0)
+    }, [allIncomesForProject])
+
+    const budgetValue = useMemo(() => {
+        return parseInt(String(project?.budget || "0").replace(/[^0-9]/g, '')) || 0
+    }, [project?.budget])
+
+    const budgetUsedPercent = useMemo(() => {
+        return budgetValue > 0 ? (allTimeExpenses / budgetValue) * 100 : 0
+    }, [budgetValue, allTimeExpenses])
+
+    const netProfitAllTime = totalInvoicedAllTime - allTimeExpenses
+    const marginAllTime = totalInvoicedAllTime > 0 ? (netProfitAllTime / totalInvoicedAllTime) * 100 : 0
+
+    // Works & Tasks summary
+    const taskSummary = useMemo(() => {
+        if (projectWorks.length > 0) {
+            const total = projectWorks.length
+            const done = projectWorks.filter(w => (w.progress || 0) >= 100).length
+            const inProgress = projectWorks.filter(w => (w.progress || 0) > 0 && (w.progress || 0) < 100).length
+            const todo = projectWorks.filter(w => (w.progress || 0) === 0).length
+            const avgProgress = Math.round(projectWorks.reduce((acc, w) => acc + (w.progress || 0), 0) / total)
+            return { total, done, inProgress, todo, progressPercent: avgProgress }
+        }
+
+        const tasks = project?.tasks || []
+        const total = tasks.length
+        const done = tasks.filter(t => t.status === 'Done').length
+        const inProgress = tasks.filter(t => t.status === 'In Progress').length
+        const todo = tasks.filter(t => t.status === 'Todo').length
+        const progressPercent = total > 0 ? Math.round((done / total) * 100) : (project?.progress || 0)
+        return { total, done, inProgress, todo, progressPercent }
+    }, [projectWorks, project?.tasks, project?.progress])
+
     useEffect(() => {
         // Scroll to top of both window and our custom scroll container
         window.scrollTo(0, 0)
@@ -463,20 +535,12 @@ export default function ProjectDetailClient() {
             </div>
 
             {/* Tab Contents */}
-            <div className="glass-card rounded-2xl p-6 min-h-[400px]">
+            <div className={cn("min-h-[400px]", activeTab !== 'overview' && "glass-card rounded-2xl p-6")}>
                 {activeTab === 'overview' && (
-                    <>
+                    <div className="space-y-6">
+                        {/* 1. Project Information & Timeline */}
                         <div className="grid gap-6 md:grid-cols-2">
-                            <div className="glass-card p-6 rounded-2xl space-y-4">
-                                <h3 className="font-bold text-lg flex items-center gap-2">
-                                    <Info className="w-5 h-5 text-primary" />
-                                    {t.projects.detail.overview.description}
-                                </h3>
-                                <p className="text-muted-foreground leading-relaxed">
-                                    {project.description || t.projects.detail.overview.no_desc}
-                                </p>
-                            </div>
-
+                            {/* Project Specs & Description */}
                             <div className="glass-card p-6 rounded-2xl space-y-4">
                                 <h3 className="font-bold text-lg flex items-center gap-2">
                                     <FileText className="w-5 h-5 text-primary" />
@@ -511,7 +575,7 @@ export default function ProjectDetailClient() {
                                                 )}
                                             </div>
                                         </div>
-                                        {hasPermission(currentTeam?.role, "FINANCIAL_VIEW") && (
+                                        {canViewFinancials && (
                                             <div className="p-3 bg-muted/30 rounded-xl space-y-1">
                                                 <p className="text-xs text-muted-foreground font-medium uppercase">Contract Value</p>
                                                 <div className="flex items-center gap-2 font-semibold text-green-500">
@@ -522,19 +586,22 @@ export default function ProjectDetailClient() {
                                         )}
                                     </div>
 
-                                    <div className="pt-2 border-t border-white/5">
-                                        <p className="text-xs text-muted-foreground font-medium uppercase mb-2">Description</p>
-                                        <p className="text-muted-foreground leading-relaxed text-sm">
-                                            {project.description || t.projects.detail.overview.no_desc}
-                                        </p>
-                                    </div>
+                                    {project.description && (
+                                        <div className="pt-2 border-t border-white/5">
+                                            <p className="text-xs text-muted-foreground font-medium uppercase mb-2">Description</p>
+                                            <p className="text-muted-foreground leading-relaxed text-sm">
+                                                {project.description}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
+                            {/* Timeline Details & Status */}
                             <div className="glass-card p-6 rounded-2xl space-y-4 flex flex-col">
                                 <h3 className="font-bold text-lg flex items-center gap-2">
                                     <Calendar className="w-5 h-5 text-primary" />
-                                    {t.projects.detail.overview.timeline} & Status
+                                    {t.projects.detail.overview.timeline}
                                 </h3>
 
                                 <div className="space-y-4 flex-1">
@@ -567,7 +634,196 @@ export default function ProjectDetailClient() {
                             </div>
                         </div>
 
-                    </>
+                        {/* 2. Budget Utilization Meter */}
+                        {canViewFinancials && budgetValue > 0 && (
+                            <div className="glass-card rounded-2xl border border-white/5 p-5 space-y-3">
+                                <div className="flex items-center justify-between text-xs flex-wrap gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-foreground text-sm">การใช้งบประมาณ (Budget Consumption)</span>
+                                        {budgetUsedPercent > 100 && (
+                                            <span className="flex items-center gap-1 text-[11px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
+                                                <AlertCircle className="w-3 h-3" /> เกินงบ {(budgetUsedPercent - 100).toFixed(1)}%
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className="font-mono text-muted-foreground text-xs">
+                                        ใช้ไป <span className="font-bold text-foreground">฿{allTimeExpenses.toLocaleString()}</span> / งบ <span className="font-bold text-foreground">฿{budgetValue.toLocaleString()}</span> ({budgetUsedPercent.toFixed(1)}%)
+                                    </span>
+                                </div>
+                                <div className="w-full h-2.5 bg-muted/40 rounded-full overflow-hidden">
+                                    <div
+                                        className={cn(
+                                            "h-full rounded-full transition-all duration-700",
+                                            budgetUsedPercent > 100
+                                                ? 'bg-rose-500'
+                                                : budgetUsedPercent > 85
+                                                    ? 'bg-amber-500'
+                                                    : 'bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500'
+                                        )}
+                                        style={{ width: `${Math.min(budgetUsedPercent, 100)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 3. Quick Executive Metrics */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Invoiced vs Paid */}
+                            {canViewFinancials && (
+                                <div className="glass-card rounded-2xl border border-white/5 p-4 space-y-2">
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                        <span className="font-semibold uppercase tracking-wider">ใบแจ้งหนี้ / รายรับ</span>
+                                        <FileText className="w-4 h-4 text-blue-400" />
+                                    </div>
+                                    <p className="text-xl font-bold font-mono text-foreground">
+                                        ฿{totalInvoicedAllTime.toLocaleString()}
+                                    </p>
+                                    <div className="flex items-center justify-between text-xs pt-1 border-t border-white/5">
+                                        <span className="text-muted-foreground">รับชำระแล้ว:</span>
+                                        <span className="font-mono text-emerald-400 font-semibold">฿{totalPaidAllTime.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Profit & Margin */}
+                            {canViewFinancials && (
+                                <div className="glass-card rounded-2xl border border-white/5 p-4 space-y-2">
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                        <span className="font-semibold uppercase tracking-wider">กำไรของโครงการนี้</span>
+                                        {netProfitAllTime >= 0 ? <TrendingUp className="w-4 h-4 text-emerald-400" /> : <TrendingDown className="w-4 h-4 text-rose-400" />}
+                                    </div>
+                                    <p className={cn("text-xl font-bold font-mono", netProfitAllTime >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                                        {netProfitAllTime >= 0 ? "+" : ""}฿{netProfitAllTime.toLocaleString()}
+                                    </p>
+                                    <div className="flex items-center justify-between text-xs pt-1 border-t border-white/5">
+                                        <span className="text-muted-foreground">อัตรากำไร (Margin):</span>
+                                        <span className={cn("font-mono font-semibold", netProfitAllTime >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                                            {marginAllTime.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Task / Work Completion */}
+                            <div className="glass-card rounded-2xl border border-white/5 p-4 space-y-2">
+                                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span className="font-semibold uppercase tracking-wider">ความคืบหน้างาน</span>
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                </div>
+                                <p className="text-xl font-bold font-mono text-foreground">
+                                    {taskSummary.progressPercent}%
+                                </p>
+                                <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-white/5">
+                                    <span>เสร็จ {taskSummary.done} งาน</span>
+                                    <span>กำลังทำ {taskSummary.inProgress}</span>
+                                    <span>รอทำ {taskSummary.todo}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 4. Analytics Visual Charts (Cash Flow & Expense Category) */}
+                        {canViewFinancials && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Cash Flow */}
+                                <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors">
+                                    <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-blue-500/10 transition-colors duration-700" />
+                                    <div className="relative z-10">
+                                        <CashFlowChart projectId={project.id} />
+                                    </div>
+                                </div>
+
+                                {/* Expense Category Breakdown */}
+                                <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors">
+                                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-purple-500/10 transition-colors duration-700" />
+                                    <div className="relative z-10">
+                                        <ExpenseCategoryChart selectedProjectId={project.id} />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 5. Recent Activity (Recent Expenses & Recent Invoices) */}
+                        {canViewFinancials && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Recent Expenses */}
+                                <div className="glass-card rounded-2xl border border-white/5 p-5">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h4 className="text-base font-bold flex items-center gap-2">
+                                            <Receipt className="w-4 h-4 text-rose-400" />
+                                            รายการค่าใช้จ่ายล่าสุดของโครงการ
+                                        </h4>
+                                        <button
+                                            onClick={() => { setActiveTab("financials"); setActiveFinancialTab("expenses"); }}
+                                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                                        >
+                                            ดูทั้งหมด <ArrowRight className="w-3 h-3" />
+                                        </button>
+                                    </div>
+
+                                    {recentExpensesList.length === 0 ? (
+                                        <p className="text-xs text-muted-foreground py-6 text-center">ไม่มีรายการค่าใช้จ่ายในโครงการนี้</p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {recentExpensesList.map((exp) => (
+                                                <div key={exp.id} className="flex items-center justify-between p-2.5 rounded-xl bg-muted/20 border border-white/5 hover:border-white/10 transition-colors text-xs">
+                                                    <div className="space-y-0.5 min-w-0 pr-2">
+                                                        <p className="font-semibold text-foreground truncate">{exp.title}</p>
+                                                        <p className="text-[11px] text-muted-foreground truncate">{exp.payee} • {exp.date}</p>
+                                                    </div>
+                                                    <div className="text-right shrink-0">
+                                                        <p className="font-mono font-bold text-rose-400">฿{exp.amount.toLocaleString()}</p>
+                                                        <span className="text-[10px] text-muted-foreground">{exp.category || "อื่นๆ"}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Recent Invoices */}
+                                <div className="glass-card rounded-2xl border border-white/5 p-5">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h4 className="text-base font-bold flex items-center gap-2">
+                                            <FileText className="w-4 h-4 text-blue-400" />
+                                            ใบแจ้งหนี้ / งวดรับเงิน
+                                        </h4>
+                                        <button
+                                            onClick={() => { setActiveTab("financials"); setActiveFinancialTab("incomes"); }}
+                                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                                        >
+                                            ดูทั้งหมด <ArrowRight className="w-3 h-3" />
+                                        </button>
+                                    </div>
+
+                                    {recentIncomesList.length === 0 ? (
+                                        <p className="text-xs text-muted-foreground py-6 text-center">ยังไม่มีใบแจ้งหนี้สำหรับโครงการนี้</p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {recentIncomesList.map((inv) => (
+                                                <div key={inv.id} className="flex items-center justify-between p-2.5 rounded-xl bg-muted/20 border border-white/5 hover:border-white/10 transition-colors text-xs">
+                                                    <div className="space-y-0.5 min-w-0 pr-2">
+                                                        <p className="font-semibold text-foreground truncate">
+                                                            {inv.documentNumber || inv.note || "ใบแจ้งหนี้"}
+                                                        </p>
+                                                        <p className="text-[11px] text-muted-foreground">{inv.date}</p>
+                                                    </div>
+                                                    <div className="text-right space-y-0.5 shrink-0">
+                                                        <p className="font-mono font-bold text-blue-400">฿{(inv.grandTotal || 0).toLocaleString()}</p>
+                                                        <span className={cn(
+                                                            "inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold border",
+                                                            inv.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                                        )}>
+                                                            {inv.status}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 {activeTab === 'schedule' && (

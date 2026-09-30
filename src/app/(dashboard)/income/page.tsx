@@ -1,6 +1,6 @@
 "use client"
 
-import { Plus, Search, FileText, CheckCircle, Clock, ArrowDownAZ } from "lucide-react"
+import { Plus, Search, FileText, CheckCircle, CheckCircle2, Clock, ArrowDownAZ, FileCheck, ChevronDown, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useProjects, Customer, Project, IncomeDocument } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
@@ -58,6 +58,12 @@ export default function IncomePage() {
     const [showAddDialog, setShowAddDialog] = useState(false)
     const [selectedIncomeId, setSelectedIncomeId] = useState<string | null>(null)
     const [sortOption, setSortOption] = useState<'created' | 'date' | 'alphabetical'>('created')
+    const [statusCardFilter, setStatusCardFilter] = useState<'all' | 'paid' | 'pending' | 'quotation'>('all')
+    const [expandedMonths, setExpandedMonths] = React.useState<Record<string, boolean>>({})
+
+    const toggleMonth = (month: string, isCurrentlyExpanded: boolean) => {
+        setExpandedMonths(prev => ({ ...prev, [month]: !isCurrentlyExpanded }))
+    }
 
     // New Filters
     const [projectFilter, setProjectFilter] = useState("all")
@@ -132,29 +138,19 @@ export default function IncomePage() {
     // Helper: Get available months
     const availableMonths = Array.from(new Set(incomes.map(i => i.date.substring(0, 7)))).sort().reverse()
 
-    // Memoize Filtered Incomes
-    const filteredIncomes = React.useMemo(() => {
+    // Step 1: Base Filter (Project, Month, Customer, User, Search)
+    const baseFilteredIncomes = React.useMemo(() => {
         return incomes.filter((doc: IncomeDocument) => {
-            // 1. Basic Filters
-            const matchesType = filter === "All" || doc.type === filter
-            const project = projects.find(p => p.id === doc.projectId)
-            const matchesSearch = matchesIncomeSearch(doc, search, {
-                customerName: getCustomerName(doc.customerId),
-                projectName: project?.name
-            })
+            if (doc.isDeleted) return false
 
-            // 2. Advanced Filters
             const matchesProject = projectFilter === "all" || doc.projectId === projectFilter
             const matchesMonth = monthFilter === "all" || doc.date?.startsWith(monthFilter)
             const matchesCustomer = customerFilter === "all" || doc.customerId === customerFilter
 
-            // 3. User Filter (Was Technician, now User)
             let matchesTechnician = true
             if (technicianFilter !== "all") {
-                // Find user name
                 const userName = users.find(u => u.id === technicianFilter)?.name
                 if (userName) {
-                    // Logic: Does this project have tasks assigned to this user? 
                     const project = projects.find(p => p.id === doc.projectId)
                     if (project) {
                         matchesTechnician = project.tasks?.some(t => Array.isArray(t.assignedTo) ? t.assignedTo.includes(userName) : (t.assignedTo as any) === userName) || false
@@ -166,7 +162,42 @@ export default function IncomePage() {
                 }
             }
 
-            return matchesType && matchesSearch && matchesProject && matchesMonth && matchesCustomer && matchesTechnician
+            const project = projects.find(p => p.id === doc.projectId)
+            const matchesSearch = matchesIncomeSearch(doc, search, {
+                customerName: getCustomerName(doc.customerId),
+                projectName: project?.name
+            })
+
+            return matchesProject && matchesMonth && matchesCustomer && matchesTechnician && matchesSearch
+        })
+    }, [incomes, projectFilter, monthFilter, customerFilter, technicianFilter, search, projects, users, customers])
+
+    // Summary Card Stats (Exclude Voided documents from amounts)
+    const paidIncomes = React.useMemo(() => baseFilteredIncomes.filter(d => d.status === 'Paid'), [baseFilteredIncomes])
+    const pendingInvoices = React.useMemo(() => baseFilteredIncomes.filter(d => d.type === 'Invoice' && d.status !== 'Paid' && d.status !== 'Void'), [baseFilteredIncomes])
+    const quotationIncomes = React.useMemo(() => baseFilteredIncomes.filter(d => d.type === 'Quotation' && d.status !== 'Void'), [baseFilteredIncomes])
+
+    const paidTotal = React.useMemo(() => paidIncomes.reduce((sum, d) => sum + (d.grandTotal || 0), 0), [paidIncomes])
+    const pendingTotal = React.useMemo(() => pendingInvoices.reduce((sum, d) => sum + (d.grandTotal || 0), 0), [pendingInvoices])
+    const quotationTotal = React.useMemo(() => quotationIncomes.reduce((sum, d) => sum + (d.grandTotal || 0), 0), [quotationIncomes])
+
+    // Step 2: Final Filter (Base + Type Tabs + Status Card + Sorting)
+    const filteredIncomes = React.useMemo(() => {
+        return baseFilteredIncomes.filter((doc: IncomeDocument) => {
+            // Type Tab
+            const matchesType = filter === "All" || doc.type === filter
+
+            // Status Card
+            let matchesStatusCard = true
+            if (statusCardFilter === 'paid') {
+                matchesStatusCard = doc.status === 'Paid'
+            } else if (statusCardFilter === 'pending') {
+                matchesStatusCard = doc.type === 'Invoice' && doc.status !== 'Paid' && doc.status !== 'Void'
+            } else if (statusCardFilter === 'quotation') {
+                matchesStatusCard = doc.type === 'Quotation' && doc.status !== 'Void'
+            }
+
+            return matchesType && matchesStatusCard
         }).sort((a, b) => {
             if (sortOption === 'created') {
                 const timeA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime()
@@ -181,7 +212,29 @@ export default function IncomePage() {
             }
             return 0
         })
-    }, [incomes, filter, search, projectFilter, monthFilter, customerFilter, technicianFilter, sortOption, customers, projects, users])
+    }, [baseFilteredIncomes, filter, statusCardFilter, sortOption, customers])
+
+    // Group and Sort Months for List Display
+    const groupedIncomes = React.useMemo(() => {
+        const groups: Record<string, typeof filteredIncomes> = {}
+        filteredIncomes.forEach(doc => {
+            let monthStr = "Unknown"
+            if (doc.date) {
+                monthStr = doc.date.substring(0, 7) // YYYY-MM
+            }
+            if (!groups[monthStr]) groups[monthStr] = []
+            groups[monthStr].push(doc)
+        })
+        return groups
+    }, [filteredIncomes])
+
+    const sortedMonthsList = React.useMemo(() => {
+        return Object.keys(groupedIncomes).sort((a, b) => {
+            if (a === "Unknown") return 1
+            if (b === "Unknown") return -1
+            return b.localeCompare(a)
+        })
+    }, [groupedIncomes])
 
     // Export Logic
     const handleExportCSV = () => {
@@ -336,14 +389,111 @@ export default function IncomePage() {
                 </div>
             </div>
 
+            {/* Income Summary Cards (Scrollable) - Contained */}
+            <div className="overflow-hidden">
+                <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+                    <div className="flex gap-4 min-w-max md:min-w-0 md:grid md:grid-cols-3">
+                        {/* 1. Paid / Received */}
+                        <button
+                            onClick={() => {
+                                setStatusCardFilter(prev => prev === 'paid' ? 'all' : 'paid')
+                                setFilter('All')
+                            }}
+                            className={cn(
+                                "glass-card p-4 rounded-xl border border-white/5 transition-all text-left group",
+                                statusCardFilter === 'paid' ? "bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]" : "bg-emerald-500/5 hover:border-emerald-500/30"
+                            )}
+                        >
+                            <div className="flex items-center justify-between gap-3 mb-2">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500/30 group-hover:shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all">
+                                        <CheckCircle2 className="w-4 h-4" />
+                                    </div>
+                                    <p className="text-sm font-bold text-emerald-400 uppercase tracking-wider">
+                                        {t.income.summary?.paid || "รับชำระแล้ว / Paid"}
+                                    </p>
+                                </div>
+                                <span className="text-[11px] text-emerald-400/80 font-mono bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                    {paidIncomes.length} รายการ
+                                </span>
+                            </div>
+                            <p className="text-2xl font-black text-emerald-400">
+                                ฿{paidTotal.toLocaleString()}
+                            </p>
+                        </button>
+
+                        {/* 2. Pending / Invoiced */}
+                        <button
+                            onClick={() => {
+                                setStatusCardFilter(prev => prev === 'pending' ? 'all' : 'pending')
+                                setFilter('All')
+                            }}
+                            className={cn(
+                                "glass-card p-4 rounded-xl border border-white/5 transition-all text-left group",
+                                statusCardFilter === 'pending' ? "bg-amber-500/10 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]" : "bg-amber-500/5 hover:border-amber-500/30"
+                            )}
+                        >
+                            <div className="flex items-center justify-between gap-3 mb-2">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 group-hover:bg-amber-500/30 group-hover:shadow-[0_0_12px_rgba(245,158,11,0.3)] transition-all">
+                                        <Clock className="w-4 h-4" />
+                                    </div>
+                                    <p className="text-sm font-bold text-amber-400 uppercase tracking-wider">
+                                        {t.income.summary?.pending || "รอรับชำระ / Invoiced"}
+                                    </p>
+                                </div>
+                                <span className="text-[11px] text-amber-400/80 font-mono bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                                    {pendingInvoices.length} รายการ
+                                </span>
+                            </div>
+                            <p className="text-2xl font-black text-amber-400">
+                                ฿{pendingTotal.toLocaleString()}
+                            </p>
+                        </button>
+
+                        {/* 3. Quotation / เตรียมเบิก */}
+                        <button
+                            onClick={() => {
+                                setStatusCardFilter(prev => prev === 'quotation' ? 'all' : 'quotation')
+                                setFilter('All')
+                            }}
+                            className={cn(
+                                "glass-card p-4 rounded-xl border border-white/5 transition-all text-left group",
+                                statusCardFilter === 'quotation' ? "bg-blue-500/10 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)]" : "bg-blue-500/5 hover:border-blue-500/30"
+                            )}
+                        >
+                            <div className="flex items-center justify-between gap-3 mb-2">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400 group-hover:bg-blue-500/30 group-hover:shadow-[0_0_12px_rgba(59,130,246,0.3)] transition-all">
+                                        <FileCheck className="w-4 h-4" />
+                                    </div>
+                                    <p className="text-sm font-bold text-blue-400 uppercase tracking-wider">
+                                        {t.income.summary?.quotation || "เตรียมเบิก / Quotation"}
+                                    </p>
+                                </div>
+                                <span className="text-[11px] text-blue-400/80 font-mono bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
+                                    {quotationIncomes.length} รายการ
+                                </span>
+                            </div>
+                            <p className="text-2xl font-black text-blue-400">
+                                ฿{quotationTotal.toLocaleString()}
+                            </p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-end">
                 {/* Type Tabs */}
                 <div className="flex bg-muted rounded-lg p-1 w-full sm:w-fit overflow-x-auto scrollbar-hide">
                     {['All', 'Quotation', 'Invoice', 'Receipt'].map((tab) => (
                         <button
                             key={tab}
-                            onClick={() => setFilter(tab)}
-                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${filter === tab ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                            onClick={() => {
+                                setFilter(tab)
+                                setStatusCardFilter('all')
+                            }}
+                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${filter === tab && statusCardFilter === 'all' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             {tab === 'All' ? t.income.tabs.all : tab === 'Quotation' ? t.income.tabs.quotation : tab === 'Invoice' ? t.income.tabs.invoice : t.income.tabs.receipt}
                         </button>
@@ -404,141 +554,180 @@ export default function IncomePage() {
                 </div>
             </div>
 
-            <div className="bg-card rounded-xl border border-white/5 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-white/5 flex gap-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
-                            placeholder={t.income.filters.search_placeholder}
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 bg-muted/20 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <ArrowDownAZ className="w-4 h-4 text-muted-foreground" />
-                        <select
-                            value={sortOption}
-                            onChange={(e) => setSortOption(e.target.value as any)}
-                            className="bg-transparent border-none text-sm text-muted-foreground focus:outline-none cursor-pointer hover:text-foreground transition-colors"
-                        >
-                            <option value="created">{t.income.sort.created}</option>
-                            <option value="date">{t.income.sort.date}</option>
-                            <option value="alphabetical">{t.income.sort.alphabetical}</option>
-                        </select>
-                    </div>
+            {/* Search & Sort Bar */}
+            <div className="bg-card rounded-xl border border-white/5 shadow-sm p-4 flex gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                        placeholder={t.income.filters.search_placeholder}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 bg-muted/20 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
                 </div>
-                <div className="overflow-x-auto">
-                    {incomesLoading ? (
-                        <div className="bg-card rounded-xl border border-border p-8 py-20 min-h-[400px] flex items-center justify-center">
-                            <IncomeLoading />
-                        </div>
-                    ) : filteredIncomes.length === 0 ? (
-                        <div className="p-12 text-center space-y-3">
-                            <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto text-muted-foreground">
-                                <FileText className="w-8 h-8" />
-                            </div>
-                            <p className="text-muted-foreground">{t.income.empty}</p>
-                        </div>
-                    ) : (
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-muted/50 text-muted-foreground">
-                                <tr>
-                                    <th className="px-6 py-3 font-medium">{t.income.table.no}</th>
-                                    <th className="px-6 py-3 font-medium">{t.income.table.type}</th>
-                                    <th className="px-6 py-3 font-medium">{t.income.table.customer_project}</th>
-                                    <th className="px-6 py-3 font-medium">{t.income.table.date}</th>
-                                    <th className="px-6 py-3 font-medium text-right">{t.income.table.total}</th>
-                                    <th className="px-6 py-3 font-medium text-center">{t.income.table.status}</th>
-                                    <th className="px-6 py-3 font-medium w-10"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredIncomes.map((doc, index) => {
-                                    // Check if we need a date divider
-                                    const currentDate = doc.date
-                                    const prevDoc = index > 0 ? filteredIncomes[index - 1] : null
-                                    const showDateDivider = !prevDoc || prevDoc.date !== currentDate
-
-                                    return (
-                                        <React.Fragment key={doc.id}>
-                                            {showDateDivider && (
-                                                <tr key={`divider-${currentDate}`}>
-                                                    <td colSpan={7} className="px-6 py-2 bg-muted/30 border-b border-white/5">
-                                                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                                                            <div className="w-2 h-2 rounded-full bg-primary/60" />
-                                                            {new Date(currentDate).toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            )}
-                                            <tr
-                                                key={doc.id}
-                                                onClick={() => router.push(`?incomeId=${doc.id}`, { scroll: false })}
-                                                className="border-b border-white/5 hover:bg-muted/30 transition-colors cursor-pointer"
-                                            >
-                                                <td className="px-6 py-4 font-medium">
-                                                    <div>{doc.documentNumber}</div>
-                                                    {search.trim() && (() => {
-                                                        const matchedDetail = getIncomeMatchedDetailSnippet(doc, search)
-                                                        if (!matchedDetail) return null
-                                                        return (
-                                                            <div className="flex items-center gap-1.5 mt-1 text-xs text-primary/90 font-medium">
-                                                                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
-                                                                    รายละเอียด
-                                                                </span>
-                                                                <span className="truncate max-w-[200px] text-muted-foreground">{matchedDetail}</span>
-                                                            </div>
-                                                        )
-                                                    })()}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${doc.type === 'Quotation' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                                        doc.type === 'Invoice' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
-                                                            'bg-green-500/10 text-green-500 border-green-500/20'
-                                                        }`}>
-                                                        {doc.type}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="font-bold text-foreground">{getCustomerName(doc.customerId)}</div>
-                                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary/50"></div>
-                                                        {getProjectName(doc.projectId)}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-muted-foreground">{doc.date}</td>
-                                                <td className="px-6 py-4 text-right font-bold text-primary">฿{doc.grandTotal.toLocaleString()}</td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${doc.status === 'Paid' || doc.status === 'Accepted' ? 'text-green-500 bg-green-500/10' :
-                                                        doc.status === 'Sent' || doc.status === 'Invoiced' ? 'text-blue-500 bg-blue-500/10' :
-                                                            'text-muted-foreground bg-muted'
-                                                        }`}>
-                                                        {doc.status === 'Paid' ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                                                        {doc.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            router.push(`?incomeId=${doc.id}`, { scroll: false })
-                                                        }}
-                                                        className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                                                    >
-                                                        <FileText className="w-4 h-4" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </React.Fragment>
-                                    )
-                                })}
-                            </tbody>
-                        </table>
-                    )}
+                <div className="flex items-center gap-2">
+                    <ArrowDownAZ className="w-4 h-4 text-muted-foreground" />
+                    <select
+                        value={sortOption}
+                        onChange={(e) => setSortOption(e.target.value as any)}
+                        className="bg-transparent border-none text-sm text-muted-foreground focus:outline-none cursor-pointer hover:text-foreground transition-colors"
+                    >
+                        <option value="created">{t.income.sort.created}</option>
+                        <option value="date">{t.income.sort.date}</option>
+                        <option value="alphabetical">{t.income.sort.alphabetical}</option>
+                    </select>
                 </div>
             </div>
 
-        </div >
+            {/* Incomes List (Grouped by Month) */}
+            {incomesLoading ? (
+                <div className="bg-card rounded-xl border border-border p-8 py-20 min-h-[400px] flex items-center justify-center">
+                    <IncomeLoading />
+                </div>
+            ) : filteredIncomes.length === 0 ? (
+                <div className="bg-card rounded-xl border border-white/5 shadow-sm p-12 text-center space-y-3">
+                    <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto text-muted-foreground">
+                        <FileText className="w-8 h-8" />
+                    </div>
+                    <p className="text-muted-foreground">{t.income.empty}</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {sortedMonthsList.map((month, monthIndex) => {
+                        const isExpanded = expandedMonths[month] !== undefined ? expandedMonths[month] : monthIndex === 0
+                        const monthIncomes = groupedIncomes[month] || []
+                        const monthTotal = monthIncomes.reduce((sum, doc) => doc.status !== 'Void' ? sum + (doc.grandTotal || 0) : sum, 0)
+
+                        let monthDisplay = month
+                        if (month !== "Unknown") {
+                            const d = new Date(month + "-01")
+                            if (!isNaN(d.getTime())) {
+                                monthDisplay = d.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })
+                            }
+                        }
+
+                        return (
+                            <div key={month} className="space-y-3">
+                                <div
+                                    onClick={() => toggleMonth(month, isExpanded)}
+                                    className="flex items-center justify-between cursor-pointer py-2 px-1 hover:bg-muted/10 rounded-lg transition-colors group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                                            {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                        </div>
+                                        <h2 className="text-lg font-bold text-foreground">{monthDisplay}</h2>
+                                        <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                            {monthIncomes.length} รายการ
+                                        </span>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold text-foreground font-mono">฿{monthTotal.toLocaleString()}</p>
+                                    </div>
+                                </div>
+
+                                {isExpanded && (
+                                    <div className="bg-card rounded-xl border border-white/5 shadow-sm overflow-hidden overflow-x-auto">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="bg-muted/50 text-muted-foreground">
+                                                <tr>
+                                                    <th className="px-6 py-3 font-medium">{t.income.table.no}</th>
+                                                    <th className="px-6 py-3 font-medium">{t.income.table.type}</th>
+                                                    <th className="px-6 py-3 font-medium">{t.income.table.customer_project}</th>
+                                                    <th className="px-6 py-3 font-medium">{t.income.table.date}</th>
+                                                    <th className="px-6 py-3 font-medium text-right">{t.income.table.total}</th>
+                                                    <th className="px-6 py-3 font-medium text-center">{t.income.table.status}</th>
+                                                    <th className="px-6 py-3 font-medium w-10"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {monthIncomes.map((doc, index) => {
+                                                    // Check if we need a date divider
+                                                    const currentDate = doc.date
+                                                    const prevDoc = index > 0 ? monthIncomes[index - 1] : null
+                                                    const showDateDivider = !prevDoc || prevDoc.date !== currentDate
+
+                                                    return (
+                                                        <React.Fragment key={doc.id}>
+                                                            {showDateDivider && (
+                                                                <tr key={`divider-${currentDate}`}>
+                                                                    <td colSpan={7} className="px-6 py-2 bg-muted/30 border-b border-white/5">
+                                                                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                                                                            <div className="w-2 h-2 rounded-full bg-primary/60" />
+                                                                            {new Date(currentDate).toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                            <tr
+                                                                onClick={() => router.push(`?incomeId=${doc.id}`, { scroll: false })}
+                                                                className="border-b border-white/5 hover:bg-muted/30 transition-colors cursor-pointer"
+                                                            >
+                                                                <td className="px-6 py-4 font-medium">
+                                                                    <div>{doc.documentNumber}</div>
+                                                                    {search.trim() && (() => {
+                                                                        const matchedDetail = getIncomeMatchedDetailSnippet(doc, search)
+                                                                        if (!matchedDetail) return null
+                                                                        return (
+                                                                            <div className="flex items-center gap-1.5 mt-1 text-xs text-primary/90 font-medium">
+                                                                                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
+                                                                                    รายละเอียด
+                                                                                </span>
+                                                                                <span className="truncate max-w-[200px] text-muted-foreground">{matchedDetail}</span>
+                                                                            </div>
+                                                                        )
+                                                                    })()}
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${doc.type === 'Quotation' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                                                        doc.type === 'Invoice' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                                                                            'bg-green-500/10 text-green-500 border-green-500/20'
+                                                                        }`}>
+                                                                        {doc.type}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="font-bold text-foreground">{getCustomerName(doc.customerId)}</div>
+                                                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary/50"></div>
+                                                                        {getProjectName(doc.projectId)}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-muted-foreground">{doc.date}</td>
+                                                                <td className="px-6 py-4 text-right font-bold text-primary">฿{doc.grandTotal.toLocaleString()}</td>
+                                                                <td className="px-6 py-4 text-center">
+                                                                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${doc.status === 'Paid' || doc.status === 'Accepted' ? 'text-green-500 bg-green-500/10' :
+                                                                        doc.status === 'Sent' || doc.status === 'Invoiced' ? 'text-blue-500 bg-blue-500/10' :
+                                                                            'text-muted-foreground bg-muted'
+                                                                        }`}>
+                                                                        {doc.status === 'Paid' ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                                                                        {doc.status}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center">
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation()
+                                                                            router.push(`?incomeId=${doc.id}`, { scroll: false })
+                                                                        }}
+                                                                        className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                                                                    >
+                                                                        <FileText className="w-4 h-4" />
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        </React.Fragment>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
+        </div>
     )
 }
