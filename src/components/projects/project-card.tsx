@@ -90,22 +90,22 @@ export function ProjectCard({ project, columns = 1, priority = false }: ProjectC
                 {/* Content Overlay */}
                 <div className={cn(
                     "relative z-10 flex flex-col h-full justify-between",
-                    columns === 3 ? "p-4" : "p-5"
+                    columns === 1 ? "p-4 sm:p-5" : "p-3 sm:p-4"
                 )}>
                     {/* Top Row */}
-                    <div className="flex justify-between items-start">
-                        <div className="flex flex-col gap-1 flex-1 min-w-0 pr-2">
+                    <div className="flex justify-between items-start gap-1">
+                        <div className="flex flex-col gap-0.5 sm:gap-1 flex-1 min-w-0 pr-1 sm:pr-2">
                             <h3 className={cn(
                                 "font-bold leading-tight drop-shadow-md tracking-tight text-foreground truncate",
-                                columns === 3 ? "text-lg" : "text-xl"
+                                columns === 1 ? "text-lg sm:text-xl" : "text-sm sm:text-lg"
                             )}>
                                 {project.name}
                             </h3>
                             <p className={cn(
-                                "text-foreground/70 flex items-center gap-1.5 font-medium drop-shadow-sm",
-                                columns === 3 ? "text-xs" : "text-sm"
+                                "text-foreground/70 flex items-center gap-1 font-medium drop-shadow-sm",
+                                columns === 1 ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs"
                             )}>
-                                <User className={cn(columns === 3 ? "w-3 h-3" : "w-3.5 h-3.5")} />
+                                <User className={cn(columns === 1 ? "w-3.5 h-3.5" : "w-3 h-3")} />
                                 <span className="truncate">{project.client}</span>
                             </p>
                         </div>
@@ -114,14 +114,14 @@ export function ProjectCard({ project, columns = 1, priority = false }: ProjectC
                         {showStatusAsDot ? (
                             <div
                                 className={cn(
-                                    "w-3 h-3 rounded-full shrink-0 shadow-sm border border-white/20",
+                                    "w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0 shadow-sm border border-white/20 mt-1",
                                     dotColor
                                 )}
                                 title={label}
                             />
                         ) : (
                             <span className={cn(
-                                "px-2.5 py-1 backdrop-blur-sm rounded-lg text-[10px] font-bold border uppercase tracking-wider shadow-sm shrink-0",
+                                "px-2 sm:px-2.5 py-0.5 sm:py-1 backdrop-blur-sm rounded-lg text-[9px] sm:text-[10px] font-bold border uppercase tracking-wider shadow-sm shrink-0",
                                 badgeStyle
                             )}>
                                 {label}
@@ -130,27 +130,27 @@ export function ProjectCard({ project, columns = 1, priority = false }: ProjectC
                     </div>
 
                     {/* Bottom Row */}
-                    <div className="mt-auto pt-3 space-y-2">
+                    <div className="mt-auto pt-2 sm:pt-3 space-y-1.5 sm:space-y-2">
                         {/* Full Details: Budget & Tasks */}
                         {showFullDetails && (
-                            <div className="grid grid-cols-2 gap-4 pb-2 border-b border-foreground/10">
+                            <div className="grid grid-cols-2 gap-1.5 sm:gap-4 pb-1.5 sm:pb-2 border-b border-foreground/10">
                                 <div>
-                                    <span className="text-foreground/50 text-[10px] uppercase tracking-wider font-semibold">Budget</span>
+                                    <span className="text-foreground/50 text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold block truncate">Budget</span>
                                     <div className={cn(
-                                        "font-semibold text-foreground",
-                                        columns === 1 ? "text-lg" : "text-base"
+                                        "font-semibold text-foreground truncate",
+                                        columns === 1 ? "text-base sm:text-lg" : "text-xs sm:text-base"
                                     )}>
                                         ฿{project.budget.toLocaleString()}
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <span className="text-foreground/50 text-[10px] uppercase tracking-wider font-semibold">Tasks</span>
+                                    <span className="text-foreground/50 text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold block truncate">Tasks</span>
                                     <div className={cn(
-                                        "font-medium text-foreground flex items-center justify-end gap-1.5",
-                                        columns === 1 ? "text-lg" : "text-base"
+                                        "font-medium text-foreground flex items-center justify-end gap-1",
+                                        columns === 1 ? "text-base sm:text-lg" : "text-xs sm:text-base"
                                     )}>
-                                        <ListChecks className={cn("text-primary", columns === 1 ? "w-4 h-4" : "w-3.5 h-3.5")} />
-                                        {project.taskCount}
+                                        <ListChecks className={cn("text-primary shrink-0", columns === 1 ? "w-4 h-4" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
+                                        <span>{project.taskCount}</span>
                                     </div>
                                 </div>
                             </div>
@@ -160,9 +160,9 @@ export function ProjectCard({ project, columns = 1, priority = false }: ProjectC
                         <div className="space-y-1">
                             {/* Label */}
                             {showFullDetails && (
-                                <div className="flex justify-between text-xs font-medium text-foreground/70">
+                                <div className="flex justify-between text-[10px] sm:text-xs font-medium text-foreground/70">
                                     <span>Expenses</span>
-                                    <span>฿{project.expenses.toLocaleString()} ({expensePercent}%)</span>
+                                    <span className="truncate">฿{project.expenses.toLocaleString()} ({expensePercent}%)</span>
                                 </div>
                             )}
                             <div className="w-full bg-foreground/10 rounded-full overflow-hidden backdrop-blur-sm h-1.5">

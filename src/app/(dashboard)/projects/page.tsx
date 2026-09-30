@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
 import { Search, Plus, Archive, ChevronDown, LayoutList, LayoutGrid, Grid3x3, CheckCircle2, PauseCircle, Hammer, FileText, Layers, FolderKanban } from "lucide-react"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { cn } from "@/lib/utils"
@@ -104,7 +104,14 @@ export default function ProjectsPage() {
     const searchQuery = searchParams.get("q") || ""
     const statusFilter = searchParams.get("status") || null
     const showArchived = searchParams.get("archived") === "true"
-    const [columns, setColumns] = useState<1 | 2 | 3 | 'auto'>(3)
+    const [columns, setColumns] = useState<1 | 2 | 3>(3)
+
+    // On mobile screens (< 640px), default to 2 columns (แสดงคู่)
+    useEffect(() => {
+        if (typeof window !== "undefined" && window.innerWidth < 640) {
+            setColumns(2)
+        }
+    }, [])
 
     const [archiveConfirm, setArchiveConfirm] = useState<{ isOpen: boolean; projectId: string | null }>({
         isOpen: false,
@@ -368,25 +375,25 @@ export default function ProjectsPage() {
                         </button>
 
                         {/* Column Layout Buttons */}
-                        <div className="flex items-center gap-1 bg-muted/30 rounded-xl p-1">
+                        <div className="flex items-center gap-1 bg-muted/30 rounded-xl p-1 shrink-0">
                             <button
                                 onClick={() => setColumns(1)}
                                 className={`p-2 rounded-lg transition-all ${columns === 1 ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/10'}`}
-                                title="1 Column"
+                                title="1 Column (คอลัมน์เดียว)"
                             >
                                 <LayoutList className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => setColumns(2)}
                                 className={`p-2 rounded-lg transition-all ${columns === 2 ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/10'}`}
-                                title="2 Columns"
+                                title="2 Columns (แสดงคู่)"
                             >
                                 <LayoutGrid className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => setColumns(3)}
-                                className={`p-2 rounded-lg transition-all ${columns === 3 ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/10'}`}
-                                title="3 Columns"
+                                className={`p-2 rounded-lg transition-all hidden sm:flex ${columns === 3 ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/10'}`}
+                                title="3 Columns (3 คอลัมน์)"
                             >
                                 <Grid3x3 className="w-4 h-4" />
                             </button>
@@ -398,11 +405,10 @@ export default function ProjectsPage() {
             {/* Projects Sections */}
             {isLoading ? (
                 <div className={cn(
-                    "grid gap-6 transition-all duration-300 ease-in-out",
-                    columns === 'auto' && "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+                    "grid gap-3.5 sm:gap-6 transition-all duration-300 ease-in-out",
                     columns === 1 && "grid-cols-1",
-                    columns === 2 && "grid-cols-1 sm:grid-cols-2",
-                    columns === 3 && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                    columns === 2 && "grid-cols-2",
+                    columns === 3 && "grid-cols-2 sm:grid-cols-2 lg:grid-cols-3"
                 )}>
                     {Array.from({ length: 6 }).map((_, i) => (
                         <div key={i} className="rounded-2xl overflow-hidden border border-white/5 bg-muted/10 animate-pulse">
@@ -476,11 +482,10 @@ export default function ProjectsPage() {
                                 {/* Section Cards Grid */}
                                 {items.length > 0 ? (
                                     <div className={cn(
-                                        "grid gap-6 transition-all duration-300 ease-in-out",
-                                        columns === 'auto' && "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+                                        "grid gap-3.5 sm:gap-6 transition-all duration-300 ease-in-out",
                                         columns === 1 && "grid-cols-1",
-                                        columns === 2 && "grid-cols-1 sm:grid-cols-2",
-                                        columns === 3 && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                                        columns === 2 && "grid-cols-2",
+                                        columns === 3 && "grid-cols-2 sm:grid-cols-2 lg:grid-cols-3"
                                     )}>
                                         {items.map((project, idx) => {
                                             const budgetValue = parseInt(String(project.budget || "0").replace(/[^0-9]/g, '')) || 0
@@ -490,9 +495,7 @@ export default function ProjectsPage() {
                                             return (
                                                 <div key={project.id} className={cn(
                                                     "h-full",
-                                                    columns === 1 && "h-80",
-                                                    columns === 2 && "h-72",
-                                                    columns === 3 && "h-72"
+                                                    columns === 1 ? "h-72 sm:h-80" : "h-64 sm:h-72"
                                                 )}>
                                                     <ProjectCard
                                                         project={{

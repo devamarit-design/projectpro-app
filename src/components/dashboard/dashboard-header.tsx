@@ -250,7 +250,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                 )}
 
                 {/* TOP ROW: Date & Location Selector */}
-                <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+                <div className="relative z-30 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
                     {/* Date Pill */}
                     <div className="flex items-center gap-1.5 sm:gap-2 text-white/80 text-xs sm:text-sm font-medium bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-sm">
                         <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
@@ -258,8 +258,8 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                     </div>
 
                     {/* Site Location Selector & Refresh */}
-                    <div className="relative flex items-center gap-1.5 sm:gap-2">
-                        <div className="relative">
+                    <div className="relative z-40 flex items-center gap-1.5 sm:gap-2">
+                        <div className="relative z-50">
                             <button
                                 onClick={() => setShowLocationMenu(!showLocationMenu)}
                                 className="flex items-center gap-1.5 text-xs text-white/90 bg-black/50 hover:bg-black/70 backdrop-blur-md px-2.5 sm:px-3 py-1.5 rounded-full border border-white/15 transition-all shadow-sm group-hover:border-primary/40 max-w-[200px] sm:max-w-none"
@@ -273,10 +273,15 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
 
                             {/* Dropdown Menu */}
                             {showLocationMenu && (
-                                <div className="absolute right-0 top-full mt-2 w-56 bg-background/95 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 origin-top-right p-1.5">
-                                    <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-white/5">
-                                        เลือกตำแหน่งสภาพอากาศ
-                                    </div>
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-40 cursor-default"
+                                        onClick={() => setShowLocationMenu(false)}
+                                    />
+                                    <div className="absolute right-0 top-full mt-2 w-56 bg-background/98 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 origin-top-right p-1.5">
+                                        <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-white/5">
+                                            เลือกตำแหน่งสภาพอากาศ
+                                        </div>
                                     <button
                                         onClick={handleGPSDetect}
                                         disabled={isLocatingGPS}
@@ -302,7 +307,8 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                                             {selectedLocation.id === loc.id && <CheckCircle2 className="w-3.5 h-3.5" />}
                                         </button>
                                     ))}
-                                </div>
+                                    </div>
+                                </>
                             )}
                         </div>
 
