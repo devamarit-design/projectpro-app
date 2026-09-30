@@ -17,17 +17,25 @@ import {
     Sparkles, 
     Save, 
     Eye, 
-    RotateCcw, 
     Users, 
     HardHat, 
     Wrench, 
-    AlertCircle, 
     CheckCircle2, 
     Upload, 
     X,
     Calendar,
     Building2,
-    Shield
+    Shield,
+    Clock,
+    ChevronDown,
+    ChevronUp,
+    Briefcase,
+    Package,
+    Truck,
+    Factory,
+    Check,
+    AlertTriangle,
+    Layers
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -50,15 +58,15 @@ const DEFAULT_MANPOWER_ROLES = [
 ];
 
 const QUICK_TASK_PRESETS = [
-    { label: "เทคอนกรีต", task: "งานเทคอนกรีตเสาและคาน", category: "" },
-    { label: "ผูกเหล็กคาน/เสา", task: "งานผูกเหล็กโครงสร้างคาน/เสา", category: "" },
-    { label: "ฉาบปูนผนัง", task: "งานฉาบปูนผนังภายใน/ภายนอก", category: "" },
-    { label: "ตรวจระบบไฟ/ประปา", task: "ตรวจเช็คงานเดินท่อร้อยสายไฟและประปา", category: "" },
-    { label: "ปูกระเบื้อง", task: "งานปูกระเบื้องพื้นและผนัง", category: "" },
-    { label: "📦 ประชุมทีม/พบลูกค้า", task: "ประชุมติดตามงานกับทีมงานและสรุปงานกับลูกค้า", category: "งานทั่วไป / ธุรการ" },
-    { label: "🚚 สั่งซื้อ/ตรวจรับวัสดุ", task: "ประสานงานร้านค้า สั่งซื้อและตรวจรับวัสดุก่อสร้าง", category: "จัดซื้อ / จัดส่งวัสดุ" },
-    { label: "🏭 โกดัง/ซ่อมบำรุง", task: "จัดระเบียบสต็อก ตรวจเช็คและบำรุงรักษาเครื่องมือในโกดัง", category: "โรงงาน / โกดัง / ซ่อมบำรุง" },
-    { label: "📑 เคลียร์เอกสาร/งวดงาน", task: "จัดทำเอกสารเบิกงวดงาน จัดทำใบเสนอราคาและสัญญา", category: "งานทั่วไป / ธุรการ" }
+    { label: "เทคอนกรีต", task: "งานเทคอนกรีตเสาและคาน", category: "", time: "ช่วงเช้า" },
+    { label: "ผูกเหล็ก", task: "งานผูกเหล็กโครงสร้างคาน/เสา", category: "", time: "ช่วงเช้า" },
+    { label: "ฉาบปูน", task: "งานฉาบปูนผนังภายใน/ภายนอก", category: "", time: "ช่วงบ่าย" },
+    { label: "ตรวจระบบไฟ/ประปา", task: "ตรวจเช็คงานเดินท่อร้อยสายไฟและประปา", category: "", time: "ช่วงบ่าย" },
+    { label: "ปูกระเบื้อง", task: "งานปูกระเบื้องพื้นและผนัง", category: "", time: "ช่วงบ่าย" },
+    { label: "📦 ประชุมทีม/พบลูกค้า", task: "ประชุมติดตามงานกับทีมงานและสรุปงานกับลูกค้า", category: "งานทั่วไป / ธุรการ", time: "ช่วงเช้า" },
+    { label: "🚚 สั่งซื้อ/ตรวจรับวัสดุ", task: "ประสานงานร้านค้า สั่งซื้อและตรวจรับวัสดุก่อสร้าง", category: "จัดซื้อ / จัดส่งวัสดุ", time: "ช่วงเช้า" },
+    { label: "🏭 โกดัง/ซ่อมบำรุง", task: "จัดระเบียบสต็อก ตรวจเช็คและบำรุงรักษาเครื่องมือในโกดัง", category: "โรงงาน / โกดัง / ซ่อมบำรุง", time: "ช่วงบ่าย" },
+    { label: "📑 เคลียร์เอกสาร/งวดงาน", task: "จัดทำเอกสารเบิกงวดงาน จัดทำใบเสนอราคาและสัญญา", category: "งานทั่วไป / ธุรการ", time: "ช่วงเย็น" }
 ];
 
 export function JobSheetForm({
@@ -69,6 +77,12 @@ export function JobSheetForm({
 }: JobSheetFormProps) {
     const { projects, currentUser } = useProjects();
     const [isSaving, setIsSaving] = useState(false);
+
+    // Accordion toggles for mobile compactness
+    const [openManpower, setOpenManpower] = useState(false);
+    const [openEquipment, setOpenEquipment] = useState(false);
+    const [openSafety, setOpenSafety] = useState(false);
+    const [openPhotos, setOpenPhotos] = useState(false);
 
     // Form states
     const [date, setDate] = useState(initialData?.date || new Date().toISOString().split("T")[0]);
@@ -92,7 +106,7 @@ export function JobSheetForm({
         initialData?.weather?.temperature ?? 30
     );
 
-    // Work Items
+    // Work Items (Task-centric list)
     const [workItems, setWorkItems] = useState<JobSheetWorkItem[]>(
         initialData?.workItems && initialData.workItems.length > 0
             ? initialData.workItems
@@ -102,6 +116,7 @@ export function JobSheetForm({
                       task: "งานเทคอนกรีตเสาและคาน",
                       projectId: projects[0]?.id || "",
                       projectName: projects[0]?.name || "โครงการหลัก",
+                      timeSlot: "ช่วงเช้า (08:30 - 12:00)",
                       quantity: "15 ตร.ม.",
                       location: "ชั้น 2 โซน A",
                       status: "completed",
@@ -132,7 +147,7 @@ export function JobSheetForm({
     const [inspectedBy, setInspectedBy] = useState(initialData?.inspectedBy || "");
     const [photos, setPhotos] = useState<string[]>(initialData?.photos || []);
 
-    // When project changes, update projectName
+    // When project mode changes
     useEffect(() => {
         if (selectedProjectId === "multi") {
             setProjectName("ปฏิบัติงานหลายโครงการ & งานทั่วไป");
@@ -147,7 +162,7 @@ export function JobSheetForm({
     }, [selectedProjectId, projects]);
 
     // Work item handlers
-    const addWorkItem = (presetTask?: string, presetCategory?: string) => {
+    const addWorkItem = (presetTask?: string, presetCategory?: string, presetTime?: string) => {
         let initialProjId = selectedProjectId && selectedProjectId !== "multi" && selectedProjectId !== "general" ? selectedProjectId : "";
         let initialProjName = "";
 
@@ -169,6 +184,7 @@ export function JobSheetForm({
             task: presetTask || "",
             projectId: initialProjId,
             projectName: initialProjName,
+            timeSlot: presetTime || (workItems.length === 0 ? "ช่วงเช้า" : workItems.length === 1 ? "ช่วงบ่าย" : "ช่วงเย็น"),
             quantity: "",
             location: "",
             status: "in_progress",
@@ -184,6 +200,10 @@ export function JobSheetForm({
     };
 
     const removeWorkItem = (id: string) => {
+        if (workItems.length <= 1) {
+            toast.error("ควรมีรายการงานอย่างน้อย 1 รายการ");
+            return;
+        }
         setWorkItems(workItems.filter((item) => item.id !== id));
     };
 
@@ -227,9 +247,9 @@ export function JobSheetForm({
     // Auto-fetch live weather
     const handleAutoFetchWeather = async () => {
         try {
-            const toastId = toast.loading("กำลังดึงข้อมูลสภาพอากาศ...");
+            const toastId = toast.loading("กำลังดึงสภาพอากาศจริง...");
             const res = await fetch(
-                "https://api.open-meteo.com/v1/forecast?latitude=13.7563&longitude=100.5018&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Asia%2FBangkok"
+                "https://api.open-meteo.com/v1/forecast?latitude=13.7563&longitude=100.5018&current=temperature_2m,weather_code&timezone=Asia%2FBangkok"
             );
             if (!res.ok) throw new Error("Fetch failed");
             const data = await res.json();
@@ -339,20 +359,19 @@ export function JobSheetForm({
         onPreview(fullSheet);
     };
 
-    // Calculate total manpower
     const totalManpower = manpower.reduce((acc, curr) => acc + (Number(curr.count) || 0), 0);
 
     return (
-        <form onSubmit={handleFormSubmit} className="space-y-6 max-w-5xl mx-auto pb-12">
-            {/* Top Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/60 border border-white/10 rounded-2xl p-4 backdrop-blur-md sticky top-16 z-20 shadow-xl">
+        <form onSubmit={handleFormSubmit} className="space-y-5 max-w-5xl mx-auto pb-24 sm:pb-12">
+            {/* Desktop Top Toolbar */}
+            <div className="hidden sm:flex items-center justify-between gap-3 bg-zinc-900/60 border border-white/10 rounded-2xl p-4 backdrop-blur-md sticky top-16 z-20 shadow-xl">
                 <div>
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                         <HardHat className="w-5 h-5 text-amber-400" />
                         {initialData ? "แก้ไขรายงาน JobSheet" : "เขียน JobSheet ประจำวัน"}
                     </h2>
                     <p className="text-xs text-white/50">
-                        บันทึกการทำงานประจำวัน กำลังพล สภาพอากาศ และดาวน์โหลดเป็น Sheet / PDF ได้ทันที
+                        เน้นบันทึกเป็นงานๆ ประจำวัน รองรับหลายโปรเจคและงานทั่วไปใน 1 วัน
                     </p>
                 </div>
 
@@ -373,7 +392,7 @@ export function JobSheetForm({
                         variant="outline"
                         size="sm"
                         onClick={handleTriggerPreview}
-                        className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
+                        className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
                     >
                         <Eye className="w-4 h-4 mr-1.5" />
                         ดูตัวอย่าง Sheet / พิมพ์
@@ -382,7 +401,7 @@ export function JobSheetForm({
                         type="submit"
                         disabled={isSaving}
                         size="sm"
-                        className="bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-lg shadow-amber-500/20"
+                        className="bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-lg shadow-amber-500/20 px-5"
                     >
                         <Save className="w-4 h-4 mr-1.5" />
                         {isSaving ? "กำลังบันทึก..." : "บันทึก JobSheet"}
@@ -390,170 +409,148 @@ export function JobSheetForm({
                 </div>
             </div>
 
-            {/* SECTION 1: General Info & Weather */}
-            <div className="bg-zinc-900/40 border border-white/10 rounded-2xl p-5 space-y-4">
-                <div className="flex items-center gap-2 border-b border-white/5 pb-3">
-                    <Calendar className="w-4 h-4 text-amber-400" />
-                    <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
-                        1. ข้อมูลทั่วไป & สภาพอากาศประจำวัน
-                    </h3>
+            {/* Mobile Header Banner */}
+            <div className="sm:hidden flex items-center justify-between gap-2 px-1">
+                <div>
+                    <h2 className="text-base font-extrabold text-white flex items-center gap-1.5">
+                        <HardHat className="w-4 h-4 text-amber-400" />
+                        {initialData ? "แก้ไข JobSheet" : "เขียน JobSheet วันนี้"}
+                    </h2>
+                    <span className="text-[11px] text-white/50 font-mono">
+                        {date} • {workItems.length} งาน
+                    </span>
                 </div>
+                {onCancel && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={onCancel}
+                        className="text-white/60 text-xs h-8 px-2"
+                    >
+                        ยกเลิก
+                    </Button>
+                )}
+            </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    {/* Date */}
-                    <div>
-                        <label className="text-xs text-white/70 block mb-1.5 font-medium">วันที่บันทึกงาน *</label>
-                        <Input
-                            type="date"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            className="bg-zinc-950 border-white/10 text-white"
-                            required
-                        />
+            {/* COMPACT TOP BAR: Date, Report No & Weather Summary */}
+            <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-3.5 sm:p-4 shadow-md space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 sm:gap-3 items-center">
+                    {/* Date Picker */}
+                    <div className="sm:col-span-4 flex items-center gap-2 bg-zinc-950 px-3 py-2 rounded-xl border border-white/10">
+                        <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
+                        <div className="flex-1">
+                            <span className="text-[10px] text-white/40 block leading-none mb-1 font-medium">วันที่บันทึกงาน</span>
+                            <input
+                                type="date"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                className="bg-transparent text-white text-xs font-semibold focus:outline-none w-full"
+                                required
+                            />
+                        </div>
                     </div>
 
-                    {/* Report Number */}
-                    <div>
-                        <label className="text-xs text-white/70 block mb-1.5 font-medium">เลขที่รายงาน (Doc No.)</label>
-                        <Input
-                            type="text"
-                            value={reportNumber}
-                            onChange={(e) => setReportNumber(e.target.value)}
-                            className="bg-zinc-950 border-white/10 text-white font-mono"
-                        />
+                    {/* Mode / Overall Scope */}
+                    <div className="sm:col-span-5 flex items-center gap-2 bg-zinc-950 px-3 py-2 rounded-xl border border-white/10">
+                        <Briefcase className="w-4 h-4 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                            <span className="text-[10px] text-white/40 block leading-none mb-1 font-medium">รูปแบบการทำงานวันนี้</span>
+                            <select
+                                value={selectedProjectId}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSelectedProjectId(val);
+                                    if (val === "multi") {
+                                        setProjectName("ปฏิบัติงานหลายโครงการ & งานทั่วไป");
+                                    } else if (val === "general") {
+                                        setProjectName("งานทั่วไป / ธุรการ / ไม่ระบุโครงการ");
+                                    } else {
+                                        const found = projects.find((p) => p.id === val);
+                                        if (found) setProjectName(found.name);
+                                    }
+                                }}
+                                className="bg-transparent text-white text-xs font-semibold focus:outline-none w-full truncate"
+                            >
+                                <option value="multi">🗂️ ปฏิบัติงานหลายโครงการ / ทั่วไป</option>
+                                <option value="general">📦 งานทั่วไป / ธุรการ / นอกโครงการ</option>
+                                <optgroup label="🏢 โครงการเฉพาะในระบบ">
+                                    {projects.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            🏢 {p.name}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            </select>
+                        </div>
                     </div>
 
-                    {/* Project Selector / Mode */}
-                    <div>
-                        <label className="text-xs text-white/70 block mb-1.5 font-medium flex items-center justify-between">
-                            <span>โครงการหลัก / โหมดงาน</span>
-                            <span className="text-[10px] text-amber-400">แยกรายข้อได้</span>
-                        </label>
-                        <select
-                            value={selectedProjectId}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setSelectedProjectId(val);
-                                if (val === "multi") {
-                                    setProjectName("ปฏิบัติงานหลายโครงการ & งานทั่วไป");
-                                } else if (val === "general") {
-                                    setProjectName("งานทั่วไป / ธุรการ / ไม่ระบุโครงการ");
-                                } else {
-                                    const found = projects.find((p) => p.id === val);
-                                    if (found) setProjectName(found.name);
-                                }
-                            }}
-                            className="w-full h-10 px-3 rounded-md bg-zinc-950 border border-white/10 text-white text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
-                        >
-                            <option value="multi">🗂️ ปฏิบัติงานหลายโครงการ / ทั่วไป (Multi-Project)</option>
-                            <option value="general">📦 งานทั่วไป / ธุรการ / นอกโครงการ (General Tasks)</option>
-                            <optgroup label="โครงการก่อสร้างในระบบ">
-                                {projects.map((p) => (
-                                    <option key={p.id} value={p.id}>
-                                        🏢 {p.name}
-                                    </option>
-                                ))}
-                            </optgroup>
-                        </select>
-                    </div>
-
-                    {/* SubProject / Zone */}
-                    <div>
-                        <label className="text-xs text-white/70 block mb-1.5 font-medium">โครงการย่อย / โซนงาน / แผนก</label>
-                        <Input
-                            type="text"
-                            placeholder="เช่น อาคาร A, จัดซื้อ, งานระบบ"
-                            value={subProjectName}
-                            onChange={(e) => setSubProjectName(e.target.value)}
-                            className="bg-zinc-950 border-white/10 text-white"
-                        />
-                    </div>
-                </div>
-
-                {/* Weather Section */}
-                <div className="pt-2 border-t border-white/5">
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                        <label className="text-xs text-white/70 font-medium flex items-center gap-1.5">
-                            <CloudSun className="w-3.5 h-3.5 text-amber-400" />
-                            สภาพอากาศหน้างาน
-                        </label>
+                    {/* Weather Quick Capsule */}
+                    <div className="sm:col-span-3 flex items-center justify-between gap-1.5 bg-zinc-950 px-3 py-2 rounded-xl border border-white/10">
+                        <div className="flex items-center gap-1.5 truncate">
+                            <CloudSun className="w-4 h-4 text-amber-400 shrink-0" />
+                            <span className="text-xs text-white/80 font-medium truncate">
+                                {weatherCondition.split(" ")[0]}
+                            </span>
+                            <span className="text-xs font-bold text-amber-400 font-mono">
+                                {temperature}°C
+                            </span>
+                        </div>
                         <button
                             type="button"
                             onClick={handleAutoFetchWeather}
-                            className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 transition-colors"
+                            title="ดึงสภาพอากาศจริง"
+                            className="p-1 rounded-md text-amber-400 hover:bg-white/10 transition-colors"
                         >
-                            <Sparkles className="w-3 h-3" />
-                            ดึงสภาพอากาศจริงอัตโนมัติ
+                            <Sparkles className="w-3.5 h-3.5" />
                         </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                        <div className="sm:col-span-3 flex flex-wrap gap-2">
-                            {[
-                                { label: "☀️ ท้องฟ้าแจ่มใส", value: "ท้องฟ้าแจ่มใส (Clear Sky)" },
-                                { label: "⛅ มีเมฆมาก", value: "มีเมฆบางส่วน / ครึ้มฟ้าครึ้มฝน (Cloudy)" },
-                                { label: "🌧️ ฝนตก", value: "มีฝนตก (Rain Showers)" },
-                                { label: "⚡ พายุฟ้าคะนอง", value: "พายุฝนฟ้าคะนอง (Thunderstorm)" },
-                                { label: "🌫️ หมอกลง", value: "มีหมอกลง (Foggy)" }
-                            ].map((w) => (
-                                <button
-                                    key={w.value}
-                                    type="button"
-                                    onClick={() => setWeatherCondition(w.value)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                                        weatherCondition === w.value
-                                            ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-sm"
-                                            : "bg-zinc-950/60 border-white/10 text-white/60 hover:text-white hover:bg-white/5"
-                                    }`}
-                                >
-                                    {w.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div>
-                            <Input
-                                type="number"
-                                placeholder="อุณหภูมิ (°C)"
-                                value={temperature ?? ""}
-                                onChange={(e) => setTemperature(e.target.value ? Number(e.target.value) : undefined)}
-                                className="bg-zinc-950 border-white/10 text-white text-xs"
-                            />
-                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* SECTION 2: Work Items Executed */}
-            <div className="bg-zinc-900/40 border border-white/10 rounded-2xl p-5 space-y-4">
-                <div className="flex items-center justify-between border-b border-white/5 pb-3">
+            {/* MAIN SECTION: THE DAILY JOBS LIST (TASK-CENTRIC) */}
+            <div className="space-y-3.5">
+                <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-2">
-                        <Wrench className="w-4 h-4 text-amber-400" />
-                        <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
-                            2. รายการงานที่ปฏิบัติในวันนี้ ({workItems.length} รายการ)
-                        </h3>
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                            <Wrench className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                                งานที่ปฏิบัติในวันนี้
+                                <span className="text-xs font-mono font-bold text-black bg-amber-400 px-2 py-0.5 rounded-full">
+                                    {workItems.length} งาน
+                                </span>
+                            </h3>
+                            <p className="text-[11px] text-white/50 hidden sm:block">
+                                แยกบันทึกทีละงานได้อิสระ แต่ละงานเลือกโครงการหรือเป็นงานทั่วไปได้
+                            </p>
+                        </div>
                     </div>
+
                     <Button
                         type="button"
                         size="sm"
                         onClick={() => addWorkItem()}
-                        className="h-8 text-xs bg-white/10 hover:bg-white/20 text-white"
+                        className="bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs h-8 sm:h-9 rounded-xl shadow-md shadow-amber-500/10"
                     >
-                        <Plus className="w-3.5 h-3.5 mr-1" />
-                        เพิ่มรายการงาน
+                        <Plus className="w-3.5 h-3.5 mr-1 stroke-[3]" />
+                        เพิ่มงานใหม่
                     </Button>
                 </div>
 
-                {/* Preset Chips */}
-                <div>
-                    <span className="text-[11px] text-white/40 block mb-1.5">คลิกเพื่อเพิ่มงานสำเร็จรูป (มีทั้งงานโครงการและงานทั่วไป):</span>
-                    <div className="flex flex-wrap gap-1.5">
+                {/* Horizontal Quick Task Presets (Swipeable on Mobile) */}
+                <div className="overflow-x-auto pb-1.5 scrollbar-hide -mx-2 px-2 sm:mx-0 sm:px-0">
+                    <div className="flex items-center gap-1.5 min-w-max">
+                        <span className="text-[11px] text-white/40 font-medium mr-1 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-amber-400" /> แม่แบบด่วน:
+                        </span>
                         {QUICK_TASK_PRESETS.map((preset, idx) => (
                             <button
                                 key={idx}
                                 type="button"
-                                onClick={() => addWorkItem(preset.task, preset.category)}
-                                className="text-[11px] px-2.5 py-1 rounded-md bg-white/5 hover:bg-amber-500/10 hover:text-amber-300 border border-white/5 text-white/70 transition-colors"
+                                onClick={() => addWorkItem(preset.task, preset.category, preset.time)}
+                                className="text-[11px] px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-amber-500/20 hover:text-amber-300 border border-white/10 hover:border-amber-500/30 text-white/70 transition-all active:scale-95 whitespace-nowrap shadow-sm"
                             >
                                 + {preset.label}
                             </button>
@@ -561,318 +558,442 @@ export function JobSheetForm({
                     </div>
                 </div>
 
-                {/* Items List */}
+                {/* THE TASK CARDS LIST (Mobile-First Layout) */}
                 <div className="space-y-3">
-                    {workItems.map((item, index) => (
-                        <div
-                            key={item.id}
-                            className="bg-zinc-950/80 border border-white/10 rounded-xl p-3.5 space-y-2.5 relative group transition-all hover:border-white/20"
-                        >
-                            <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
-                                    #{index + 1}
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() => removeWorkItem(item.id)}
-                                    className="text-white/40 hover:text-rose-400 p-1 transition-colors"
-                                    title="ลบรายการนี้"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
+                    {workItems.map((item, index) => {
+                        const isGeneral = !item.projectId || item.projectName?.includes("ทั่วไป") || item.projectName?.includes("จัดซื้อ") || item.projectName?.includes("โรงงาน");
 
-                            {/* ROW 1: Project Selector & Task Name */}
-                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-                                {/* Project / Category Selector */}
-                                <div className="sm:col-span-4">
-                                    <label className="text-[10px] text-white/50 block mb-1">โครงการ / หมวดงาน</label>
-                                    <select
-                                        value={item.projectId || (item.projectName?.includes("ทั่วไป") ? "general" : item.projectName?.includes("จัดซื้อ") ? "procurement" : item.projectName?.includes("โรงงาน") ? "workshop" : "")}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            if (val === "general") {
-                                                updateWorkItem(item.id, "projectId", "");
-                                                updateWorkItem(item.id, "projectName", "งานทั่วไป / ธุรการ");
-                                            } else if (val === "procurement") {
-                                                updateWorkItem(item.id, "projectId", "");
-                                                updateWorkItem(item.id, "projectName", "จัดซื้อ / จัดส่งวัสดุ");
-                                            } else if (val === "workshop") {
-                                                updateWorkItem(item.id, "projectId", "");
-                                                updateWorkItem(item.id, "projectName", "โรงงาน / โกดัง / ซ่อมบำรุง");
-                                            } else if (val === "") {
-                                                updateWorkItem(item.id, "projectId", "");
-                                                updateWorkItem(item.id, "projectName", projectName || "งานทั่วไป");
-                                            } else {
-                                                const found = projects.find((p) => p.id === val);
-                                                updateWorkItem(item.id, "projectId", val);
-                                                updateWorkItem(item.id, "projectName", found ? found.name : "");
-                                            }
-                                        }}
-                                        className="w-full h-9 px-2 rounded-md bg-zinc-900 border border-white/10 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
-                                    >
-                                        <option value="">-- {selectedProjectId && selectedProjectId !== "multi" && selectedProjectId !== "general" ? projectName : "ตามโครงการหลัก"} --</option>
-                                        <optgroup label="🏢 โครงการก่อสร้าง">
-                                            {projects.map((p) => (
-                                                <option key={p.id} value={p.id}>
-                                                    {p.name}
-                                                </option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="📦 งานทั่วไป / ไม่ระบุโครงการ">
-                                            <option value="general">📦 งานทั่วไป / ธุรการ / ออฟฟิศ</option>
-                                            <option value="procurement">🚚 จัดซื้อ / จัดส่งวัสดุ</option>
-                                            <option value="workshop">🏭 โรงงาน / โกดัง / ซ่อมบำรุง</option>
-                                        </optgroup>
-                                    </select>
+                        return (
+                            <div
+                                key={item.id}
+                                className="bg-zinc-900/80 border border-white/10 hover:border-amber-500/30 rounded-2xl p-3.5 sm:p-4 space-y-3 transition-all shadow-lg relative group"
+                            >
+                                {/* CARD TOP ROW: Job Number + Project Selector + Time + Trash */}
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2.5">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="text-xs font-mono font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 shrink-0">
+                                            งานที่ #{index + 1}
+                                        </span>
+
+                                        {/* Project / Category Selector Pill */}
+                                        <div className="relative flex-1 max-w-xs">
+                                            <select
+                                                value={
+                                                    item.projectId ||
+                                                    (item.projectName?.includes("จัดซื้อ")
+                                                        ? "procurement"
+                                                        : item.projectName?.includes("โรงงาน")
+                                                        ? "workshop"
+                                                        : item.projectName?.includes("ทั่วไป")
+                                                        ? "general"
+                                                        : "")
+                                                }
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === "general") {
+                                                        updateWorkItem(item.id, "projectId", "");
+                                                        updateWorkItem(item.id, "projectName", "งานทั่วไป / ธุรการ");
+                                                    } else if (val === "procurement") {
+                                                        updateWorkItem(item.id, "projectId", "");
+                                                        updateWorkItem(item.id, "projectName", "จัดซื้อ / จัดส่งวัสดุ");
+                                                    } else if (val === "workshop") {
+                                                        updateWorkItem(item.id, "projectId", "");
+                                                        updateWorkItem(item.id, "projectName", "โรงงาน / โกดัง / ซ่อมบำรุง");
+                                                    } else if (val === "") {
+                                                        updateWorkItem(item.id, "projectId", "");
+                                                        updateWorkItem(item.id, "projectName", projectName || "งานทั่วไป");
+                                                    } else {
+                                                        const found = projects.find((p) => p.id === val);
+                                                        updateWorkItem(item.id, "projectId", val);
+                                                        updateWorkItem(item.id, "projectName", found ? found.name : "");
+                                                    }
+                                                }}
+                                                className={`w-full text-xs font-bold px-2.5 py-1 rounded-lg border appearance-none pr-6 focus:outline-none transition-all truncate ${
+                                                    isGeneral
+                                                        ? "bg-zinc-800 text-zinc-300 border-zinc-700"
+                                                        : "bg-amber-500/10 text-amber-300 border-amber-500/30"
+                                                }`}
+                                            >
+                                                <option value="">-- โครงการหลัก / ตามฟอร์ม --</option>
+                                                <optgroup label="🏢 โครงการก่อสร้าง">
+                                                    {projects.map((p) => (
+                                                        <option key={p.id} value={p.id}>
+                                                            🏢 {p.name}
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                                <optgroup label="📦 งานทั่วไป / ไม่ระบุโครงการ">
+                                                    <option value="general">📦 งานทั่วไป / ธุรการ / ออฟฟิศ</option>
+                                                    <option value="procurement">🚚 จัดซื้อ / จัดส่งวัสดุ</option>
+                                                    <option value="workshop">🏭 โรงงาน / โกดัง / ซ่อมบำรุง</option>
+                                                </optgroup>
+                                            </select>
+                                            <ChevronDown className="w-3 h-3 text-white/40 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        </div>
+                                    </div>
+
+                                    {/* Time Slot & Delete */}
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <div className="relative">
+                                            <select
+                                                value={item.timeSlot || "ช่วงเช้า"}
+                                                onChange={(e) => updateWorkItem(item.id, "timeSlot", e.target.value)}
+                                                className="bg-black/40 border border-white/10 text-[11px] text-white/80 rounded-lg px-2 py-1 pr-5 appearance-none focus:outline-none font-medium"
+                                            >
+                                                <option value="ช่วงเช้า">🌅 เช้า</option>
+                                                <option value="ช่วงบ่าย">☀️ บ่าย</option>
+                                                <option value="ช่วงเย็น">🌆 เย็น</option>
+                                                <option value="ล่วงเวลา / OT">🌙 OT</option>
+                                                <option value="ทั้งวัน">⏱️ ทั้งวัน</option>
+                                            </select>
+                                            <ChevronDown className="w-2.5 h-2.5 text-white/40 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => removeWorkItem(item.id)}
+                                            className="w-7 h-7 rounded-lg text-white/40 hover:text-rose-400 hover:bg-rose-500/10 flex items-center justify-center transition-colors"
+                                            title="ลบงานนี้"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
                                 </div>
 
-                                {/* Task Name */}
-                                <div className="sm:col-span-8">
-                                    <label className="text-[10px] text-white/50 block mb-1">รายละเอียดงานที่ทำ *</label>
+                                {/* TASK TITLE (Big, Thumb-Friendly Input) */}
+                                <div>
+                                    <label className="text-[10px] text-white/40 block mb-1 font-semibold uppercase tracking-wider">
+                                        รายละเอียดงานที่ทำ *
+                                    </label>
                                     <Input
-                                        placeholder="ระบุรายละเอียดกิจกรรมหรือเนื้องานที่ปฏิบัติ..."
+                                        placeholder="ระบุสิ่งที่ทำ เช่น ตรวจเช็คเหล็กคาน, เจรจากับซัพพลายเออร์..."
                                         value={item.task}
                                         onChange={(e) => updateWorkItem(item.id, "task", e.target.value)}
+                                        className="bg-zinc-950 border-white/10 text-white text-xs sm:text-sm h-10 font-medium placeholder:text-white/30 focus:border-amber-500/60"
+                                        required
+                                    />
+                                </div>
+
+                                {/* LOCATION & QUANTITY (2-Column Grid on Mobile) */}
+                                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                                    <div>
+                                        <label className="text-[10px] text-white/40 block mb-1 font-medium">พื้นที่ / โซน</label>
+                                        <Input
+                                            placeholder="เช่น ชั้น 2, ออฟฟิศ"
+                                            value={item.location}
+                                            onChange={(e) => updateWorkItem(item.id, "location", e.target.value)}
+                                            className="bg-zinc-950 border-white/10 text-white text-xs h-9 placeholder:text-white/30"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-white/40 block mb-1 font-medium">ปริมาณงาน / เวลา</label>
+                                        <Input
+                                            placeholder="เช่น 15 ตร.ม., 3 ชม."
+                                            value={item.quantity}
+                                            onChange={(e) => updateWorkItem(item.id, "quantity", e.target.value)}
+                                            className="bg-zinc-950 border-white/10 text-white text-xs h-9 placeholder:text-white/30"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* STATUS (4 Tap Buttons on Mobile - No Clunky Select!) */}
+                                <div>
+                                    <label className="text-[10px] text-white/40 block mb-1 font-medium">สถานะของงานนี้</label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                                        {[
+                                            { key: "completed", label: "เสร็จสิ้น", icon: Check, activeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/50" },
+                                            { key: "in_progress", label: "กำลังดำเนินการ", icon: Clock, activeClass: "bg-blue-500/20 text-blue-300 border-blue-500/50" },
+                                            { key: "pending", label: "รอดำเนินการ", icon: Clock, activeClass: "bg-amber-500/20 text-amber-300 border-amber-500/50" },
+                                            { key: "delayed", label: "ติดปัญหา/ล่าช้า", icon: AlertTriangle, activeClass: "bg-rose-500/20 text-rose-300 border-rose-500/50" }
+                                        ].map((st) => {
+                                            const isActive = item.status === st.key;
+                                            return (
+                                                <button
+                                                    key={st.key}
+                                                    type="button"
+                                                    onClick={() => updateWorkItem(item.id, "status", st.key)}
+                                                    className={`h-8 px-2 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 border transition-all ${
+                                                        isActive
+                                                            ? st.activeClass + " shadow-sm"
+                                                            : "bg-zinc-950/60 text-white/40 border-white/5 hover:text-white hover:bg-white/5"
+                                                    }`}
+                                                >
+                                                    <st.icon className="w-3 h-3" />
+                                                    <span>{st.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Item Notes */}
+                                <div>
+                                    <Input
+                                        placeholder="หมายเหตุเพิ่มเติมสำหรับงานนี้ (ถ้ามี)..."
+                                        value={item.notes || ""}
+                                        onChange={(e) => updateWorkItem(item.id, "notes", e.target.value)}
+                                        className="bg-zinc-950/60 border-white/5 text-white/70 text-xs h-8 placeholder:text-white/25"
+                                    />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Big Full-Width Add Another Job Button */}
+                <button
+                    type="button"
+                    onClick={() => addWorkItem()}
+                    className="w-full py-3.5 px-4 rounded-2xl border-2 border-dashed border-amber-500/40 hover:border-amber-500/80 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.99] shadow-sm"
+                >
+                    <Plus className="w-4 h-4 stroke-[3]" />
+                    เพิ่มงานถัดไปในวันนี้ (+ Add Job)
+                </button>
+            </div>
+
+            {/* COLLAPSIBLE SECONDARY SECTIONS (Mobile-Optimized Accordions) */}
+            <div className="space-y-3 pt-2">
+                {/* 1. Manpower Accordion */}
+                <div className="bg-zinc-900/50 border border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                    <button
+                        type="button"
+                        onClick={() => setOpenManpower(!openManpower)}
+                        className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <Users className="w-4 h-4 text-blue-400" />
+                            <div>
+                                <span className="text-xs sm:text-sm font-bold text-white block">กำลังพลหน้างาน (Manpower)</span>
+                                <span className="text-[10px] text-white/50">รวมช่าง/คนงานทั้งหมด {totalManpower} คน</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                                {totalManpower} คน
+                            </span>
+                            {openManpower ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
+                        </div>
+                    </button>
+
+                    {openManpower && (
+                        <div className="p-4 border-t border-white/5 bg-zinc-950/40 space-y-3 animate-in fade-in duration-200">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                {manpower.map((mp) => (
+                                    <div
+                                        key={mp.id}
+                                        className="bg-zinc-900 border border-white/10 rounded-xl p-2.5 flex items-center justify-between gap-1.5"
+                                    >
+                                        <div className="truncate">
+                                            <span className="text-xs text-white/80 block truncate font-medium">{mp.role}</span>
+                                            <span className="text-[10px] text-white/40">{mp.count} คน</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => updateManpowerCount(mp.id, -1)}
+                                                className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors active:scale-95"
+                                            >
+                                                -
+                                            </button>
+                                            <span className="w-6 text-center text-xs font-bold text-amber-400 font-mono">
+                                                {mp.count}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => updateManpowerCount(mp.id, 1)}
+                                                className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors active:scale-95"
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* 2. Equipment & Materials Accordion */}
+                <div className="bg-zinc-900/50 border border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                    <button
+                        type="button"
+                        onClick={() => setOpenEquipment(!openEquipment)}
+                        className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <Factory className="w-4 h-4 text-purple-400" />
+                            <div>
+                                <span className="text-xs sm:text-sm font-bold text-white block">เครื่องจักร & วัสดุก่อสร้างเข้าไซต์</span>
+                                <span className="text-[10px] text-white/50 truncate block max-w-[240px]">
+                                    {equipment || materialsReceived || "ระบุเครื่องมือหรือวัสดุที่ใช้"}
+                                </span>
+                            </div>
+                        </div>
+                        {openEquipment ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
+                    </button>
+
+                    {openEquipment && (
+                        <div className="p-4 border-t border-white/5 bg-zinc-950/40 space-y-3 animate-in fade-in duration-200">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[11px] text-white/60 block mb-1">เครื่องจักร / เครื่องมือที่ใช้งาน</label>
+                                    <Textarea
+                                        rows={2}
+                                        placeholder="เช่น รถโม่คอนกรีต 2 คัน, เครื่องตบดิน..."
+                                        value={equipment}
+                                        onChange={(e) => setEquipment(e.target.value)}
+                                        className="bg-zinc-900 border-white/10 text-white text-xs resize-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[11px] text-white/60 block mb-1">วัสดุก่อสร้างที่รับเข้าวันนี้</label>
+                                    <Textarea
+                                        rows={2}
+                                        placeholder="เช่น ปูนซีเมนต์ 50 ถุง, หินทราย 2 คันรถ..."
+                                        value={materialsReceived}
+                                        onChange={(e) => setMaterialsReceived(e.target.value)}
+                                        className="bg-zinc-900 border-white/10 text-white text-xs resize-none"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* 3. Site Photos Accordion */}
+                <div className="bg-zinc-900/50 border border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                    <button
+                        type="button"
+                        onClick={() => setOpenPhotos(!openPhotos)}
+                        className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <Upload className="w-4 h-4 text-emerald-400" />
+                            <div>
+                                <span className="text-xs sm:text-sm font-bold text-white block">รูปถ่ายหน้างาน (Site Photos)</span>
+                                <span className="text-[10px] text-white/50">{photos.length} รูปภาพประกอบ</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {photos.length > 0 && (
+                                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                    {photos.length} รูป
+                                </span>
+                            )}
+                            {openPhotos ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
+                        </div>
+                    </button>
+
+                    {openPhotos && (
+                        <div className="p-4 border-t border-white/5 bg-zinc-950/40 space-y-3 animate-in fade-in duration-200">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-white/60">ถ่ายจากกล้องมือถือหรือแนบรูปหน้างาน</span>
+                                <label className="cursor-pointer">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handlePhotoUpload}
+                                        className="hidden"
+                                    />
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold border border-amber-500/30 transition-colors">
+                                        <Plus className="w-3.5 h-3.5" />
+                                        แนบรูปเพิ่ม
+                                    </span>
+                                </label>
+                            </div>
+
+                            {photos.length > 0 ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                    {photos.map((src, idx) => (
+                                        <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border border-white/10 group bg-black">
+                                            <img src={src} alt="site" className="w-full h-full object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={() => removePhoto(idx)}
+                                                className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/80 text-white hover:bg-rose-500 transition-colors"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="border border-dashed border-white/10 rounded-xl p-5 text-center text-white/40 text-xs">
+                                    ยังไม่มีรูปภาพประกอบ สามารถกดปุ่มแนบรูปด้านบนได้
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* 4. Safety & Signatures Accordion */}
+                <div className="bg-zinc-900/50 border border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                    <button
+                        type="button"
+                        onClick={() => setOpenSafety(!openSafety)}
+                        className="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <Shield className="w-4 h-4 text-amber-400" />
+                            <div>
+                                <span className="text-xs sm:text-sm font-bold text-white block">ความปลอดภัย & ผู้จัดทำรายงาน</span>
+                                <span className="text-[10px] text-white/50">ผู้รายงาน: {reportedBy}</span>
+                            </div>
+                        </div>
+                        {openSafety ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
+                    </button>
+
+                    {openSafety && (
+                        <div className="p-4 border-t border-white/5 bg-zinc-950/40 space-y-3 animate-in fade-in duration-200">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[11px] text-white/60 block mb-1">ปัญหา / อุปสรรคหน้างาน</label>
+                                    <Input
+                                        placeholder="เช่น ฝนตกช่วงบ่าย 1 ชม."
+                                        value={obstacles}
+                                        onChange={(e) => setObstacles(e.target.value)}
+                                        className="bg-zinc-900 border-white/10 text-white text-xs h-9"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[11px] text-white/60 block mb-1">บันทึกความปลอดภัย</label>
+                                    <Input
+                                        placeholder="เช่น สวมหมวกนิรภัย 100% ไม่มีอุบัติเหตุ"
+                                        value={safetyNotes}
+                                        onChange={(e) => setSafetyNotes(e.target.value)}
+                                        className="bg-zinc-900 border-white/10 text-white text-xs h-9"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-white/5">
+                                <div>
+                                    <label className="text-[11px] text-white/60 block mb-1">ชื่อผู้จัดทำรายงาน *</label>
+                                    <Input
+                                        value={reportedBy}
+                                        onChange={(e) => setReportedBy(e.target.value)}
                                         className="bg-zinc-900 border-white/10 text-white text-xs h-9"
                                         required
                                     />
                                 </div>
-                            </div>
-
-                            {/* ROW 2: Location, Quantity, Status, Notes */}
-                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 pt-1">
-                                {/* Location */}
-                                <div className="sm:col-span-3">
-                                    <label className="text-[10px] text-white/50 block mb-1">พื้นที่ / โซน</label>
+                                <div>
+                                    <label className="text-[11px] text-white/60 block mb-1">ชื่อวิศวกรผู้ตรวจสอบ</label>
                                     <Input
-                                        placeholder="เช่น ชั้น 2, ออฟฟิศ, โกดัง"
-                                        value={item.location}
-                                        onChange={(e) => updateWorkItem(item.id, "location", e.target.value)}
-                                        className="bg-zinc-900 border-white/10 text-white text-xs h-8"
-                                    />
-                                </div>
-
-                                {/* Quantity */}
-                                <div className="sm:col-span-3">
-                                    <label className="text-[10px] text-white/50 block mb-1">ปริมาณงาน / เวลา</label>
-                                    <Input
-                                        placeholder="เช่น 15 ตร.ม., 3 ชม."
-                                        value={item.quantity}
-                                        onChange={(e) => updateWorkItem(item.id, "quantity", e.target.value)}
-                                        className="bg-zinc-900 border-white/10 text-white text-xs h-8"
-                                    />
-                                </div>
-
-                                {/* Status */}
-                                <div className="sm:col-span-2">
-                                    <label className="text-[10px] text-white/50 block mb-1">สถานะ</label>
-                                    <select
-                                        value={item.status}
-                                        onChange={(e) => updateWorkItem(item.id, "status", e.target.value)}
-                                        className="w-full h-8 px-2 rounded-md bg-zinc-900 border border-white/10 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
-                                    >
-                                        <option value="completed">เสร็จสิ้น (100%)</option>
-                                        <option value="in_progress">กำลังดำเนินการ</option>
-                                        <option value="pending">รอดำเนินการ</option>
-                                        <option value="delayed">ล่าช้า / ติดปัญหา</option>
-                                    </select>
-                                </div>
-
-                                {/* Item Notes */}
-                                <div className="sm:col-span-4">
-                                    <label className="text-[10px] text-white/50 block mb-1">หมายเหตุ</label>
-                                    <Input
-                                        placeholder="รายละเอียดเพิ่มเติม..."
-                                        value={item.notes || ""}
-                                        onChange={(e) => updateWorkItem(item.id, "notes", e.target.value)}
-                                        className="bg-zinc-900/60 border-white/5 text-white/80 text-xs h-8"
+                                        placeholder="เช่น นายช่างสมศักดิ์"
+                                        value={inspectedBy}
+                                        onChange={(e) => setInspectedBy(e.target.value)}
+                                        className="bg-zinc-900 border-white/10 text-white text-xs h-9"
                                     />
                                 </div>
                             </div>
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
 
-            {/* SECTION 3: Manpower & Resources */}
-            <div className="bg-zinc-900/40 border border-white/10 rounded-2xl p-5 space-y-4">
-                <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                    <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-amber-400" />
-                        <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
-                            3. กำลังพล & ทรัพยากรหน้างาน
-                        </h3>
-                    </div>
-                    <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
-                        รวมช่าง/คนงาน {totalManpower} คน
-                    </span>
-                </div>
-
-                {/* Manpower Counter Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {manpower.map((mp) => (
-                        <div
-                            key={mp.id}
-                            className="bg-zinc-950 border border-white/10 rounded-xl p-2.5 flex items-center justify-between gap-2"
-                        >
-                            <div className="truncate">
-                                <span className="text-xs text-white/80 block truncate font-medium">{mp.role}</span>
-                                <span className="text-[10px] text-white/40">{mp.count} คน</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    type="button"
-                                    onClick={() => updateManpowerCount(mp.id, -1)}
-                                    className="w-6 h-6 rounded bg-white/5 hover:bg-white/15 text-white flex items-center justify-center text-xs font-bold transition-colors"
-                                >
-                                    -
-                                </button>
-                                <span className="w-6 text-center text-xs font-bold text-amber-400 font-mono">
-                                    {mp.count}
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() => updateManpowerCount(mp.id, 1)}
-                                    className="w-6 h-6 rounded bg-white/5 hover:bg-white/15 text-white flex items-center justify-center text-xs font-bold transition-colors"
-                                >
-                                    +
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Equipment & Materials */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    <div>
-                        <label className="text-xs text-white/70 block mb-1.5 font-medium">เครื่องจักร / เครื่องมือที่ใช้งาน</label>
-                        <Textarea
-                            rows={2}
-                            placeholder="เช่น รถแบคโฮ 1 คัน, เครื่องตบดิน, นั่งร้าน..."
-                            value={equipment}
-                            onChange={(e) => setEquipment(e.target.value)}
-                            className="bg-zinc-950 border-white/10 text-white text-xs resize-none"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-xs text-white/70 block mb-1.5 font-medium">วัสดุก่อสร้างที่รับเข้าวันนี้</label>
-                        <Textarea
-                            rows={2}
-                            placeholder="เช่น คอนกรีตผสมเสร็จ 12 ลบ.ม., ปูนซีเมนต์ 50 ถุง..."
-                            value={materialsReceived}
-                            onChange={(e) => setMaterialsReceived(e.target.value)}
-                            className="bg-zinc-950 border-white/10 text-white text-xs resize-none"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* SECTION 4: Obstacles & Safety */}
-            <div className="bg-zinc-900/40 border border-white/10 rounded-2xl p-5 space-y-4">
-                <div className="flex items-center gap-2 border-b border-white/5 pb-3">
-                    <Shield className="w-4 h-4 text-amber-400" />
-                    <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
-                        4. ปัญหาอุปสรรค & บันทึกความปลอดภัย
-                    </h3>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label className="text-xs text-white/70 block mb-1.5 font-medium">ปัญหา / อุปสรรคหน้างาน</label>
-                        <Textarea
-                            rows={2}
-                            placeholder="เช่น ฝนตกช่วงบ่าย 14:00-15:00 น. ทำให้ต้องหยุดงานเทพื้นชั่วคราว..."
-                            value={obstacles}
-                            onChange={(e) => setObstacles(e.target.value)}
-                            className="bg-zinc-950 border-white/10 text-white text-xs resize-none"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-xs text-white/70 block mb-1.5 font-medium">ความปลอดภัยและข้อสังเกต</label>
-                        <Textarea
-                            rows={2}
-                            placeholder="เช่น ตรวจสอบสายไฟและระบบนิรภัยเรียบร้อย ไม่มีอุบัติเหตุ..."
-                            value={safetyNotes}
-                            onChange={(e) => setSafetyNotes(e.target.value)}
-                            className="bg-zinc-950 border-white/10 text-white text-xs resize-none"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* SECTION 5: Site Photos */}
-            <div className="bg-zinc-900/40 border border-white/10 rounded-2xl p-5 space-y-4">
-                <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                    <div className="flex items-center gap-2">
-                        <Upload className="w-4 h-4 text-amber-400" />
-                        <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
-                            5. ภาพถ่ายประกอบหน้างาน ({photos.length} รูป)
-                        </h3>
-                    </div>
-                    <label className="cursor-pointer">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handlePhotoUpload}
-                            className="hidden"
-                        />
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors">
-                            <Plus className="w-3.5 h-3.5" />
-                            แนบรูปภาพหน้างาน
-                        </span>
-                    </label>
-                </div>
-
-                {photos.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                        {photos.map((src, idx) => (
-                            <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border border-white/10 group bg-black">
-                                <img src={src} alt="site" className="w-full h-full object-cover" />
-                                <button
-                                    type="button"
-                                    onClick={() => removePhoto(idx)}
-                                    className="absolute top-1 right-1 p-1 rounded-full bg-black/70 text-white hover:bg-rose-500 transition-colors opacity-0 group-hover:opacity-100"
-                                >
-                                    <X className="w-3 h-3" />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="border border-dashed border-white/10 rounded-xl p-6 text-center text-white/40 text-xs">
-                        ยังไม่มีรูปภาพประกอบ สามารถถ่ายจากมือถือหรือแนบรูปหน้างานเข้ามาได้
-                    </div>
-                )}
-            </div>
-
-            {/* SECTION 6: Signatures */}
-            <div className="bg-zinc-900/40 border border-white/10 rounded-2xl p-5 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label className="text-xs text-white/70 block mb-1.5 font-medium">ชื่อผู้จัดทำรายงาน / ผู้ควบคุมงาน *</label>
-                        <Input
-                            value={reportedBy}
-                            onChange={(e) => setReportedBy(e.target.value)}
-                            className="bg-zinc-950 border-white/10 text-white text-xs"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label className="text-xs text-white/70 block mb-1.5 font-medium">ชื่อวิศวกรผู้ตรวจสอบ (ถ้ามี)</label>
-                        <Input
-                            placeholder="เช่น นายช่างสมศักดิ์ (วศ.1234)"
-                            value={inspectedBy}
-                            onChange={(e) => setInspectedBy(e.target.value)}
-                            className="bg-zinc-950 border-white/10 text-white text-xs"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+            {/* Desktop Bottom Submit Actions */}
+            <div className="hidden sm:flex items-center justify-end gap-3 pt-3 border-t border-white/10">
                 {onCancel && (
                     <Button
                         type="button"
@@ -895,9 +1016,37 @@ export function JobSheetForm({
                 <Button
                     type="submit"
                     disabled={isSaving}
-                    className="bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-lg shadow-amber-500/20 px-6"
+                    className="bg-amber-500 hover:bg-amber-600 text-black font-bold shadow-lg shadow-amber-500/20 px-6 h-10"
                 >
                     <Save className="w-4 h-4 mr-1.5" />
+                    {isSaving ? "กำลังบันทึก..." : "บันทึก JobSheet"}
+                </Button>
+            </div>
+
+            {/* MOBILE FLOATING BOTTOM BAR (Always accessible by thumb!) */}
+            <div className="fixed bottom-0 inset-x-0 bg-zinc-950/95 border-t border-white/10 px-4 py-2.5 flex items-center justify-between sm:hidden z-40 backdrop-blur-lg shadow-2xl">
+                <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/15 px-2 py-1 rounded-lg border border-amber-500/20">
+                        {workItems.length} งาน
+                    </span>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleTriggerPreview}
+                        className="h-9 px-3 text-xs border-white/10 text-white/80"
+                    >
+                        <Eye className="w-3.5 h-3.5 mr-1" />
+                        ดู Sheet
+                    </Button>
+                </div>
+
+                <Button
+                    type="submit"
+                    disabled={isSaving}
+                    className="h-10 px-5 text-xs bg-amber-500 hover:bg-amber-600 text-black font-extrabold rounded-xl shadow-lg shadow-amber-500/30"
+                >
+                    <Save className="w-4 h-4 mr-1 stroke-[3]" />
                     {isSaving ? "กำลังบันทึก..." : "บันทึก JobSheet"}
                 </Button>
             </div>

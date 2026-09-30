@@ -330,7 +330,14 @@ export function JobSheetPreviewModal({
                                                             )}
                                                         </td>
                                                         <td className="py-2 px-2.5 font-medium text-zinc-900">{item.task}</td>
-                                                        <td className="py-2 px-2 text-zinc-600">{item.location || "-"}</td>
+                                                        <td className="py-2 px-2 text-zinc-600">
+                                                            <div>{item.location || "-"}</div>
+                                                            {item.timeSlot && (
+                                                                <span className="inline-block mt-0.5 text-[10px] px-1.5 py-0.5 bg-zinc-100 text-zinc-600 rounded border border-zinc-200 font-medium">
+                                                                    {item.timeSlot}
+                                                                </span>
+                                                            )}
+                                                        </td>
                                                         <td className="py-2 px-2 text-center text-zinc-800 font-medium">{item.quantity || "-"}</td>
                                                         <td className="py-2 px-2 text-center">
                                                             {item.status === "completed" && (
