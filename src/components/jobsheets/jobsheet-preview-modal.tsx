@@ -53,7 +53,9 @@ export function JobSheetPreviewModal({
     const [showSignatures, setShowSignatures] = useState(true);
 
     // Mobile viewport & zoom states
-    const [containerWidth, setContainerWidth] = useState(0);
+    const [containerWidth, setContainerWidth] = useState(() => 
+        typeof window !== "undefined" ? window.innerWidth : 860
+    );
     const [viewMode, setViewMode] = useState<"fit" | "actual">("fit");
     const [sheetHeight, setSheetHeight] = useState(1200);
 
@@ -68,25 +70,40 @@ export function JobSheetPreviewModal({
                 setContainerWidth(scrollContainerRef.current.clientWidth);
             }
             if (sheetRef.current) {
-                setSheetHeight(sheetRef.current.offsetHeight || 1200);
+                setSheetHeight(sheetRef.current.offsetHeight || sheetRef.current.scrollHeight || 1200);
             }
         };
 
-        const timer = setTimeout(updateDimensions, 100);
+        updateDimensions();
+
+        const ro = new ResizeObserver(() => {
+            updateDimensions();
+        });
+
+        if (scrollContainerRef.current) {
+            ro.observe(scrollContainerRef.current);
+        }
+        if (sheetRef.current) {
+            ro.observe(sheetRef.current);
+        }
+
         window.addEventListener("resize", updateDimensions);
         return () => {
-            clearTimeout(timer);
+            ro.disconnect();
             window.removeEventListener("resize", updateDimensions);
         };
-    }, [open, jobsheet, showSignatures]);
+    }, [open, jobsheet, showSignatures, viewMode]);
 
     // Calculate scale factor for mobile preview
     const scale = useMemo(() => {
         if (viewMode === "actual") return 1;
-        if (!containerWidth || containerWidth >= 880) return 1;
-        const availableWidth = containerWidth - 24;
-        return Math.min(1, Math.max(0.32, availableWidth / 860));
+        if (!containerWidth || containerWidth >= 900) return 1;
+        const availableWidth = Math.max(280, containerWidth - 32);
+        return Math.min(1, availableWidth / 860);
     }, [containerWidth, viewMode]);
+
+    const scaledWidth = Math.round(860 * scale);
+    const scaledHeight = Math.round(sheetHeight * scale);
 
     if (!jobsheet) return null;
 
@@ -174,9 +191,16 @@ export function JobSheetPreviewModal({
         if (!sheetRef.current) return null;
         const element = sheetRef.current;
 
-        // 1. Temporarily save original transform and set to none so it's captured at true 860px resolution
+        // 1. Temporarily save original styles and set to unscaled static positioning
         const originalTransform = element.style.transform;
+        const originalPosition = element.style.position;
+        const originalLeft = element.style.left;
+        const originalTop = element.style.top;
+
         element.style.transform = "none";
+        element.style.position = "static";
+        element.style.left = "auto";
+        element.style.top = "auto";
 
         // 2. Pre-fetch images to object URLs to bypass CORS during canvas export
         const images = element.querySelectorAll("img");
@@ -206,6 +230,9 @@ export function JobSheetPreviewModal({
         // Return cleanup function to restore transform and revoked URLs
         return () => {
             element.style.transform = originalTransform;
+            element.style.position = originalPosition;
+            element.style.left = originalLeft;
+            element.style.top = originalTop;
             originalSrcs.forEach((src, img) => {
                 URL.revokeObjectURL(img.src);
                 img.src = src;
@@ -410,56 +437,63 @@ export function JobSheetPreviewModal({
                 {/* Printable Document Sheet Scroll Area */}
                 <div 
                     ref={scrollContainerRef}
-                    className="flex-1 overflow-y-auto overflow-x-auto p-2 sm:p-6 bg-zinc-950 flex flex-col items-center"
+                    className="flex-1 overflow-y-auto overflow-x-auto p-3 sm:p-6 bg-zinc-950"
                 >
-                    {/* Mobile View Mode Switcher */}
-                    <div className="sm:hidden flex items-center justify-between w-full max-w-[860px] mb-2 px-1 text-xs text-white/70">
-                        <span className="text-[11px] font-mono">
-                            {viewMode === "fit" ? "🔍 มุมมอง: พอดีจอ (Fit)" : "🔍 มุมมอง: ขนาดจริง A4"}
-                        </span>
-                        <div className="flex items-center gap-1 bg-zinc-900 border border-white/10 p-0.5 rounded-lg">
-                            <button
-                                type="button"
-                                onClick={() => setViewMode("fit")}
-                                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                                    viewMode === "fit" ? "bg-amber-500 text-black font-bold" : "text-white/60 hover:text-white"
-                                }`}
-                            >
-                                พอดีจอ
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setViewMode("actual")}
-                                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                                    viewMode === "actual" ? "bg-amber-500 text-black font-bold" : "text-white/60 hover:text-white"
-                                }`}
-                            >
-                                100% (A4)
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Scaled Wrapper for mobile */}
-                    <div
-                        style={{
-                            width: scale < 1 ? `${Math.round(860 * scale)}px` : "860px",
-                            height: scale < 1 && sheetHeight ? `${Math.round(sheetHeight * scale)}px` : "auto",
-                            transition: "width 0.15s ease-out, height 0.15s ease-out"
-                        }}
-                        className="relative shrink-0 flex justify-center"
-                    >
-                        <div
-                            ref={sheetRef}
-                            id="jobsheet-printable-paper"
-                            className="bg-white text-zinc-900 shadow-2xl rounded-sm p-8 sm:p-10 font-sans print:shadow-none print:p-6 print:m-0 print:w-full print:max-w-none border border-zinc-200"
-                            style={{
-                                width: "860px",
-                                minWidth: "860px",
-                                minHeight: "1200px",
-                                transform: scale < 1 ? `scale(${scale})` : "none",
-                                transformOrigin: "top left"
-                            }}
+                    <div className="w-fit min-w-full flex flex-col items-center">
+                        {/* Mobile View Mode Switcher */}
+                        <div 
+                            style={{ width: `${scaledWidth}px` }}
+                            className="sm:hidden flex items-center justify-between mb-3 px-0.5 text-xs text-white/70 transition-all duration-150"
                         >
+                            <span className="text-[11px] font-mono">
+                                {viewMode === "fit" ? "🔍 มุมมอง: พอดีจอ (Fit)" : "🔍 มุมมอง: ขนาดจริง A4"}
+                            </span>
+                            <div className="flex items-center gap-1 bg-zinc-900 border border-white/10 p-0.5 rounded-lg shadow-sm">
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode("fit")}
+                                    className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                                        viewMode === "fit" ? "bg-amber-500 text-black font-bold" : "text-white/60 hover:text-white"
+                                    }`}
+                                >
+                                    พอดีจอ
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode("actual")}
+                                    className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                                        viewMode === "actual" ? "bg-amber-500 text-black font-bold" : "text-white/60 hover:text-white"
+                                    }`}
+                                >
+                                    100% (A4)
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Scaled Wrapper for mobile */}
+                        <div
+                            style={{
+                                width: `${scaledWidth}px`,
+                                height: scale < 1 ? `${scaledHeight}px` : "auto",
+                                transition: "width 0.15s ease-out, height 0.15s ease-out"
+                            }}
+                            className="relative shrink-0"
+                        >
+                            <div
+                                ref={sheetRef}
+                                id="jobsheet-printable-paper"
+                                className="bg-white text-zinc-900 shadow-2xl rounded-sm p-8 sm:p-10 font-sans print:shadow-none print:p-6 print:m-0 print:w-full print:max-w-none border border-zinc-200"
+                                style={{
+                                    width: "860px",
+                                    minWidth: "860px",
+                                    minHeight: "1200px",
+                                    transform: scale < 1 ? `scale(${scale})` : "none",
+                                    transformOrigin: "top left",
+                                    position: scale < 1 ? "absolute" : "relative",
+                                    left: 0,
+                                    top: 0
+                                }}
+                            >
                             {/* Company Header (Using User's Company Logo & Name, NOT App Logo) */}
                             <div className="border-b-2 border-zinc-900 pb-4 mb-4">
                                 <div className="flex items-start justify-between gap-4">
@@ -737,7 +771,8 @@ export function JobSheetPreviewModal({
                         </div>
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+            </div>
+        </DialogContent>
+    </Dialog>
     );
 }
