@@ -22,7 +22,8 @@ import {
     ShieldCheck,
     Briefcase,
     SlidersHorizontal,
-    CheckCircle2
+    CheckCircle2,
+    X
 } from "lucide-react";
 import { toast } from "sonner";
 import { toBlob, toPng } from "html-to-image";
@@ -134,7 +135,7 @@ export function JobSheetPreviewModal({
         const lines = taskText.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
         if (lines.length <= 1) {
             return (
-                <div className="font-bold text-zinc-950 text-sm leading-relaxed">
+                <div className="font-bold text-zinc-950 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
                     {taskText}
                 </div>
             );
@@ -142,17 +143,17 @@ export function JobSheetPreviewModal({
 
         const [title, ...subLines] = lines;
         return (
-            <div className="space-y-1.5">
-                <div className="font-extrabold text-zinc-950 text-sm leading-snug">
+            <div className="space-y-1.5 break-words [overflow-wrap:anywhere]">
+                <div className="font-extrabold text-zinc-950 text-sm leading-snug break-words [overflow-wrap:anywhere]">
                     {title}
                 </div>
                 <div className="space-y-1 pl-3 border-l-2 border-amber-400">
                     {subLines.map((line, idx) => {
                         const cleanLine = line.replace(/^[-•*]\s*/, "");
                         return (
-                            <div key={idx} className="flex items-start gap-1.5 text-zinc-800 text-xs leading-relaxed">
+                            <div key={idx} className="flex items-start gap-1.5 text-zinc-800 text-xs leading-relaxed break-words [overflow-wrap:anywhere]">
                                 <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
-                                <span className="font-medium">{cleanLine}</span>
+                                <span className="font-medium break-words [overflow-wrap:anywhere]">{cleanLine}</span>
                             </div>
                         );
                     })}
@@ -276,6 +277,9 @@ export function JobSheetPreviewModal({
                         margin: "0",
                         width: "820px",
                         maxWidth: "820px",
+                        boxShadow: "none",
+                        border: "none",
+                        borderRadius: "0",
                         fontFamily: FONT_FAMILY_STACK
                     }
                 });
@@ -294,6 +298,9 @@ export function JobSheetPreviewModal({
                         margin: "0",
                         width: "820px",
                         maxWidth: "820px",
+                        boxShadow: "none",
+                        border: "none",
+                        borderRadius: "0",
                         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Thai', 'Sukhumvit Set', sans-serif"
                     }
                 });
@@ -338,6 +345,9 @@ export function JobSheetPreviewModal({
                         margin: "0",
                         width: "820px",
                         maxWidth: "820px",
+                        boxShadow: "none",
+                        border: "none",
+                        borderRadius: "0",
                         fontFamily: FONT_FAMILY_STACK
                     }
                 });
@@ -356,6 +366,9 @@ export function JobSheetPreviewModal({
                         margin: "0",
                         width: "820px",
                         maxWidth: "820px",
+                        boxShadow: "none",
+                        border: "none",
+                        borderRadius: "0",
                         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Thai', 'Sukhumvit Set', sans-serif"
                     }
                 });
@@ -370,37 +383,31 @@ export function JobSheetPreviewModal({
                 format: "a4"
             });
 
-            const pdfWidth = pdf.internal.pageSize.getWidth(); // 210
-            const pdfHeight = pdf.internal.pageSize.getHeight(); // 297
-
-            const margin = 8; // 8mm margin
-            const printableWidth = pdfWidth - (margin * 2); // 194mm
-            const printableHeight = pdfHeight - (margin * 2); // 281mm
+            const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
+            const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
             const imgProps = pdf.getImageProperties(dataUrl);
-            const imgHeightInMm = (imgProps.height * printableWidth) / imgProps.width;
+            const imgRatio = imgProps.height / imgProps.width;
 
-            // If it fits nicely on 1 page (allow slight scaling if within 15%)
-            if (imgHeightInMm <= printableHeight * 1.15) {
-                const finalHeight = Math.min(printableHeight, imgHeightInMm);
-                const finalWidth = (imgProps.width * finalHeight) / imgProps.height;
-                const finalX = margin + ((printableWidth - finalWidth) / 2);
-                const finalY = margin + Math.max(0, (printableHeight - finalHeight) / 4);
-
-                pdf.addImage(dataUrl, "PNG", finalX, finalY, finalWidth, finalHeight, undefined, "FAST");
+            // Note: Document paper is 820px width x 1160px min-height (ratio ~1.414, exact A4).
+            // The paper already contains internal padding (p-8 / 32px), so rendering edge-to-edge
+            // gives a pristine official A4 PDF without any double-margins, strange borders, or floating shadows!
+            if (imgRatio <= 1.48) {
+                pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
             } else {
                 // Multi-page handling for very long documents
-                let heightLeft = imgHeightInMm;
-                let position = margin;
+                const pageImgHeight = pdfWidth * imgRatio;
+                let heightLeft = pageImgHeight;
+                let position = 0;
 
-                pdf.addImage(dataUrl, "PNG", margin, position, printableWidth, imgHeightInMm, undefined, "FAST");
-                heightLeft -= printableHeight;
+                pdf.addImage(dataUrl, "PNG", 0, position, pdfWidth, pageImgHeight, undefined, "FAST");
+                heightLeft -= pdfHeight;
 
                 while (heightLeft > 0) {
-                    position = position - printableHeight;
+                    position = position - pdfHeight;
                     pdf.addPage();
-                    pdf.addImage(dataUrl, "PNG", margin, position, printableWidth, imgHeightInMm, undefined, "FAST");
-                    heightLeft -= printableHeight;
+                    pdf.addImage(dataUrl, "PNG", 0, position, pdfWidth, pageImgHeight, undefined, "FAST");
+                    heightLeft -= pdfHeight;
                 }
             }
 
@@ -425,87 +432,195 @@ export function JobSheetPreviewModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-5xl w-full max-h-[96vh] h-[96vh] flex flex-col p-0 overflow-hidden bg-zinc-950 border-white/10 text-white">
+            <DialogContent className="max-w-5xl w-full h-[100dvh] sm:h-[96vh] max-h-[100dvh] sm:max-h-[96vh] flex flex-col p-0 overflow-hidden bg-zinc-950 border-0 sm:border sm:border-white/10 text-white rounded-none sm:rounded-2xl pt-[max(env(safe-area-inset-top),0px)] pb-[max(env(safe-area-inset-bottom),0px)]">
                 {/* Header Actions & Customizable Toggles */}
-                <div className="flex flex-wrap items-center justify-between gap-2.5 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-white/10 bg-zinc-900/95 backdrop-blur-md shrink-0">
-                    <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
-                        <div>
-                            <DialogTitle className="text-xs sm:text-base font-bold text-white flex items-center gap-1.5">
-                                <span>ตัวอย่าง Job Sheet (A4)</span>
-                                <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
-                                    {jobsheet.reportNumber}
-                                </span>
-                            </DialogTitle>
-                            <DialogDescription className="text-[10px] sm:text-xs text-white/50 line-clamp-1">
-                                {jobsheet.date} • {reporterName} ({reporterRole})
-                            </DialogDescription>
+                <div className="border-b border-white/10 bg-zinc-900/95 backdrop-blur-md shrink-0 px-3 sm:px-5 py-2.5 sm:py-3">
+                    {/* Desktop Layout (>= sm) */}
+                    <div className="hidden sm:flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                            <FileText className="w-5 h-5 text-amber-400 shrink-0" />
+                            <div>
+                                <DialogTitle className="text-base font-bold text-white flex items-center gap-2">
+                                    <span>ตัวอย่าง Job Sheet (A4)</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
+                                        {jobsheet.reportNumber}
+                                    </span>
+                                </DialogTitle>
+                                <DialogDescription className="text-xs text-white/50 line-clamp-1">
+                                    {jobsheet.date} • {reporterName} ({reporterRole})
+                                </DialogDescription>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Output Controls & Action Buttons */}
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        {/* Toggle: Signatures block */}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowSignatures(!showSignatures)}
-                            className={`h-7 sm:h-8 text-[11px] sm:text-xs border transition-colors px-2 sm:px-3 ${
-                                showSignatures
-                                    ? "bg-amber-500/20 border-amber-500/50 text-amber-300"
-                                    : "border-white/10 text-white/60 hover:bg-white/5"
-                            }`}
-                            title="สลับการแสดงผลช่องลงนามท้ายเอกสาร"
-                        >
-                            <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1" />
-                            {showSignatures ? "มีลงนาม" : "ไม่มีลงนาม"}
-                        </Button>
+                        {/* Desktop Action Buttons */}
+                        <div className="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowSignatures(!showSignatures)}
+                                className={`h-8 text-xs border transition-colors px-3 ${
+                                    showSignatures
+                                        ? "bg-amber-500/20 border-amber-500/50 text-amber-300"
+                                        : "border-white/10 text-white/60 hover:bg-white/5"
+                                }`}
+                                title="สลับการแสดงผลช่องลงนามท้ายเอกสาร"
+                            >
+                                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                                {showSignatures ? "มีลงนาม" : "ไม่มีลงนาม"}
+                            </Button>
 
-                        {onEdit && (
+                            {onEdit && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        onOpenChange(false);
+                                        onEdit(jobsheet);
+                                    }}
+                                    className="h-8 text-xs border-white/10 hover:bg-white/5 text-white/80 px-3"
+                                >
+                                    แก้ไข
+                                </Button>
+                            )}
+
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                    onOpenChange(false);
-                                    onEdit(jobsheet);
-                                }}
-                                className="h-7 sm:h-8 text-[11px] sm:text-xs border-white/10 hover:bg-white/5 text-white/80 px-2 sm:px-3"
+                                onClick={handlePrint}
+                                className="h-8 text-xs border-white/10 hover:bg-white/5 text-white/80 px-3"
                             >
-                                แก้ไข
+                                <Printer className="w-3.5 h-3.5 mr-1" />
+                                พิมพ์
                             </Button>
-                        )}
 
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handlePrint}
-                            className="h-7 sm:h-8 text-[11px] sm:text-xs border-white/10 hover:bg-white/5 text-white/80 px-2 sm:px-3"
-                        >
-                            <Printer className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1" />
-                            พิมพ์
-                        </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleDownloadPng}
+                                disabled={isExportingPng}
+                                className="h-8 text-xs border-white/10 hover:bg-white/5 text-white/80 px-3"
+                            >
+                                {isExportingPng ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5 mr-1 text-emerald-400" />}
+                                PNG
+                            </Button>
 
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleDownloadPng}
-                            disabled={isExportingPng}
-                            className="h-7 sm:h-8 text-[11px] sm:text-xs border-white/10 hover:bg-white/5 text-white/80 px-2 sm:px-3"
-                        >
-                            {isExportingPng ? <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 animate-spin" /> : <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 text-emerald-400" />}
-                            PNG
-                        </Button>
+                            <Button
+                                size="sm"
+                                onClick={handleDownloadPdf}
+                                disabled={isExportingPdf}
+                                className="h-8 text-xs bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-md shadow-amber-500/20 px-3.5"
+                            >
+                                {isExportingPdf ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
+                                PDF
+                            </Button>
 
-                        <Button
-                            size="sm"
-                            onClick={handleDownloadPdf}
-                            disabled={isExportingPdf}
-                            className="h-7 sm:h-8 text-[11px] sm:text-xs bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-md shadow-amber-500/20 px-2.5 sm:px-3.5"
-                        >
-                            {isExportingPdf ? <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 animate-spin" /> : <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1" />}
-                            PDF
-                        </Button>
+                            {/* Prominent Close Button */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => onOpenChange(false)}
+                                className="h-8 w-8 ml-1 rounded-full text-white/60 hover:text-white hover:bg-white/10"
+                                title="ปิดหน้าต่าง"
+                            >
+                                <X className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Mobile Layout (< sm) */}
+                    <div className="flex sm:hidden flex-col gap-2.5">
+                        {/* Mobile Top Row: Title + Close Button */}
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <FileText className="w-4 h-4 text-amber-400 shrink-0" />
+                                <div className="min-w-0">
+                                    <DialogTitle className="text-sm font-bold text-white flex items-center gap-1.5 truncate">
+                                        <span>Job Sheet</span>
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
+                                            {jobsheet.reportNumber}
+                                        </span>
+                                    </DialogTitle>
+                                    <DialogDescription className="text-[10px] text-white/50 truncate">
+                                        {jobsheet.date} • {reporterName}
+                                    </DialogDescription>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                {onEdit && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            onOpenChange(false);
+                                            onEdit(jobsheet);
+                                        }}
+                                        className="h-8 text-xs border-white/10 hover:bg-white/5 text-white/80 px-2.5"
+                                    >
+                                        แก้ไข
+                                    </Button>
+                                )}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onOpenChange(false)}
+                                    className="h-8 text-xs bg-white/10 hover:bg-white/20 border-white/10 text-white font-medium px-2.5 gap-1"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                    <span>ปิด</span>
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Mobile Bottom Row: Touch-friendly Action Buttons */}
+                        <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-white/10 overflow-x-auto no-scrollbar">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowSignatures(!showSignatures)}
+                                className={`h-8 text-[11px] border shrink-0 px-2.5 ${
+                                    showSignatures
+                                        ? "bg-amber-500/20 border-amber-500/50 text-amber-300"
+                                        : "border-white/10 text-white/60 hover:bg-white/5"
+                                }`}
+                            >
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                {showSignatures ? "มีลงนาม" : "ไม่มี"}
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handlePrint}
+                                className="h-8 text-[11px] border-white/10 hover:bg-white/5 text-white/80 shrink-0 px-2.5"
+                            >
+                                <Printer className="w-3 h-3 mr-1" />
+                                พิมพ์
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleDownloadPng}
+                                disabled={isExportingPng}
+                                className="h-8 text-[11px] border-white/10 hover:bg-white/5 text-white/80 shrink-0 px-2.5"
+                            >
+                                {isExportingPng ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <ImageIcon className="w-3 h-3 mr-1 text-emerald-400" />}
+                                PNG
+                            </Button>
+
+                            <Button
+                                size="sm"
+                                onClick={handleDownloadPdf}
+                                disabled={isExportingPdf}
+                                className="h-8 text-[11px] bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-md shadow-amber-500/20 shrink-0 px-3"
+                            >
+                                {isExportingPdf ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
+                                PDF
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -683,11 +798,11 @@ export function JobSheetPreviewModal({
                                                                 <div className="space-y-1.5">
                                                                     <div>
                                                                         {isGeneral ? (
-                                                                            <span className="inline-flex items-center gap-1 font-bold text-zinc-700 bg-zinc-100 px-2 py-0.5 rounded text-[11px] border border-zinc-200 whitespace-nowrap">
+                                                                            <span className="inline-block max-w-full font-bold text-zinc-700 bg-zinc-100 px-2 py-0.5 rounded text-[11px] border border-zinc-200 break-words leading-tight whitespace-normal">
                                                                                 📦 {item.projectName || "งานทั่วไป / ส่วนกลาง"}
                                                                             </span>
                                                                         ) : (
-                                                                            <span className="inline-flex items-center gap-1 font-bold text-amber-900 bg-amber-50 px-2.5 py-0.5 rounded text-[11px] border border-amber-300 whitespace-nowrap">
+                                                                            <span className="inline-block max-w-full font-bold text-amber-900 bg-amber-50 px-2.5 py-0.5 rounded text-[11px] border border-amber-300 break-words leading-tight whitespace-normal">
                                                                                 🏢 {item.projectName || jobsheet.projectName}
                                                                             </span>
                                                                         )}
@@ -695,12 +810,12 @@ export function JobSheetPreviewModal({
 
                                                                     <div className="flex flex-wrap items-center gap-1 text-[11px]">
                                                                         {item.timeSlot && (
-                                                                            <span className="inline-flex items-center gap-0.5 bg-zinc-100 text-zinc-700 px-1.5 py-0.5 rounded border border-zinc-200 font-mono whitespace-nowrap">
+                                                                            <span className="inline-flex items-center gap-0.5 bg-zinc-100 text-zinc-700 px-1.5 py-0.5 rounded border border-zinc-200 font-mono whitespace-nowrap shrink-0">
                                                                                 ⏱ {item.timeSlot}
                                                                             </span>
                                                                         )}
                                                                         {item.location && (
-                                                                            <span className="inline-flex items-center gap-0.5 bg-blue-50 text-blue-900 px-1.5 py-0.5 rounded border border-blue-200/80 font-medium whitespace-nowrap">
+                                                                            <span className="inline-block max-w-full bg-blue-50 text-blue-900 px-1.5 py-0.5 rounded border border-blue-200/80 font-medium break-words leading-tight whitespace-normal">
                                                                                 📍 {item.location}
                                                                             </span>
                                                                         )}
@@ -709,12 +824,12 @@ export function JobSheetPreviewModal({
                                                             </td>
 
                                                             {/* 3. รายละเอียดงานที่ปฏิบัติ */}
-                                                            <td className="py-3 px-3.5 align-top border-r border-zinc-200">
+                                                            <td className="py-3 px-3.5 align-top border-r border-zinc-200 break-words [overflow-wrap:anywhere]">
                                                                 {renderTaskDetails(item.task)}
                                                                 {item.quantity && (
-                                                                    <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-xs text-zinc-700 font-medium whitespace-nowrap">
-                                                                        <span className="text-zinc-500 font-medium text-[11px]">ปริมาณ / ขนาด:</span>
-                                                                        <span className="font-bold text-zinc-900">{item.quantity}</span>
+                                                                    <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-xs text-zinc-700 font-medium break-words leading-tight whitespace-normal">
+                                                                        <span className="text-zinc-500 font-medium text-[11px] shrink-0">ปริมาณ / ขนาด:</span>
+                                                                        <span className="font-bold text-zinc-900 break-words">{item.quantity}</span>
                                                                     </div>
                                                                 )}
                                                             </td>
@@ -744,9 +859,9 @@ export function JobSheetPreviewModal({
                                                             </td>
 
                                                             {/* 5. หมายเหตุ */}
-                                                            <td className="py-3 px-2.5 text-zinc-700 text-xs align-top leading-relaxed">
+                                                            <td className="py-3 px-2.5 text-zinc-700 text-xs align-top leading-relaxed break-words [overflow-wrap:anywhere]">
                                                                 {item.notes ? (
-                                                                    <span className="font-medium text-zinc-800">{item.notes}</span>
+                                                                    <span className="font-medium text-zinc-800 break-words">{item.notes}</span>
                                                                 ) : (
                                                                     <span className="text-zinc-300">-</span>
                                                                 )}
@@ -770,19 +885,19 @@ export function JobSheetPreviewModal({
                             {(jobsheet.obstacles || jobsheet.safetyNotes) && (
                                 <div className="grid grid-cols-2 gap-3 mb-5 text-xs">
                                     {jobsheet.obstacles && (
-                                        <div className="border border-zinc-300 rounded p-2.5 bg-amber-50/20">
+                                        <div className="border border-zinc-300 rounded p-2.5 bg-amber-50/20 break-words [overflow-wrap:anywhere]">
                                             <span className="font-bold text-amber-900 block mb-1">
                                                 ⚠️ ปัญหา / อุปสรรคหน้างาน:
                                             </span>
-                                            <p className="text-zinc-700 leading-relaxed">{jobsheet.obstacles}</p>
+                                            <p className="text-zinc-700 leading-relaxed break-words [overflow-wrap:anywhere]">{jobsheet.obstacles}</p>
                                         </div>
                                     )}
                                     {jobsheet.safetyNotes && (
-                                        <div className="border border-zinc-300 rounded p-2.5 bg-emerald-50/20">
+                                        <div className="border border-zinc-300 rounded p-2.5 bg-emerald-50/20 break-words [overflow-wrap:anywhere]">
                                             <span className="font-bold text-emerald-900 block mb-1">
                                                 🛡️ ความปลอดภัยหน้างาน:
                                             </span>
-                                            <p className="text-zinc-700 leading-relaxed">{jobsheet.safetyNotes}</p>
+                                            <p className="text-zinc-700 leading-relaxed break-words [overflow-wrap:anywhere]">{jobsheet.safetyNotes}</p>
                                         </div>
                                     )}
                                 </div>
@@ -813,10 +928,10 @@ export function JobSheetPreviewModal({
                                             <div className="h-14 border-b border-dashed border-zinc-400 mb-2 flex items-end justify-center pb-1 font-serif text-sm italic text-zinc-700">
                                                 {reporterName}
                                             </div>
-                                            <span className="font-bold text-zinc-900 block text-xs">
+                                            <span className="font-bold text-zinc-900 block text-xs break-words">
                                                 ( {reporterName} )
                                             </span>
-                                            <span className="text-zinc-600 text-[11px] block mt-0.5">
+                                            <span className="text-zinc-600 text-[11px] block mt-0.5 break-words">
                                                 ผู้รายงาน / {reporterRole}
                                             </span>
                                             <span className="text-zinc-400 text-[10px] block mt-0.5">
@@ -828,10 +943,10 @@ export function JobSheetPreviewModal({
                                             <div className="h-14 border-b border-dashed border-zinc-400 mb-2 flex items-end justify-center pb-1 font-serif text-sm italic text-zinc-700">
                                                 {jobsheet.inspectedBy || "..................................................."}
                                             </div>
-                                            <span className="font-bold text-zinc-900 block text-xs">
+                                            <span className="font-bold text-zinc-900 block text-xs break-words">
                                                 ( {jobsheet.inspectedBy || "ผู้ตรวจสอบ / ผู้จัดการโครงการ"} )
                                             </span>
-                                            <span className="text-zinc-600 text-[11px] block mt-0.5">
+                                            <span className="text-zinc-600 text-[11px] block mt-0.5 break-words">
                                                 วิศวกรโครงการ / ตัวแทนผู้ว่าจ้าง
                                             </span>
                                             <span className="text-zinc-400 text-[10px] block mt-0.5">
