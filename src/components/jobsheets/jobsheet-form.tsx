@@ -237,6 +237,16 @@ export function JobSheetForm({
         setWorkItems(workItems.filter((item) => item.id !== id));
     };
 
+    const moveWorkItem = (index: number, direction: "up" | "down") => {
+        const targetIndex = direction === "up" ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= workItems.length) return;
+        const newItems = [...workItems];
+        const temp = newItems[index];
+        newItems[index] = newItems[targetIndex];
+        newItems[targetIndex] = temp;
+        setWorkItems(newItems);
+    };
+
     // Add photo
     const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -590,9 +600,35 @@ export function JobSheetForm({
                                 {/* CARD TOP ROW: Job Number + Project Selector + Time + Trash */}
                                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2.5">
                                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <span className="text-xs font-mono font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 shrink-0">
-                                            งานที่ #{index + 1}
-                                        </span>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <span className="text-xs font-mono font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                                                งานที่ #{index + 1}
+                                            </span>
+
+                                            {/* Reorder Buttons: Move Up / Down */}
+                                            {workItems.length > 1 && (
+                                                <div className="flex items-center bg-black/40 border border-white/10 rounded-md p-0.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => moveWorkItem(index, "up")}
+                                                        disabled={index === 0}
+                                                        className="w-5 h-5 rounded flex items-center justify-center text-white/50 hover:text-amber-400 hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-white/40 transition-colors"
+                                                        title="สลับลำดับขึ้น (ย้ายไปก่อนหน้า)"
+                                                    >
+                                                        <ChevronUp className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => moveWorkItem(index, "down")}
+                                                        disabled={index === workItems.length - 1}
+                                                        className="w-5 h-5 rounded flex items-center justify-center text-white/50 hover:text-amber-400 hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-white/40 transition-colors"
+                                                        title="สลับลำดับลง (ย้ายไปถัดไป)"
+                                                    >
+                                                        <ChevronDown className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
 
                                         {/* Project / Category Selector Pill */}
                                         <div className="relative flex-1 max-w-xs">
