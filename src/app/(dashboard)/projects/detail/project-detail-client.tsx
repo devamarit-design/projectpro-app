@@ -465,7 +465,7 @@ export default function ProjectDetailClient() {
 
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-20 w-full max-w-full overflow-x-hidden">
             <ConfirmDialog
                 isOpen={deleteSubProjectConfirm.isOpen}
                 onClose={() => setDeleteSubProjectConfirm({ isOpen: false, subProjectId: null })}

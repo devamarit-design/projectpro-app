@@ -269,7 +269,7 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                                     <Calendar className="w-3 h-3" /> {t.dialogs.add_project.start_date}

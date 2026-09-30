@@ -122,7 +122,7 @@ export default function NewProjectPage() {
     }
 
     return (
-        <div className="space-y-6 pb-20 max-w-2xl mx-auto">
+        <div className="space-y-6 pb-20 max-w-2xl mx-auto w-full max-w-full overflow-x-hidden">
             <div className="flex items-center gap-4">
                 <Link href="/projects" className="p-2 -ml-2 hover:bg-muted/50 rounded-full transition-colors">
                     <ArrowLeft className="w-5 h-5" />
@@ -133,7 +133,7 @@ export default function NewProjectPage() {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-4 sm:p-6 space-y-6 w-full max-w-full overflow-x-hidden">
                 {/* Project Info */}
                 <div className="space-y-4">
                     <h2 className="text-lg font-semibold border-b border-border/50 pb-2">{t.projects.edit.sections.details}</h2>
@@ -150,82 +150,79 @@ export default function NewProjectPage() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">{t.projects.customer} <span className="text-red-500">*</span></label>
-                            <div className="relative">
-                                <div className="relative">
-                                    <SearchableCombobox
-                                        options={[
-                                            { value: "NEW_CUSTOMER", label: `+ ${t.income.dialog?.create_customer || "Create New Customer"}`, description: "สร้างลูกค้าใหม่" },
-                                            ...customers.map(c => ({ value: c.name, label: c.name, description: c.type || "Customer" }))
-                                        ]}
-                                        value={formData.customer}
-                                        onChange={(val) => {
-                                            if (val === "NEW_CUSTOMER") {
-                                                setShowAddCustomer(true)
-                                            } else {
-                                                setFormData({ ...formData, customer: val })
-                                            }
-                                        }}
-                                        placeholder={t.projects.edit.placeholders.select_customer}
-                                        searchPlaceholder="ค้นหาลูกค้า..."
-                                    />
-                                </div>
-                            </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">{t.projects.customer} <span className="text-red-500">*</span></label>
+                        <div className="relative">
+                            <SearchableCombobox
+                                options={[
+                                    { value: "NEW_CUSTOMER", label: `+ ${t.income.dialog?.create_customer || "Create New Customer"}`, description: "สร้างลูกค้าใหม่" },
+                                    ...customers.map(c => ({ value: c.name, label: c.name, description: c.type || "Customer" }))
+                                ]}
+                                value={formData.customer}
+                                onChange={(val) => {
+                                    if (val === "NEW_CUSTOMER") {
+                                        setShowAddCustomer(true)
+                                    } else {
+                                        setFormData({ ...formData, customer: val })
+                                    }
+                                }}
+                                placeholder={t.projects.edit.placeholders.select_customer}
+                                searchPlaceholder="ค้นหาลูกค้า..."
+                            />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium flex items-center gap-1.5">
-                                    <MapPin className="w-4 h-4 text-primary" />
-                                    ชื่อสถานที่ / พิกัดที่ตั้ง (แสดงในหน้าโปรเจกต์)
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="เช่น มะขาม จันทบุรี หรือ 123 ถ.มิตรภาพ"
-                                        className="w-full h-11 pl-10 pr-4 rounded-xl bg-background/50 border border-input focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
-                                        value={formData.location}
-                                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                    />
-                                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                </div>
-                                <p className="text-[11px] text-muted-foreground">
-                                    ชื่อข้อความที่จะแสดงเป็นปุ่มหรือลิงก์ให้คลิก
-                                </p>
-                            </div>
+                    </div>
 
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-sm font-medium flex items-center gap-1.5">
-                                        <Globe className="w-4 h-4 text-blue-400" />
-                                        ลิงก์ Google Maps (ถ้ามี)
-                                    </label>
-                                    {formData.mapUrl && (formData.mapUrl.startsWith("http://") || formData.mapUrl.startsWith("https://")) && (
-                                        <a
-                                            href={formData.mapUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-[11px] text-blue-400 hover:underline inline-flex items-center gap-1"
-                                        >
-                                            ทดสอบเปิดแผนที่ <ExternalLink className="w-3 h-3" />
-                                        </a>
-                                    )}
-                                </div>
-                                <div className="relative">
-                                    <input
-                                        type="url"
-                                        placeholder="วางลิงก์ เช่น https://maps.app.goo.gl/..."
-                                        className="w-full h-11 pl-10 pr-4 rounded-xl bg-background/50 border border-input focus:ring-2 focus:ring-primary/20 outline-none transition-all text-xs font-mono"
-                                        value={formData.mapUrl}
-                                        onChange={(e) => setFormData({ ...formData, mapUrl: e.target.value })}
-                                    />
-                                    <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                </div>
-                                <p className="text-[11px] text-muted-foreground">
-                                    เมื่อคลิกที่ชื่อสถานที่ ระบบจะเปิดลิงก์แผนที่นี้ทันที
-                                </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium flex items-center gap-1.5">
+                                <MapPin className="w-4 h-4 text-primary" />
+                                ชื่อสถานที่ / พิกัดที่ตั้ง (แสดงในหน้าโปรเจกต์)
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="เช่น มะขาม จันทบุรี หรือ 123 ถ.มิตรภาพ"
+                                    className="w-full h-11 pl-10 pr-4 rounded-xl bg-background/50 border border-input focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
+                                    value={formData.location}
+                                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                />
+                                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             </div>
+                            <p className="text-[11px] text-muted-foreground">
+                                ชื่อข้อความที่จะแสดงเป็นปุ่มหรือลิงก์ให้คลิก
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium flex items-center gap-1.5">
+                                    <Globe className="w-4 h-4 text-blue-400" />
+                                    ลิงก์ Google Maps (ถ้ามี)
+                                </label>
+                                {formData.mapUrl && (formData.mapUrl.startsWith("http://") || formData.mapUrl.startsWith("https://")) && (
+                                    <a
+                                        href={formData.mapUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[11px] text-blue-400 hover:underline inline-flex items-center gap-1"
+                                    >
+                                        ทดสอบเปิดแผนที่ <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                )}
+                            </div>
+                            <div className="relative">
+                                <input
+                                    type="url"
+                                    placeholder="วางลิงก์ เช่น https://maps.app.goo.gl/..."
+                                    className="w-full h-11 pl-10 pr-4 rounded-xl bg-background/50 border border-input focus:ring-2 focus:ring-primary/20 outline-none transition-all text-xs font-mono"
+                                    value={formData.mapUrl}
+                                    onChange={(e) => setFormData({ ...formData, mapUrl: e.target.value })}
+                                />
+                                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            </div>
+                            <p className="text-[11px] text-muted-foreground">
+                                เมื่อคลิกที่ชื่อสถานที่ ระบบจะเปิดลิงก์แผนที่นี้ทันที
+                            </p>
                         </div>
                     </div>
 
@@ -245,7 +242,7 @@ export default function NewProjectPage() {
                 <div className="space-y-4 pt-4">
                     <h2 className="text-lg font-semibold border-b border-border/50 pb-2">{t.projects.edit.sections.timeline}</h2>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-sm font-medium">{t.projects.edit.fields.start_date}</label>
                             <div className="relative">
@@ -272,7 +269,7 @@ export default function NewProjectPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2 md:col-span-2">
                             <label className="text-sm font-medium">{t.projects.edit.fields.budget}</label>
                             <input

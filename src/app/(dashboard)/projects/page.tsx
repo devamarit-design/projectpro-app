@@ -261,7 +261,7 @@ export default function ProjectsPage() {
     }
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-20 w-full max-w-full overflow-x-hidden">
             <ConfirmDialog
                 isOpen={archiveConfirm.isOpen}
                 onClose={() => setArchiveConfirm({ isOpen: false, projectId: null })}
@@ -287,10 +287,10 @@ export default function ProjectsPage() {
             </div>
 
             {/* Filter & Search */}
-            <div className="space-y-4">
+            <div className="space-y-4 w-full max-w-full overflow-x-hidden">
                 {/* Row 1: Status Tabs Bar */}
-                <div className="overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-                    <div className="flex p-1 bg-muted/30 border border-white/5 rounded-2xl w-fit min-w-full sm:min-w-0">
+                <div className="overflow-x-auto no-scrollbar -mx-2 px-2 sm:mx-0 sm:px-0 max-w-full">
+                    <div className="flex p-1 bg-muted/30 border border-white/5 rounded-2xl w-max">
                         <div className="flex items-center gap-1">
                             {statusTabs.map((tab) => {
                                 const isActive = (statusFilter === null && tab.value === null) || statusFilter === tab.value

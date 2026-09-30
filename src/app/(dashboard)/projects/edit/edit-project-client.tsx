@@ -145,7 +145,7 @@ export default function EditProjectClient() {
 
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-20 w-full max-w-full overflow-x-hidden">
             {/* Header */}
             <div className="flex items-center gap-4">
                 <Link href={`/projects/detail?id=${id}`} className="p-2 -ml-2 rounded-full hover:bg-muted/50 transition-colors">
@@ -157,7 +157,7 @@ export default function EditProjectClient() {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-8 w-full max-w-full overflow-x-hidden">
                 {/* Project Details Section */}
                 <div className="glass-card rounded-2xl p-6 space-y-6">
                     <div className="flex items-center gap-3 pb-4 border-b border-white/5">
