@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { useBackNavigation } from "@/hooks/use-back-navigation"
 import { ConfirmDialog } from "./confirm-dialog"
@@ -17,10 +18,14 @@ const Dialog = ({
     confirmBeforeClose?: boolean
 }) => {
     const [showConfirm, setShowConfirm] = React.useState(false)
+    const [mounted, setMounted] = React.useState(false)
 
-    // Disabled useBackNavigation as it causes immediate closing of dialogs in some contexts
-    // useBackNavigation(!!open, (val) => onOpenChange?.(val))
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
+
     if (!open) return null
+    if (!mounted || typeof document === "undefined") return null
 
     const handleBackdropClick = () => {
         if (confirmBeforeClose) {
@@ -30,8 +35,8 @@ const Dialog = ({
         }
     }
 
-    return (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={handleBackdropClick}>
+    const dialogContent = (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={handleBackdropClick}>
             {children}
             {confirmBeforeClose && (
                 <ConfirmDialog
@@ -50,6 +55,8 @@ const Dialog = ({
             )}
         </div>
     )
+
+    return createPortal(dialogContent, document.body)
 }
 
 const DialogContent = React.forwardRef<
