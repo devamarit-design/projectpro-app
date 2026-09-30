@@ -754,33 +754,30 @@ export function JobSheetPreviewModal({
                                                                 {idx + 1}
                                                             </td>
 
-                                                            {/* 2. โครงการ / โซน / เวลา */}
+                                                            {/* 2. โครงการ / โซน / เวลา (เรียบหรู ดูมืออาชีพ) */}
                                                             <td className="py-3 px-3 align-top border-r border-zinc-200">
-                                                                <div className="space-y-1.5">
-                                                                    <div>
-                                                                        {isGeneral ? (
-                                                                            <span className="inline-block max-w-full font-bold text-zinc-700 bg-zinc-100 px-2 py-0.5 rounded text-[11px] border border-zinc-200 break-words leading-tight whitespace-normal">
-                                                                                📦 {item.projectName || "งานทั่วไป / ส่วนกลาง"}
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span className="inline-block max-w-full font-bold text-amber-900 bg-amber-50 px-2.5 py-0.5 rounded text-[11px] border border-amber-300 break-words leading-tight whitespace-normal">
-                                                                                🏢 {item.projectName || jobsheet.projectName}
-                                                                            </span>
-                                                                        )}
+                                                                <div className="flex flex-col gap-1">
+                                                                    <div className={`text-xs font-semibold leading-snug break-words ${isGeneral ? "text-zinc-600" : "text-zinc-900"}`}>
+                                                                        {(item.projectName || jobsheet.projectName || "งานทั่วไป").replace(/^[🏢📦\s]+/u, "")}
                                                                     </div>
 
-                                                                    <div className="flex flex-wrap items-center gap-1 text-[11px]">
-                                                                        {item.timeSlot && (
-                                                                            <span className="inline-flex items-center gap-0.5 bg-zinc-100 text-zinc-700 px-1.5 py-0.5 rounded border border-zinc-200 font-mono whitespace-nowrap shrink-0">
-                                                                                ⏱ {item.timeSlot}
-                                                                            </span>
-                                                                        )}
-                                                                        {item.location && (
-                                                                            <span className="inline-block max-w-full bg-blue-50 text-blue-900 px-1.5 py-0.5 rounded border border-blue-200/80 font-medium break-words leading-tight whitespace-normal">
-                                                                                📍 {item.location}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
+                                                                    {(item.timeSlot || item.location) && (
+                                                                        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-zinc-500 font-normal leading-tight">
+                                                                            {item.timeSlot && (
+                                                                                <span className="text-zinc-600 font-medium">
+                                                                                    {item.timeSlot.replace(/^[⏱\s]+/u, "")}
+                                                                                </span>
+                                                                            )}
+                                                                            {item.timeSlot && item.location && (
+                                                                                <span className="text-zinc-300 font-light">•</span>
+                                                                            )}
+                                                                            {item.location && (
+                                                                                <span className="text-zinc-500">
+                                                                                    {item.location.replace(/^[📍\s]+/u, "")}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             </td>
 
