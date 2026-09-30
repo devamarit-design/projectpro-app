@@ -50,6 +50,7 @@ export function JobSheetPreviewModal({
 
     // Toggles for clean, job-focused output
     const [showSignatures, setShowSignatures] = useState(true);
+    const [logoFailed, setLogoFailed] = useState(false);
 
     // Mobile viewport & zoom states
     const [containerWidth, setContainerWidth] = useState(() => 
@@ -59,6 +60,10 @@ export function JobSheetPreviewModal({
     const [sheetHeight, setSheetHeight] = useState(1160);
 
     const { companyProfile, currentUser, currentTeam } = useProjects();
+
+    useEffect(() => {
+        setLogoFailed(false);
+    }, [open, jobsheet?.companyLogo, companyProfile?.logo]);
 
     // Track container dimensions for mobile responsive preview
     useEffect(() => {
@@ -197,25 +202,31 @@ export function JobSheetPreviewModal({
         try {
             if (!img.src || img.src.startsWith("data:")) return img.src;
 
-            // 1. If image is complete in DOM, draw to an in-memory canvas
+            // 1. If image is complete in DOM and loaded, try drawing to canvas
             try {
-                const canvas = document.createElement("canvas");
-                canvas.width = img.naturalWidth || img.width || 150;
-                canvas.height = img.naturalHeight || img.height || 150;
-                const ctx = canvas.getContext("2d");
-                if (ctx && canvas.width > 0 && canvas.height > 0) {
-                    ctx.drawImage(img, 0, 0);
-                    const dataUrl = canvas.toDataURL("image/png");
-                    if (dataUrl && dataUrl.length > 100 && dataUrl !== "data:,") {
-                        return dataUrl;
+                if (img.complete && img.naturalWidth > 0) {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext("2d");
+                    if (ctx) {
+                        ctx.drawImage(img, 0, 0);
+                        const dataUrl = canvas.toDataURL("image/png");
+                        if (dataUrl && dataUrl.length > 100 && dataUrl !== "data:,") {
+                            return dataUrl;
+                        }
                     }
                 }
             } catch {
-                // Tainted canvas or draw failure, try fetch
+                // Canvas tainted or blocked, fallback to proxy fetch
             }
 
-            // 2. Fetch image as blob
-            const res = await fetch(img.src, { cache: "no-cache", mode: "cors" });
+            // 2. Fetch image via /api/proxy-image (handles CORS properly without failing)
+            const targetUrl = img.src.startsWith("http") && !img.src.includes("/api/proxy-image")
+                ? `/api/proxy-image?url=${encodeURIComponent(img.src)}`
+                : img.src;
+
+            const res = await fetch(targetUrl);
             if (res.ok) {
                 const blob = await res.blob();
                 return await new Promise<string>((resolve) => {
@@ -231,6 +242,8 @@ export function JobSheetPreviewModal({
         return null;
     };
 
+    const BLANK_GIF = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
     // Helper to safely prep element and images for high-res screenshot capture
     const prepareElementForCapture = async () => {
         if (!sheetRef.current) return null;
@@ -239,13 +252,27 @@ export function JobSheetPreviewModal({
         // Convert images to base64 so they never disappear or get replaced with empty SVGs
         const images = Array.from(element.querySelectorAll("img"));
         const originalSrcs = new Map<HTMLImageElement, string>();
+        const hiddenImages = new Set<HTMLImageElement>();
 
         await Promise.all(
             images.map(async (img) => {
-                const dataUrl = await convertImageToBase64(img);
-                if (dataUrl) {
-                    originalSrcs.set(img, img.src);
-                    img.src = dataUrl;
+                originalSrcs.set(img, img.src);
+                try {
+                    const dataUrl = await convertImageToBase64(img);
+                    if (dataUrl) {
+                        img.src = dataUrl;
+                    } else {
+                        // Broken or unconvertible image! Neutralize and hide it completely
+                        img.src = BLANK_GIF;
+                        img.style.display = "none";
+                        img.setAttribute("data-skip-export", "true");
+                        hiddenImages.add(img);
+                    }
+                } catch {
+                    img.src = BLANK_GIF;
+                    img.style.display = "none";
+                    img.setAttribute("data-skip-export", "true");
+                    hiddenImages.add(img);
                 }
             })
         );
@@ -257,11 +284,24 @@ export function JobSheetPreviewModal({
         return () => {
             originalSrcs.forEach((src, img) => {
                 img.src = src;
+                if (hiddenImages.has(img)) {
+                    img.style.display = "";
+                    img.removeAttribute("data-skip-export");
+                }
             });
         };
     };
 
     const FONT_FAMILY_STACK = "'Kanit', var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Thai', 'Sukhumvit Set', sans-serif";
+
+    const captureFilter = (domNode: Node) => {
+        if (domNode instanceof HTMLElement) {
+            if (domNode.style.display === "none" || domNode.getAttribute("data-skip-export") === "true") {
+                return false;
+            }
+        }
+        return true;
+    };
 
     // Export as PNG
     const handleDownloadPng = async () => {
@@ -282,6 +322,7 @@ export function JobSheetPreviewModal({
                     backgroundColor: "#ffffff",
                     quality: 0.98,
                     cacheBust: true,
+                    filter: captureFilter,
                     style: {
                         transform: "none",
                         margin: "0",
@@ -302,6 +343,7 @@ export function JobSheetPreviewModal({
                     quality: 0.98,
                     skipFonts: true,
                     cacheBust: true,
+                    filter: captureFilter,
                     fontEmbedCSS: `* { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Thai', 'Sukhumvit Set', sans-serif !important; }`,
                     style: {
                         transform: "none",
@@ -350,6 +392,7 @@ export function JobSheetPreviewModal({
                     backgroundColor: "#ffffff",
                     quality: 0.98,
                     cacheBust: true,
+                    filter: captureFilter,
                     style: {
                         transform: "none",
                         margin: "0",
@@ -370,6 +413,7 @@ export function JobSheetPreviewModal({
                     quality: 0.98,
                     skipFonts: true,
                     cacheBust: true,
+                    filter: captureFilter,
                     fontEmbedCSS: `* { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Thai', 'Sukhumvit Set', sans-serif !important; }`,
                     style: {
                         transform: "none",
@@ -657,16 +701,18 @@ export function JobSheetPreviewModal({
                             <div className="border-b-2 border-zinc-900 pb-4 mb-4">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-center gap-3.5">
-                                        {companyLogo ? (
+                                        {companyLogo && !logoFailed ? (
                                             <img
-                                                src={companyLogo}
+                                                src={companyLogo.startsWith("http") && !companyLogo.includes("/api/proxy-image") ? `/api/proxy-image?url=${encodeURIComponent(companyLogo)}` : companyLogo}
                                                 alt={companyName}
-                                                crossOrigin="anonymous"
                                                 className="h-12 sm:h-14 w-auto max-w-[150px] object-contain rounded"
+                                                onError={() => {
+                                                    setLogoFailed(true);
+                                                }}
                                             />
                                         ) : (
                                             <div className="w-12 h-12 rounded-lg bg-zinc-900 text-amber-400 flex items-center justify-center font-black text-xl tracking-tight shadow-sm shrink-0">
-                                                {companyName.charAt(0).toUpperCase()}
+                                                {companyName ? companyName.charAt(0).toUpperCase() : "JS"}
                                             </div>
                                         )}
                                         <div>
@@ -879,11 +925,23 @@ export function JobSheetPreviewModal({
                                         ภาพถ่ายประกอบการทำงาน (Site Photos)
                                     </h4>
                                     <div className="grid grid-cols-4 gap-2">
-                                        {jobsheet.photos.map((src, i) => (
-                                            <div key={i} className="aspect-video rounded border border-zinc-200 overflow-hidden bg-zinc-100">
-                                                <img src={src} alt={`Site photo ${i + 1}`} className="w-full h-full object-cover" />
-                                            </div>
-                                        ))}
+                                        {jobsheet.photos.map((src, i) => {
+                                            const proxiedSrc = src.startsWith("http") && !src.includes("/api/proxy-image")
+                                                ? `/api/proxy-image?url=${encodeURIComponent(src)}`
+                                                : src;
+                                            return (
+                                                <div key={i} className="aspect-video rounded border border-zinc-200 overflow-hidden bg-zinc-100">
+                                                    <img
+                                                        src={proxiedSrc}
+                                                        alt={`Site photo ${i + 1}`}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            (e.currentTarget as HTMLElement).style.display = "none";
+                                                        }}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}

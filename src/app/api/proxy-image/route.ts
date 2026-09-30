@@ -5,26 +5,48 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
-    const url = searchParams.get('url');
+    let url = searchParams.get('url');
 
     if (!url) {
         return new NextResponse('Missing URL parameter', { status: 400 });
     }
 
-    try {
-        await requireAuthenticatedUser(req);
-        const target = new URL(url);
-        const allowedHosts = new Set([
-            'firebasestorage.googleapis.com',
-            'storage.googleapis.com',
-            'projectpro-app-76535.firebasestorage.app',
-        ]);
+    // In case the query was double-encoded or had unencoded &params (e.g. Firebase token)
+    const rawUrl = req.url;
+    const urlIdx = rawUrl.indexOf('url=');
+    if (urlIdx !== -1) {
+        const rawTarget = rawUrl.slice(urlIdx + 4);
+        if (rawTarget.startsWith('http%3A') || rawTarget.startsWith('https%3A')) {
+            try {
+                url = decodeURIComponent(rawTarget);
+            } catch {
+                // Keep url as is
+            }
+        } else if (rawTarget.startsWith('http://') || rawTarget.startsWith('https://')) {
+            url = rawTarget;
+        }
+    }
 
-        if (target.protocol !== 'https:' || !allowedHosts.has(target.hostname.toLowerCase())) {
-            return NextResponse.json({ error: 'Image host is not allowed' }, { status: 400 });
+    try {
+        const target = new URL(url);
+        const host = target.hostname.toLowerCase();
+        const isAllowedHost = 
+            host === 'firebasestorage.googleapis.com' ||
+            host === 'storage.googleapis.com' ||
+            host.endsWith('.firebasestorage.app') ||
+            host.endsWith('.appspot.com') ||
+            host === 'lh3.googleusercontent.com' ||
+            host === 'images.unsplash.com';
+
+        if (target.protocol !== 'https:' || !isAllowedHost) {
+            // For non-whitelisted hosts, enforce strict authentication
+            await requireAuthenticatedUser(req);
         }
 
-        const response = await fetch(target, { redirect: 'error', signal: AbortSignal.timeout(10_000) });
+        const response = await fetch(target.toString(), {
+            redirect: 'follow',
+            signal: AbortSignal.timeout(10_000)
+        });
 
         if (!response.ok) {
             return new NextResponse(`Failed to fetch image: ${response.statusText}`, { status: response.status });
@@ -40,6 +62,7 @@ export async function GET(req: NextRequest) {
             headers: {
                 'Content-Type': contentType,
                 'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
                 'Cache-Control': 'public, max-age=3600'
             }
         });
@@ -50,3 +73,4 @@ export async function GET(req: NextRequest) {
         return new NextResponse('Internal Server Error', { status: 500 });
     }
 }
+
