@@ -24,3 +24,5 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROJECTPRO_APP_76535 }}'
           channelId: live
           projectId: projectpro-app-76535
+        env:
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
