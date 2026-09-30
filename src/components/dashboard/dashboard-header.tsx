@@ -231,7 +231,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
             {/* 1. Main Weather & Site Forecast Hero Card */}
             <div
                 className={cn(
-                    "relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl transition-all duration-300 group min-h-[300px] flex flex-col justify-between p-6 sm:p-8",
+                    "relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl transition-all duration-300 group min-h-[280px] sm:min-h-[300px] flex flex-col justify-between p-4 sm:p-6 md:p-8",
                     isAdmin ? "lg:col-span-7 xl:col-span-8" : "lg:col-span-12"
                 )}
             >
@@ -250,23 +250,23 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                 )}
 
                 {/* TOP ROW: Date & Location Selector */}
-                <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
+                <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
                     {/* Date Pill */}
-                    <div className="flex items-center gap-2 text-white/80 text-xs sm:text-sm font-medium bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 shadow-sm">
-                        <Calendar className="w-4 h-4 text-primary" />
-                        <span>{formattedDate}</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-white/80 text-xs sm:text-sm font-medium bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-sm">
+                        <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
+                        <span className="truncate">{formattedDate}</span>
                     </div>
 
                     {/* Site Location Selector & Refresh */}
-                    <div className="relative flex items-center gap-2">
+                    <div className="relative flex items-center gap-1.5 sm:gap-2">
                         <div className="relative">
                             <button
                                 onClick={() => setShowLocationMenu(!showLocationMenu)}
-                                className="flex items-center gap-1.5 text-xs text-white/90 bg-black/50 hover:bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 transition-all shadow-sm group-hover:border-primary/40"
+                                className="flex items-center gap-1.5 text-xs text-white/90 bg-black/50 hover:bg-black/70 backdrop-blur-md px-2.5 sm:px-3 py-1.5 rounded-full border border-white/15 transition-all shadow-sm group-hover:border-primary/40 max-w-[200px] sm:max-w-none"
                                 title="เลือกพื้นที่ไซต์งาน"
                             >
                                 <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                                <span className="font-medium truncate max-w-[170px] sm:max-w-[220px]">
+                                <span className="font-medium truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[220px]">
                                     {selectedLocation.name}
                                 </span>
                             </button>
@@ -310,7 +310,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                         <button
                             onClick={() => fetchWeather(selectedLocation.lat, selectedLocation.lon, selectedLocation.name)}
                             disabled={isLoadingWeather}
-                            className="p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/15 text-white/80 hover:text-white transition-all shadow-sm"
+                            className="p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/15 text-white/80 hover:text-white transition-all shadow-sm shrink-0"
                             title="รีเฟรชข้อมูลสภาพอากาศ"
                         >
                             <RefreshCw className={cn("w-3.5 h-3.5", isLoadingWeather && "animate-spin text-primary")} />
@@ -331,46 +331,46 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                 </div>
 
                 {/* MIDDLE ROW: Greeting + Real-time Weather Highlights */}
-                <div className="relative z-10 my-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="relative z-10 my-3 sm:my-4 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
                     {/* Left: Greeting & User Name */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 inline-flex items-center gap-1">
+                    <div className="space-y-1 sm:space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 inline-flex items-center gap-1">
                                 <Sparkles className="w-3 h-3" />
                                 {currentTeam?.role || "Member"}
                             </span>
-                            <span className="text-xs text-white/60">
+                            <span className="text-[11px] sm:text-xs text-white/60">
                                 อัปเดต {weather?.updatedAt || "เมื่อสักครู่"}
                             </span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                        <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight break-words">
                             {greeting},{" "}
                             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-primary/90">
                                 {currentUser?.name?.split(" ")[0] || "Amarit"}
                             </span>
                         </h1>
-                        <p className="text-xs sm:text-sm text-white/70 font-medium flex items-center gap-1.5">
-                            <HardHat className="w-4 h-4 text-amber-400 shrink-0" />
-                            <span>แดชบอร์ดติดตามสภาพงาน และข้อมูลโครงการประจำวัน</span>
+                        <p className="text-xs sm:text-sm text-white/70 font-medium flex items-start sm:items-center gap-1.5 leading-snug">
+                            <HardHat className="w-4 h-4 text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
+                            <span className="break-words">แดชบอร์ดติดตามสภาพงาน และข้อมูลโครงการประจำวัน</span>
                         </p>
                     </div>
 
                     {/* Right: Weather Metrics Display */}
                     {weather && weatherInfo && (
-                        <div className="flex items-center gap-4 bg-black/40 backdrop-blur-md border border-white/10 p-3 sm:p-4 rounded-2xl shrink-0 self-start md:self-auto">
-                            <div className="p-2 sm:p-2.5 rounded-xl bg-white/10 text-white shadow-inner flex items-center justify-center">
-                                <WeatherIcon className={cn("w-8 h-8 sm:w-10 sm:h-10 animate-pulse", weatherInfo.color)} />
+                        <div className="flex items-center gap-3 sm:gap-4 bg-black/40 backdrop-blur-md border border-white/10 p-2.5 sm:p-4 rounded-2xl shrink-0 self-start md:self-auto max-w-full">
+                            <div className="p-2 sm:p-2.5 rounded-xl bg-white/10 text-white shadow-inner flex items-center justify-center shrink-0">
+                                <WeatherIcon className={cn("w-7 h-7 sm:w-10 sm:h-10 animate-pulse", weatherInfo.color)} />
                             </div>
-                            <div>
-                                <div className="flex items-baseline gap-1.5">
-                                    <span className="text-3xl sm:text-4xl font-black font-mono text-white tracking-tight">
+                            <div className="min-w-0">
+                                <div className="flex items-baseline gap-1.5 flex-wrap">
+                                    <span className="text-2xl sm:text-4xl font-black font-mono text-white tracking-tight">
                                         {weather.temperature}°C
                                     </span>
                                     <span className="text-xs text-white/70 font-medium">
                                         (รู้สึก {weather.apparentTemperature}°)
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-2 mt-0.5">
+                                <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
                                     <span className={cn("text-xs font-bold", weatherInfo.color)}>
                                         {weatherInfo.label}
                                     </span>
@@ -384,21 +384,21 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                 </div>
 
                 {/* BOTTOM ROW: Weather Detail Pills & Site Advisory */}
-                <div className="relative z-10 space-y-3 pt-3 border-t border-white/10">
-                    <div className="flex flex-wrap items-center justify-between gap-2.5">
+                <div className="relative z-10 space-y-2.5 sm:space-y-3 pt-3 border-t border-white/10">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                         {/* Weather Spec Pills */}
                         {weather && (
-                            <div className="flex items-center gap-2 sm:gap-3 text-xs text-white/80 flex-wrap">
-                                <div className="flex items-center gap-1 bg-black/30 px-2.5 py-1 rounded-lg border border-white/5">
-                                    <Droplets className="w-3.5 h-3.5 text-blue-400" />
+                            <div className="flex items-center gap-1.5 sm:gap-2.5 text-[11px] sm:text-xs text-white/80 flex-wrap w-full">
+                                <div className="flex items-center gap-1 bg-black/30 px-2 sm:px-2.5 py-1 rounded-lg border border-white/5">
+                                    <Droplets className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-400 shrink-0" />
                                     <span>ความชื้น: <strong className="text-white font-mono">{weather.humidity}%</strong></span>
                                 </div>
-                                <div className="flex items-center gap-1 bg-black/30 px-2.5 py-1 rounded-lg border border-white/5">
-                                    <Wind className="w-3.5 h-3.5 text-teal-300" />
+                                <div className="flex items-center gap-1 bg-black/30 px-2 sm:px-2.5 py-1 rounded-lg border border-white/5">
+                                    <Wind className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-teal-300 shrink-0" />
                                     <span>ความเร็วลม: <strong className="text-white font-mono">{weather.windSpeed} km/h</strong></span>
                                 </div>
-                                <div className="flex items-center gap-1 bg-black/30 px-2.5 py-1 rounded-lg border border-white/5">
-                                    <Thermometer className="w-3.5 h-3.5 text-amber-400" />
+                                <div className="flex items-center gap-1 bg-black/30 px-2 sm:px-2.5 py-1 rounded-lg border border-white/5">
+                                    <Thermometer className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 shrink-0" />
                                     <span>ดัชนีความร้อน: <strong className="text-white font-mono">{weather.apparentTemperature}°C</strong></span>
                                 </div>
                             </div>
@@ -409,14 +409,14 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                     {weatherInfo && (
                         <div
                             className={cn(
-                                "flex items-center gap-2.5 p-2.5 rounded-xl text-xs sm:text-sm font-medium border backdrop-blur-md transition-colors",
+                                "flex items-start sm:items-center gap-2 p-2.5 sm:p-3 rounded-xl text-xs sm:text-sm font-medium border backdrop-blur-md transition-colors w-full",
                                 weatherInfo.advisoryType === "good" && "bg-emerald-500/10 border-emerald-500/20 text-emerald-300",
                                 weatherInfo.advisoryType === "warning" && "bg-amber-500/10 border-amber-500/20 text-amber-300",
                                 weatherInfo.advisoryType === "caution" && "bg-blue-500/10 border-blue-500/20 text-blue-300",
                                 weatherInfo.advisoryType === "danger" && "bg-rose-500/15 border-rose-500/30 text-rose-300 animate-pulse"
                             )}
                         >
-                            <span className="shrink-0">{weatherInfo.advisory}</span>
+                            <span className="flex-1 break-words leading-relaxed">{weatherInfo.advisory}</span>
                         </div>
                     )}
                 </div>
