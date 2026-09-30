@@ -336,12 +336,12 @@ export function JobSheetForm({
             isMultiProject: involvedProjectIds.length > 1 || selectedProjectId === "multi" || workItems.some((w) => !w.projectId || w.projectName?.includes("ทั่วไป")),
             subProjectId: "",
             subProjectName,
-            orgId: "", // Will be assigned by service/context
+            orgId: initialData?.orgId || currentTeam?.id || currentUser?.orgIds?.[0] || "",
             companyName: initialData?.companyName || companyProfile?.name || currentTeam?.name || "บริษัทของคุณ",
             companyLogo: initialData?.companyLogo || companyProfile?.logo || "",
-            createdBy: currentUser?.id || "",
-            createdByName: currentUser?.name || reportedBy,
-            createdByRole: currentUser?.role || reportedByRole,
+            createdBy: initialData?.createdBy || currentUser?.id || "",
+            createdByName: initialData?.createdByName || currentUser?.name || reportedBy,
+            createdByRole: initialData?.createdByRole || currentUser?.role || reportedByRole,
             weather: {
                 condition: weatherCondition,
                 temperature: Number(temperature) || 30

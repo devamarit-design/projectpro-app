@@ -147,11 +147,16 @@ export default function JobSheetsPage() {
 
     // Handlers with Optimistic Updates
     const handleSaveNew = async (data: Omit<JobSheet, "id" | "createdAt" | "updatedAt">) => {
-        const targetOrgId = orgId || "default_org";
+        const targetOrgId = currentTeam?.id || data.orgId || currentUser?.orgIds?.[0] || (orgId !== "default_org" ? orgId : "");
+        if (!targetOrgId) {
+            toast.error("กรุณาเลือกทีมก่อนบันทึก JobSheet");
+            return;
+        }
         try {
             const saved = await createJobSheet(targetOrgId, {
                 ...data,
-                createdBy: currentUserId || "current_user",
+                orgId: targetOrgId,
+                createdBy: currentUserId || currentUser?.id || "current_user",
                 createdByName: currentUser?.name || data.reportedBy || "ผู้รายงาน"
             });
             // Optimistic update so user sees it in list immediately
@@ -166,12 +171,16 @@ export default function JobSheetsPage() {
 
     const handleSaveEdit = async (data: Omit<JobSheet, "id" | "createdAt" | "updatedAt">) => {
         if (!editingSheet) return;
-        const targetOrgId = orgId || "default_org";
+        const targetOrgId = editingSheet.orgId || currentTeam?.id || data.orgId || currentUser?.orgIds?.[0] || (orgId !== "default_org" ? orgId : "");
         try {
-            await updateJobSheet(targetOrgId, editingSheet.id, data);
+            await updateJobSheet(targetOrgId, editingSheet.id, {
+                ...data,
+                orgId: targetOrgId
+            });
             const updated: JobSheet = {
                 ...editingSheet,
                 ...data,
+                orgId: targetOrgId,
                 updatedAt: new Date().toISOString()
             };
             setJobsheets(prev => prev.map(s => s.id === editingSheet.id ? updated : s));

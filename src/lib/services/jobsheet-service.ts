@@ -4,6 +4,7 @@ import {
     collection,
     doc,
     addDoc,
+    setDoc,
     updateDoc,
     deleteDoc,
     query,
@@ -151,14 +152,36 @@ export function subscribeJobSheets(
                     return (b.createdAt || "").localeCompare(a.createdAt || "");
                 });
 
-                // Include any temporary local items that haven't settled to Firestore yet
+                // Include any temporary or unsynced local items that haven't settled to Firestore yet
                 const localSheets = getLocalJobSheets(orgId, userId || undefined);
-                const localOnly = localSheets.filter(l => l.id.startsWith("local_") && !results.some(r => r.id === l.id));
+                const localOnly = localSheets.filter(l => !results.some(r => r.id === l.id));
                 const merged = [...localOnly, ...results];
 
                 // Cache to localStorage
                 merged.forEach(saveLocalJobSheet);
                 onData(merged);
+
+                // Auto-sync background healing for local items missing from Firestore
+                if (typeof window !== "undefined" && navigator.onLine && orgId && orgId !== "default_org") {
+                    localSheets.forEach(async (localSheet) => {
+                        if (!results.some(r => r.id === localSheet.id)) {
+                            try {
+                                if (localSheet.id.startsWith("local_")) {
+                                    await createJobSheet(orgId, localSheet);
+                                } else if (localSheet.orgId === orgId || !localSheet.orgId || localSheet.orgId === "default_org") {
+                                    const docRef = doc(db, "jobsheets", localSheet.id);
+                                    await setDoc(docRef, {
+                                        ...cleanFirestoreData(localSheet),
+                                        orgId,
+                                        updatedAt: serverTimestamp()
+                                    }, { merge: true });
+                                }
+                            } catch (syncErr) {
+                                console.warn("Background jobsheet sync attempt:", syncErr);
+                            }
+                        }
+                    });
+                }
             },
             (error) => {
                 console.warn("Firestore jobsheet subscription warning, falling back to local:", error);
@@ -186,10 +209,11 @@ export async function createJobSheet(
 ): Promise<JobSheet> {
     const nowIso = new Date().toISOString();
     const tempId = `local_${Date.now()}`;
+    const effectiveOrgId = (orgId && orgId !== "default_org") ? orgId : (data.orgId && data.orgId !== "default_org" ? data.orgId : "");
 
     const cleanedPayload = cleanFirestoreData({
         ...data,
-        orgId,
+        orgId: effectiveOrgId,
         createdAt: nowIso,
         updatedAt: nowIso
     });
@@ -217,7 +241,7 @@ export async function createJobSheet(
 
         return newSheet;
     } catch (error) {
-        console.warn("Firestore save failed, saved locally as fallback:", error);
+        console.error("Firestore save failed, saved locally as fallback:", error);
         return newSheet;
     }
 }
@@ -231,13 +255,23 @@ export async function updateJobSheet(
     data: Partial<JobSheet>
 ): Promise<void> {
     const nowIso = new Date().toISOString();
+    
+    // Safety: ensure orgId is never overwritten by empty string "" or "default_org"
+    const updateData: Record<string, any> = { ...data };
+    const effectiveOrgId = (data.orgId && data.orgId !== "default_org") ? data.orgId : (orgId && orgId !== "default_org" ? orgId : "");
+    if (effectiveOrgId) {
+        updateData.orgId = effectiveOrgId;
+    } else {
+        delete updateData.orgId; // NEVER overwrite valid orgId with empty string
+    }
+
     const cleanedPayload = cleanFirestoreData({
-        ...data,
+        ...updateData,
         updatedAt: nowIso
     });
 
     // Update local immediately
-    const local = getLocalJobSheets(orgId);
+    const local = getLocalJobSheets(effectiveOrgId || orgId);
     const existing = local.find(s => s.id === id);
     if (existing) {
         saveLocalJobSheet({ ...existing, ...cleanedPayload, updatedAt: nowIso });
@@ -252,7 +286,7 @@ export async function updateJobSheet(
             });
         }
     } catch (error) {
-        console.warn("Firestore update error, updated locally:", error);
+        console.error("Firestore update error, updated locally:", error);
     }
 }
 
