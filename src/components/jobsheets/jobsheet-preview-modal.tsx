@@ -181,29 +181,60 @@ export function JobSheetPreviewModal({
         }
     };
 
+    // Helper to convert any image into a base64 Data URL so it is 100% immune to CORS and never vanishes during export
+    const convertImageToBase64 = async (img: HTMLImageElement): Promise<string | null> => {
+        try {
+            if (!img.src || img.src.startsWith("data:")) return img.src;
+
+            // 1. If image is complete in DOM, draw to an in-memory canvas
+            try {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.naturalWidth || img.width || 150;
+                canvas.height = img.naturalHeight || img.height || 150;
+                const ctx = canvas.getContext("2d");
+                if (ctx && canvas.width > 0 && canvas.height > 0) {
+                    ctx.drawImage(img, 0, 0);
+                    const dataUrl = canvas.toDataURL("image/png");
+                    if (dataUrl && dataUrl.length > 100 && dataUrl !== "data:,") {
+                        return dataUrl;
+                    }
+                }
+            } catch {
+                // Tainted canvas or draw failure, try fetch
+            }
+
+            // 2. Fetch image as blob
+            const res = await fetch(img.src, { cache: "no-cache", mode: "cors" });
+            if (res.ok) {
+                const blob = await res.blob();
+                return await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.onerror = () => resolve("");
+                    reader.readAsDataURL(blob);
+                });
+            }
+        } catch (e) {
+            console.warn("Failed to convert image to base64 for export:", img.src, e);
+        }
+        return null;
+    };
+
     // Helper to safely prep element and images for high-res screenshot capture
     const prepareElementForCapture = async () => {
         if (!sheetRef.current) return null;
         const element = sheetRef.current;
 
-        // Pre-fetch images to object URLs to bypass CORS during canvas export
-        const images = element.querySelectorAll("img");
+        // Convert images to base64 so they never disappear or get replaced with empty SVGs
+        const images = Array.from(element.querySelectorAll("img"));
         const originalSrcs = new Map<HTMLImageElement, string>();
 
         await Promise.all(
-            Array.from(images).map(async (img) => {
-                try {
-                    if (!img.src || img.src.startsWith("data:") || img.src.startsWith("blob:")) {
-                        return;
-                    }
-                    const response = await fetch(img.src, { cache: "no-cache", mode: "cors" });
-                    if (!response.ok) return;
-                    const blob = await response.blob();
-                    const objectUrl = URL.createObjectURL(blob);
+            images.map(async (img) => {
+                const dataUrl = await convertImageToBase64(img);
+                if (dataUrl) {
                     originalSrcs.set(img, img.src);
-                    img.src = objectUrl;
-                } catch {
-                    // Ignore image fetch error, will fallback safely
+                    img.src = dataUrl;
                 }
             })
         );
@@ -211,14 +242,15 @@ export function JobSheetPreviewModal({
         // Wait a frame for DOM repaint
         await new Promise((r) => setTimeout(r, 120));
 
-        // Return cleanup function to restore revoked URLs
+        // Return cleanup function to restore original src URLs
         return () => {
             originalSrcs.forEach((src, img) => {
-                URL.revokeObjectURL(img.src);
                 img.src = src;
             });
         };
     };
+
+    const FONT_FAMILY_STACK = "'Kanit', var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Thai', 'Sukhumvit Set', sans-serif";
 
     // Export as PNG
     const handleDownloadPng = async () => {
@@ -231,20 +263,41 @@ export function JobSheetPreviewModal({
             cleanup = await prepareElementForCapture();
             if (!sheetRef.current) throw new Error("ไม่พบเอกสาร");
 
-            const blob = await toBlob(sheetRef.current, {
-                pixelRatio: 2,
-                backgroundColor: "#ffffff",
-                quality: 0.98,
-                skipFonts: true,
-                cacheBust: true,
-                imagePlaceholder: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E",
-                style: {
-                    transform: "none",
-                    margin: "0",
-                    width: "820px",
-                    maxWidth: "820px"
-                }
-            });
+            let blob: Blob | null = null;
+            try {
+                // Tier 1: Capture with full embedded web fonts
+                blob = await toBlob(sheetRef.current, {
+                    pixelRatio: 2,
+                    backgroundColor: "#ffffff",
+                    quality: 0.98,
+                    cacheBust: true,
+                    style: {
+                        transform: "none",
+                        margin: "0",
+                        width: "820px",
+                        maxWidth: "820px",
+                        fontFamily: FONT_FAMILY_STACK
+                    }
+                });
+            } catch (fontErr) {
+                console.warn("First capture attempt with embedded web fonts failed, retrying with system sans fallback:", fontErr);
+                // Tier 2: Fallback with explicit modern sans-serif fallback (never Times New Roman)
+                blob = await toBlob(sheetRef.current, {
+                    pixelRatio: 2,
+                    backgroundColor: "#ffffff",
+                    quality: 0.98,
+                    skipFonts: true,
+                    cacheBust: true,
+                    fontEmbedCSS: `* { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Thai', 'Sukhumvit Set', sans-serif !important; }`,
+                    style: {
+                        transform: "none",
+                        margin: "0",
+                        width: "820px",
+                        maxWidth: "820px",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Thai', 'Sukhumvit Set', sans-serif"
+                    }
+                });
+            }
 
             if (!blob) throw new Error("ไม่สามารถสร้างรูปภาพ Blob ได้");
 
@@ -272,20 +325,43 @@ export function JobSheetPreviewModal({
             cleanup = await prepareElementForCapture();
             if (!sheetRef.current) throw new Error("ไม่พบเอกสาร");
 
-            const dataUrl = await toPng(sheetRef.current, {
-                pixelRatio: 2,
-                backgroundColor: "#ffffff",
-                quality: 0.98,
-                skipFonts: true,
-                cacheBust: true,
-                imagePlaceholder: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E",
-                style: {
-                    transform: "none",
-                    margin: "0",
-                    width: "820px",
-                    maxWidth: "820px"
-                }
-            });
+            let dataUrl: string | null = null;
+            try {
+                // Tier 1: Capture with full embedded web fonts
+                dataUrl = await toPng(sheetRef.current, {
+                    pixelRatio: 2,
+                    backgroundColor: "#ffffff",
+                    quality: 0.98,
+                    cacheBust: true,
+                    style: {
+                        transform: "none",
+                        margin: "0",
+                        width: "820px",
+                        maxWidth: "820px",
+                        fontFamily: FONT_FAMILY_STACK
+                    }
+                });
+            } catch (fontErr) {
+                console.warn("First capture attempt with embedded web fonts failed, retrying with system sans fallback:", fontErr);
+                // Tier 2: Fallback with explicit modern sans-serif fallback
+                dataUrl = await toPng(sheetRef.current, {
+                    pixelRatio: 2,
+                    backgroundColor: "#ffffff",
+                    quality: 0.98,
+                    skipFonts: true,
+                    cacheBust: true,
+                    fontEmbedCSS: `* { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Thai', 'Sukhumvit Set', sans-serif !important; }`,
+                    style: {
+                        transform: "none",
+                        margin: "0",
+                        width: "820px",
+                        maxWidth: "820px",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Thai', 'Sukhumvit Set', sans-serif"
+                    }
+                });
+            }
+
+            if (!dataUrl) throw new Error("ไม่สามารถสร้างข้อมูลภาพ PDF ได้");
 
             const { jsPDF } = await import("jspdf");
             const pdf = new jsPDF({
@@ -487,7 +563,8 @@ export function JobSheetPreviewModal({
                             style={{
                                 width: "820px",
                                 minWidth: "820px",
-                                minHeight: "1160px"
+                                minHeight: "1160px",
+                                fontFamily: FONT_FAMILY_STACK
                             }}
                         >
                             {/* Company Header (Using User's Company Logo & Name, NOT App Logo) */}
@@ -498,6 +575,7 @@ export function JobSheetPreviewModal({
                                             <img
                                                 src={companyLogo}
                                                 alt={companyName}
+                                                crossOrigin="anonymous"
                                                 className="h-12 sm:h-14 w-auto max-w-[150px] object-contain rounded"
                                             />
                                         ) : (
@@ -605,11 +683,11 @@ export function JobSheetPreviewModal({
                                                                 <div className="space-y-1.5">
                                                                     <div>
                                                                         {isGeneral ? (
-                                                                            <span className="inline-flex items-center gap-1 font-bold text-zinc-700 bg-zinc-100 px-2 py-0.5 rounded text-[11px] border border-zinc-200">
+                                                                            <span className="inline-flex items-center gap-1 font-bold text-zinc-700 bg-zinc-100 px-2 py-0.5 rounded text-[11px] border border-zinc-200 whitespace-nowrap">
                                                                                 📦 {item.projectName || "งานทั่วไป / ส่วนกลาง"}
                                                                             </span>
                                                                         ) : (
-                                                                            <span className="inline-flex items-center gap-1 font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded text-[11px] border border-amber-300">
+                                                                            <span className="inline-flex items-center gap-1 font-bold text-amber-900 bg-amber-50 px-2.5 py-0.5 rounded text-[11px] border border-amber-300 whitespace-nowrap">
                                                                                 🏢 {item.projectName || jobsheet.projectName}
                                                                             </span>
                                                                         )}
@@ -617,12 +695,12 @@ export function JobSheetPreviewModal({
 
                                                                     <div className="flex flex-wrap items-center gap-1 text-[11px]">
                                                                         {item.timeSlot && (
-                                                                            <span className="inline-flex items-center gap-0.5 bg-zinc-100 text-zinc-700 px-1.5 py-0.5 rounded border border-zinc-200 font-mono">
+                                                                            <span className="inline-flex items-center gap-0.5 bg-zinc-100 text-zinc-700 px-1.5 py-0.5 rounded border border-zinc-200 font-mono whitespace-nowrap">
                                                                                 ⏱ {item.timeSlot}
                                                                             </span>
                                                                         )}
                                                                         {item.location && (
-                                                                            <span className="inline-flex items-center gap-0.5 bg-blue-50 text-blue-900 px-1.5 py-0.5 rounded border border-blue-200/80 font-medium">
+                                                                            <span className="inline-flex items-center gap-0.5 bg-blue-50 text-blue-900 px-1.5 py-0.5 rounded border border-blue-200/80 font-medium whitespace-nowrap">
                                                                                 📍 {item.location}
                                                                             </span>
                                                                         )}
@@ -634,7 +712,7 @@ export function JobSheetPreviewModal({
                                                             <td className="py-3 px-3.5 align-top border-r border-zinc-200">
                                                                 {renderTaskDetails(item.task)}
                                                                 {item.quantity && (
-                                                                    <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-xs text-zinc-700 font-medium">
+                                                                    <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-xs text-zinc-700 font-medium whitespace-nowrap">
                                                                         <span className="text-zinc-500 font-medium text-[11px]">ปริมาณ / ขนาด:</span>
                                                                         <span className="font-bold text-zinc-900">{item.quantity}</span>
                                                                     </div>
@@ -644,22 +722,22 @@ export function JobSheetPreviewModal({
                                                             {/* 4. สถานะ */}
                                                             <td className="py-3 px-2 text-center align-top border-r border-zinc-200">
                                                                 {item.status === "completed" && (
-                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 whitespace-nowrap shrink-0">
                                                                         <Check className="w-3 h-3 stroke-[3]" /> เสร็จสิ้น
                                                                     </span>
                                                                 )}
                                                                 {item.status === "in_progress" && (
-                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300 whitespace-nowrap shrink-0">
                                                                         <Clock className="w-3 h-3" /> ดำเนินการ
                                                                     </span>
                                                                 )}
                                                                 {item.status === "pending" && (
-                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 whitespace-nowrap shrink-0">
                                                                         รอดำเนินการ
                                                                     </span>
                                                                 )}
                                                                 {item.status === "delayed" && (
-                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 whitespace-nowrap shrink-0">
                                                                         ติดปัญหา
                                                                     </span>
                                                                 )}
