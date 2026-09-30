@@ -393,7 +393,7 @@ export function JobSheetForm({
     return (
         <form onSubmit={handleFormSubmit} className="space-y-5 w-full max-w-5xl mx-auto pb-24 sm:pb-12 overflow-x-hidden">
             {/* Desktop Top Toolbar */}
-            <div className="hidden sm:flex items-center justify-between gap-3 bg-zinc-900/60 border border-white/10 rounded-2xl p-4 backdrop-blur-md sticky top-16 z-20 shadow-xl">
+            <div className="hidden sm:flex items-center justify-between gap-3 bg-zinc-900/60 border border-white/10 rounded-2xl p-4 shadow-md">
                 <div>
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                         <HardHat className="w-5 h-5 text-amber-400" />
