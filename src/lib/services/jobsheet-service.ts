@@ -45,9 +45,26 @@ export function getLocalJobSheets(orgId?: string, userId?: string): JobSheet[] {
         const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (!raw) return [];
         const all: JobSheet[] = JSON.parse(raw);
-        return all.filter(s => (!orgId || s.orgId === orgId) && (!userId || s.createdBy === userId));
+        // Deduplicate local items as well
+        const seen = new Set<string>();
+        const unique = all.filter(s => {
+            const key = s.reportNumber || s.id;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+        return unique.filter(s => (!orgId || s.orgId === orgId) && (!userId || s.createdBy === userId));
     } catch {
         return [];
+    }
+}
+
+export function setLocalJobSheets(sheets: JobSheet[]) {
+    if (typeof window === "undefined") return;
+    try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sheets.slice(0, 50)));
+    } catch (e) {
+        console.warn("Failed to set local jobsheets cache:", e);
     }
 }
 
@@ -56,13 +73,13 @@ export function saveLocalJobSheet(sheet: JobSheet) {
     try {
         const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
         const all: JobSheet[] = raw ? JSON.parse(raw) : [];
-        const idx = all.findIndex(s => s.id === sheet.id);
+        const idx = all.findIndex(s => s.id === sheet.id || (s.reportNumber && s.reportNumber === sheet.reportNumber));
         if (idx >= 0) {
             all[idx] = sheet;
         } else {
             all.unshift(sheet);
         }
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(all));
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(all.slice(0, 50)));
     } catch (e) {
         console.warn("Failed to backup jobsheet to localStorage:", e);
     }
@@ -145,41 +162,50 @@ export function subscribeJobSheets(
                     } as JobSheet;
                 });
 
+                // Deduplicate in memory and identify duplicates to delete
+                const uniqueMap = new Map<string, JobSheet>();
+                const duplicateDocIdsToDelete: string[] = [];
+
+                for (const sheet of results) {
+                    const key = sheet.reportNumber?.trim() || `${sheet.date}_${sheet.projectName}_${sheet.reportedBy}`;
+                    if (!uniqueMap.has(key)) {
+                        uniqueMap.set(key, sheet);
+                    } else {
+                        const existing = uniqueMap.get(key)!;
+                        const existingTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+                        const sheetTime = new Date(sheet.updatedAt || sheet.createdAt || 0).getTime();
+                        if (sheetTime >= existingTime) {
+                            if (existing.id && !existing.id.startsWith("local_")) {
+                                duplicateDocIdsToDelete.push(existing.id);
+                            }
+                            uniqueMap.set(key, sheet);
+                        } else {
+                            if (sheet.id && !sheet.id.startsWith("local_")) {
+                                duplicateDocIdsToDelete.push(sheet.id);
+                            }
+                        }
+                    }
+                }
+
+                const deduplicated = Array.from(uniqueMap.values());
+
                 // Client-side sort: date descending, then createdAt descending (no composite index required)
-                results.sort((a, b) => {
+                deduplicated.sort((a, b) => {
                     const dateDiff = (b.date || "").localeCompare(a.date || "");
                     if (dateDiff !== 0) return dateDiff;
                     return (b.createdAt || "").localeCompare(a.createdAt || "");
                 });
 
-                // Include any temporary or unsynced local items that haven't settled to Firestore yet
-                const localSheets = getLocalJobSheets(orgId, userId || undefined);
-                const localOnly = localSheets.filter(l => !results.some(r => r.id === l.id));
-                const merged = [...localOnly, ...results];
+                // Fast O(1) cache update
+                setLocalJobSheets(deduplicated);
+                onData(deduplicated);
 
-                // Cache to localStorage
-                merged.forEach(saveLocalJobSheet);
-                onData(merged);
-
-                // Auto-sync background healing for local items missing from Firestore
-                if (typeof window !== "undefined" && navigator.onLine && orgId && orgId !== "default_org") {
-                    localSheets.forEach(async (localSheet) => {
-                        if (!results.some(r => r.id === localSheet.id)) {
-                            try {
-                                if (localSheet.id.startsWith("local_")) {
-                                    await createJobSheet(orgId, localSheet);
-                                } else if (localSheet.orgId === orgId || !localSheet.orgId || localSheet.orgId === "default_org") {
-                                    const docRef = doc(db, "jobsheets", localSheet.id);
-                                    await setDoc(docRef, {
-                                        ...cleanFirestoreData(localSheet),
-                                        orgId,
-                                        updatedAt: serverTimestamp()
-                                    }, { merge: true });
-                                }
-                            } catch (syncErr) {
-                                console.warn("Background jobsheet sync attempt:", syncErr);
-                            }
-                        }
+                // Auto-purge redundant duplicate docs in background without re-triggering loops
+                if (duplicateDocIdsToDelete.length > 0 && typeof window !== "undefined") {
+                    Promise.allSettled(
+                        duplicateDocIdsToDelete.map(id => deleteDoc(doc(db, "jobsheets", id)))
+                    ).catch(e => {
+                        console.warn("Background duplicate cleanup warning:", e);
                     });
                 }
             },

@@ -160,7 +160,7 @@ export default function JobSheetsPage() {
                 createdByName: currentUser?.name || data.reportedBy || "ผู้รายงาน"
             });
             // Optimistic update so user sees it in list immediately
-            setJobsheets(prev => [saved, ...prev.filter(s => s.id !== saved.id)]);
+            setJobsheets(prev => [saved, ...prev.filter(s => s.id !== saved.id && (!saved.reportNumber || s.reportNumber !== saved.reportNumber))]);
             setActiveTab("list");
             toast.success("บันทึก JobSheet ลงระบบเรียบร้อยแล้ว");
         } catch (err) {
