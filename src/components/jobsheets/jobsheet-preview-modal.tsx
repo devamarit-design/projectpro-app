@@ -82,25 +82,31 @@ export function JobSheetPreviewModal({
         }
     };
 
-    // Helper to render task details with bullet support (e.g., "- เคลียร์เรื่องการปรับพื้น...")
+    // Helper to render task details with clear typography & bullet support
     const renderTaskDetails = (taskText: string) => {
-        if (!taskText) return <span className="text-zinc-400">-</span>;
+        if (!taskText) return <span className="text-zinc-400 italic">ไม่ได้ระบุรายละเอียด</span>;
         const lines = taskText.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
         if (lines.length <= 1) {
-            return <div className="font-semibold text-zinc-900 leading-snug">{taskText}</div>;
+            return (
+                <div className="font-bold text-zinc-950 text-sm sm:text-[14px] leading-relaxed">
+                    {taskText}
+                </div>
+            );
         }
 
         const [title, ...subLines] = lines;
         return (
-            <div className="space-y-1">
-                <div className="font-bold text-zinc-900 text-xs sm:text-sm leading-snug">{title}</div>
-                <div className="space-y-0.5 pl-1.5 border-l-2 border-amber-300">
+            <div className="space-y-1.5">
+                <div className="font-extrabold text-zinc-950 text-sm sm:text-[14px] leading-snug">
+                    {title}
+                </div>
+                <div className="space-y-1 pl-3 border-l-2 border-amber-400">
                     {subLines.map((line, idx) => {
                         const cleanLine = line.replace(/^[-•*]\s*/, "");
                         return (
-                            <div key={idx} className="flex items-start gap-1.5 text-zinc-700 text-xs leading-relaxed">
-                                <span className="text-amber-500 font-bold shrink-0">•</span>
-                                <span>{cleanLine}</span>
+                            <div key={idx} className="flex items-start gap-2 text-zinc-800 text-[13px] leading-relaxed">
+                                <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
+                                <span className="font-medium">{cleanLine}</span>
                             </div>
                         );
                     })}
@@ -385,13 +391,11 @@ export function JobSheetPreviewModal({
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-zinc-900 text-white font-bold text-xs uppercase tracking-wider">
-                                            <th className="py-2.5 px-2.5 w-10 text-center border-r border-zinc-700">ลำดับ</th>
-                                            <th className="py-2.5 px-3 w-28 text-center border-r border-zinc-700">เวลา</th>
-                                            <th className="py-2.5 px-3 w-44 border-r border-zinc-700">โครงการ / หมวดงาน</th>
-                                            <th className="py-2.5 px-3 border-r border-zinc-700">รายละเอียดงานที่ปฏิบัติ</th>
-                                            <th className="py-2.5 px-3 w-28 border-r border-zinc-700">สถานที่ / โซน</th>
+                                            <th className="py-2.5 px-3 w-12 text-center border-r border-zinc-700">ลำดับ</th>
+                                            <th className="py-2.5 px-3.5 w-56 border-r border-zinc-700">โครงการ / โซน / เวลา</th>
+                                            <th className="py-2.5 px-4 border-r border-zinc-700">รายละเอียดงานที่ปฏิบัติ (Work Activities & Progress)</th>
                                             <th className="py-2.5 px-2.5 w-24 text-center border-r border-zinc-700">สถานะ</th>
-                                            <th className="py-2.5 px-3 w-28">หมายเหตุ</th>
+                                            <th className="py-2.5 px-3 w-32">หมายเหตุ</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-300 text-xs">
@@ -405,52 +409,48 @@ export function JobSheetPreviewModal({
                                                             {idx + 1}
                                                         </td>
 
-                                                        {/* 2. เวลา */}
-                                                        <td className="py-3 px-2.5 text-center align-top border-r border-zinc-200 font-mono text-[11px] text-zinc-800">
-                                                            {item.timeSlot ? (
-                                                                <span className="inline-block bg-zinc-100 text-zinc-800 font-medium px-1.5 py-0.5 rounded border border-zinc-200">
-                                                                    {item.timeSlot}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-zinc-400">-</span>
-                                                            )}
+                                                        {/* 2. โครงการ / โซน / เวลา (จัดกลุ่มข้อมูลบริบทให้เป็นสัดส่วนชัดเจน) */}
+                                                        <td className="py-3 px-3 align-top border-r border-zinc-200">
+                                                            <div className="space-y-1.5">
+                                                                <div>
+                                                                    {isGeneral ? (
+                                                                        <span className="inline-flex items-center gap-1 font-bold text-zinc-700 bg-zinc-100 px-2 py-0.5 rounded text-[11px] border border-zinc-200">
+                                                                            📦 {item.projectName || "งานทั่วไป / ส่วนกลาง"}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center gap-1 font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded text-[11px] border border-amber-200">
+                                                                            🏢 {item.projectName || jobsheet.projectName}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+
+                                                                <div className="flex flex-wrap items-center gap-1 text-[11px]">
+                                                                    {item.timeSlot && (
+                                                                        <span className="inline-flex items-center gap-0.5 bg-zinc-100 text-zinc-700 px-1.5 py-0.5 rounded border border-zinc-200 font-mono">
+                                                                            ⏱ {item.timeSlot}
+                                                                        </span>
+                                                                    )}
+                                                                    {item.location && (
+                                                                        <span className="inline-flex items-center gap-0.5 bg-blue-50 text-blue-900 px-1.5 py-0.5 rounded border border-blue-200/80 font-medium">
+                                                                            📍 {item.location}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         </td>
 
-                                                        {/* 3. โครงการ / หมวดงาน */}
-                                                        <td className="py-3 px-3 align-top border-r border-zinc-200">
-                                                            {isGeneral ? (
-                                                                <span className="inline-flex items-center gap-1 font-semibold text-zinc-700 bg-zinc-100 px-2 py-0.5 rounded text-[11px] border border-zinc-200">
-                                                                    📦 {item.projectName || "งานทั่วไป / ส่วนกลาง"}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center gap-1 font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded text-[11px] border border-amber-200">
-                                                                    🏢 {item.projectName || jobsheet.projectName}
-                                                                </span>
-                                                            )}
-                                                        </td>
-
-                                                        {/* 4. รายละเอียดงานที่ปฏิบัติ (เน้นอ่านง่าย รองรับข้อความยาว & หัวข้อย่อย) */}
-                                                        <td className="py-3 px-3 align-top border-r border-zinc-200">
+                                                        {/* 3. รายละเอียดงานที่ปฏิบัติ (เน้นความกว้าง ตัวหนังสือใหญ่ อ่านง่าย สบายตาที่สุด) */}
+                                                        <td className="py-3.5 px-4 align-top border-r border-zinc-200">
                                                             {renderTaskDetails(item.task)}
                                                             {item.quantity && (
-                                                                <div className="mt-1 text-[11px] text-zinc-500 font-medium">
-                                                                    ปริมาณ/ขนาด: <span className="text-zinc-800">{item.quantity}</span>
+                                                                <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-xs text-zinc-700 font-medium">
+                                                                    <span className="text-zinc-500 font-medium text-[11px]">ปริมาณ / ขนาด:</span>
+                                                                    <span className="font-bold text-zinc-900">{item.quantity}</span>
                                                                 </div>
                                                             )}
                                                         </td>
 
-                                                        {/* 5. พื้นที่ / โซน */}
-                                                        <td className="py-3 px-2.5 text-zinc-700 align-top border-r border-zinc-200">
-                                                            {item.location ? (
-                                                                <span className="text-zinc-800 font-medium">
-                                                                    {item.location}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-zinc-400">-</span>
-                                                            )}
-                                                        </td>
-
-                                                        {/* 6. สถานะ */}
+                                                        {/* 4. สถานะ */}
                                                         <td className="py-3 px-2 text-center align-top border-r border-zinc-200">
                                                             {item.status === "completed" && (
                                                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
@@ -474,16 +474,20 @@ export function JobSheetPreviewModal({
                                                             )}
                                                         </td>
 
-                                                        {/* 7. หมายเหตุ */}
-                                                        <td className="py-3 px-2.5 text-zinc-600 text-[11px] align-top">
-                                                            {item.notes || "-"}
+                                                        {/* 5. หมายเหตุ */}
+                                                        <td className="py-3 px-3 text-zinc-700 text-xs align-top leading-relaxed">
+                                                            {item.notes ? (
+                                                                <span className="font-medium text-zinc-800">{item.notes}</span>
+                                                            ) : (
+                                                                <span className="text-zinc-300">-</span>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 );
                                             })
                                         ) : (
                                             <tr>
-                                                <td colSpan={7} className="py-6 text-center text-zinc-400">
+                                                <td colSpan={5} className="py-6 text-center text-zinc-400">
                                                     ไม่มีรายการงานที่บันทึก
                                                 </td>
                                             </tr>
