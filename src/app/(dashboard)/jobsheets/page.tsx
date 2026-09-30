@@ -219,26 +219,26 @@ export default function JobSheetsPage() {
 
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8 max-w-7xl animate-in fade-in duration-500 pb-32 md:pb-12">
-            {/* Header Banner */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black p-6 sm:p-8 shadow-2xl">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-                
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="space-y-2">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold uppercase tracking-wider">
-                            <FileText className="w-3.5 h-3.5" />
-                            Daily Construction Log & Sheet
+            {/* Header Banner (Shown only in List view for focused writing/editing) */}
+            {activeTab === "list" && (
+                <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black p-6 sm:p-8 shadow-2xl">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+                    
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="space-y-2">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold uppercase tracking-wider">
+                                <FileText className="w-3.5 h-3.5" />
+                                Daily Construction Log & Sheet
+                            </div>
+                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+                                JobSheet <span className="text-amber-400 font-mono">/</span> Daily Report
+                            </h1>
+                            <p className="text-sm text-white/60 max-w-2xl leading-relaxed">
+                                ระบบบันทึกงานประจำวันหน้างาน รายการงานที่ทำ สภาพอากาศ กำลังพล และดาวน์โหลดเป็น A4 JobSheet ในรูปแบบ PDF หรือภาพความละเอียดสูง (PNG) ส่งเข้า LINE หรือลูกค้าง่ายๆ
+                            </p>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-                            JobSheet <span className="text-amber-400 font-mono">/</span> Daily Report
-                        </h1>
-                        <p className="text-sm text-white/60 max-w-2xl leading-relaxed">
-                            ระบบบันทึกงานประจำวันหน้างาน รายการงานที่ทำ สภาพอากาศ กำลังพล และดาวน์โหลดเป็น A4 JobSheet ในรูปแบบ PDF หรือภาพความละเอียดสูง (PNG) ส่งเข้า LINE หรือลูกค้าง่ายๆ
-                        </p>
-                    </div>
 
-                    <div className="flex flex-wrap items-center gap-2.5">
-                        {activeTab === "list" ? (
+                        <div className="flex flex-wrap items-center gap-2.5">
                             <Button
                                 onClick={() => {
                                     setEditingSheet(null);
@@ -249,56 +249,44 @@ export default function JobSheetsPage() {
                                 <Plus className="w-4 h-4 mr-1.5 stroke-[3]" />
                                 เขียน JobSheet วันนี้
                             </Button>
-                        ) : (
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    setEditingSheet(null);
-                                    setActiveTab("list");
-                                }}
-                                className="border-white/10 text-white hover:bg-white/5 h-11 rounded-xl px-5"
-                            >
-                                <ChevronRight className="w-4 h-4 mr-1.5 rotate-180" />
-                                กลับหน้ารายการ
-                            </Button>
-                        )}
+                        </div>
+                    </div>
+
+                    {/* Quick Stats Grid */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t border-white/10">
+                        <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
+                            <span className="text-xs text-white/50 block mb-1">รายงานทั้งหมดในระบบ</span>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-2xl font-black text-white font-mono">{totalReports}</span>
+                                <span className="text-xs text-amber-400/80">ฉบับ</span>
+                            </div>
+                        </div>
+
+                        <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
+                            <span className="text-xs text-white/50 block mb-1">รายงานของฉัน</span>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-2xl font-black text-amber-400 font-mono">{myReportsCount}</span>
+                                <span className="text-xs text-white/40">ฉบับ</span>
+                            </div>
+                        </div>
+
+                        <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
+                            <span className="text-xs text-white/50 block mb-1">งานที่บันทึกสำเร็จ</span>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-2xl font-black text-emerald-400 font-mono">{totalTasksDone}</span>
+                                <span className="text-xs text-white/40">รายการ</span>
+                            </div>
+                        </div>
+
+                        <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
+                            <span className="text-xs text-white/50 block mb-1">โครงการล่าสุด</span>
+                            <span className="text-sm font-bold text-white truncate block">
+                                {latestSheet ? latestSheet.projectName : "ยังไม่มีข้อมูล"}
+                            </span>
+                        </div>
                     </div>
                 </div>
-
-                {/* Quick Stats Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t border-white/10">
-                    <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                        <span className="text-xs text-white/50 block mb-1">รายงานทั้งหมดในระบบ</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-white font-mono">{totalReports}</span>
-                            <span className="text-xs text-amber-400/80">ฉบับ</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                        <span className="text-xs text-white/50 block mb-1">รายงานของฉัน</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-amber-400 font-mono">{myReportsCount}</span>
-                            <span className="text-xs text-white/40">ฉบับ</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                        <span className="text-xs text-white/50 block mb-1">งานที่บันทึกสำเร็จ</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-emerald-400 font-mono">{totalTasksDone}</span>
-                            <span className="text-xs text-white/40">รายการ</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                        <span className="text-xs text-white/50 block mb-1">โครงการล่าสุด</span>
-                        <span className="text-sm font-bold text-white truncate block">
-                            {latestSheet ? latestSheet.projectName : "ยังไม่มีข้อมูล"}
-                        </span>
-                    </div>
-                </div>
-            </div>
+            )}
 
             {/* TAB: Create / Edit Form */}
             {activeTab === "create" && (
