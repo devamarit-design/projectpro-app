@@ -63,6 +63,7 @@ function getWeatherDetails(code: number, isDay: boolean) {
             icon: isDay ? Sun : Moon,
             color: isDay ? "text-amber-400" : "text-indigo-300",
             bgTint: isDay ? "from-amber-500/20" : "from-indigo-500/20",
+            bgImage: isDay ? "/assets/dashboard/weather-sunny.jpg" : "/assets/dashboard/weather-night.jpg",
             advisory: "☀️ สภาพอากาศแจ่มใส เหมาะสำหรับงานเทคอนกรีต งานโครงสร้าง และงานกลางแจ้งทุกประเภท",
             advisoryType: "good" as const
         }
@@ -72,8 +73,9 @@ function getWeatherDetails(code: number, isDay: boolean) {
             label: code === 3 ? "ท้องฟ้ามีเมฆมาก" : "มีเมฆบางส่วน",
             en: code === 3 ? "Overcast" : "Partly Cloudy",
             icon: isDay ? CloudSun : CloudMoon,
-            color: "text-sky-300",
-            bgTint: "from-sky-500/20",
+            color: isDay ? "text-sky-300" : "text-indigo-300",
+            bgTint: isDay ? "from-sky-500/20" : "from-indigo-500/20",
+            bgImage: isDay ? "/assets/dashboard/weather-cloudy.jpg" : "/assets/dashboard/weather-night.jpg",
             advisory: "⛅ สภาพอากาศดี อุณหภูมิกำลังดี ปลอดโปร่งสำหรับการปฏิบัติงานหน้างาน",
             advisoryType: "good" as const
         }
@@ -85,6 +87,7 @@ function getWeatherDetails(code: number, isDay: boolean) {
             icon: CloudFog,
             color: "text-slate-300",
             bgTint: "from-slate-500/20",
+            bgImage: "/assets/dashboard/weather-fog.jpg",
             advisory: "🌫️ มีหมอกในพื้นที่ ระมัดระวังทัศนวิสัยในการขับขี่และควบคุมเครื่องจักรหนัก",
             advisoryType: "warning" as const
         }
@@ -96,6 +99,7 @@ function getWeatherDetails(code: number, isDay: boolean) {
             icon: CloudRain,
             color: "text-blue-400",
             bgTint: "from-blue-600/30",
+            bgImage: "/assets/dashboard/weather-rain.jpg",
             advisory: "🌧️ มีฝนตก ระวังงานโครงสร้าง งานเทคอนกรีต และความปลอดภัยระบบไฟฟ้าหน้างาน",
             advisoryType: "caution" as const
         }
@@ -107,6 +111,7 @@ function getWeatherDetails(code: number, isDay: boolean) {
             icon: CloudLightning,
             color: "text-purple-400",
             bgTint: "from-purple-600/30",
+            bgImage: "/assets/dashboard/weather-thunder.jpg",
             advisory: "⚡ มีพายุฟ้าคะนอง งดงานบนที่สูงและงานติดตั้งเครนเพื่อความปลอดภัยสูงสุด",
             advisoryType: "danger" as const
         }
@@ -115,8 +120,9 @@ function getWeatherDetails(code: number, isDay: boolean) {
         label: "อากาศทั่วไป",
         en: "Normal",
         icon: isDay ? Sun : Moon,
-        color: "text-amber-400",
-        bgTint: "from-amber-500/20",
+        color: isDay ? "text-amber-400" : "text-indigo-300",
+        bgTint: isDay ? "from-amber-500/20" : "from-indigo-500/20",
+        bgImage: isDay ? "/assets/dashboard/weather-sunny.jpg" : "/assets/dashboard/weather-night.jpg",
         advisory: "✨ สภาพอากาศปกติ สามารถดำเนินงานได้ตามแผนงาน",
         advisoryType: "good" as const
     }
@@ -235,11 +241,12 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                     isAdmin ? "lg:col-span-7 xl:col-span-8" : "lg:col-span-12"
                 )}
             >
-                {/* Background Image with Ambient Scrim */}
+                {/* Dynamic Weather Background Image with Ambient Scrim */}
                 <img
-                    src="/assets/dashboard/weather-bg.jpg"
+                    key={weatherInfo?.bgImage || "/assets/dashboard/weather-bg.jpg"}
+                    src={weatherInfo?.bgImage || "/assets/dashboard/weather-bg.jpg"}
                     alt="Weather & Construction Skyline"
-                    className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.02] transition-transform duration-1000 pointer-events-none"
+                    className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.02] transition-all duration-1000 pointer-events-none animate-in fade-in duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/75 to-black/50 pointer-events-none" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30 pointer-events-none" />
