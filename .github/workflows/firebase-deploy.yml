@@ -13,6 +13,7 @@ jobs:
           node-version: 20
           cache: 'npm'
       - run: npm ci
+      - run: npm install lightningcss-linux-x64-gnu@1.30.2 --no-save
       - run: npm ci --prefix functions
       - run: npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
