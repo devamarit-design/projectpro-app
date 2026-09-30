@@ -37,7 +37,8 @@ import {
     Layers,
     ExternalLink,
     Search,
-    X
+    X,
+    GitMerge
 } from "lucide-react"
 import { IncomeDocument } from "@/context/project-context"
 import Link from "next/link"
@@ -57,6 +58,8 @@ import { TaskBoard } from "@/components/tasks/task-board"
 import TaskDetailSheet from "@/components/tasks/task-detail-sheet"
 import { CashFlowChart } from "@/components/dashboard/cash-flow-chart"
 import { ExpenseCategoryChart } from "@/components/dashboard/expense-category-chart"
+import { SubProjectManagerModal } from "@/components/projects/subproject-manager-modal"
+import { AIExpenseAuditor } from "@/components/dashboard/ai-expense-auditor"
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import dynamic from "next/dynamic"
@@ -152,6 +155,7 @@ export default function ProjectDetailClient() {
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
     const [selectedSubProjectId, setSelectedSubProjectId] = useState<string | null>(null)
     const [isAddSubProjectOpen, setIsAddSubProjectOpen] = useState(false)
+    const [isSubProjectManagerOpen, setIsSubProjectManagerOpen] = useState(false)
     const [newSubProjectName, setNewSubProjectName] = useState("")
     const [userFilter, setUserFilter] = useState<string>("all")
     const [monthFilter, setMonthFilter] = useState<string>("all")
@@ -740,6 +744,11 @@ export default function ProjectDetailClient() {
                                     </div>
                                 </div>
                             </div>
+                        )}
+
+                        {/* AI Expense & Fuel Auditor */}
+                        {canViewFinancials && (
+                            <AIExpenseAuditor projectId={project.id} />
                         )}
 
                         {/* 5. Recent Activity (Recent Expenses & Recent Invoices) */}
@@ -1471,17 +1480,32 @@ export default function ProjectDetailClient() {
                 {
                     activeTab === 'sub_projects' && (
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="font-bold text-lg flex items-center gap-2">
-                                    <Target className="w-5 h-5 text-primary" />
-                                    {t.projects.detail.tabs.sub_projects}
-                                </h3>
-                                <button
-                                    onClick={() => setIsAddSubProjectOpen(true)}
-                                    className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20"
-                                >
-                                    <Plus className="w-4 h-4" /> {locale === 'th' ? "เพิ่มโปรเจคย่อย" : "Add Sub-project"}
-                                </button>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                                <div>
+                                    <h3 className="font-bold text-lg flex items-center gap-2">
+                                        <Target className="w-5 h-5 text-primary" />
+                                        {t.projects.detail.tabs.sub_projects}
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        แยกติดตามสัดส่วนรายจ่ายตามหมวดงานของโครงการ
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2.5 flex-wrap">
+                                    <button
+                                        onClick={() => setIsSubProjectManagerOpen(true)}
+                                        className="px-3.5 py-2 bg-muted/60 hover:bg-muted text-foreground border border-white/10 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+                                        title="แก้ปัญหาโปรเจคย่อยซ้ำซ้อน รวมตัวที่ซ้ำ หรือซิงค์พรีเซ็ต"
+                                    >
+                                        <GitMerge className="w-3.5 h-3.5 text-primary" />
+                                        <span>จัดระเบียบ & รวมตัวที่ซ้ำ (Merge)</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setIsAddSubProjectOpen(true)}
+                                        className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                                    >
+                                        <Plus className="w-4 h-4" /> {locale === 'th' ? "เพิ่มโปรเจคย่อย" : "Add Sub-project"}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1649,6 +1673,11 @@ export default function ProjectDetailClient() {
                                     </div>
                                 )}
                             </div>
+
+                            {/* AI Expense & Fuel Auditor for Sub-projects */}
+                            <div className="mt-8">
+                                <AIExpenseAuditor projectId={project.id} />
+                            </div>
                         </div>
                     )
                 }
@@ -1697,6 +1726,12 @@ export default function ProjectDetailClient() {
                     if (searchParams.has('incomeId')) router.back()
                     else setSelectedIncomeDocId(null)
                 }}
+            />
+
+            <SubProjectManagerModal
+                isOpen={isSubProjectManagerOpen}
+                onClose={() => setIsSubProjectManagerOpen(false)}
+                project={project}
             />
 
             {/* Task/Sub-project Detail Sheet */}

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Building, MapPin, Calendar, Check, DollarSign, Upload, ImageIcon, Loader2 } from "lucide-react"
+import { X, Building, MapPin, Calendar, Check, DollarSign, Upload, ImageIcon, Loader2, Layers, CheckCircle2 } from "lucide-react"
 import { useProjects, Project } from "@/context/project-context"
 import { useOrganization } from "@/context/organization-context"
 import { cn } from "@/lib/utils"
@@ -9,6 +9,7 @@ import { useTranslation } from "@/lib/i18n-context"
 import { uploadImage } from "@/lib/upload"
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 import { SafeBackdrop } from "@/components/ui/safe-backdrop"
+import { loadSubProjectPresets, createSubProjectsFromPreset, SubProjectPresetGroup, DEFAULT_PRESET_GROUPS } from "@/lib/subproject-presets"
 
 interface AddProjectDialogProps {
     isOpen: boolean
@@ -31,6 +32,20 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
     const [coverImage, setCoverImage] = React.useState<string>("")
     const [isUploading, setIsUploading] = React.useState(false)
     const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+    // Sub-project Preset State
+    const [applyPreset, setApplyPreset] = React.useState(true)
+    const [presetGroups, setPresetGroups] = React.useState<SubProjectPresetGroup[]>(DEFAULT_PRESET_GROUPS)
+    const [selectedPresetId, setSelectedPresetId] = React.useState("standard-construction")
+
+    React.useEffect(() => {
+        if (isOpen) {
+            loadSubProjectPresets(currentOrg?.id).then(groups => {
+                setPresetGroups(groups)
+                if (groups.length > 0) setSelectedPresetId(groups[0].id)
+            })
+        }
+    }, [isOpen, currentOrg?.id])
 
     // Quick Add Customer State
     const [showAddCustomer, setShowAddCustomer] = React.useState(false)
@@ -92,6 +107,11 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
         e.preventDefault()
         if (!name) return
 
+        const activePreset = presetGroups.find(g => g.id === selectedPresetId)
+        const initialSubProjects = applyPreset && activePreset
+            ? createSubProjectsFromPreset(activePreset.items)
+            : []
+
         addProject({
             name,
             customer: customer || "Walk-in Customer",
@@ -104,7 +124,8 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
             startDate: startDate || new Date().toISOString().split('T')[0],
             endDate: endDate || new Date().toISOString().split('T')[0],
             image: coverImage || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80",
-            description: "Quick added project"
+            description: "Quick added project",
+            subProjects: initialSubProjects
         })
 
         if (onSuccess) {
@@ -271,6 +292,66 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                                     className="w-full h-11 px-4 bg-background border border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none"
                                 />
                             </div>
+                        </div>
+
+                        {/* SUB-PROJECT PRESET INITIALIZATION */}
+                        <div className="pt-2 border-t border-white/10 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={applyPreset}
+                                        onChange={(e) => setApplyPreset(e.target.checked)}
+                                        className="w-4 h-4 rounded text-primary focus:ring-primary/40 bg-background border-white/20"
+                                    />
+                                    <span className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                                        <Layers className="w-3.5 h-3.5 text-primary" />
+                                        สร้างโปรเจคย่อยเริ่มต้นจากพรีเซ็ต
+                                    </span>
+                                </label>
+                                {applyPreset && (
+                                    <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full font-semibold border border-primary/20">
+                                        แนะนำ
+                                    </span>
+                                )}
+                            </div>
+
+                            {applyPreset && (
+                                <div className="p-3 bg-muted/30 border border-white/10 rounded-xl space-y-2.5 animate-in fade-in duration-200">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-[11px] text-muted-foreground">ชุดพรีเซ็ต:</span>
+                                        <select
+                                            value={selectedPresetId}
+                                            onChange={(e) => setSelectedPresetId(e.target.value)}
+                                            className="px-2.5 py-1 text-xs bg-background border border-white/10 rounded-lg outline-none focus:ring-1 focus:ring-primary/50"
+                                        >
+                                            {presetGroups.map(group => (
+                                                <option key={group.id} value={group.id}>
+                                                    {group.name} ({group.items.length} หมวด)
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Preview badges */}
+                                    {(() => {
+                                        const currentGrp = presetGroups.find(g => g.id === selectedPresetId)
+                                        if (!currentGrp) return null
+                                        return (
+                                            <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto p-1 bg-black/20 rounded-lg">
+                                                {currentGrp.items.map((it, idx) => (
+                                                    <span key={idx} className="text-[10px] bg-white/5 border border-white/10 px-2 py-0.5 rounded text-white/80">
+                                                        {it.name}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )
+                                    })()}
+                                    <p className="text-[10px] text-muted-foreground">
+                                        * โปรเจคย่อยเหล่านี้จะถูกสร้างให้อัตโนมัติในโปรเจคใหม่ ช่วยให้ทีมบันทึกรายจ่ายได้ทันทีโดยไม่ตั้งชื่อซ้ำ
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
 

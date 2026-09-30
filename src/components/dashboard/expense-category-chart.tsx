@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { useProjects } from "@/context/project-context"
 import { getExpenseAmountForProject } from "@/lib/project-utils"
-import { PieChart as PieIcon, Layers, Wrench, HardHat, Package, FileQuestion } from "lucide-react"
+import { PieChart as PieIcon, Layers, Wrench, HardHat, Package, FileQuestion, Fuel, Truck } from "lucide-react"
 
 interface ExpenseCategoryChartProps {
     selectedProjectId?: string
@@ -28,6 +28,18 @@ const CATEGORY_CONFIG: Record<string, { label: string; subLabel: string; color: 
         subLabel: "Sub-contractors",
         color: "#8b5cf6", // Purple
         icon: Wrench
+    },
+    Fuel: {
+        label: "ค่าน้ำมัน / เชื้อเพลิง",
+        subLabel: "Fuel & Transport",
+        color: "#06b6d4", // Cyan
+        icon: Fuel
+    },
+    Equipment: {
+        label: "เครื่องจักร / เครื่องมือ",
+        subLabel: "Machinery & Equipment",
+        color: "#10b981", // Emerald
+        icon: Truck
     },
     Other: {
         label: "ค่าใช้จ่ายอื่นๆ",

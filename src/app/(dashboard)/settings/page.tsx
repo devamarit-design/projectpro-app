@@ -15,7 +15,8 @@ import { TelegramSettings } from "@/components/settings/telegram-settings"
 import { PerformanceSettings } from "@/components/settings/performance-settings"
 import { GoogleSheetsSettings } from "@/components/settings/google-sheets-settings"
 import { GoogleDriveSettings } from "@/components/settings/google-drive-settings"
-import { Cloud } from "lucide-react"
+import { SubProjectPresetsSettings } from "@/components/settings/subproject-presets-settings"
+import { Cloud, Layers } from "lucide-react"
 
 
 export default function SettingsPage() {
@@ -35,6 +36,7 @@ export default function SettingsPage() {
 
     const menuItems = [
         { id: "company", label: t.settings.menu.company, icon: Building2 },
+        { id: "subproject-presets", label: "พรีเซ็ตโปรเจคย่อย", icon: Layers },
         { id: "documents", label: t.settings.menu.documents, icon: FileText },
         { id: "notifications", label: t.settings.menu.notifications, icon: Bell },
         ...(isOwner ? [{ id: "telegram", label: "Telegram", icon: Send }] : []),
@@ -80,6 +82,7 @@ export default function SettingsPage() {
                 <main className="flex-1">
                     <div className="bg-background/50 backdrop-blur-sm border rounded-2xl p-6 shadow-sm min-h-[500px]">
                         {activeSection === "company" && <CompanySettings />}
+                        {activeSection === "subproject-presets" && <SubProjectPresetsSettings />}
                         {activeSection === "documents" && <DocumentSettings />}
                         {activeSection === "notifications" && <NotificationSettings />}
                         {activeSection === "telegram" && <TelegramSettings />}

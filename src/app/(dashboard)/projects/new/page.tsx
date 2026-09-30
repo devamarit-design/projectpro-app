@@ -2,13 +2,14 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useTranslation } from "@/lib/i18n-context"
-import { ArrowLeft, Upload, Calendar as CalendarIcon, User, Loader2, MapPin, Globe, ExternalLink } from "lucide-react" // Added Loader2
+import { ArrowLeft, Upload, Calendar as CalendarIcon, User, Loader2, MapPin, Globe, ExternalLink, Layers } from "lucide-react" // Added Loader2
 import Link from "next/link"
 import { useProjects } from "@/context/project-context"
 import { uploadImage } from "@/lib/upload" // Added import
 import { useRouter } from "next/navigation"
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 import SearchableCombobox from "@/components/ui/searchable-combobox"
+import { loadSubProjectPresets, createSubProjectsFromPreset, SubProjectPresetGroup, DEFAULT_PRESET_GROUPS } from "@/lib/subproject-presets"
 
 export default function NewProjectPage() {
     const { t } = useTranslation()
@@ -16,6 +17,18 @@ export default function NewProjectPage() {
     const router = useRouter()
 
     const [isUploading, setIsUploading] = useState(false) // Added state
+
+    // Preset State
+    const [applyPreset, setApplyPreset] = useState(true)
+    const [presetGroups, setPresetGroups] = useState<SubProjectPresetGroup[]>(DEFAULT_PRESET_GROUPS)
+    const [selectedPresetId, setSelectedPresetId] = useState("standard-construction")
+
+    useEffect(() => {
+        loadSubProjectPresets(currentTeam?.id).then(groups => {
+            setPresetGroups(groups)
+            if (groups.length > 0) setSelectedPresetId(groups[0].id)
+        })
+    }, [currentTeam?.id])
 
     const [formData, setFormData] = useState({
         name: "",
@@ -83,6 +96,11 @@ export default function NewProjectPage() {
         const cleanMapUrl = formData.mapUrl?.trim() || ""
         const cleanLocation = formData.location?.trim() || (cleanMapUrl ? (formData.name || "เปิดแผนที่ Google Maps") : "")
 
+        const activePreset = presetGroups.find(g => g.id === selectedPresetId)
+        const initialSubProjects = applyPreset && activePreset
+            ? createSubProjectsFromPreset(activePreset.items)
+            : []
+
         addProject({
             name: formData.name,
             customer: formData.customer,
@@ -96,7 +114,8 @@ export default function NewProjectPage() {
             expenses: "฿0",
             startDate: formData.startDate,
             endDate: formData.endDate,
-            image: formData.image || "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800&q=80" // Use uploaded or default
+            image: formData.image || "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800&q=80",
+            subProjects: initialSubProjects
         })
 
         router.push("/projects")
@@ -302,6 +321,66 @@ export default function NewProjectPage() {
                             </div>
                         )}
                     </label>
+                </div>
+
+                {/* Sub-project Preset Setup */}
+                <div className="space-y-4 pt-4 border-t border-border/50">
+                    <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={applyPreset}
+                                onChange={(e) => setApplyPreset(e.target.checked)}
+                                className="w-4 h-4 rounded text-primary focus:ring-primary/40 bg-background border-white/20"
+                            />
+                            <span className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                                <Layers className="w-4 h-4 text-primary" />
+                                สร้างโปรเจคย่อยเริ่มต้นจากพรีเซ็ตมาตรฐาน
+                            </span>
+                        </label>
+                        {applyPreset && (
+                            <span className="text-xs text-primary bg-primary/10 px-2.5 py-0.5 rounded-full font-semibold border border-primary/20">
+                                แนะนำ
+                            </span>
+                        )}
+                    </div>
+
+                    {applyPreset && (
+                        <div className="p-4 bg-muted/30 border border-white/10 rounded-2xl space-y-3 animate-in fade-in duration-200">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <span className="text-xs text-muted-foreground font-medium">ชุดพรีเซ็ตที่เลือก:</span>
+                                <select
+                                    value={selectedPresetId}
+                                    onChange={(e) => setSelectedPresetId(e.target.value)}
+                                    className="px-3 py-1.5 text-xs bg-background border border-white/10 rounded-xl outline-none focus:ring-1 focus:ring-primary/50"
+                                >
+                                    {presetGroups.map(group => (
+                                        <option key={group.id} value={group.id}>
+                                            {group.name} ({group.items.length} หมวดงาน)
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Preview badges */}
+                            {(() => {
+                                const currentGrp = presetGroups.find(g => g.id === selectedPresetId)
+                                if (!currentGrp) return null
+                                return (
+                                    <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-2 bg-black/20 rounded-xl border border-white/5">
+                                        {currentGrp.items.map((it, idx) => (
+                                            <span key={idx} className="text-[11px] bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg text-white/90">
+                                                {it.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )
+                            })()}
+                            <p className="text-[11px] text-muted-foreground">
+                                * โครงการใหม่จะถูกสร้างพร้อมโปรเจคย่อยเหล่านี้ทันที ช่วยป้องกันการตั้งชื่อซ้ำซ้อนในทีม
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Action Buttons */}
