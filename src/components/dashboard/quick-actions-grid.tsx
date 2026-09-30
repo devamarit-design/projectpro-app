@@ -8,7 +8,8 @@ import {
     FileText,
     Store,
     Users,
-    Settings
+    Settings,
+    ClipboardList
 } from "lucide-react"
 
 export function QuickActionsGrid() {
@@ -21,6 +22,13 @@ export function QuickActionsGrid() {
             href: "/projects",
             color: "text-blue-500",
             bg: "bg-blue-500/10"
+        },
+        {
+            label: "JobSheet",
+            icon: ClipboardList,
+            href: "/jobsheets",
+            color: "text-amber-500",
+            bg: "bg-amber-500/10"
         },
         {
             label: t.expenses?.title || "Expenses",
@@ -60,7 +68,7 @@ export function QuickActionsGrid() {
     ]
 
     return (
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-y-6 gap-x-4 mb-8">
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-y-6 gap-x-3 sm:gap-x-4 mb-8">
             {actions.map((action, index) => {
                 const Icon = action.icon
                 return (
