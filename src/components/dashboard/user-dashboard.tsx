@@ -34,10 +34,13 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
                     {/* 1.5. Notice Ticker */}
                     <NoticeTicker />
 
-                    {/* 2. Quick Actions Grid (Icons) */}
+                    {/* 2. Hero Section (Real Weather & Financial/Team Bento Grid) */}
+                    <DashboardHeader />
+
+                    {/* 3. Quick Actions Grid (Icons) */}
                     <QuickActionsGrid />
 
-                    {/* 2.5. Team Wall Widget (Moved Here) */}
+                    {/* 4. Team Wall Widget */}
                     <div className="w-full mt-4 mb-6">
                         <div className="flex items-center justify-between px-1 mb-2">
                             <h3 className="font-semibold text-lg flex items-center gap-2">
@@ -67,9 +70,6 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
                             <WallFeed variant="widget" />
                         </div>
                     </div>
-
-                    {/* 3. Hero Section (Real Weather & Financial/Team Bento Grid) */}
-                    <DashboardHeader />
                 </>
             )}
 

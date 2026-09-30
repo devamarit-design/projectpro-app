@@ -40,11 +40,11 @@ function AdminDashboard() {
       {/* 1.5. Notice Ticker */}
       <NoticeTicker />
 
-      {/* 2. Quick Actions Grid (Icons) */}
-      <QuickActionsGrid />
-
-      {/* 3. Hero Section (Real Weather & Financial/Team Bento Grid) */}
+      {/* 2. Hero Section (Real Weather & Financial/Team Bento Grid) */}
       <DashboardHeader onDownload={() => setShowReportDialog(true)} />
+
+      {/* 3. Quick Actions Grid (Icons) */}
+      <QuickActionsGrid />
 
 
 
