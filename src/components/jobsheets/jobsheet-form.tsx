@@ -133,21 +133,21 @@ export function JobSheetForm({
         initialData?.weather?.temperature ?? 30
     );
 
-    // Work Items (Task-centric list)
+    // Work Items (Task-centric list - Starts completely empty with placeholders)
     const [workItems, setWorkItems] = useState<JobSheetWorkItem[]>(
         initialData?.workItems && initialData.workItems.length > 0
             ? initialData.workItems
             : [
                   {
                       id: "1",
-                      task: "งานเทคอนกรีตเสาและคาน",
-                      projectId: projects[0]?.id || "",
-                      projectName: projects[0]?.name || "โครงการหลัก",
-                      timeSlot: "ช่วงเช้า (08:30 - 12:00)",
-                      quantity: "15 ตร.ม.",
-                      location: "ชั้น 2 โซน A",
-                      status: "completed",
-                      notes: "เทปูนเรียบร้อย บ่มคอนกรีตตามมาตรฐาน"
+                      task: "",
+                      projectId: "",
+                      projectName: "",
+                      timeSlot: "",
+                      quantity: "",
+                      location: "",
+                      status: "in_progress",
+                      notes: ""
                   }
               ]
     );
@@ -697,22 +697,23 @@ export function JobSheetForm({
                                     </div>
                                 </div>
 
-                                {/* TASK TITLE & DETAILS (Supports Multi-line / Sub-bullets) */}
+                                {/* TASK TITLE & DETAILS (Larger, High-legibility & Supports Multi-line / Bullets) */}
                                 <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="text-[10px] text-white/50 font-bold uppercase tracking-wider">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="text-xs text-amber-300/90 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                                             รายละเอียดงานที่ปฏิบัติ *
                                         </label>
-                                        <span className="text-[10px] text-white/40 hidden sm:inline">
-                                            ขึ้นบรรทัดใหม่หรือใส่ - เพื่อทำข้อย่อยได้
+                                        <span className="text-[10px] text-white/40">
+                                            (Enter ขึ้นบรรทัดใหม่ / ใส่ - ทำข้อย่อย)
                                         </span>
                                     </div>
                                     <textarea
-                                        rows={2}
-                                        placeholder={`ระบุรายละเอียดงาน เช่น:\nเข้าหน้างานตึก\n- เคลียร์เรื่องการปรับพื้น แต่ละชั้น\n- เคลียร์แนววางไฟกับช่าง`}
+                                        rows={4}
+                                        placeholder={`ตัวอย่างเช่น:\nเข้าหน้างานตึก\n- เคลียร์เรื่องการปรับพื้น แต่ละชั้น\n- เคลียร์แนววางไฟกับช่างธง`}
                                         value={item.task}
                                         onChange={(e) => updateWorkItem(item.id, "task", e.target.value)}
-                                        className="w-full bg-zinc-950 border border-white/10 rounded-xl p-2.5 text-white text-xs sm:text-sm font-medium placeholder:text-white/20 focus:border-amber-500/60 focus:outline-none transition-all resize-y min-h-[58px]"
+                                        className="w-full bg-zinc-950 border border-white/15 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 rounded-xl p-3 sm:p-3.5 text-white text-base sm:text-sm font-medium placeholder:text-white/20 focus:outline-none transition-all resize-y min-h-[110px] leading-relaxed shadow-inner"
                                         required
                                     />
                                 </div>
@@ -720,21 +721,21 @@ export function JobSheetForm({
                                 {/* LOCATION & QUANTITY (2-Column Grid on Mobile) */}
                                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                                     <div>
-                                        <label className="text-[10px] text-white/40 block mb-1 font-medium">พื้นที่ / โซน</label>
+                                        <label className="text-[10px] text-white/50 block mb-1 font-medium">พื้นที่ / โซน</label>
                                         <Input
                                             placeholder="เช่น ชั้น 2, ออฟฟิศ"
                                             value={item.location}
                                             onChange={(e) => updateWorkItem(item.id, "location", e.target.value)}
-                                            className="bg-zinc-950 border-white/10 text-white text-xs h-9 placeholder:text-white/30"
+                                            className="bg-zinc-950 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-xs h-10 sm:h-9 placeholder:text-white/30"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-white/40 block mb-1 font-medium">ปริมาณงาน / เวลา</label>
+                                        <label className="text-[10px] text-white/50 block mb-1 font-medium">ปริมาณงาน / เวลา</label>
                                         <Input
                                             placeholder="เช่น 15 ตร.ม., 3 ชม."
                                             value={item.quantity}
                                             onChange={(e) => updateWorkItem(item.id, "quantity", e.target.value)}
-                                            className="bg-zinc-950 border-white/10 text-white text-xs h-9 placeholder:text-white/30"
+                                            className="bg-zinc-950 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-xs h-10 sm:h-9 placeholder:text-white/30"
                                         />
                                     </div>
                                 </div>
@@ -775,7 +776,7 @@ export function JobSheetForm({
                                         placeholder="หมายเหตุเพิ่มเติมสำหรับงานนี้ (ถ้ามี)..."
                                         value={item.notes || ""}
                                         onChange={(e) => updateWorkItem(item.id, "notes", e.target.value)}
-                                        className="bg-zinc-950/60 border-white/5 text-white/70 text-xs h-8 placeholder:text-white/25"
+                                        className="bg-zinc-950/60 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white/90 text-base sm:text-xs h-10 sm:h-8 placeholder:text-white/25"
                                     />
                                 </div>
                             </div>
@@ -821,7 +822,7 @@ export function JobSheetForm({
                             value={reportedBy}
                             onChange={(e) => setReportedBy(e.target.value)}
                             placeholder="เช่น เบียร์"
-                            className="bg-zinc-950 border-white/10 text-white text-xs h-9 font-medium"
+                            className="bg-zinc-950 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-xs h-10 sm:h-9 font-medium"
                             required
                         />
                     </div>
@@ -831,7 +832,7 @@ export function JobSheetForm({
                             value={reportedByRole}
                             onChange={(e) => setReportedByRole(e.target.value)}
                             placeholder="เช่น ผู้ดูแลหน้างาน"
-                            className="bg-zinc-950 border-white/10 text-white text-xs h-9 font-medium"
+                            className="bg-zinc-950 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-xs h-10 sm:h-9 font-medium"
                             required
                         />
                     </div>
@@ -841,7 +842,7 @@ export function JobSheetForm({
                             placeholder="เช่น นายช่างสมศักดิ์ (ถ้ามี)"
                             value={inspectedBy}
                             onChange={(e) => setInspectedBy(e.target.value)}
-                            className="bg-zinc-950 border-white/10 text-white text-xs h-9 placeholder:text-white/30"
+                            className="bg-zinc-950 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-xs h-10 sm:h-9 placeholder:text-white/30"
                         />
                     </div>
                 </div>
