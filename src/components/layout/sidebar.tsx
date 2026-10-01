@@ -26,7 +26,8 @@ import {
     Newspaper,
     GanttChartSquare,
     MessageSquare,
-    ClipboardList
+    ClipboardList,
+    Globe
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -104,6 +105,7 @@ export function Sidebar({ className }: { className?: string }) {
         {
             title: "อื่นๆ", // Other
             items: [
+                { href: "/home", label: "Product Website (หน้าเว็บ)", icon: Globe },
                 { href: "/settings", label: t.common.settings, icon: Settings },
                 { href: "/announcements", label: "ประกาศ", icon: Megaphone },
                 { href: "/about", label: t.navbar.about, icon: Info },
