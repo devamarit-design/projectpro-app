@@ -58,6 +58,7 @@
 }
 
 :root {
+  color-scheme: light;
   --background: hsl(0 0% 100%);
   --foreground: hsl(240 10% 3.9%);
   --card: hsl(0 0% 100%);
@@ -113,6 +114,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: hsl(0 0% 0%);
   --foreground: hsl(0 0% 98%);
   --card: hsl(240 10% 3.9%);
@@ -619,4 +621,145 @@ body.reduce-motion *::after {
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
+}
+
+/* =========================================================================
+   UNIVERSAL SELECT & DROPDOWN STYLING
+   Fixes Windows Chrome/Edge/Chromium bug where native select popups
+   render with a white background and white text (white-on-white illegibility),
+   and ensures consistent, crystal-clear dropdown rendering across all OSes.
+   ========================================================================= */
+
+/* Base select default */
+select {
+  color-scheme: light;
+}
+
+/* Light mode options */
+:root:not(.dark) select,
+html:not(.dark) select {
+  color-scheme: light;
+}
+
+:root:not(.dark) option,
+:root:not(.dark) optgroup,
+:root:not(.dark) select option,
+:root:not(.dark) select optgroup,
+html:not(.dark) option,
+html:not(.dark) optgroup,
+html:not(.dark) select option,
+html:not(.dark) select optgroup {
+  background-color: #ffffff !important;
+  color: #09090b !important; /* zinc-950 */
+}
+
+/* Dark mode native selects & options */
+.dark,
+.dark select,
+select.dark,
+[data-theme="dark"],
+[data-theme="dark"] select,
+html.dark select,
+body.dark select {
+  color-scheme: dark !important;
+}
+
+.dark option,
+.dark optgroup,
+.dark select option,
+.dark select optgroup,
+select.dark option,
+select.dark optgroup,
+[data-theme="dark"] option,
+[data-theme="dark"] optgroup,
+[data-theme="dark"] select option,
+[data-theme="dark"] select optgroup,
+html.dark option,
+html.dark optgroup,
+html.dark select option,
+html.dark select optgroup,
+body.dark option,
+body.dark optgroup,
+body.dark select option,
+body.dark select optgroup {
+  background-color: #18181b !important; /* zinc-900 */
+  color: #f4f4f5 !important;            /* zinc-100 */
+}
+
+/* Contextual dark selects (dark backgrounds or white text) */
+select[class*="bg-zinc-"],
+select[class*="bg-black"],
+select[class*="text-white"],
+select[class*="text-zinc-"],
+select[class*="text-amber-"],
+select[class*="bg-muted"],
+[class*="bg-zinc-9"] select,
+[class*="bg-zinc-8"] select,
+[class*="bg-black"] select,
+[class*="bg-neutral-9"] select,
+[class*="bg-muted"] select {
+  color-scheme: dark !important;
+}
+
+select[class*="bg-zinc-"] option,
+select[class*="bg-black"] option,
+select[class*="text-white"] option,
+select[class*="text-zinc-"] option,
+select[class*="text-amber-"] option,
+select[class*="bg-muted"] option,
+[class*="bg-zinc-9"] select option,
+[class*="bg-zinc-8"] select option,
+[class*="bg-black"] select option,
+[class*="bg-neutral-9"] select option,
+[class*="bg-muted"] select option,
+select[class*="bg-zinc-"] optgroup,
+select[class*="bg-black"] optgroup,
+select[class*="text-white"] optgroup,
+select[class*="text-zinc-"] optgroup,
+select[class*="text-amber-"] optgroup,
+select[class*="bg-muted"] optgroup,
+[class*="bg-zinc-9"] select optgroup,
+[class*="bg-zinc-8"] select optgroup,
+[class*="bg-black"] select optgroup,
+[class*="bg-neutral-9"] select optgroup,
+[class*="bg-muted"] select optgroup {
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+}
+
+/* Selected option highlight */
+select option:checked {
+  background-color: #f59e0b !important; /* amber-500 */
+  color: #000000 !important;
+  font-weight: 600;
+}
+
+.dark select option:checked,
+[data-theme="dark"] select option:checked,
+[class*="bg-zinc-9"] select option:checked,
+[class*="bg-black"] select option:checked {
+  background-color: #d97706 !important; /* amber-600 */
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+/* Optgroup section headers */
+select optgroup {
+  font-weight: 700 !important;
+  font-size: 0.75rem !important;
+  padding: 4px 6px !important;
+  background-color: #121214 !important;
+  color: #a1a1aa !important; /* zinc-400 */
+}
+
+:root:not(.dark) select optgroup,
+html:not(.dark) select optgroup {
+  background-color: #f4f4f5 !important;
+  color: #71717a !important;
+}
+
+/* Disabled options */
+select option:disabled {
+  color: #71717a !important;
+  opacity: 0.5;
 }

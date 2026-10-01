@@ -606,13 +606,13 @@ export function JobSheetForm({
                                         if (found) setProjectName(found.name);
                                     }
                                 }}
-                                className="bg-transparent text-white text-xs font-semibold focus:outline-none w-full truncate"
+                                className="bg-transparent text-white text-xs font-semibold focus:outline-none w-full truncate [color-scheme:dark] cursor-pointer"
                             >
-                                <option value="multi">🗂️ ปฏิบัติงานหลายโครงการ / ทั่วไป</option>
-                                <option value="general">📦 งานทั่วไป / ธุรการ / นอกโครงการ</option>
-                                <optgroup label="🏢 โครงการเฉพาะในระบบ">
+                                <option value="multi" className="bg-zinc-900 text-zinc-100 py-1">🗂️ ปฏิบัติงานหลายโครงการ / ทั่วไป</option>
+                                <option value="general" className="bg-zinc-900 text-zinc-100 py-1">📦 งานทั่วไป / ธุรการ / นอกโครงการ</option>
+                                <optgroup label="🏢 โครงการเฉพาะในระบบ" className="bg-zinc-950 text-zinc-400 font-bold">
                                     {projects.map((p) => (
-                                        <option key={p.id} value={p.id}>
+                                        <option key={p.id} value={p.id} className="bg-zinc-900 text-zinc-100 py-1">
                                             🏢 {p.name}
                                         </option>
                                     ))}
@@ -802,24 +802,24 @@ export function JobSheetForm({
                                                         });
                                                     }
                                                 }}
-                                                className={`w-full text-xs font-semibold px-3 py-1.5 rounded-lg border appearance-none pr-8 focus:outline-none transition-all truncate h-9 cursor-pointer ${
+                                                className={`w-full text-xs font-semibold px-3 py-1.5 rounded-lg border appearance-none pr-8 focus:outline-none transition-all truncate h-9 cursor-pointer [color-scheme:dark] ${
                                                     isGeneral
-                                                        ? "bg-zinc-900 text-zinc-300 border-zinc-700 focus:border-zinc-500"
+                                                        ? "bg-zinc-900 text-zinc-200 border-zinc-700 focus:border-zinc-500"
                                                         : "bg-amber-500/10 text-amber-300 border-amber-500/30 focus:border-amber-400"
                                                 }`}
                                             >
-                                                <option value="">-- โครงการหลัก / ตามฟอร์ม --</option>
-                                                <optgroup label="🏢 โครงการก่อสร้าง">
+                                                <option value="" className="bg-zinc-900 text-zinc-100 py-1">-- โครงการหลัก / ตามฟอร์ม --</option>
+                                                <optgroup label="🏢 โครงการก่อสร้าง" className="bg-zinc-950 text-zinc-400 font-bold">
                                                     {projects.map((p) => (
-                                                        <option key={p.id} value={p.id}>
+                                                        <option key={p.id} value={p.id} className="bg-zinc-900 text-zinc-100 py-1">
                                                             🏢 {p.name}
                                                         </option>
                                                     ))}
                                                 </optgroup>
-                                                <optgroup label="📦 งานทั่วไป / ไม่ระบุโครงการ">
-                                                    <option value="general">📦 งานทั่วไป / ธุรการ / ออฟฟิศ</option>
-                                                    <option value="procurement">🚚 จัดซื้อ / จัดส่งวัสดุ</option>
-                                                    <option value="workshop">🏭 โรงงาน / โกดัง / ซ่อมบำรุง</option>
+                                                <optgroup label="📦 งานทั่วไป / ไม่ระบุโครงการ" className="bg-zinc-950 text-zinc-400 font-bold">
+                                                    <option value="general" className="bg-zinc-900 text-zinc-100 py-1">📦 งานทั่วไป / ธุรการ / ออฟฟิศ</option>
+                                                    <option value="procurement" className="bg-zinc-900 text-zinc-100 py-1">🚚 จัดซื้อ / จัดส่งวัสดุ</option>
+                                                    <option value="workshop" className="bg-zinc-900 text-zinc-100 py-1">🏭 โรงงาน / โกดัง / ซ่อมบำรุง</option>
                                                 </optgroup>
                                             </select>
                                             <ChevronDown className="w-3.5 h-3.5 text-white/40 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -848,18 +848,18 @@ export function JobSheetForm({
                                                             updateWorkItem(item.id, "timeSlot", e.target.value);
                                                         }
                                                     }}
-                                                    className="bg-zinc-800 hover:bg-zinc-700 text-white/80 text-xs rounded-lg px-2.5 h-9 appearance-none focus:outline-none cursor-pointer border border-white/10 font-semibold transition-colors pr-6"
+                                                    className="bg-zinc-800 hover:bg-zinc-700 text-white/80 text-xs rounded-lg px-2.5 h-9 appearance-none focus:outline-none cursor-pointer border border-white/10 font-semibold transition-colors pr-6 [color-scheme:dark]"
                                                     title="เลือกช่วงเวลาด่วน"
                                                 >
-                                                    <option value="">+ เวลาด่วน</option>
-                                                    <option value="ทั้งวัน">⏱️ ทั้งวัน</option>
-                                                    <option value="ช่วงเช้า">🌅 ช่วงเช้า</option>
-                                                    <option value="ช่วงบ่าย">☀️ ช่วงบ่าย</option>
-                                                    <option value="ช่วงเย็น">🌆 ช่วงเย็น</option>
-                                                    <option value="ล่วงเวลา (OT)">🌙 ล่วงเวลา (OT)</option>
-                                                    <option value="09:00 - 12:00">09:00 - 12:00</option>
-                                                    <option value="13:00 - 16:30">13:00 - 16:30</option>
-                                                    <option value="09:00 - 17:00">09:00 - 17:00</option>
+                                                    <option value="" className="bg-zinc-900 text-zinc-100">+ เวลาด่วน</option>
+                                                    <option value="ทั้งวัน" className="bg-zinc-900 text-zinc-100">⏱️ ทั้งวัน</option>
+                                                    <option value="ช่วงเช้า" className="bg-zinc-900 text-zinc-100">🌅 ช่วงเช้า</option>
+                                                    <option value="ช่วงบ่าย" className="bg-zinc-900 text-zinc-100">☀️ ช่วงบ่าย</option>
+                                                    <option value="ช่วงเย็น" className="bg-zinc-900 text-zinc-100">🌆 ช่วงเย็น</option>
+                                                    <option value="ล่วงเวลา (OT)" className="bg-zinc-900 text-zinc-100">🌙 ล่วงเวลา (OT)</option>
+                                                    <option value="09:00 - 12:00" className="bg-zinc-900 text-zinc-100">09:00 - 12:00</option>
+                                                    <option value="13:00 - 16:30" className="bg-zinc-900 text-zinc-100">13:00 - 16:30</option>
+                                                    <option value="09:00 - 17:00" className="bg-zinc-900 text-zinc-100">09:00 - 17:00</option>
                                                 </select>
                                                 <ChevronDown className="w-3 h-3 text-white/40 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                                             </div>
