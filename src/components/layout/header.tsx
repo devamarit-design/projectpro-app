@@ -6,9 +6,6 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { HeaderProfile } from "./header-profile"
 import { useTranslation } from "@/lib/i18n-context"
 
-import { useScrollDirection } from "@/hooks/use-scroll-direction"
-import { cn } from "@/lib/utils"
-
 interface HeaderProps { }
 
 import { useNotifications } from "@/context/notification-context"
@@ -18,7 +15,6 @@ import { useRouter } from "next/navigation"
 export function Header({ }: HeaderProps) {
     const { locale, setLocale, t } = useTranslation()
     const { unreadCount } = useNotifications()
-    const scrollDirection = useScrollDirection()
     const router = useRouter()
 
     const toggleLanguage = () => {
@@ -28,10 +24,7 @@ export function Header({ }: HeaderProps) {
 
     return (
         <header
-            className={cn(
-                "sticky top-4 z-40 flex h-16 shrink-0 items-center gap-x-4 bg-background/60 backdrop-blur-xl rounded-2xl mx-4 mt-2 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8 border border-white/10 transition-transform duration-300 overflow-x-auto scrollbar-hide",
-                scrollDirection === "down" ? "-translate-y-24" : "translate-y-0"
-            )}
+            className="sticky top-2 sm:top-4 z-40 flex h-14 sm:h-16 shrink-0 items-center gap-x-3 sm:gap-x-4 bg-background/80 backdrop-blur-xl rounded-2xl mx-3 sm:mx-4 mt-2 px-3 sm:px-6 lg:px-8 shadow-sm border border-white/10 overflow-x-auto scrollbar-hide"
         >
             <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
                 <div className="relative flex flex-1 items-center">

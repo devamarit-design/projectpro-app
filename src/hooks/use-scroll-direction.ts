@@ -10,9 +10,10 @@ export function useScrollDirection() {
         let retryInterval: NodeJS.Timeout | null = null;
 
         const getScrollY = () => {
-            const elScroll = container ? container.scrollTop : 0;
-            const winScroll = typeof window !== 'undefined' ? window.scrollY : 0;
-            return Math.max(elScroll, winScroll);
+            if (container) {
+                return container.scrollTop;
+            }
+            return typeof window !== 'undefined' ? window.scrollY : 0;
         };
 
         const updateScrollDirection = () => {
