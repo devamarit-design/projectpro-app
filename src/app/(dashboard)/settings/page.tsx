@@ -23,9 +23,16 @@ export default function SettingsPage() {
     const { t } = useTranslation()
     const { currentUser, currentTeam } = useProjects()
     const searchParams = useSearchParams()
-    const [activeSection, setActiveSection] = useState("company")
+    const isGuest = currentTeam?.role === 'Guest'
+    const [activeSection, setActiveSection] = useState("theme")
     const isAdmin = currentTeam?.role === 'Admin' || currentTeam?.role === 'Owner'
     const isOwner = currentTeam?.role === 'Owner'
+
+    useEffect(() => {
+        if (!isGuest) {
+            setActiveSection("company")
+        }
+    }, [isGuest])
 
     useEffect(() => {
         const tab = searchParams.get("tab")
@@ -34,7 +41,12 @@ export default function SettingsPage() {
         }
     }, [searchParams])
 
-    const menuItems = [
+    const menuItems = isGuest ? [
+        { id: "theme", label: t.settings.menu.theme, icon: Palette },
+        { id: "notifications", label: t.settings.menu.notifications, icon: Bell },
+        { id: "security", label: t.settings.menu.security, icon: Shield },
+        { id: "performance", label: t.settings.menu.performance, icon: MonitorSmartphone },
+    ] : [
         { id: "company", label: t.settings.menu.company, icon: Building2 },
         { id: "subproject-presets", label: "พรีเซ็ตโปรเจคย่อย", icon: Layers },
         { id: "documents", label: t.settings.menu.documents, icon: FileText },

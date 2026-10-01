@@ -9,54 +9,74 @@ export type Action =
     | "PROJECT_CREATE"
     | "PROJECT_UPDATE"
     | "PROJECT_DELETE"
+    | "PROJECT_VIEW"
     | "EXPENSE_CREATE"
     | "EXPENSE_APPROVE"
     | "EXPENSE_DELETE"
+    | "EXPENSE_VIEW"
     | "INCOME_CREATE"
     | "INCOME_UPDATE"
     | "INCOME_DELETE"
+    | "INCOME_VIEW"
     | "FINANCIAL_VIEW"
     | "TEAM_VIEW"
+    | "JOBSHEET_VIEW"
+    | "JOBSHEET_CREATE"
+    | "SETTINGS_VIEW"
 
-export type Role = "Owner" | "Admin" | "Manager" | "Accountant" | "Staff" | string
+export type Role = "Owner" | "Admin" | "Manager" | "Accountant" | "Staff" | "Guest" | string
 
 // Define permissions for each role
 export const PERMISSIONS: Record<Role, Action[]> = {
     Owner: [
         "USER_CREATE", "USER_UPDATE", "USER_DELETE",
         "COMPANY_UPDATE",
-        "PROJECT_CREATE", "PROJECT_UPDATE", "PROJECT_DELETE",
-        "EXPENSE_CREATE", "EXPENSE_APPROVE", "EXPENSE_DELETE",
-        "INCOME_CREATE", "INCOME_UPDATE", "INCOME_DELETE",
-        "FINANCIAL_VIEW", "TEAM_VIEW"
+        "PROJECT_CREATE", "PROJECT_UPDATE", "PROJECT_DELETE", "PROJECT_VIEW",
+        "EXPENSE_CREATE", "EXPENSE_APPROVE", "EXPENSE_DELETE", "EXPENSE_VIEW",
+        "INCOME_CREATE", "INCOME_UPDATE", "INCOME_DELETE", "INCOME_VIEW",
+        "FINANCIAL_VIEW", "TEAM_VIEW",
+        "JOBSHEET_VIEW", "JOBSHEET_CREATE", "SETTINGS_VIEW"
     ],
     Admin: [
         "USER_CREATE", "USER_UPDATE", "USER_DELETE",
         "COMPANY_UPDATE",
-        "PROJECT_CREATE", "PROJECT_UPDATE",
-        "EXPENSE_CREATE", "EXPENSE_APPROVE", "EXPENSE_DELETE",
-        "INCOME_CREATE", "INCOME_UPDATE", "INCOME_DELETE",
-        "FINANCIAL_VIEW", "TEAM_VIEW"
+        "PROJECT_CREATE", "PROJECT_UPDATE", "PROJECT_VIEW",
+        "EXPENSE_CREATE", "EXPENSE_APPROVE", "EXPENSE_DELETE", "EXPENSE_VIEW",
+        "INCOME_CREATE", "INCOME_UPDATE", "INCOME_DELETE", "INCOME_VIEW",
+        "FINANCIAL_VIEW", "TEAM_VIEW",
+        "JOBSHEET_VIEW", "JOBSHEET_CREATE", "SETTINGS_VIEW"
     ],
     Manager: [
-        "PROJECT_CREATE", "PROJECT_UPDATE",
-        "EXPENSE_CREATE", "EXPENSE_APPROVE",
+        "PROJECT_CREATE", "PROJECT_UPDATE", "PROJECT_VIEW",
+        "EXPENSE_CREATE", "EXPENSE_APPROVE", "EXPENSE_VIEW",
         "FINANCIAL_VIEW",
-        "TEAM_VIEW"
+        "TEAM_VIEW",
+        "JOBSHEET_VIEW", "JOBSHEET_CREATE", "SETTINGS_VIEW"
     ],
     Accountant: [
-        "EXPENSE_CREATE",
-        "INCOME_CREATE", "INCOME_UPDATE", "INCOME_DELETE",
+        "EXPENSE_CREATE", "EXPENSE_VIEW",
+        "INCOME_CREATE", "INCOME_UPDATE", "INCOME_DELETE", "INCOME_VIEW",
         "FINANCIAL_VIEW",
-        "TEAM_VIEW"
+        "TEAM_VIEW",
+        "PROJECT_VIEW",
+        "JOBSHEET_VIEW", "JOBSHEET_CREATE", "SETTINGS_VIEW"
     ],
     Staff: [
-        "EXPENSE_CREATE",
-        "TEAM_VIEW"
+        "EXPENSE_CREATE", "EXPENSE_VIEW",
+        "PROJECT_VIEW",
+        "TEAM_VIEW",
+        "JOBSHEET_VIEW", "JOBSHEET_CREATE", "SETTINGS_VIEW"
     ],
     Member: [ // Legacy Role Mapped to Staff
-        "EXPENSE_CREATE",
-        "TEAM_VIEW"
+        "EXPENSE_CREATE", "EXPENSE_VIEW",
+        "PROJECT_VIEW",
+        "TEAM_VIEW",
+        "JOBSHEET_VIEW", "JOBSHEET_CREATE", "SETTINGS_VIEW"
+    ],
+    Guest: [
+        "JOBSHEET_VIEW",
+        "JOBSHEET_CREATE",
+        "SETTINGS_VIEW"
     ]
 }
 

@@ -42,7 +42,26 @@ export function Sidebar({ className }: { className?: string }) {
     const { currentUser, logout, currentTeam } = useProjects()
     const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false)
 
-    const navGroups = [
+    const isGuest = currentTeam?.role === "Guest"
+
+    const navGroups = isGuest ? [
+        {
+            title: "MENU",
+            items: [
+                { href: "/", label: t.common.dashboard, icon: LayoutDashboard },
+                { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList },
+            ]
+        },
+        {
+            title: "บัญชีและการตั้งค่า",
+            items: [
+                { href: "/profile", label: t.common.profile, icon: User },
+                { href: "/settings", label: t.common.settings, icon: Settings },
+                { href: "/about", label: t.navbar.about, icon: Info },
+                { href: "/policy", label: t.navbar.policy, icon: ShieldCheck },
+            ]
+        }
+    ] : [
         {
             title: "MENU",
             items: [

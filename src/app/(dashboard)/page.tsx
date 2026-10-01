@@ -156,9 +156,67 @@ function AdminDashboard() {
   )
 }
 
+function GuestDashboard() {
+  return (
+    <div className="space-y-6 pb-20">
+      {/* 1. Banner Carousel */}
+      <DashboardBanner />
+
+      {/* 1.5. Notice Ticker */}
+      <NoticeTicker />
+
+      {/* 2. Hero Section (Weather & Greeting) */}
+      <DashboardHeader />
+
+      {/* 3. Quick Actions Grid (Filtered: JobSheet & Settings) */}
+      <QuickActionsGrid />
+
+      {/* 4. Dedicated JobSheet Action Section */}
+      <div className="w-full">
+        <div className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-lg shadow-amber-500/5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative z-10">
+            <div className="space-y-2 max-w-xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-500 text-xs font-bold border border-amber-500/30">
+                <ClipboardList className="w-3.5 h-3.5" />
+                <span>JobSheet Portal</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+                บันทึกและส่งรายงานการปฏิบัติงานประจำวัน
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                สร้าง JobSheet รายวัน รายงานสภาพอากาศ แรงงาน วัสดุอุปกรณ์ และรายละเอียดงานเพื่อส่งให้ทีมงานตรวจสอบ
+              </p>
+            </div>
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full sm:w-auto">
+              <Link
+                href="/jobsheets?action=new"
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/25 transition-all text-center flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>เขียน JobSheet วันนี้</span>
+              </Link>
+              <Link
+                href="/jobsheets"
+                className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-background/80 hover:bg-muted border border-border text-foreground font-semibold text-sm transition-all text-center flex items-center justify-center gap-2"
+              >
+                <span>ดู JobSheet ทั้งหมด</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
-  const { currentUser, currentTeam } = useProjects()
+  const { currentTeam } = useProjects()
+  const isGuest = currentTeam?.role === 'Guest'
   const isAdmin = currentTeam?.role === 'Owner' || currentTeam?.role === 'Admin'
+
+  if (isGuest) {
+    return <GuestDashboard />
+  }
 
   return isAdmin ? <AdminDashboard /> : <UserDashboard />
 }

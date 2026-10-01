@@ -8,7 +8,7 @@ import { MobileNav } from "./mobile-nav"
 import { useProjects } from "@/context/project-context"
 import { TeamOnboarding } from "@/components/team/team-onboarding"
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 export function AppShell({
@@ -18,8 +18,36 @@ export function AppShell({
     children: React.ReactNode
     variant?: "default" | "fullscreen"
 }) {
-    const { teams } = useProjects()
+    const { teams, currentTeam } = useProjects()
     const pathname = usePathname()
+    const router = useRouter()
+
+    const isGuest = currentTeam?.role === "Guest"
+
+    // Guard Guest restricted routes
+    React.useEffect(() => {
+        if (isGuest && pathname) {
+            const guestForbidden = [
+                "/projects",
+                "/income",
+                "/expenses",
+                "/financial",
+                "/customers",
+                "/partners",
+                "/team",
+                "/contracts",
+                "/wall",
+                "/announcements",
+                "/bored",
+                "/trash",
+                "/pro-tools"
+            ]
+            const isForbidden = guestForbidden.some(prefix => pathname === prefix || pathname.startsWith(prefix + "/"))
+            if (isForbidden) {
+                router.replace("/jobsheets")
+            }
+        }
+    }, [isGuest, pathname, router])
 
     // Enable scroll position restoration for iOS back navigation
     useScrollRestoration("main-scroll-container")

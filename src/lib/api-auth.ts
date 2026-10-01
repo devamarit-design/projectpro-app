@@ -3,7 +3,7 @@ import "server-only"
 import type { DecodedIdToken } from "firebase-admin/auth"
 import { adminAuth, db } from "@/lib/firebase-admin"
 
-export type OrganizationRole = "Owner" | "Admin" | "Manager" | "Accountant" | "Staff"
+export type OrganizationRole = "Owner" | "Admin" | "Manager" | "Accountant" | "Staff" | "Guest"
 
 export class ApiAuthError extends Error {
     constructor(message: string, public readonly status: 401 | 403 = 401) {

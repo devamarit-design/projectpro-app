@@ -244,6 +244,7 @@ export default function TeamPage() {
                                                         <option value="Manager">Manager</option>
                                                         <option value="Accountant">Accountant</option>
                                                         <option value="Staff">Staff</option>
+                                                        <option value="Guest">Guest</option>
                                                     </select>
                                                     <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-primary/50">
                                                         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
@@ -254,7 +255,9 @@ export default function TeamPage() {
                                                     "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border",
                                                     user.role === 'Admin' || user.role === 'Owner'
                                                         ? "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-900"
-                                                        : "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-900"
+                                                        : user.role === 'Guest'
+                                                            ? "bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-900"
+                                                            : "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-900"
                                                 )}>
                                                     {user.role}
                                                 </span>

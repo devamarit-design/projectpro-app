@@ -135,6 +135,7 @@ export default function AddUserDialog({ isOpen, onClose, initialData }: AddUserD
                                     <option value="Manager">Manager</option>
                                     <option value="Accountant">Accountant</option>
                                     <option value="Staff">Staff</option>
+                                    <option value="Guest">Guest</option>
                                     <option value="Owner">Owner</option>
                                 </select>
                             </div>

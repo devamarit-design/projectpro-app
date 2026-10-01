@@ -52,6 +52,7 @@ export function MobileNav() {
     const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false)
     const [isModalOpen, setIsModalOpen] = React.useState(false)
     const scrollDirection = useScrollDirection()
+    const isGuest = currentTeam?.role === "Guest"
 
     React.useEffect(() => {
         const checkModal = () => {
@@ -88,53 +89,82 @@ export function MobileNav() {
         { href: "/expenses", label: t.finance.expense, icon: TrendingDown, color: "text-red-500 from-red-500/20 to-red-500/5" },
     ], [currentTeam?.role, t.finance.income, t.finance.expense])
 
-    const moreGroups = React.useMemo(() => [
-        {
-            title: "เอกสาร", // Documents
-            items: [
-                { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 bg-amber-500/10" },
-                { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList, color: "text-amber-400 bg-amber-500/10" },
-            ]
-        },
-        {
-            title: "ข้อมูล", // Data
-            items: [
-                { href: "/customers", label: t.common.customers, icon: Users, color: "text-orange-500 bg-orange-500/10" },
-                { href: "/partners", label: t.common.partners, icon: Handshake, color: "text-cyan-500 bg-cyan-500/10" },
-            ]
-        },
-        {
-            title: "ทีม", // Team
-            items: [
-                { href: "/profile", label: t.common.profile, icon: User, color: "text-rose-500 bg-rose-500/10" },
-                ...(hasPermission(currentTeam?.role, "TEAM_VIEW") ? [{
-                    href: "/team",
-                    label: t.common.team,
-                    icon: Briefcase,
-                    color: "text-purple-500 bg-purple-500/10"
-                }] : []),
-                { href: "/announcements", label: "ประกาศ", icon: Megaphone, color: "text-yellow-500 bg-yellow-500/10" },
-                { href: "/wall", label: "Team Wall", icon: Newspaper, color: "text-pink-500 bg-pink-500/10" },
-            ]
-        },
-        {
-            title: "อื่นๆ", // Other
-            items: [
-                { href: "/settings", label: t.common.settings, icon: Settings, color: "text-gray-500 bg-gray-500/10" },
-                { href: "/about", label: t.navbar.about, icon: Info, color: "text-blue-500 bg-blue-500/10" },
-                { href: "/policy", label: t.navbar.policy, icon: ShieldCheck, color: "text-emerald-500 bg-emerald-500/10" },
-                { href: "/bored", label: t.navbar.bored, icon: Gamepad2, color: "text-indigo-500 bg-indigo-500/10" },
+    const moreGroups = React.useMemo(() => {
+        if (isGuest) {
+            return [
+                {
+                    title: "เอกสาร",
+                    items: [
+                        { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList, color: "text-amber-400 bg-amber-500/10" },
+                    ]
+                },
+                {
+                    title: "บัญชีและการตั้งค่า",
+                    items: [
+                        { href: "/profile", label: t.common.profile, icon: User, color: "text-rose-500 bg-rose-500/10" },
+                        { href: "/settings", label: t.common.settings, icon: Settings, color: "text-gray-500 bg-gray-500/10" },
+                        { href: "/about", label: t.navbar.about, icon: Info, color: "text-blue-500 bg-blue-500/10" },
+                        { href: "/policy", label: t.navbar.policy, icon: ShieldCheck, color: "text-emerald-500 bg-emerald-500/10" },
+                    ]
+                }
             ]
         }
-    ], [currentTeam?.role, t])
 
-    const addItems = React.useMemo(() => [
-        ...(hasPermission(currentTeam?.role, "INCOME_CREATE") ? [{ href: "/income?action=new", label: t.finance.income, icon: FileText, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
-        { href: "/expenses?action=new", label: t.finance.expense, icon: CreditCard, color: "text-red-500 from-red-500/20 to-red-500/5" },
-        { href: "/jobsheets", label: "เขียน JobSheet", icon: ClipboardList, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
-        // { href: "/storage?action=new", label: "Media", icon: HardDrive, color: "text-purple-500 from-purple-500/20 to-purple-500/5" },
-        { href: "/wall?action=new", label: "Post", icon: Newspaper, color: "text-pink-500 from-pink-500/20 to-pink-500/5" },
-    ], [currentTeam?.role, t])
+        return [
+            {
+                title: "เอกสาร", // Documents
+                items: [
+                    { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 bg-amber-500/10" },
+                    { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList, color: "text-amber-400 bg-amber-500/10" },
+                ]
+            },
+            {
+                title: "ข้อมูล", // Data
+                items: [
+                    { href: "/customers", label: t.common.customers, icon: Users, color: "text-orange-500 bg-orange-500/10" },
+                    { href: "/partners", label: t.common.partners, icon: Handshake, color: "text-cyan-500 bg-cyan-500/10" },
+                ]
+            },
+            {
+                title: "ทีม", // Team
+                items: [
+                    { href: "/profile", label: t.common.profile, icon: User, color: "text-rose-500 bg-rose-500/10" },
+                    ...(hasPermission(currentTeam?.role, "TEAM_VIEW") ? [{
+                        href: "/team",
+                        label: t.common.team,
+                        icon: Briefcase,
+                        color: "text-purple-500 bg-purple-500/10"
+                    }] : []),
+                    { href: "/announcements", label: "ประกาศ", icon: Megaphone, color: "text-yellow-500 bg-yellow-500/10" },
+                    { href: "/wall", label: "Team Wall", icon: Newspaper, color: "text-pink-500 bg-pink-500/10" },
+                ]
+            },
+            {
+                title: "อื่นๆ", // Other
+                items: [
+                    { href: "/settings", label: t.common.settings, icon: Settings, color: "text-gray-500 bg-gray-500/10" },
+                    { href: "/about", label: t.navbar.about, icon: Info, color: "text-blue-500 bg-blue-500/10" },
+                    { href: "/policy", label: t.navbar.policy, icon: ShieldCheck, color: "text-emerald-500 bg-emerald-500/10" },
+                    { href: "/bored", label: t.navbar.bored, icon: Gamepad2, color: "text-indigo-500 bg-indigo-500/10" },
+                ]
+            }
+        ]
+    }, [currentTeam?.role, isGuest, t])
+
+    const addItems = React.useMemo(() => {
+        if (isGuest) {
+            return [
+                { href: "/jobsheets", label: "เขียน JobSheet", icon: ClipboardList, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
+            ]
+        }
+
+        return [
+            ...(hasPermission(currentTeam?.role, "INCOME_CREATE") ? [{ href: "/income?action=new", label: t.finance.income, icon: FileText, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
+            { href: "/expenses?action=new", label: t.finance.expense, icon: CreditCard, color: "text-red-500 from-red-500/20 to-red-500/5" },
+            { href: "/jobsheets", label: "เขียน JobSheet", icon: ClipboardList, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
+            { href: "/wall?action=new", label: "Post", icon: Newspaper, color: "text-pink-500 from-pink-500/20 to-pink-500/5" },
+        ]
+    }, [currentTeam?.role, isGuest, t])
 
     const isFinanceActive = pathname === "/income" || pathname === "/expenses"
 
@@ -330,17 +360,30 @@ export function MobileNav() {
                         <span className="text-[10px]">{t.navbar.home}</span>
                     </Link>
 
-                    {/* 2. Projects */}
-                    <Link
-                        href="/projects"
-                        className={cn(
-                            "flex flex-col items-center justify-center w-full space-y-1 transition-colors relative",
-                            pathname === "/projects" ? "text-primary scale-110" : "text-muted-foreground"
-                        )}
-                    >
-                        <FolderKanban className="w-5 h-5" />
-                        <span className="text-[10px]">{t.navbar.project}</span>
-                    </Link>
+                    {/* 2. Projects (or JobSheet for Guest) */}
+                    {isGuest ? (
+                        <Link
+                            href="/jobsheets"
+                            className={cn(
+                                "flex flex-col items-center justify-center w-full space-y-1 transition-colors relative",
+                                pathname === "/jobsheets" ? "text-primary scale-110" : "text-muted-foreground"
+                            )}
+                        >
+                            <ClipboardList className="w-5 h-5" />
+                            <span className="text-[10px]">JobSheet</span>
+                        </Link>
+                    ) : (
+                        <Link
+                            href="/projects"
+                            className={cn(
+                                "flex flex-col items-center justify-center w-full space-y-1 transition-colors relative",
+                                pathname === "/projects" ? "text-primary scale-110" : "text-muted-foreground"
+                            )}
+                        >
+                            <FolderKanban className="w-5 h-5" />
+                            <span className="text-[10px]">{t.navbar.project}</span>
+                        </Link>
+                    )}
 
                     {/* 3. Add (Center) */}
                     <button
@@ -355,8 +398,19 @@ export function MobileNav() {
                         </div>
                     </button>
 
-                    {/* 4. Finance (Expense + Income) */}
-                    {hasPermission(currentTeam?.role, "INCOME_CREATE") ? (
+                    {/* 4. Finance (or Settings for Guest) */}
+                    {isGuest ? (
+                        <Link
+                            href="/settings"
+                            className={cn(
+                                "flex flex-col items-center justify-center w-full space-y-1 transition-colors relative",
+                                pathname === "/settings" ? "text-primary scale-110" : "text-muted-foreground"
+                            )}
+                        >
+                            <Settings className="w-5 h-5" />
+                            <span className="text-[10px]">{t.common.settings}</span>
+                        </Link>
+                    ) : hasPermission(currentTeam?.role, "INCOME_CREATE") ? (
                         <button
                             onClick={toggleFinanceMenu}
                             className={cn(
