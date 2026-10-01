@@ -91,8 +91,8 @@ export function AppShell({
                     className="flex-1 w-full h-full overflow-y-auto overflow-x-hidden scroll-smooth"
                 >
                     <main className={cn(
-                        "min-h-full w-full p-3 sm:p-8 lg:p-10 bg-muted/20 pb-24 sm:pb-28",
-                        isPopupPage ? "pt-4 sm:pt-6" : "pt-20 sm:pt-24"
+                        "min-h-full w-full px-3 sm:px-8 lg:px-10 bg-muted/20 pb-24 sm:pb-28",
+                        isPopupPage ? "pt-4 sm:pt-6" : "pt-24 sm:pt-28 lg:pt-32"
                     )}>
                         {children}
                     </main>
