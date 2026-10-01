@@ -10,6 +10,8 @@ import { uploadImage } from "@/lib/upload"
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 import { SafeBackdrop } from "@/components/ui/safe-backdrop"
 import { loadSubProjectPresets, createSubProjectsFromPreset, SubProjectPresetGroup, DEFAULT_PRESET_GROUPS } from "@/lib/subproject-presets"
+import { getSmartProjectCover } from "@/lib/project-covers"
+import { CoverPresetPicker } from "@/components/projects/cover-preset-picker"
 
 interface AddProjectDialogProps {
     isOpen: boolean
@@ -30,8 +32,14 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
     const [startDate, setStartDate] = React.useState("")
     const [endDate, setEndDate] = React.useState("")
     const [coverImage, setCoverImage] = React.useState<string>("")
+    // Cover image state & smart recommendation
     const [isUploading, setIsUploading] = React.useState(false)
     const fileInputRef = React.useRef<HTMLInputElement>(null)
+    const [showCoverPicker, setShowCoverPicker] = React.useState(false)
+    const autoSuggestedCover = React.useMemo(() => {
+        return getSmartProjectCover({ name: name || "Modern Architecture" })
+    }, [name])
+    const activeCover = coverImage || autoSuggestedCover
 
     // Sub-project Preset State
     const [applyPreset, setApplyPreset] = React.useState(true)
@@ -123,7 +131,7 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
             expenses: "฿0",
             startDate: startDate || new Date().toISOString().split('T')[0],
             endDate: endDate || new Date().toISOString().split('T')[0],
-            image: coverImage || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80",
+            image: coverImage || autoSuggestedCover,
             description: "Quick added project",
             subProjects: initialSubProjects
         })
@@ -161,47 +169,75 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
 
                 <div className="flex-1 overflow-y-auto p-6">
                     <form id="project-form" onSubmit={handleSubmit} className="space-y-4">
-                        {/* Cover Image Upload */}
+                        {/* Cover Image Section */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                Cover Image
-                            </label>
-                            <label
-                                className={cn(
-                                    "relative w-full h-32 border-2 border-dashed rounded-xl flex items-center justify-center cursor-pointer transition-all hover:border-primary/50 hover:bg-primary/5",
-                                    coverImage ? "border-primary/30" : "border-white/10"
-                                )}
-                            >
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                    className="hidden"
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                    <ImageIcon className="w-3.5 h-3.5 text-primary" />
+                                    รูปภาพหน้าปก
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCoverPicker(prev => !prev)}
+                                    className="text-xs text-primary hover:underline font-medium"
+                                >
+                                    {showCoverPicker ? "ซ่อนคลังรูปภาพ" : "เลือกรูปพรีเซ็ต / อัปโหลด"}
+                                </button>
+                            </div>
+
+                            {/* Cover Preview Card */}
+                            <div className="relative w-full h-32 rounded-xl overflow-hidden border border-white/10 group shadow-sm bg-slate-900">
+                                <img
+                                    src={activeCover}
+                                    alt="Cover preview"
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 />
-                                {isUploading ? (
-                                    <div className="flex flex-col items-center gap-2">
-                                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                                        <span className="text-xs text-muted-foreground">Uploading...</span>
+                                <div className="absolute inset-0 bg-black/40" />
+                                <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/85 to-transparent flex items-end justify-between">
+                                    <div>
+                                        <span className={cn(
+                                            "text-[10px] font-bold px-2 py-0.5 rounded-md border",
+                                            coverImage
+                                                ? "bg-primary/20 text-primary border-primary/30"
+                                                : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                        )}>
+                                            {coverImage ? "เลือกรูปแล้ว" : "ระบบเลือกให้อัตโนมัติตามชื่อโครงการ"}
+                                        </span>
+                                        <p className="text-white text-xs font-semibold mt-1 truncate max-w-[260px] drop-shadow-sm">
+                                            {name || "โครงการใหม่"}
+                                        </p>
                                     </div>
-                                ) : coverImage ? (
-                                    <div className="relative w-full h-full group">
-                                        <img
-                                            src={coverImage}
-                                            alt="Cover preview"
-                                            className="w-full h-full object-cover rounded-xl"
-                                        />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
-                                            <span className="text-white text-xs font-medium bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">Change Image</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center gap-2">
-                                        <Upload className="w-8 h-8 text-muted-foreground" />
-                                        <span className="text-xs text-muted-foreground">Click to upload cover image</span>
-                                        <span className="text-[10px] text-muted-foreground/50">PNG, JPG up to 10MB</span>
-                                    </div>
-                                )}
-                            </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCoverPicker(true)}
+                                        className="px-2.5 py-1 text-xs rounded-lg bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md transition-all font-medium"
+                                    >
+                                        เปลี่ยนรูป
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Hidden file input */}
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
+                            />
+
+                            {/* Presets Grid */}
+                            {showCoverPicker && (
+                                <div className="p-3 bg-muted/20 border border-white/10 rounded-xl space-y-2 animate-in fade-in duration-200">
+                                    <CoverPresetPicker
+                                        value={coverImage || autoSuggestedCover}
+                                        projectName={name}
+                                        onChange={(url) => setCoverImage(url)}
+                                        onUploadClick={() => fileInputRef.current?.click()}
+                                        isUploading={isUploading}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-2">

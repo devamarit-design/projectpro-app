@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { useProjects } from "@/context/project-context"
 import { ProjectCard } from "@/components/projects/project-card"
 import { getExpensesByProject } from "@/lib/project-utils"
+import { getSmartProjectCover } from "@/lib/project-covers"
 
 import type { LucideIcon } from "lucide-react"
 
@@ -505,7 +506,7 @@ export default function ProjectsPage() {
                                                             taskCount: taskCount,
                                                             budget: budgetValue,
                                                             expenses: projectExpenses,
-                                                            imageUrl: project.image || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80",
+                                                            imageUrl: getSmartProjectCover(project),
                                                             status: project.status,
                                                             location: project.location,
                                                             mapUrl: project.mapUrl

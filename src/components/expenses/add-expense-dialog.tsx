@@ -13,6 +13,7 @@ import { useOrganization } from "@/context/organization-context"
 import { sendExpenseNotification } from "@/lib/functions-client"
 import Image from "next/image"
 import { SafeBackdrop } from "@/components/ui/safe-backdrop"
+import { getSmartProjectCover } from "@/lib/project-covers"
 
 interface AddExpenseDialogProps {
     isOpen: boolean
@@ -260,7 +261,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 expenses: "0",
                 startDate: new Date().toISOString(),
                 endDate: new Date().toISOString(),
-                image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
+                image: getSmartProjectCover({ name: newItemName }),
                 description: "Quickly added project",
                 tasks: []
             })

@@ -10,6 +10,9 @@ import Link from "next/link"
 import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 import { getExpenseAmountForProject } from "@/lib/project-utils"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
+import { getSmartProjectCover } from "@/lib/project-covers"
+import { CoverPresetPicker } from "@/components/projects/cover-preset-picker"
 
 import { useSearchParams } from "next/navigation"
 
@@ -50,6 +53,8 @@ export default function EditProjectClient() {
         image: ""
     })
     const [isUploading, setIsUploading] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const resolvedCover = formData.image || getSmartProjectCover({ id, name: formData.name })
 
     // Quick Add Customer State
     const [showAddCustomer, setShowAddCustomer] = useState(false)
@@ -364,45 +369,65 @@ export default function EditProjectClient() {
 
                 {/* Cover Image Section */}
                 <div className="glass-card rounded-2xl p-6 space-y-6">
-                    <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-                        <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">
-                            <Upload className="w-5 h-5" />
+                    <div className="flex items-center justify-between pb-4 border-b border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">
+                                <Upload className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold">{t.projects.edit.sections.image}</h2>
+                                <p className="text-xs text-muted-foreground">เลือกพรีเซ็ตสถาปัตยกรรม หรืออัปโหลดรูปภาพของคุณเอง</p>
+                            </div>
                         </div>
-                        <h2 className="text-lg font-semibold">{t.projects.edit.sections.image}</h2>
+                        <span className={cn(
+                            "text-xs px-2.5 py-0.5 rounded-full font-medium border",
+                            formData.image
+                                ? "bg-primary/10 text-primary border-primary/20"
+                                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                        )}>
+                            {formData.image ? "เลือกรูปแล้ว" : "ระบบเลือกภาพแนะนำให้อัตโนมัติ"}
+                        </span>
                     </div>
 
-                    <label className="border-2 border-dashed border-white/10 rounded-xl min-h-[200px] flex flex-col items-center justify-center p-6 bg-background/50 cursor-pointer hover:bg-muted/5 transition-colors group relative overflow-hidden">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
+                    {/* Preview banner */}
+                    <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-white/10 bg-slate-900 group shadow-md">
+                        <img
+                            src={resolvedCover}
+                            alt="Cover Preview"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
-                        {isUploading ? (
-                            <div className="flex flex-col items-center gap-3">
-                                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                                <span className="text-sm text-muted-foreground">Uploading...</span>
+                        <div className="absolute inset-0 bg-black/40" />
+                        <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex items-end justify-between">
+                            <div>
+                                <span className="text-[10px] uppercase font-bold text-white/70 tracking-wider">
+                                    พรีวิวหน้าปกโครงการ
+                                </span>
+                                <p className="text-white font-bold text-base truncate max-w-sm mt-0.5 drop-shadow-sm">
+                                    {formData.name || project?.name || "โครงการ"}
+                                </p>
                             </div>
-                        ) : formData.image ? (
-                            <>
-                                <img src={formData.image} alt="Cover" className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-60 transition-opacity" />
-                                <div className="z-10 flex flex-col items-center gap-2">
-                                    <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
-                                        <Upload className="w-5 h-5 text-white" />
-                                    </div>
-                                    <span className="text-xs font-bold text-white uppercase tracking-wider bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">Change Cover</span>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="flex flex-col items-center gap-2 text-center">
-                                <div className="w-16 h-16 rounded-full bg-background border border-white/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                    <Upload className="w-8 h-8 text-muted-foreground" />
-                                </div>
-                                <h3 className="font-medium mb-1">{t.projects.edit.upload_area.title}</h3>
-                                <p className="text-sm text-muted-foreground">{t.projects.edit.upload_area.subtitle}</p>
-                            </div>
-                        )}
-                    </label>
+                        </div>
+                    </div>
+
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                    />
+
+                    {/* Presets gallery */}
+                    <div className="p-4 bg-muted/20 border border-white/10 rounded-2xl">
+                        <CoverPresetPicker
+                            value={formData.image || resolvedCover}
+                            projectName={formData.name || project?.name}
+                            projectId={id}
+                            onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
+                            onUploadClick={() => fileInputRef.current?.click()}
+                            isUploading={isUploading}
+                        />
+                    </div>
                 </div>
 
                 <div className="flex justify-end gap-4 pt-4">
