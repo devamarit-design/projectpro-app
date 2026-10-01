@@ -43,13 +43,13 @@ export function ExpenseEntrySelectionDialog({
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
                 onClick={onClose}
             />
-            <div className="relative w-full max-w-md bg-background/95 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-md bg-background border border-border rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-foreground">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 pb-2">
-                    <h2 className="text-xl font-bold tracking-tight">{t.expenses?.add_expense || "Add Expense"}</h2>
+                    <h2 className="text-xl font-bold tracking-tight text-foreground">{t.expenses?.add_expense || "Add Expense"}</h2>
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-full hover:bg-white/5 text-muted-foreground transition-colors"
+                        className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -65,7 +65,7 @@ export function ExpenseEntrySelectionDialog({
                         onClick={() => {
                             onSelectScan()
                         }}
-                        className="w-full group relative overflow-hidden rounded-2xl border border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 transition-all p-5 text-left flex items-start gap-4 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10 active:scale-[0.98]"
+                        className="w-full group relative overflow-hidden rounded-2xl border border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 transition-all p-5 text-left flex items-start gap-4 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10 active:scale-[0.98] cursor-pointer"
                     >
                         <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                             <Sparkles className="w-24 h-24 rotate-12" />
@@ -92,9 +92,9 @@ export function ExpenseEntrySelectionDialog({
                         onClick={() => {
                             onSelectManual()
                         }}
-                        className="w-full group relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all p-5 text-left flex items-start gap-4 hover:border-white/20 active:scale-[0.98]"
+                        className="w-full group relative overflow-hidden rounded-2xl border border-border bg-muted/40 hover:bg-muted/70 transition-all p-5 text-left flex items-start gap-4 hover:border-border active:scale-[0.98] cursor-pointer shadow-xs"
                     >
-                        <div className="w-12 h-12 rounded-xl bg-gray-500/20 flex items-center justify-center shrink-0 group-hover:brightness-125 group-hover:bg-white/15 transition-all duration-300">
+                        <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center shrink-0 group-hover:brightness-110 transition-all duration-300 border border-border/80">
                             <FileText className="w-6 h-6 text-foreground" />
                         </div>
                         <div className="relative z-10 flex-1">

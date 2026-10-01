@@ -177,9 +177,9 @@ export default function SearchableCombobox({
                 }}
                 className={cn(
                     "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-left transition-all cursor-pointer",
-                    "bg-muted/30 border-white/10 hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50",
+                    "bg-background hover:bg-muted/30 border-border hover:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-xs",
                     disabled && "opacity-50 cursor-not-allowed pointer-events-none",
-                    isOpen && "ring-2 ring-primary/50 border-primary/50"
+                    isOpen && "ring-2 ring-primary/50 border-primary"
                 )}
             >
                 <span className={cn(
@@ -193,9 +193,9 @@ export default function SearchableCombobox({
                         <button
                             type="button"
                             onClick={handleClear}
-                            className="p-0.5 hover:bg-white/10 rounded transition-colors"
+                            className="p-0.5 hover:bg-muted rounded transition-colors text-muted-foreground hover:text-foreground"
                         >
-                            <X className="w-3.5 h-3.5 text-muted-foreground" />
+                            <X className="w-3.5 h-3.5" />
                         </button>
                     )}
                     <ChevronDown className={cn(
@@ -220,13 +220,13 @@ export default function SearchableCombobox({
                     }}
                     className={cn(
                         "rounded-xl border shadow-2xl overflow-hidden pointer-events-auto",
-                        "bg-[#13151f] text-popover-foreground border-white/20",
+                        "bg-popover text-popover-foreground border-border",
                         "animate-in fade-in-0 zoom-in-95 duration-150",
                         coords.openUpward ? "slide-in-from-bottom-2" : "slide-in-from-top-2"
                     )}
                 >
                     {/* Search Input */}
-                    <div className="p-2 pb-1.5 bg-[#13151f] border-b border-white/10">
+                    <div className="p-2 pb-1.5 bg-popover border-b border-border/80">
                         <div className="relative">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <input
@@ -237,7 +237,7 @@ export default function SearchableCombobox({
                                 placeholder={searchPlaceholder}
                                 className={cn(
                                     "w-full pl-8 pr-3 py-2 rounded-lg text-sm",
-                                    "bg-white/5 border border-white/10 text-foreground focus:border-primary/50",
+                                    "bg-muted/50 border border-border text-foreground focus:border-primary/50",
                                     "focus:outline-none focus:ring-1 focus:ring-primary/30",
                                     "placeholder:text-muted-foreground"
                                 )}
@@ -246,7 +246,7 @@ export default function SearchableCombobox({
                     </div>
 
                     {/* Options List */}
-                    <div className="max-h-60 overflow-y-auto p-1 space-y-0.5 overscroll-contain touch-pan-y bg-[#13151f] custom-scrollbar">
+                    <div className="max-h-60 overflow-y-auto p-1 space-y-0.5 overscroll-contain touch-pan-y bg-popover custom-scrollbar">
                         {filteredOptions.length === 0 ? (
                             <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                                 {emptyMessage}
@@ -261,18 +261,18 @@ export default function SearchableCombobox({
                                         onClick={() => !option.disabled && handleSelect(option.value)}
                                         disabled={option.disabled}
                                         className={cn(
-                                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors cursor-pointer",
+                                            "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer",
                                             isActionItem
                                                 ? "bg-primary/10 border border-primary/20 text-primary font-bold hover:bg-primary/20 my-1"
-                                                : "hover:bg-white/10 text-foreground",
+                                                : "hover:bg-muted text-foreground",
                                             option.disabled && "opacity-50 cursor-not-allowed",
-                                            value === option.value && !isActionItem && "bg-primary/20 text-primary font-semibold"
+                                            value === option.value && !isActionItem && "bg-primary/15 text-primary font-semibold"
                                         )}
                                     >
                                         <div className="flex-1 min-w-0">
                                             <p className={cn(
                                                 "text-sm font-medium truncate",
-                                                (value === option.value || isActionItem) && "text-primary"
+                                                (value === option.value || isActionItem) && "text-primary font-semibold"
                                             )}>
                                                 {option.label}
                                             </p>

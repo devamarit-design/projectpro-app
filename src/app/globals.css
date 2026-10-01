@@ -191,7 +191,7 @@
   }
 
   .glass-card {
-    @apply bg-card/40 backdrop-blur-md border-none shadow-md hover:bg-card/50 transition-all duration-300 dark:bg-card/30 dark:shadow-none;
+    @apply bg-card/90 backdrop-blur-md border border-border shadow-xs hover:shadow-md transition-all duration-300 dark:bg-card/40 dark:border-white/10 dark:shadow-none;
   }
 
   .glass-dark {
@@ -257,12 +257,12 @@
   color: inherit !important;
 }
 
-/* Global Neon Glow for Titles, Buttons & Cards (Gradient Theme) */
-html[data-theme-gradient="true"] h1:not([class*="bg-gradient"] *):not(.bg-white *),
-html[data-theme-gradient="true"] h2:not(.text-muted-foreground):not([class*="bg-gradient"] *):not(.bg-white *),
-html[data-theme-gradient="true"] .neon-glow-title {
+/* Global Neon Glow for Titles (Dark Mode) */
+.dark html[data-theme-gradient="true"] h1:not([class*="bg-gradient"] *):not(.bg-white *),
+.dark html[data-theme-gradient="true"] h2:not(.text-muted-foreground):not([class*="bg-gradient"] *):not(.bg-white *),
+.dark html[data-theme-gradient="true"] .neon-glow-title {
   text-transform: uppercase !important;
-  letter-spacing: 0.1em !important;
+  letter-spacing: 0.05em !important;
 
   /* Pure Gradient Text */
   background: var(--primary-gradient);
@@ -271,11 +271,26 @@ html[data-theme-gradient="true"] .neon-glow-title {
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
 
-  /* Subtle Colored Neon Aura (Soften intensity) */
+  /* Subtle Colored Neon Aura */
   filter:
     drop-shadow(0 0 3px hsl(var(--primary)/0.6)) drop-shadow(0 0 10px hsl(var(--primary)/0.4)) drop-shadow(0 0 20px hsl(var(--primary)/0.2)) !important;
 
   transition: all 0.3s ease;
+  display: inline-block;
+}
+
+/* Light Mode: Clean High-Contrast Typography for Headings (No Blurry Neon Dropshadow) */
+html:not(.dark)[data-theme-gradient="true"] h1:not([class*="bg-gradient"] *):not(.bg-white *),
+html:not(.dark)[data-theme-gradient="true"] h2:not(.text-muted-foreground):not([class*="bg-gradient"] *):not(.bg-white *),
+html:not(.dark)[data-theme-gradient="true"] .neon-glow-title {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+  filter: none !important;
+  letter-spacing: normal !important;
+  transition: all 0.2s ease;
   display: inline-block;
 }
 
@@ -295,16 +310,22 @@ html[data-theme-gradient="true"] .neon-glow-title [class*="icon"] {
   -webkit-text-fill-color: initial !important;
 }
 
-/* Borderless Neon Cards & Containers (Soften glow) */
-html[data-theme-gradient="true"] .bg-card,
-html[data-theme-gradient="true"] .glass-card,
-html[data-theme-gradient="true"] [class*="bg-muted"]:not(body):not(.bg-muted\/20):not(nav *):not(.fixed *) {
+/* Borderless Neon Cards & Containers (Dark Mode Only) */
+.dark html[data-theme-gradient="true"] .bg-card,
+.dark html[data-theme-gradient="true"] .glass-card {
   border: none !important;
-  /* Remove all borders */
+  /* Remove all borders in dark mode for soft ambient neon glow */
   box-shadow:
     0 0 15px hsl(var(--primary)/0.15),
     0 0 30px hsl(var(--primary)/0.05),
     inset 0 0 20px rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Light Mode: Keep Crisp Structured Borders & Natural Shadows */
+html:not(.dark)[data-theme-gradient="true"] .bg-card,
+html:not(.dark)[data-theme-gradient="true"] .glass-card {
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Modern High-End Neon Buttons & Primary Actions (Zero Boundary Clipping) */

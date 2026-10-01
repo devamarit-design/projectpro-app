@@ -493,9 +493,9 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                                     />
 
                                     {/* Menu Container: Centered Modal on Mobile, Dropdown on Desktop */}
-                                    <div className="fixed sm:absolute inset-x-3.5 sm:inset-x-auto top-1/2 -translate-y-1/2 sm:translate-y-0 sm:top-full sm:right-0 sm:mt-2 w-auto sm:w-80 max-w-sm mx-auto sm:mx-0 bg-[#13151f] text-popover-foreground border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in zoom-in-95 origin-center sm:origin-top-right p-2.5 max-h-[85vh] sm:max-h-none flex flex-col">
+                                    <div className="fixed sm:absolute inset-x-3.5 sm:inset-x-auto top-1/2 -translate-y-1/2 sm:translate-y-0 sm:top-full sm:right-0 sm:mt-2 w-auto sm:w-80 max-w-sm mx-auto sm:mx-0 bg-popover text-popover-foreground border border-border rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in zoom-in-95 origin-center sm:origin-top-right p-2.5 max-h-[85vh] sm:max-h-none flex flex-col">
                                         {/* Header with Title and Close Button */}
-                                        <div className="px-2 py-1.5 flex items-center justify-between border-b border-white/10 mb-2 shrink-0">
+                                        <div className="px-2 py-1.5 flex items-center justify-between border-b border-border mb-2 shrink-0">
                                             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                                                 <Crosshair className="w-3.5 h-3.5 text-primary" /> เลือกพิกัดไซต์งาน / สภาพอากาศ
                                             </span>
@@ -507,7 +507,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                                                 )}
                                                 <button
                                                     onClick={() => setShowLocationMenu(false)}
-                                                    className="p-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                                    className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                                                     title="ปิดหน้าต่าง"
                                                     aria-label="Close"
                                                 >

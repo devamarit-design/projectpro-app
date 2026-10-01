@@ -197,19 +197,19 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
             />
             <div className="fixed inset-0 z-[100] flex justify-end font-sans">
                 <div
-                    className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+                    className="absolute inset-0 bg-black/50 dark:bg-black/80 backdrop-blur-sm transition-opacity"
                     onClick={onClose}
                 />
 
-                <div className="relative w-full max-w-md h-full bg-card/95 backdrop-blur-3xl border-l border-white/10 shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
+                <div className="relative w-full max-w-md h-full bg-card border-l border-border shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col text-foreground">
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 pt-[calc(1.5rem+env(safe-area-inset-top))] border-b border-white/10 shrink-0 relative z-50">
+                    <div className="flex items-center justify-between p-6 pt-[calc(1.5rem+env(safe-area-inset-top))] border-b border-border shrink-0 relative z-50">
                         <div className="flex items-center gap-3">
                             <div className="p-3 rounded-xl bg-primary/10 text-primary border border-primary/20">
                                 <DollarSign className="w-6 h-6" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold tracking-tight">Expense Details</h2>
+                                <h2 className="text-xl font-bold tracking-tight text-foreground">Expense Details</h2>
                                 <div className="text-xs text-muted-foreground space-y-0.5">
                                     <p className="uppercase tracking-wide opacity-70">ID: {expense.id.slice(0, 8).toUpperCase()}...</p>
                                     {(expense.createdAt || expense.createdBy) && (
@@ -237,7 +237,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                     {(expense.status === 'Paid' || expense.status === 'Unpaid' || isArchived) && (
                                         <button
                                             onClick={() => setShowArchiveConfirm(true)}
-                                            className={cn("p-2 rounded-full transition-colors", isArchived ? "text-green-500 hover:bg-green-500/10" : "text-amber-500 hover:bg-amber-500/10")}
+                                            className={cn("p-2 rounded-full transition-colors cursor-pointer", isArchived ? "text-green-500 hover:bg-green-500/10" : "text-amber-500 hover:bg-amber-500/10")}
                                             title={isArchived ? "Restore Expense" : "Archive Expense"}
                                         >
                                             <Archive className="w-4 h-4" />
@@ -245,7 +245,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                     )}
                                     <button
                                         onClick={handleDelete}
-                                        className="p-2 rounded-full text-red-500 hover:bg-red-500/10 transition-colors"
+                                        className="p-2 rounded-full text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
                                         title="Delete Expense"
                                     >
                                         <Trash2 className="w-4 h-4" />
@@ -254,7 +254,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                             )}
                             <button
                                 onClick={onClose}
-                                className="p-2 rounded-full hover:bg-background/50 transition-colors"
+                                className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -526,7 +526,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                                                 newItems[idx] = { ...item, category: e.target.value as any }
                                                                 setEditForm(prev => ({ ...prev, items: newItems }))
                                                             }}
-                                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-2 text-xs focus:outline-none focus:border-primary/50 h-full"
+                                                            className="w-full bg-background border border-input rounded-lg px-2 py-2 text-xs focus:outline-none focus:border-primary/50 h-full text-foreground"
                                                         >
                                                             <option value="Material">Material</option>
                                                             <option value="Labor">Labor</option>
@@ -541,7 +541,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                                             newItems[idx] = { ...item, description: e.target.value }
                                                             setEditForm(prev => ({ ...prev, items: newItems }))
                                                         }}
-                                                        className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 min-w-[100px]"
+                                                        className="flex-1 bg-background border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 min-w-[100px] text-foreground"
                                                         placeholder="Item description"
                                                     />
                                                 </div>
@@ -555,7 +555,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                                                 newItems[idx] = { ...item, amount: parseFloat(e.target.value) || 0 }
                                                                 setEditForm(prev => ({ ...prev, items: newItems }))
                                                             }}
-                                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-right font-mono focus:outline-none focus:border-primary/50"
+                                                            className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm text-right font-mono focus:outline-none focus:border-primary/50 text-foreground"
                                                             placeholder="0.00"
                                                         />
                                                     </div>
@@ -746,18 +746,18 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setIsEditing(false)}
-                                    className="flex-1 py-3 rounded-xl font-medium hover:bg-white/5 transition-colors"
+                                    className="flex-1 py-3 rounded-xl font-medium bg-muted/40 hover:bg-muted text-foreground border border-border transition-colors cursor-pointer"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSave}
                                     disabled={isUploading}
-                                    className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                 >
                                     {isUploading ? (
                                         <>
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white/90 rounded-full animate-spin" />
+                                            <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                                             {uploadStatus || "Saving..."}
                                         </>
                                     ) : (
@@ -770,7 +770,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                         ) : (
                             <button
                                 onClick={() => setIsEditing(true)}
-                                className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-foreground rounded-xl font-bold uppercase tracking-wider transition-all"
+                                className="w-full py-3 bg-muted/40 hover:bg-muted border border-border text-foreground rounded-xl font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs"
                             >
                                 Edit Expense
                             </button>

@@ -591,7 +591,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         if (receiptImage) {
             return (
                 <div className="space-y-2 pt-1">
-                    <div className="relative rounded-xl overflow-hidden border border-white/10 group aspect-video sm:aspect-[4/3] lg:aspect-auto lg:h-64 bg-black/40 w-full">
+                    <div className="relative rounded-xl overflow-hidden border border-border group aspect-video sm:aspect-[4/3] lg:aspect-auto lg:h-64 bg-muted/40 w-full">
                         <Image
                             src={receiptImage}
                             alt="Receipt Preview"
@@ -607,14 +607,14 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 removeImage()
                                 setReceiptFile(null)
                             }}
-                            className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-red-500 text-white rounded-full transition-colors shadow-lg"
+                            className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-red-500 text-white rounded-full transition-colors shadow-lg cursor-pointer"
                             title="ลบรูป"
                         >
                             <X className="w-4 h-4" />
                         </button>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="text-emerald-400 font-medium flex items-center gap-1">
+                        <span className="text-emerald-500 font-medium flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" /> แนบรูปภาพแล้ว
                         </span>
                         <button
@@ -623,7 +623,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 removeImage()
                                 setReceiptFile(null)
                             }}
-                            className="text-red-400 hover:underline"
+                            className="text-red-500 hover:underline cursor-pointer"
                         >
                             เปลี่ยนรูปใหม่
                         </button>
@@ -634,9 +634,9 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
         return (
             <div className="space-y-3 pt-1">
-                <label className="flex flex-col items-center justify-center w-full h-36 lg:h-44 border-2 border-dashed border-white/15 rounded-xl hover:bg-white/5 hover:border-primary/50 transition-all cursor-pointer group">
+                <label className="flex flex-col items-center justify-center w-full h-36 lg:h-44 border-2 border-dashed border-border rounded-xl hover:bg-muted/40 hover:border-primary/50 transition-all cursor-pointer group">
                     <div className="flex flex-col items-center justify-center p-4 text-center">
-                        <div className="p-3 rounded-full bg-white/5 group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-2">
+                        <div className="p-3 rounded-full bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-2">
                             <Upload className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
                         </div>
                         <p className="text-xs text-muted-foreground group-hover:text-foreground font-medium">
@@ -661,9 +661,9 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         <>
             {/* Quick Add Dialog Overlay */}
             {quickAdd && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center font-sans">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setQuickAdd(null)} />
-                    <div className="relative glass-card w-full max-w-sm p-6 rounded-2xl shadow-2xl border border-white/10 flex flex-col animate-in fade-in zoom-in-95">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center font-sans p-4">
+                    <div className="absolute inset-0 bg-black/50 dark:bg-black/80 backdrop-blur-sm" onClick={() => setQuickAdd(null)} />
+                    <div className="relative bg-background text-foreground w-full max-w-sm p-6 rounded-2xl shadow-2xl border border-border flex flex-col animate-in fade-in zoom-in-95">
                         <h3 className="text-xl font-bold mb-4">Add New {quickAdd.type === 'user' ? 'Person' : quickAdd.type.charAt(0).toUpperCase() + quickAdd.type.slice(1)}</h3>
                         <form onSubmit={handleQuickAdd} className="space-y-4">
                             <div className="space-y-1">
@@ -673,7 +673,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                     required
                                     value={newItemName}
                                     onChange={(e) => setNewItemName(e.target.value)}
-                                    className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                                     placeholder={`Enter ${quickAdd.type} name...`}
                                 />
                             </div>
@@ -684,7 +684,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                     <input
                                         value={newItemSecondary}
                                         onChange={(e) => setNewItemSecondary(e.target.value)}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                        className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                                         placeholder="Customer Name (Optional)"
                                     />
                                 </div>
@@ -696,7 +696,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                     <select
                                         value={newItemSecondary}
                                         onChange={(e) => setNewItemSecondary(e.target.value)}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                        className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                                     >
                                         <option value="">Select Role...</option>
                                         <option value="Staff">Staff</option>
@@ -715,7 +715,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                     <select
                                         value={newItemSecondary}
                                         onChange={(e) => setNewItemSecondary(e.target.value)}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                        className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                                     >
                                         <option value="Material">Material Store</option>
                                         <option value="Sub-contract">Sub-contractor</option>
@@ -729,13 +729,13 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 <button
                                     type="button"
                                     onClick={() => setQuickAdd(null)}
-                                    className="flex-1 py-3 rounded-xl font-bold bg-white/5 hover:bg-white/10 transition-colors"
+                                    className="flex-1 py-3 rounded-xl font-bold bg-muted/60 hover:bg-muted text-foreground border border-border transition-colors cursor-pointer"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:opacity-90 transition-colors"
+                                    className="flex-1 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:opacity-90 transition-colors cursor-pointer shadow-sm"
                                 >
                                     Add Valid
                                 </button>
@@ -752,20 +752,20 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     onScanComplete={handleScanComplete}
                 />
 
-                <SafeBackdrop onClose={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity" />
+                <SafeBackdrop onClose={onClose} className="absolute inset-0 bg-black/50 dark:bg-black/80 backdrop-blur-sm transition-opacity" />
 
-                <div className="relative glass-card w-full sm:max-w-2xl lg:max-w-5xl xl:max-w-6xl h-full sm:h-[90vh] max-h-[100dvh] sm:max-h-[90vh] p-0 rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-white/10 flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden bg-background">
+                <div className="relative w-full sm:max-w-2xl lg:max-w-5xl xl:max-w-6xl h-full sm:h-[90vh] max-h-[100dvh] sm:max-h-[90vh] p-0 rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-border flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden bg-background text-foreground">
 
                     {/* Dialog Header with Safe Area for Mobile */}
-                    <div className="flex items-center justify-between px-4 py-3 sm:p-5 border-b border-white/10 shrink-0 bg-background/95 backdrop-blur-md pt-[max(0.875rem,env(safe-area-inset-top))]">
+                    <div className="flex items-center justify-between px-4 py-3 sm:p-5 border-b border-border shrink-0 bg-background pt-[max(0.875rem,env(safe-area-inset-top))]">
                         <div className="min-w-0 pr-2">
-                            <h2 className="text-lg sm:text-2xl font-bold tracking-tight truncate">{t.expenses.dialog.title}</h2>
+                            <h2 className="text-lg sm:text-2xl font-bold tracking-tight truncate text-foreground">{t.expenses.dialog.title}</h2>
                             <p className="text-xs sm:text-sm text-muted-foreground truncate hidden sm:block">{t.expenses.dialog.subtitle}</p>
                         </div>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white/80 hover:text-white flex items-center justify-center transition-all shrink-0 cursor-pointer shadow-sm border border-white/10"
+                            className="w-9 h-9 rounded-full bg-muted/80 hover:bg-muted active:scale-95 text-foreground flex items-center justify-center transition-all shrink-0 cursor-pointer shadow-xs border border-border"
                             aria-label="Close"
                         >
                             <X className="w-5 h-5" />
@@ -774,20 +774,20 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                     {/* 3-Step Navigation Pills with Mobile Close Button */}
                     <div className="px-3 sm:px-5 pt-2.5 pb-0.5 shrink-0 lg:hidden flex items-center gap-2">
-                        <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/5 rounded-xl border border-white/10 text-xs flex-1 min-w-0">
+                        <div className="grid grid-cols-3 gap-1.5 p-1 bg-muted/60 rounded-xl border border-border text-xs flex-1 min-w-0">
                             <button
                                 type="button"
                                 onClick={() => toggleSection(1)}
                                 className={cn(
                                     "py-2 px-1.5 rounded-lg font-medium flex items-center justify-center gap-1.5 transition-all min-w-0 cursor-pointer",
                                     openSections[1]
-                                        ? "bg-primary text-primary-foreground font-bold shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                        ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-background/60"
                                 )}
                             >
                                 <span className={cn(
-                                    "w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0",
-                                    openSections[1] ? "bg-white/20" : "bg-white/10"
+                                    "w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold",
+                                    openSections[1] ? "bg-white/20 text-primary-foreground" : "bg-muted-foreground/20 text-muted-foreground"
                                 )}>
                                     {title && payee ? <Check className="w-2.5 h-2.5" /> : "1"}
                                 </span>
@@ -800,13 +800,13 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 className={cn(
                                     "py-2 px-1.5 rounded-lg font-medium flex items-center justify-center gap-1.5 transition-all min-w-0 cursor-pointer",
                                     openSections[2]
-                                        ? "bg-primary text-primary-foreground font-bold shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                        ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-background/60"
                                 )}
                             >
                                 <span className={cn(
-                                    "w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0",
-                                    openSections[2] ? "bg-white/20" : "bg-white/10"
+                                    "w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold",
+                                    openSections[2] ? "bg-white/20 text-primary-foreground" : "bg-muted-foreground/20 text-muted-foreground"
                                 )}>
                                     {subtotal > 0 ? <Check className="w-2.5 h-2.5" /> : "2"}
                                 </span>
@@ -819,13 +819,13 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 className={cn(
                                     "py-2 px-1.5 rounded-lg font-medium flex items-center justify-center gap-1.5 transition-all min-w-0 cursor-pointer",
                                     openSections[3]
-                                        ? "bg-primary text-primary-foreground font-bold shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                        ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-background/60"
                                 )}
                             >
                                 <span className={cn(
-                                    "w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0",
-                                    openSections[3] ? "bg-white/20" : "bg-white/10"
+                                    "w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 font-bold",
+                                    openSections[3] ? "bg-white/20 text-primary-foreground" : "bg-muted-foreground/20 text-muted-foreground"
                                 )}>
                                     {receiptImage ? <Check className="w-2.5 h-2.5" /> : "3"}
                                 </span>
@@ -842,7 +842,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                             {/* LEFT PANE (Mobile: full width, Desktop: 7 cols)           */}
                             {/* Contains Step 1 (Header) & Step 2 (Line Items)           */}
                             {/* ======================================================== */}
-                            <div ref={scrollRef} className="lg:col-span-7 xl:col-span-7 flex flex-col h-full overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 space-y-3.5 min-w-0 w-full lg:border-r lg:border-white/10 custom-scrollbar overscroll-contain min-h-0">
+                            <div ref={scrollRef} className="lg:col-span-7 xl:col-span-7 flex flex-col h-full overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 space-y-3.5 min-w-0 w-full lg:border-r lg:border-border custom-scrollbar overscroll-contain min-h-0">
 
                                 {/* Mobile Smart Scan Quick Access Banner */}
                                 <div className="lg:hidden shrink-0 bg-purple-500/10 border border-purple-500/20 p-3 sm:p-3.5 rounded-xl flex items-center justify-between gap-3 min-w-0 w-full">
@@ -865,11 +865,11 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 </div>
 
                                 {/* STEP 1: หัวบิล (Bill Header, Date, Store, Project, Status) */}
-                                <div className="shrink-0 bg-muted/10 border border-white/10 rounded-2xl overflow-hidden transition-all min-w-0 w-full">
+                                <div className="shrink-0 bg-card border border-border shadow-xs rounded-2xl overflow-hidden transition-all min-w-0 w-full">
                                     <button
                                         type="button"
                                         onClick={() => toggleSection(1)}
-                                        className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-2.5 text-left hover:bg-white/5 transition-colors"
+                                        className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-2.5 text-left hover:bg-muted/40 transition-colors"
                                     >
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <div className={cn(
@@ -881,7 +881,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-bold text-foreground">1. หัวบิล & โครงการ</span>
-                                                    <span className="text-[9px] text-muted-foreground uppercase px-1.5 py-0.5 rounded bg-white/5 border border-white/5">Header</span>
+                                                    <span className="text-[9px] text-muted-foreground uppercase px-1.5 py-0.5 rounded bg-muted border border-border/60">Header</span>
                                                 </div>
                                                 {!openSections[1] && (
                                                     <p className="text-xs text-muted-foreground truncate mt-0.5 max-w-[200px] sm:max-w-md">
@@ -899,7 +899,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                     </button>
 
                                     {openSections[1] && (
-                                        <div className="p-3.5 sm:p-4 pt-0 space-y-3.5 border-t border-white/5 min-w-0 w-full animate-in fade-in duration-200">
+                                        <div className="p-3.5 sm:p-4 pt-0 space-y-3.5 border-t border-border/60 min-w-0 w-full animate-in fade-in duration-200">
                                             {/* Bill Title & Date */}
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0 w-full">
                                                 <div className="space-y-1 min-w-0">
@@ -916,8 +916,8 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                         }}
                                                         placeholder={t.expenses.dialog.bill_placeholder}
                                                         className={cn(
-                                                            "w-full min-w-0 bg-background/50 border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors",
-                                                            errors.title ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10"
+                                                            "w-full min-w-0 bg-background border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors text-foreground",
+                                                            errors.title ? "border-red-500/50 focus:ring-red-500/20" : "border-input hover:border-foreground/20"
                                                         )}
                                                     />
                                                 </div>
@@ -934,8 +934,8 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                             if (errors.date) setErrors({ ...errors, date: false })
                                                         }}
                                                         className={cn(
-                                                            "w-full min-w-0 bg-background/50 border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors",
-                                                            errors.date ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10"
+                                                            "w-full min-w-0 bg-background border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors text-foreground",
+                                                            errors.date ? "border-red-500/50 focus:ring-red-500/20" : "border-input hover:border-foreground/20"
                                                         )}
                                                     />
                                                 </div>
@@ -954,7 +954,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                             setItems(items.map(i => ({ ...i, category: newCat })))
                                                             setPayee("")
                                                         }}
-                                                        className="w-full min-w-0 bg-background/50 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+                                                        className="w-full min-w-0 bg-background border border-input hover:border-foreground/20 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate text-foreground shadow-xs"
                                                     >
                                                         <option value="Material">Material (ค่าวัสดุ)</option>
                                                         <option value="Labor">Labor (ค่าแรง)</option>
@@ -997,7 +997,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             </div>
 
                                             {/* Project Assignment Mode (Combine vs Split) */}
-                                            <div className="space-y-2.5 p-3 rounded-xl bg-white/5 border border-white/10 min-w-0 w-full">
+                                            <div className="space-y-2.5 p-3 rounded-xl bg-muted/40 border border-border/80 min-w-0 w-full">
                                                 <div className="flex items-center gap-4">
                                                     <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold">
                                                         <input
@@ -1063,7 +1063,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                         <select
                                                             value={status}
                                                             onChange={(e) => setStatus(e.target.value as any)}
-                                                            className="w-full min-w-0 bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+                                                            className="w-full min-w-0 bg-background border border-input hover:border-foreground/20 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate text-foreground shadow-xs"
                                                         >
                                                             <option value="Paid">Paid (ชำระแล้ว)</option>
                                                             <option value="Pending">Pending (รอชำระ)</option>
@@ -1084,7 +1084,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                             <select
                                                                 value={paidBy}
                                                                 onChange={(e) => handleSelectChange(e.target.value, setPaidBy, 'user')}
-                                                                className="w-full min-w-0 bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+                                                                className="w-full min-w-0 bg-background border border-input hover:border-foreground/20 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate text-foreground shadow-xs"
                                                             >
                                                                 <option value="">Select User...</option>
                                                                 {currentUser && (
@@ -1109,7 +1109,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                             <select
                                                                 value={vendor}
                                                                 onChange={(e) => handleSelectChange(e.target.value, setVendor, 'vendor')}
-                                                                className="w-full min-w-0 bg-background/50 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+                                                                className="w-full min-w-0 bg-background border border-input hover:border-foreground/20 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate text-foreground shadow-xs"
                                                             >
                                                                 <option value="">Select Vendor...</option>
                                                                 {vendors.map(v => (
@@ -1138,11 +1138,11 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 </div>
 
                                 {/* STEP 2: รายการบิล & ยอดเงิน (Line Items, VAT, Totals) */}
-                                <div className="shrink-0 bg-muted/10 border border-white/10 rounded-2xl overflow-hidden transition-all min-w-0 w-full">
+                                <div className="shrink-0 bg-card border border-border shadow-xs rounded-2xl overflow-hidden transition-all min-w-0 w-full">
                                     <button
                                         type="button"
                                         onClick={() => toggleSection(2)}
-                                        className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-2.5 text-left hover:bg-white/5 transition-colors"
+                                        className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-2.5 text-left hover:bg-muted/40 transition-colors"
                                     >
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <div className={cn(
@@ -1154,7 +1154,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-bold text-foreground">2. รายการบิล & ยอดเงิน</span>
-                                                    <span className="text-[9px] text-muted-foreground uppercase px-1.5 py-0.5 rounded bg-white/5 border border-white/5">
+                                                    <span className="text-[9px] text-muted-foreground uppercase px-1.5 py-0.5 rounded bg-muted border border-border/60">
                                                         {items.length} รายการ
                                                     </span>
                                                 </div>
@@ -1172,7 +1172,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                     </button>
 
                                     {openSections[2] && (
-                                        <div className="p-3.5 sm:p-4 pt-0 space-y-3.5 border-t border-white/5 min-w-0 w-full animate-in fade-in duration-200">
+                                        <div className="p-3.5 sm:p-4 pt-0 space-y-3.5 border-t border-border/60 min-w-0 w-full animate-in fade-in duration-200">
                                             {/* VAT Toggle & Header Info */}
                                             <div className="flex items-center justify-between min-w-0 w-full pt-1">
                                                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -1183,7 +1183,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                         type="checkbox"
                                                         checked={vatIncluded}
                                                         onChange={(e) => setVatIncluded(e.target.checked)}
-                                                        className="w-4 h-4 rounded border-white/10 bg-background/50 text-primary focus:ring-primary/50 transition-all"
+                                                        className="w-4 h-4 rounded border-input bg-background text-primary focus:ring-primary/50 transition-all"
                                                     />
                                                     <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                                                         {t.expenses.dialog.vat_included}
@@ -1206,20 +1206,20 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                 {items.map((item, index) => (
                                                     <div
                                                         key={item.id}
-                                                        className="bg-background/40 border border-white/10 rounded-xl p-3 space-y-2.5 min-w-0 w-full animate-in fade-in duration-150"
+                                                        className="bg-muted/30 border border-border/80 rounded-xl p-3 space-y-2.5 min-w-0 w-full animate-in fade-in duration-150"
                                                     >
                                                         {/* Responsive Item Layout: Single row on desktop, 2-row on mobile */}
                                                         <div className="flex flex-col md:flex-row md:items-center gap-2.5 min-w-0 w-full">
                                                             {/* Item Description with Index */}
                                                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                <span className="w-6 h-6 rounded-md bg-white/5 border border-white/10 flex items-center justify-center text-[11px] font-bold text-muted-foreground shrink-0">
+                                                                <span className="w-6 h-6 rounded-md bg-muted border border-border/80 flex items-center justify-center text-[11px] font-bold text-muted-foreground shrink-0">
                                                                     {index + 1}
                                                                 </span>
                                                                 <input
                                                                     placeholder={t.expenses.dialog.item_desc || "รายละเอียดรายการ..."}
                                                                     value={item.description}
                                                                     onChange={(e) => updateItem(item.id, { description: e.target.value })}
-                                                                    className="flex-1 min-w-0 bg-background border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                    className="flex-1 min-w-0 bg-background border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                                                                 />
                                                             </div>
 
@@ -1242,7 +1242,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                                                 amount: qty * price
                                                                             })
                                                                         }}
-                                                                        className="w-full min-w-0 bg-background border border-white/10 rounded-lg px-2.5 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                        className="w-full min-w-0 bg-background border border-input rounded-lg px-2.5 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                                                                     />
                                                                 </div>
 
@@ -1263,7 +1263,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                                                 amount: qty * price
                                                                             })
                                                                         }}
-                                                                        className="w-full min-w-0 bg-background border border-white/10 rounded-lg px-2.5 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                        className="w-full min-w-0 bg-background border border-input rounded-lg px-2.5 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                                                                     />
                                                                 </div>
 
@@ -1284,7 +1284,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                                             }}
                                                                             className={cn(
                                                                                 "w-full min-w-0 bg-background border rounded-lg pl-5 pr-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-right font-bold text-primary transition-colors",
-                                                                                errors.amount ? "border-red-500/50 focus:ring-red-500/20" : "border-white/10"
+                                                                                errors.amount ? "border-red-500/50 focus:ring-red-500/20" : "border-input"
                                                                             )}
                                                                         />
                                                                         <span className="absolute left-1.5 top-2 text-xs text-muted-foreground pointer-events-none">฿</span>
@@ -1318,7 +1318,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                                                         {/* Split bill selectors if split mode */}
                                                         {billType === 'split' && (
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-white/5 min-w-0 w-full">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-border/60 min-w-0 w-full">
                                                                 <select
                                                                     value={item.projectId || ""}
                                                                     onChange={(e) => handleSelectChange(
@@ -1326,7 +1326,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                                         (val) => updateItem(item.id, { projectId: val, taskId: "" }),
                                                                         'project'
                                                                     )}
-                                                                    className="w-full min-w-0 bg-background border border-white/10 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+                                                                    className="w-full min-w-0 bg-background border border-input rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 truncate text-foreground"
                                                                 >
                                                                     <option value="">Select Project...</option>
                                                                     {projects.map(p => (
@@ -1343,7 +1343,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                                         'sub-project',
                                                                         item.projectId
                                                                     )}
-                                                                    className="w-full min-w-0 bg-background border border-white/10 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+                                                                    className="w-full min-w-0 bg-background border border-input rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 truncate text-foreground"
                                                                 >
                                                                     <option value="">- Sub-project (Optional) -</option>
                                                                     {projects.find(p => p.id === item.projectId)?.subProjects?.map(sp => (
@@ -1360,14 +1360,14 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                 <button
                                                     type="button"
                                                     onClick={addItem}
-                                                    className="w-full py-2.5 flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-white/5 border border-dashed border-white/10 rounded-xl transition-all"
+                                                    className="w-full py-2.5 flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-dashed border-border rounded-xl transition-all"
                                                 >
                                                     <Plus className="w-4 h-4 text-primary" /> {t.expenses.dialog.add_line_item}
                                                 </button>
                                             </div>
 
                                             {/* Totals Summary (Mobile view) */}
-                                            <div className="p-3 rounded-xl bg-white/5 border border-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-w-0 w-full lg:hidden">
+                                            <div className="p-3 rounded-xl bg-muted/40 border border-border/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-w-0 w-full lg:hidden">
                                                 {vatIncluded ? (
                                                     <div className="text-xs text-muted-foreground space-y-0.5">
                                                         <div>{t.expenses.dialog.subtotal}: <span className="font-mono text-foreground font-semibold">฿{(subtotal - vatAmount).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
@@ -1387,7 +1387,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                 <button
                                                     type="button"
                                                     onClick={() => setOpenSections(prev => ({ ...prev, 1: true, 2: false }))}
-                                                    className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all text-muted-foreground hover:text-foreground active:scale-95"
+                                                    className="px-3.5 py-2 bg-muted/60 hover:bg-muted text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all text-muted-foreground hover:text-foreground active:scale-95 border border-border"
                                                 >
                                                     <ArrowLeft className="w-3.5 h-3.5" />
                                                     ย้อนกลับหัวบิล
@@ -1406,11 +1406,11 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 </div>
 
                                 {/* STEP 3: รูปสลิป / บิล (On Mobile only, embedded in left column) */}
-                                <div className="lg:hidden shrink-0 bg-muted/10 border border-white/10 rounded-2xl overflow-hidden transition-all min-w-0 w-full">
+                                <div className="lg:hidden shrink-0 bg-card border border-border shadow-xs rounded-2xl overflow-hidden transition-all min-w-0 w-full">
                                     <button
                                         type="button"
                                         onClick={() => toggleSection(3)}
-                                        className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-2.5 text-left hover:bg-white/5 transition-colors"
+                                        className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-2.5 text-left hover:bg-muted/40 transition-colors"
                                     >
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <div className={cn(
@@ -1422,7 +1422,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-bold text-foreground">3. แนบรูปสลิป / บิล</span>
-                                                    <span className="text-[9px] text-muted-foreground uppercase px-1.5 py-0.5 rounded bg-white/5 border border-white/5">Receipt</span>
+                                                    <span className="text-[9px] text-muted-foreground uppercase px-1.5 py-0.5 rounded bg-muted border border-border/60">Receipt</span>
                                                 </div>
                                                 {!openSections[3] && (
                                                     <p className="text-xs text-muted-foreground truncate mt-0.5 max-w-[200px] sm:max-w-md">
@@ -1438,14 +1438,14 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                     </button>
 
                                     {openSections[3] && (
-                                        <div className="p-3.5 sm:p-4 pt-0 space-y-3.5 border-t border-white/5 min-w-0 w-full animate-in fade-in duration-200">
+                                        <div className="p-3.5 sm:p-4 pt-0 space-y-3.5 border-t border-border/60 min-w-0 w-full animate-in fade-in duration-200">
                                             {renderReceiptContent()}
 
                                             <div className="flex justify-between items-center pt-2">
                                                 <button
                                                     type="button"
                                                     onClick={() => setOpenSections(prev => ({ ...prev, 2: true, 3: false }))}
-                                                    className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all text-muted-foreground hover:text-foreground active:scale-95"
+                                                    className="px-3.5 py-2 bg-muted/60 hover:bg-muted text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all text-muted-foreground hover:text-foreground active:scale-95 border border-border"
                                                 >
                                                     <ArrowLeft className="w-3.5 h-3.5" />
                                                     ย้อนกลับรายการบิล
@@ -1461,7 +1461,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                             {/* RIGHT PANE (Desktop only, 5 cols)                        */}
                             {/* Contains Smart Scan AI, Receipt Preview & Bill Summary   */}
                             {/* ======================================================== */}
-                            <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col h-full overflow-y-auto overflow-x-hidden p-5 space-y-4 bg-white/[0.02] min-w-0 custom-scrollbar overscroll-contain min-h-0">
+                            <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col h-full overflow-y-auto overflow-x-hidden p-5 space-y-4 bg-muted/15 min-w-0 custom-scrollbar overscroll-contain min-h-0">
 
                                 {/* Smart Scan AI Desktop Banner */}
                                 <div className="shrink-0 bg-purple-500/10 border border-purple-500/20 p-4 rounded-2xl flex items-center justify-between gap-3 min-w-0">
@@ -1484,7 +1484,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 </div>
 
                                 {/* Step 3: Receipt Upload & Preview on Desktop */}
-                                <div className="shrink-0 bg-muted/10 border border-white/10 rounded-2xl p-4 space-y-3 min-w-0">
+                                <div className="shrink-0 bg-card border border-border shadow-xs rounded-2xl p-4 space-y-3 min-w-0">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2 min-w-0">
                                             <div className={cn(
@@ -1506,7 +1506,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 </div>
 
                                 {/* Live Breakdown & Summary Card */}
-                                <div className="shrink-0 bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3 mt-auto min-w-0">
+                                <div className="shrink-0 bg-card border border-border shadow-xs rounded-2xl p-4 space-y-3 mt-auto min-w-0">
                                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
                                         สรุปยอดค่าใช้จ่าย (Summary)
                                     </span>
@@ -1528,7 +1528,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             </>
                                         )}
                                     </div>
-                                    <div className="h-px bg-white/10 pt-1" />
+                                    <div className="h-px bg-border my-1" />
                                     <div className="flex justify-between items-baseline pt-1">
                                         <span className="text-sm font-bold text-foreground">ยอดรวมสุทธิ</span>
                                         <span className="text-2xl font-black text-primary font-mono">฿{subtotal.toLocaleString()}</span>
@@ -1540,7 +1540,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                         </div>
 
                         {/* Full-width Sticky Footer with Live Grand Total & Save Button */}
-                        <div className="p-3.5 sm:p-5 border-t border-white/10 bg-background/95 backdrop-blur-md shrink-0 flex items-center justify-between gap-3 min-w-0 w-full pb-[max(0.875rem,env(safe-area-inset-bottom))]">
+                        <div className="p-3.5 sm:p-5 border-t border-border bg-background shrink-0 flex items-center justify-between gap-3 min-w-0 w-full pb-[max(0.875rem,env(safe-area-inset-bottom))] shadow-lg">
                             <div className="min-w-0 flex items-center gap-3">
                                 <div>
                                     <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block leading-tight">ยอดรวมทั้งสิ้น</span>
@@ -1548,7 +1548,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                         ฿{subtotal.toLocaleString()}
                                     </span>
                                 </div>
-                                <span className="hidden sm:inline-block text-xs text-muted-foreground bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
+                                <span className="hidden sm:inline-block text-xs text-muted-foreground bg-muted border border-border px-2.5 py-1 rounded-lg">
                                     {items.length} รายการ
                                 </span>
                             </div>
@@ -1557,7 +1557,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 active:scale-95 text-xs sm:text-sm font-bold text-muted-foreground hover:text-foreground transition-all cursor-pointer shrink-0"
+                                    className="px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-border bg-muted/40 hover:bg-muted active:scale-95 text-xs sm:text-sm font-bold text-foreground transition-all cursor-pointer shrink-0 shadow-xs"
                                 >
                                     ยกเลิก
                                 </button>
@@ -1568,7 +1568,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 >
                                     {isUploading ? (
                                         <>
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white/90 rounded-full animate-spin" />
+                                            <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                                             <span className="truncate">{uploadStatus || "Saving..."}</span>
                                         </>
                                     ) : (
