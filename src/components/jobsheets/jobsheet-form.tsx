@@ -509,13 +509,13 @@ export function JobSheetForm({
     return (
         <form onSubmit={handleFormSubmit} className="flex flex-col gap-5 w-full max-w-5xl mx-auto pb-24 sm:pb-12 overflow-x-hidden">
             {/* Desktop Top Toolbar */}
-            <div className="hidden sm:flex items-center justify-between gap-3 bg-zinc-900/60 border border-white/10 rounded-2xl p-4 shadow-md">
+            <div className="hidden sm:flex items-center justify-between gap-3 bg-card dark:bg-zinc-900/60 border border-border dark:border-white/10 rounded-2xl p-4 shadow-xs">
                 <div>
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        <HardHat className="w-5 h-5 text-amber-400" />
+                    <h2 className="text-lg font-bold text-foreground dark:text-white flex items-center gap-2">
+                        <HardHat className="w-5 h-5 text-amber-500 dark:text-amber-400" />
                         {initialData ? "แก้ไขรายงาน JobSheet" : "เขียน JobSheet ประจำวัน"}
                     </h2>
-                    <p className="text-xs text-white/50">
+                    <p className="text-xs text-muted-foreground dark:text-white/50">
                         เน้นบันทึกเป็นงานๆ ประจำวัน รองรับหลายโปรเจคและงานทั่วไปใน 1 วัน
                     </p>
                 </div>
@@ -527,7 +527,7 @@ export function JobSheetForm({
                             variant="outline"
                             size="sm"
                             onClick={onCancel}
-                            className="border-white/10 text-white/70 hover:bg-white/5"
+                            className="border-border dark:border-white/10 text-muted-foreground hover:text-foreground hover:bg-muted dark:text-white/70 dark:hover:bg-white/5 cursor-pointer"
                         >
                             ยกเลิก
                         </Button>
@@ -537,7 +537,7 @@ export function JobSheetForm({
                         variant="outline"
                         size="sm"
                         onClick={handleTriggerPreview}
-                        className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                        className="border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
                     >
                         <Eye className="w-4 h-4 mr-1.5" />
                         ดูตัวอย่าง Sheet / พิมพ์
@@ -546,7 +546,7 @@ export function JobSheetForm({
                         type="submit"
                         disabled={isSaving}
                         size="sm"
-                        className="bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-lg shadow-amber-500/20 px-5"
+                        className="bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-md shadow-amber-500/20 px-5 cursor-pointer"
                     >
                         <Save className="w-4 h-4 mr-1.5" />
                         {isSaving ? "กำลังบันทึก..." : "บันทึก JobSheet"}
@@ -557,11 +557,11 @@ export function JobSheetForm({
             {/* Mobile Header Banner */}
             <div className="sm:hidden flex items-center justify-between gap-2 px-1">
                 <div>
-                    <h2 className="text-base font-extrabold text-white flex items-center gap-1.5">
-                        <HardHat className="w-4 h-4 text-amber-400" />
+                    <h2 className="text-base font-extrabold text-foreground dark:text-white flex items-center gap-1.5">
+                        <HardHat className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                         {initialData ? "แก้ไข JobSheet" : "เขียน JobSheet วันนี้"}
                     </h2>
-                    <span className="text-[11px] text-white/50 font-mono">
+                    <span className="text-[11px] text-muted-foreground dark:text-white/50 font-mono">
                         {date} • {workItems.length} งาน
                     </span>
                 </div>
@@ -571,7 +571,7 @@ export function JobSheetForm({
                         variant="ghost"
                         size="sm"
                         onClick={onCancel}
-                        className="text-white/60 text-xs h-8 px-2"
+                        className="text-muted-foreground hover:text-foreground dark:text-white/60 text-xs h-8 px-2 cursor-pointer"
                     >
                         ยกเลิก
                     </Button>
@@ -579,28 +579,28 @@ export function JobSheetForm({
             </div>
 
             {/* COMPACT TOP BAR: Date, Report No & Weather Summary */}
-            <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-3.5 sm:p-4 shadow-md space-y-3">
+            <div className="bg-card dark:bg-zinc-900/60 border border-border dark:border-white/10 rounded-2xl p-3.5 sm:p-4 shadow-xs space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 sm:gap-3 items-center">
                     {/* Date Picker */}
-                    <div className="sm:col-span-4 flex items-center gap-2 bg-zinc-950 px-3 py-2 rounded-xl border border-white/10">
-                        <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div className="sm:col-span-4 flex items-center gap-2 bg-muted/50 dark:bg-zinc-950 px-3 py-2 rounded-xl border border-border dark:border-white/10">
+                        <Calendar className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" />
                         <div className="flex-1">
-                            <span className="text-[10px] text-white/40 block leading-none mb-1 font-medium">วันที่บันทึกงาน</span>
+                            <span className="text-[10px] text-muted-foreground dark:text-white/40 block leading-none mb-1 font-medium">วันที่บันทึกงาน</span>
                             <input
                                 type="date"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
-                                className="bg-transparent text-white text-xs font-semibold focus:outline-none w-full"
+                                className="bg-transparent text-foreground dark:text-white text-xs font-semibold focus:outline-none w-full"
                                 required
                             />
                         </div>
                     </div>
 
                     {/* Mode / Overall Scope */}
-                    <div className="sm:col-span-5 flex items-center gap-2 bg-zinc-950 px-3 py-2 rounded-xl border border-white/10">
+                    <div className="sm:col-span-5 flex items-center gap-2 bg-muted/50 dark:bg-zinc-950 px-3 py-2 rounded-xl border border-border dark:border-white/10">
                         <Briefcase className="w-4 h-4 text-primary shrink-0" />
                         <div className="flex-1 min-w-0">
-                            <span className="text-[10px] text-white/40 block leading-none mb-1 font-medium">รูปแบบการทำงานวันนี้</span>
+                            <span className="text-[10px] text-muted-foreground dark:text-white/40 block leading-none mb-1 font-medium">รูปแบบการทำงานวันนี้</span>
                             <select
                                 value={selectedProjectId}
                                 onChange={(e) => {
@@ -615,13 +615,13 @@ export function JobSheetForm({
                                         if (found) setProjectName(found.name);
                                     }
                                 }}
-                                className="bg-transparent text-white text-xs font-semibold focus:outline-none w-full truncate [color-scheme:dark] cursor-pointer"
+                                className="bg-transparent text-foreground dark:text-white text-xs font-semibold focus:outline-none w-full truncate cursor-pointer"
                             >
-                                <option value="multi" className="bg-zinc-900 text-zinc-100 py-1">🗂️ ปฏิบัติงานหลายโครงการ / ทั่วไป</option>
-                                <option value="general" className="bg-zinc-900 text-zinc-100 py-1">📦 งานทั่วไป / ธุรการ / นอกโครงการ</option>
-                                <optgroup label="🏢 โครงการเฉพาะในระบบ" className="bg-zinc-950 text-zinc-400 font-bold">
+                                <option value="multi" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 py-1">🗂️ ปฏิบัติงานหลายโครงการ / ทั่วไป</option>
+                                <option value="general" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 py-1">📦 งานทั่วไป / ธุรการ / นอกโครงการ</option>
+                                <optgroup label="🏢 โครงการเฉพาะในระบบ" className="bg-muted text-muted-foreground dark:bg-zinc-950 dark:text-zinc-400 font-bold">
                                     {projects.map((p) => (
-                                        <option key={p.id} value={p.id} className="bg-zinc-900 text-zinc-100 py-1">
+                                        <option key={p.id} value={p.id} className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 py-1">
                                             🏢 {p.name}
                                         </option>
                                     ))}
@@ -631,13 +631,13 @@ export function JobSheetForm({
                     </div>
 
                     {/* Weather Quick Capsule */}
-                    <div className="sm:col-span-3 flex items-center justify-between gap-1.5 bg-zinc-950 px-3 py-2 rounded-xl border border-white/10">
+                    <div className="sm:col-span-3 flex items-center justify-between gap-1.5 bg-muted/50 dark:bg-zinc-950 px-3 py-2 rounded-xl border border-border dark:border-white/10">
                         <div className="flex items-center gap-1.5 truncate">
-                            <CloudSun className="w-4 h-4 text-amber-400 shrink-0" />
-                            <span className="text-xs text-white/80 font-medium truncate">
+                            <CloudSun className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" />
+                            <span className="text-xs text-foreground/80 dark:text-white/80 font-medium truncate">
                                 {weatherCondition.split(" ")[0]}
                             </span>
-                            <span className="text-xs font-bold text-amber-400 font-mono">
+                            <span className="text-xs font-bold text-amber-600 dark:text-amber-400 font-mono">
                                 {temperature}°C
                             </span>
                         </div>
@@ -645,7 +645,7 @@ export function JobSheetForm({
                             type="button"
                             onClick={handleAutoFetchWeather}
                             title="ดึงสภาพอากาศจริง"
-                            className="p-1 rounded-md text-amber-400 hover:bg-white/10 transition-colors"
+                            className="p-1 rounded-md text-amber-600 dark:text-amber-400 hover:bg-muted dark:hover:bg-white/10 transition-colors cursor-pointer"
                         >
                             <Sparkles className="w-3.5 h-3.5" />
                         </button>
@@ -687,15 +687,15 @@ export function JobSheetForm({
                 {/* Horizontal Quick Task Presets (Swipeable on Mobile) */}
                 <div className="overflow-x-auto pb-1.5 scrollbar-hide -mx-2 px-2 sm:mx-0 sm:px-0">
                     <div className="flex items-center gap-1.5 min-w-max">
-                        <span className="text-[11px] text-white/40 font-medium mr-1 flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-amber-400" /> แม่แบบด่วน:
+                        <span className="text-[11px] text-muted-foreground dark:text-white/40 font-medium mr-1 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-amber-500 dark:text-amber-400" /> แม่แบบด่วน:
                         </span>
                         {QUICK_TASK_PRESETS.map((preset, idx) => (
                             <button
                                 key={idx}
                                 type="button"
                                 onClick={() => addWorkItem(preset.task, preset.category, preset.time)}
-                                className="text-[11px] px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-amber-500/20 hover:text-amber-300 border border-white/10 hover:border-amber-500/30 text-white/70 transition-all active:scale-95 whitespace-nowrap shadow-sm"
+                                className="text-[11px] px-2.5 py-1.5 rounded-lg bg-muted/70 hover:bg-amber-500/10 hover:text-amber-700 dark:bg-zinc-900 dark:hover:bg-amber-500/20 dark:hover:text-amber-300 border border-border dark:border-white/10 hover:border-amber-500/30 text-foreground/80 dark:text-white/70 transition-all active:scale-95 whitespace-nowrap shadow-2xs cursor-pointer"
                             >
                                 + {preset.label}
                             </button>
@@ -711,23 +711,23 @@ export function JobSheetForm({
                         return (
                             <div
                                 key={item.id}
-                                className="bg-zinc-900/80 border border-white/10 hover:border-amber-500/30 rounded-2xl p-3.5 sm:p-4 space-y-3 transition-all shadow-lg relative group"
+                                className="bg-card dark:bg-zinc-900/80 border border-border dark:border-white/10 hover:border-amber-500/40 rounded-2xl p-3.5 sm:p-4 space-y-3 transition-all shadow-xs dark:shadow-lg relative group"
                             >
                                 {/* CARD TOP ROW: Job Number + Reorder + Delete */}
-                                <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-2.5">
+                                <div className="flex items-center justify-between gap-2 border-b border-border/60 dark:border-white/5 pb-2.5">
                                     <div className="flex items-center gap-1.5 shrink-0">
-                                        <span className="text-xs font-mono font-black text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                                        <span className="text-xs font-mono font-black text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
                                             งานที่ #{index + 1}
                                         </span>
 
                                         {/* Reorder Buttons: Move Up / Down */}
                                         {workItems.length > 1 && (
-                                            <div className="flex items-center bg-black/40 border border-white/10 rounded-lg p-0.5">
+                                            <div className="flex items-center bg-muted dark:bg-black/40 border border-border dark:border-white/10 rounded-lg p-0.5">
                                                 <button
                                                     type="button"
                                                     onClick={() => moveWorkItem(index, "up")}
                                                     disabled={index === 0}
-                                                    className="w-6 h-6 rounded flex items-center justify-center text-white/50 hover:text-amber-400 hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-white/40 transition-colors"
+                                                    className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground dark:text-white/50 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-background dark:hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors cursor-pointer"
                                                     title="สลับลำดับขึ้น (ย้ายไปก่อนหน้า)"
                                                 >
                                                     <ChevronUp className="w-3.5 h-3.5" />
@@ -736,7 +736,7 @@ export function JobSheetForm({
                                                     type="button"
                                                     onClick={() => moveWorkItem(index, "down")}
                                                     disabled={index === workItems.length - 1}
-                                                    className="w-6 h-6 rounded flex items-center justify-center text-white/50 hover:text-amber-400 hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-white/40 transition-colors"
+                                                    className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground dark:text-white/50 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-background dark:hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors cursor-pointer"
                                                     title="สลับลำดับลง (ย้ายไปถัดไป)"
                                                 >
                                                     <ChevronDown className="w-3.5 h-3.5" />
@@ -749,7 +749,7 @@ export function JobSheetForm({
                                     <button
                                         type="button"
                                         onClick={() => removeWorkItem(item.id)}
-                                        className="h-7 px-2 rounded-lg text-white/40 hover:text-rose-400 hover:bg-rose-500/10 flex items-center gap-1 text-xs transition-colors shrink-0 cursor-pointer"
+                                        className="h-7 px-2 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:text-white/40 dark:hover:text-rose-400 dark:hover:bg-rose-500/10 flex items-center gap-1 text-xs transition-colors shrink-0 cursor-pointer"
                                         title="ลบงานนี้"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
@@ -758,11 +758,11 @@ export function JobSheetForm({
                                 </div>
 
                                 {/* METADATA ROW: Project & Time Slot (Roomy 2-column Grid) */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-black/25 p-2.5 sm:p-3 rounded-xl border border-white/5">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-muted/40 dark:bg-black/25 p-2.5 sm:p-3 rounded-xl border border-border/70 dark:border-white/5">
                                     {/* 1. โครงการ */}
                                     <div>
-                                        <label className="text-[11px] text-white/60 font-semibold mb-1 flex items-center gap-1.5">
-                                            <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                        <label className="text-[11px] text-muted-foreground dark:text-white/60 font-semibold mb-1 flex items-center gap-1.5">
+                                            <Building2 className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
                                             โครงการที่ปฏิบัติงาน
                                         </label>
                                         <div className="relative">
@@ -811,34 +811,34 @@ export function JobSheetForm({
                                                         });
                                                     }
                                                 }}
-                                                className={`w-full text-xs font-semibold px-3 py-1.5 rounded-lg border appearance-none pr-8 focus:outline-none transition-all truncate h-9 cursor-pointer [color-scheme:dark] ${
+                                                className={`w-full text-xs font-semibold px-3 py-1.5 rounded-lg border appearance-none pr-8 focus:outline-none transition-all truncate h-9 cursor-pointer ${
                                                     isGeneral
-                                                        ? "bg-zinc-900 text-zinc-200 border-zinc-700 focus:border-zinc-500"
-                                                        : "bg-amber-500/10 text-amber-300 border-amber-500/30 focus:border-amber-400"
+                                                        ? "bg-background text-foreground border-border dark:bg-zinc-900 dark:text-zinc-200 dark:border-zinc-700 focus:border-amber-500"
+                                                        : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 focus:border-amber-400"
                                                 }`}
                                             >
-                                                <option value="" className="bg-zinc-900 text-zinc-100 py-1">-- โครงการหลัก / ตามฟอร์ม --</option>
-                                                <optgroup label="🏢 โครงการก่อสร้าง" className="bg-zinc-950 text-zinc-400 font-bold">
+                                                <option value="" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 py-1">-- โครงการหลัก / ตามฟอร์ม --</option>
+                                                <optgroup label="🏢 โครงการก่อสร้าง" className="bg-muted text-muted-foreground dark:bg-zinc-950 dark:text-zinc-400 font-bold">
                                                     {projects.map((p) => (
-                                                        <option key={p.id} value={p.id} className="bg-zinc-900 text-zinc-100 py-1">
+                                                        <option key={p.id} value={p.id} className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 py-1">
                                                             🏢 {p.name}
                                                         </option>
                                                     ))}
                                                 </optgroup>
-                                                <optgroup label="📦 งานทั่วไป / ไม่ระบุโครงการ" className="bg-zinc-950 text-zinc-400 font-bold">
-                                                    <option value="general" className="bg-zinc-900 text-zinc-100 py-1">📦 งานทั่วไป / ธุรการ / ออฟฟิศ</option>
-                                                    <option value="procurement" className="bg-zinc-900 text-zinc-100 py-1">🚚 จัดซื้อ / จัดส่งวัสดุ</option>
-                                                    <option value="workshop" className="bg-zinc-900 text-zinc-100 py-1">🏭 โรงงาน / โกดัง / ซ่อมบำรุง</option>
+                                                <optgroup label="📦 งานทั่วไป / ไม่ระบุโครงการ" className="bg-muted text-muted-foreground dark:bg-zinc-950 dark:text-zinc-400 font-bold">
+                                                    <option value="general" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 py-1">📦 งานทั่วไป / ธุรการ / ออฟฟิศ</option>
+                                                    <option value="procurement" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 py-1">🚚 จัดซื้อ / จัดส่งวัสดุ</option>
+                                                    <option value="workshop" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 py-1">🏭 โรงงาน / โกดัง / ซ่อมบำรุง</option>
                                                 </optgroup>
                                             </select>
-                                            <ChevronDown className="w-3.5 h-3.5 text-white/40 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground dark:text-white/40 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                                         </div>
                                     </div>
 
                                     {/* 2. ช่วงเวลาทำงาน */}
                                     <div>
-                                        <label className="text-[11px] text-white/60 font-semibold mb-1 flex items-center gap-1.5">
-                                            <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                        <label className="text-[11px] text-muted-foreground dark:text-white/60 font-semibold mb-1 flex items-center gap-1.5">
+                                            <Clock className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
                                             ช่วงเวลาทำงาน
                                         </label>
                                         <div className="flex items-center gap-1.5">
@@ -847,7 +847,7 @@ export function JobSheetForm({
                                                 placeholder="เช่น ช่วงเช้า, 09:00 - 12:00"
                                                 value={item.timeSlot || ""}
                                                 onChange={(e) => updateWorkItem(item.id, "timeSlot", e.target.value)}
-                                                className="bg-zinc-950 border-white/10 focus:border-amber-400 text-white text-xs h-9 flex-1 placeholder:text-white/30"
+                                                className="bg-background dark:bg-zinc-950 border-border dark:border-white/10 focus:border-amber-500 text-foreground dark:text-white text-xs h-9 flex-1 placeholder:text-muted-foreground/40"
                                             />
                                             <div className="relative shrink-0">
                                                 <select
@@ -857,20 +857,20 @@ export function JobSheetForm({
                                                             updateWorkItem(item.id, "timeSlot", e.target.value);
                                                         }
                                                     }}
-                                                    className="bg-zinc-800 hover:bg-zinc-700 text-white/80 text-xs rounded-lg px-2.5 h-9 appearance-none focus:outline-none cursor-pointer border border-white/10 font-semibold transition-colors pr-6 [color-scheme:dark]"
+                                                    className="bg-muted hover:bg-muted/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-foreground/80 dark:text-white/80 text-xs rounded-lg px-2.5 h-9 appearance-none focus:outline-none cursor-pointer border border-border dark:border-white/10 font-semibold transition-colors pr-6"
                                                     title="เลือกช่วงเวลาด่วน"
                                                 >
-                                                    <option value="" className="bg-zinc-900 text-zinc-100">+ เวลาด่วน</option>
-                                                    <option value="ทั้งวัน" className="bg-zinc-900 text-zinc-100">⏱️ ทั้งวัน</option>
-                                                    <option value="ช่วงเช้า" className="bg-zinc-900 text-zinc-100">🌅 ช่วงเช้า</option>
-                                                    <option value="ช่วงบ่าย" className="bg-zinc-900 text-zinc-100">☀️ ช่วงบ่าย</option>
-                                                    <option value="ช่วงเย็น" className="bg-zinc-900 text-zinc-100">🌆 ช่วงเย็น</option>
-                                                    <option value="ล่วงเวลา (OT)" className="bg-zinc-900 text-zinc-100">🌙 ล่วงเวลา (OT)</option>
-                                                    <option value="09:00 - 12:00" className="bg-zinc-900 text-zinc-100">09:00 - 12:00</option>
-                                                    <option value="13:00 - 16:30" className="bg-zinc-900 text-zinc-100">13:00 - 16:30</option>
-                                                    <option value="09:00 - 17:00" className="bg-zinc-900 text-zinc-100">09:00 - 17:00</option>
+                                                    <option value="" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100">+ เวลาด่วน</option>
+                                                    <option value="ทั้งวัน" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100">⏱️ ทั้งวัน</option>
+                                                    <option value="ช่วงเช้า" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100">🌅 ช่วงเช้า</option>
+                                                    <option value="ช่วงบ่าย" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100">☀️ ช่วงบ่าย</option>
+                                                    <option value="ช่วงเย็น" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100">🌆 ช่วงเย็น</option>
+                                                    <option value="ล่วงเวลา (OT)" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100">🌙 ล่วงเวลา (OT)</option>
+                                                    <option value="09:00 - 12:00" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100">09:00 - 12:00</option>
+                                                    <option value="13:00 - 16:30" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100">13:00 - 16:30</option>
+                                                    <option value="09:00 - 17:00" className="bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100">09:00 - 17:00</option>
                                                 </select>
-                                                <ChevronDown className="w-3 h-3 text-white/40 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                <ChevronDown className="w-3 h-3 text-muted-foreground dark:text-white/40 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                                             </div>
                                         </div>
                                         {/* Quick Clickable Chips */}
@@ -883,8 +883,8 @@ export function JobSheetForm({
                                                     className={cn(
                                                         "text-[10px] px-2 py-0.5 rounded-md border transition-all cursor-pointer",
                                                         item.timeSlot === preset
-                                                            ? "bg-amber-500/25 text-amber-300 border-amber-500/50 font-bold"
-                                                            : "bg-white/5 text-white/50 border-white/5 hover:bg-white/10 hover:text-white"
+                                                            ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 font-bold"
+                                                            : "bg-muted/60 dark:bg-white/5 text-muted-foreground dark:text-white/50 border-border/60 dark:border-white/5 hover:bg-muted hover:text-foreground dark:hover:text-white"
                                                     )}
                                                 >
                                                     {preset}
@@ -899,11 +899,11 @@ export function JobSheetForm({
                                     {/* 1. หัวข้องาน */}
                                     <div>
                                         <div className="flex items-center justify-between mb-1.5">
-                                            <label className="text-xs text-amber-300/90 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                            <label className="text-xs text-amber-700 dark:text-amber-300/90 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400" />
                                                 หัวข้องาน *
                                             </label>
-                                            <span className="text-[10px] text-white/40">
+                                            <span className="text-[10px] text-muted-foreground dark:text-white/40">
                                                 (ชื่องานหลัก สั้น กระชับ)
                                             </span>
                                         </div>
@@ -912,7 +912,7 @@ export function JobSheetForm({
                                             placeholder="เช่น แก้เอกสารและเพิ่มงวดงาน, เทคอนกรีตเสา-คาน, ตรวจงานสถาปัตย์"
                                             value={item.task}
                                             onChange={(e) => updateWorkItem(item.id, "task", e.target.value)}
-                                            className="w-full bg-zinc-950 border-white/15 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-sm font-semibold placeholder:text-white/25 h-10 rounded-xl"
+                                            className="w-full bg-background dark:bg-zinc-950 border-border dark:border-white/15 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 text-foreground dark:text-white text-base sm:text-sm font-semibold placeholder:text-muted-foreground/40 h-10 rounded-xl"
                                             required
                                         />
                                     </div>
@@ -920,7 +920,7 @@ export function JobSheetForm({
                                     {/* 2. รายละเอียดงาน / ข้อย่อย */}
                                     <div>
                                         <div className="flex items-center justify-between mb-1.5">
-                                            <label className="text-xs text-white/70 font-semibold flex items-center gap-1.5">
+                                            <label className="text-xs text-foreground/80 dark:text-white/70 font-semibold flex items-center gap-1.5">
                                                 รายละเอียดงาน / ข้อย่อย (ถ้ามี)
                                             </label>
                                             <div className="flex items-center gap-2">
@@ -931,11 +931,11 @@ export function JobSheetForm({
                                                         const next = current ? (current.endsWith("\n") ? `${current}- ` : `${current}\n- `) : "- ";
                                                         updateWorkItem(item.id, "details", next);
                                                     }}
-                                                    className="text-[11px] text-amber-400/90 hover:text-amber-300 bg-amber-400/10 hover:bg-amber-400/20 px-2 py-0.5 rounded border border-amber-400/20 transition-colors"
+                                                    className="text-[11px] text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/20 transition-colors cursor-pointer"
                                                 >
                                                     + เพิ่มข้อย่อย (-)
                                                 </button>
-                                                <span className="text-[10px] text-white/40 hidden sm:inline">
+                                                <span className="text-[10px] text-muted-foreground dark:text-white/40 hidden sm:inline">
                                                     (Enter ขึ้นบรรทัดใหม่)
                                                 </span>
                                             </div>
@@ -945,7 +945,7 @@ export function JobSheetForm({
                                             placeholder={`เช่น:\n- แบ่งเป็น 3 งวดงานตามที่ลูกค้าขอ\n- ปรับปรุงตารางเวลาและสรุปยอดงวดงาน`}
                                             value={item.details || ""}
                                             onChange={(e) => updateWorkItem(item.id, "details", e.target.value)}
-                                            className="w-full bg-zinc-950 border border-white/15 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 rounded-xl p-3 text-white text-base sm:text-sm font-normal placeholder:text-white/20 focus:outline-none transition-all resize-y min-h-[85px] leading-relaxed shadow-inner"
+                                            className="w-full bg-background dark:bg-zinc-950 border border-border dark:border-white/15 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 rounded-xl p-3 text-foreground dark:text-white text-base sm:text-sm font-normal placeholder:text-muted-foreground/40 focus:outline-none transition-all resize-y min-h-[85px] leading-relaxed shadow-2xs dark:shadow-inner"
                                         />
                                     </div>
                                 </div>
@@ -953,34 +953,34 @@ export function JobSheetForm({
                                 {/* LOCATION & QUANTITY (2-Column Grid on Mobile) */}
                                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                                     <div>
-                                        <label className="text-[10px] text-white/50 block mb-1 font-medium">พื้นที่ / โซน</label>
+                                        <label className="text-[10px] text-muted-foreground dark:text-white/50 block mb-1 font-medium">พื้นที่ / โซน</label>
                                         <Input
                                             placeholder="เช่น ชั้น 2, ออฟฟิศ"
                                             value={item.location}
                                             onChange={(e) => updateWorkItem(item.id, "location", e.target.value)}
-                                            className="bg-zinc-950 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-xs h-10 sm:h-9 placeholder:text-white/30"
+                                            className="bg-background dark:bg-zinc-950 border-border dark:border-white/10 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 text-foreground dark:text-white text-base sm:text-xs h-10 sm:h-9 placeholder:text-muted-foreground/40"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-white/50 block mb-1 font-medium">ปริมาณงาน (ถ้ามี)</label>
+                                        <label className="text-[10px] text-muted-foreground dark:text-white/50 block mb-1 font-medium">ปริมาณงาน (ถ้ามี)</label>
                                         <Input
                                             placeholder="เช่น 15 ตร.ม., 10 จุด, 1 ชุด"
                                             value={item.quantity}
                                             onChange={(e) => updateWorkItem(item.id, "quantity", e.target.value)}
-                                            className="bg-zinc-950 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-xs h-10 sm:h-9 placeholder:text-white/30"
+                                            className="bg-background dark:bg-zinc-950 border-border dark:border-white/10 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 text-foreground dark:text-white text-base sm:text-xs h-10 sm:h-9 placeholder:text-muted-foreground/40"
                                         />
                                     </div>
                                 </div>
 
                                 {/* STATUS (4 Tap Buttons on Mobile - No Clunky Select!) */}
                                 <div>
-                                    <label className="text-[10px] text-white/40 block mb-1 font-medium">สถานะของงานนี้</label>
+                                    <label className="text-[10px] text-muted-foreground dark:text-white/40 block mb-1 font-medium">สถานะของงานนี้</label>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                                         {[
-                                            { key: "completed", label: "เสร็จสิ้น", icon: Check, activeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/50" },
-                                            { key: "in_progress", label: "กำลังดำเนินการ", icon: Clock, activeClass: "bg-blue-500/20 text-blue-300 border-blue-500/50" },
-                                            { key: "pending", label: "รอดำเนินการ", icon: Clock, activeClass: "bg-amber-500/20 text-amber-300 border-amber-500/50" },
-                                            { key: "delayed", label: "ติดปัญหา/ล่าช้า", icon: AlertTriangle, activeClass: "bg-rose-500/20 text-rose-300 border-rose-500/50" }
+                                            { key: "completed", label: "เสร็จสิ้น", icon: Check, activeClass: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40" },
+                                            { key: "in_progress", label: "กำลังดำเนินการ", icon: Clock, activeClass: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/40" },
+                                            { key: "pending", label: "รอดำเนินการ", icon: Clock, activeClass: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40" },
+                                            { key: "delayed", label: "ติดปัญหา/ล่าช้า", icon: AlertTriangle, activeClass: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/40" }
                                         ].map((st) => {
                                             const isActive = item.status === st.key;
                                             return (
@@ -988,10 +988,10 @@ export function JobSheetForm({
                                                     key={st.key}
                                                     type="button"
                                                     onClick={() => updateWorkItem(item.id, "status", st.key)}
-                                                    className={`h-8 px-2 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 border transition-all ${
+                                                    className={`h-8 px-2 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 border transition-all cursor-pointer ${
                                                         isActive
-                                                            ? st.activeClass + " shadow-sm"
-                                                            : "bg-zinc-950/60 text-white/40 border-white/5 hover:text-white hover:bg-white/5"
+                                                            ? st.activeClass + " shadow-2xs font-bold"
+                                                            : "bg-muted/60 dark:bg-zinc-950/60 text-muted-foreground dark:text-white/40 border-border/60 dark:border-white/5 hover:text-foreground dark:hover:text-white hover:bg-muted"
                                                     }`}
                                                 >
                                                     <st.icon className="w-3 h-3" />
@@ -1008,7 +1008,7 @@ export function JobSheetForm({
                                         placeholder="หมายเหตุเพิ่มเติมสำหรับงานนี้ (ถ้ามี)..."
                                         value={item.notes || ""}
                                         onChange={(e) => updateWorkItem(item.id, "notes", e.target.value)}
-                                        className="bg-zinc-950/60 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white/90 text-base sm:text-xs h-10 sm:h-8 placeholder:text-white/25"
+                                        className="bg-background dark:bg-zinc-950/60 border-border dark:border-white/10 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 text-foreground dark:text-white/90 text-base sm:text-xs h-10 sm:h-8 placeholder:text-muted-foreground/40"
                                     />
                                 </div>
                             </div>
@@ -1020,7 +1020,7 @@ export function JobSheetForm({
                 <button
                     type="button"
                     onClick={() => addWorkItem()}
-                    className="w-full py-3.5 px-4 rounded-2xl border-2 border-dashed border-amber-500/40 hover:border-amber-500/80 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.99] shadow-sm"
+                    className="w-full py-3.5 px-4 rounded-2xl border-2 border-dashed border-amber-500/40 hover:border-amber-500/80 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.99] shadow-2xs cursor-pointer"
                 >
                     <Plus className="w-4 h-4 stroke-[3]" />
                     เพิ่มงานถัดไปในวันนี้ (+ Add Job)
@@ -1028,13 +1028,13 @@ export function JobSheetForm({
             </div>
 
             {/* SIGNATURE & REPORTER META (Compact & Focused on Document Sign-off) */}
-            <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-4 space-y-3 shadow-md">
+            <div className="bg-card dark:bg-zinc-900/60 border border-border dark:border-white/10 rounded-2xl p-4 space-y-3 shadow-xs">
                 <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <Shield className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-bold text-foreground dark:text-white flex items-center gap-1.5">
+                        <Shield className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                         ข้อมูลผู้จัดทำและลงนามท้ายแผ่น (Signatures)
                     </span>
-                    <label className="cursor-pointer text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1">
+                    <label className="cursor-pointer text-[11px] text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 flex items-center gap-1 font-medium">
                         <Upload className="w-3.5 h-3.5" />
                         <span>{photos.length > 0 ? `${photos.length} รูปถ่าย` : "+ แนบรูปหน้างาน (ถ้ามี)"}</span>
                         <input
@@ -1049,47 +1049,47 @@ export function JobSheetForm({
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     <div>
-                        <label className="text-[10px] text-white/50 block mb-1 font-medium">ชื่อผู้รายงาน *</label>
+                        <label className="text-[10px] text-muted-foreground dark:text-white/50 block mb-1 font-medium">ชื่อผู้รายงาน *</label>
                         <Input
                             value={reportedBy}
                             onChange={(e) => setReportedBy(e.target.value)}
                             placeholder="เช่น เบียร์"
-                            className="bg-zinc-950 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-xs h-10 sm:h-9 font-medium"
+                            className="bg-background dark:bg-zinc-950 border-border dark:border-white/10 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 text-foreground dark:text-white text-base sm:text-xs h-10 sm:h-9 font-medium"
                             required
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-white/50 block mb-1 font-medium">ตำแหน่ง *</label>
+                        <label className="text-[10px] text-muted-foreground dark:text-white/50 block mb-1 font-medium">ตำแหน่ง *</label>
                         <Input
                             value={reportedByRole}
                             onChange={(e) => setReportedByRole(e.target.value)}
                             placeholder="เช่น ผู้ดูแลหน้างาน"
-                            className="bg-zinc-950 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-xs h-10 sm:h-9 font-medium"
+                            className="bg-background dark:bg-zinc-950 border-border dark:border-white/10 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 text-foreground dark:text-white text-base sm:text-xs h-10 sm:h-9 font-medium"
                             required
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-white/50 block mb-1 font-medium">ผู้ตรวจสอบ / วิศวกรโครงการ</label>
+                        <label className="text-[10px] text-muted-foreground dark:text-white/50 block mb-1 font-medium">ผู้ตรวจสอบ / วิศวกรโครงการ</label>
                         <Input
                             placeholder="เช่น นายช่างสมศักดิ์ (ถ้ามี)"
                             value={inspectedBy}
                             onChange={(e) => setInspectedBy(e.target.value)}
-                            className="bg-zinc-950 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-xs h-10 sm:h-9 placeholder:text-white/30"
+                            className="bg-background dark:bg-zinc-950 border-border dark:border-white/10 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 text-foreground dark:text-white text-base sm:text-xs h-10 sm:h-9 placeholder:text-muted-foreground/40"
                         />
                     </div>
                 </div>
 
                 {/* Photos thumbnails if uploaded */}
                 {photos.length > 0 && (
-                    <div className="pt-2 border-t border-white/5">
+                    <div className="pt-2 border-t border-border/60 dark:border-white/5">
                         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                             {photos.map((src, idx) => (
-                                <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border border-white/10 group bg-black">
+                                <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border border-border dark:border-white/10 group bg-muted dark:bg-black shadow-2xs">
                                     <img src={src} alt="site" className="w-full h-full object-cover" />
                                     <button
                                         type="button"
                                         onClick={() => removePhoto(idx)}
-                                        className="absolute top-1 right-1 p-0.5 rounded-full bg-black/80 text-white hover:bg-rose-500 transition-colors"
+                                        className="absolute top-1 right-1 p-0.5 rounded-full bg-black/70 text-white hover:bg-rose-500 transition-colors cursor-pointer"
                                     >
                                         <X className="w-3 h-3" />
                                     </button>
@@ -1101,9 +1101,9 @@ export function JobSheetForm({
             </div>
 
             {/* Bottom Submit Actions (Both Desktop & Mobile, Safe from Mobile Navbar!) */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-4 pb-28 sm:pb-8 border-t border-white/10">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-4 pb-28 sm:pb-8 border-t border-border dark:border-white/10">
                 <div className="flex items-center justify-between sm:justify-start gap-2">
-                    <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/15 px-2.5 py-1.5 rounded-xl border border-amber-500/20 sm:hidden">
+                    <span className="text-xs font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-500/15 px-2.5 py-1.5 rounded-xl border border-amber-500/20 sm:hidden">
                         รวม {workItems.length} งาน
                     </span>
                     {onCancel && (
@@ -1111,7 +1111,7 @@ export function JobSheetForm({
                             type="button"
                             variant="outline"
                             onClick={onCancel}
-                            className="border-white/10 text-white/70 hover:bg-white/5 h-10 px-4 text-xs"
+                            className="border-border dark:border-white/10 text-muted-foreground hover:text-foreground hover:bg-muted dark:text-white/70 dark:hover:bg-white/5 h-10 px-4 text-xs cursor-pointer"
                         >
                             ยกเลิก
                         </Button>
@@ -1120,7 +1120,7 @@ export function JobSheetForm({
                         type="button"
                         variant="outline"
                         onClick={handleTriggerPreview}
-                        className="flex-1 sm:flex-initial border-amber-500/30 text-amber-400 hover:bg-amber-500/10 h-10 px-4 text-xs font-medium"
+                        className="flex-1 sm:flex-initial border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 h-10 px-4 text-xs font-medium cursor-pointer"
                     >
                         <Eye className="w-4 h-4 mr-1.5" />
                         ดูตัวอย่าง Sheet / พิมพ์
@@ -1130,7 +1130,7 @@ export function JobSheetForm({
                 <Button
                     type="submit"
                     disabled={isSaving}
-                    className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-black font-extrabold shadow-lg shadow-amber-500/20 px-6 h-11 text-sm rounded-xl active:scale-[0.99]"
+                    className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-black font-extrabold shadow-md shadow-amber-500/20 px-6 h-11 text-sm rounded-xl active:scale-[0.99] cursor-pointer"
                 >
                     <Save className="w-4 h-4 mr-1.5 stroke-[2.5]" />
                     {isSaving ? "กำลังบันทึก..." : "บันทึก JobSheet"}

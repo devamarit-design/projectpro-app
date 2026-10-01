@@ -425,19 +425,19 @@ export default function JobSheetsPage() {
         <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8 max-w-7xl animate-in fade-in duration-500 pb-32 md:pb-12">
             {/* Header Banner (Shown only in List view for focused writing/editing) */}
             {activeTab === "list" && (
-                <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black p-6 sm:p-8 shadow-2xl">
+                <div className="relative overflow-hidden rounded-3xl border border-amber-500/20 dark:border-white/10 bg-gradient-to-br from-amber-500/10 via-amber-50/40 to-white dark:from-zinc-900 dark:via-zinc-950 dark:to-black p-6 sm:p-8 shadow-xs dark:shadow-2xl">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
                     
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="space-y-2">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold uppercase tracking-wider">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/25 text-amber-700 dark:text-amber-400 text-xs font-semibold uppercase tracking-wider">
                                 <FileText className="w-3.5 h-3.5" />
                                 Daily Construction Log & Sheet
                             </div>
-                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-                                JobSheet <span className="text-amber-400 font-mono">/</span> Daily Report
+                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground dark:text-white tracking-tight">
+                                JobSheet <span className="text-amber-500 dark:text-amber-400 font-mono">/</span> Daily Report
                             </h1>
-                            <p className="text-sm text-white/60 max-w-2xl leading-relaxed">
+                            <p className="text-sm text-muted-foreground dark:text-white/60 max-w-2xl leading-relaxed">
                                 ระบบบันทึกงานประจำวันหน้างาน รายการงานที่ทำ สภาพอากาศ และดาวน์โหลดเป็น A4 JobSheet ในรูปแบบ PDF หรือภาพความละเอียดสูง (PNG) ส่งเข้า LINE หรือลูกค้าง่ายๆ
                             </p>
                         </div>
@@ -448,7 +448,7 @@ export default function JobSheetsPage() {
                                     setEditingSheet(null);
                                     setActiveTab("create");
                                 }}
-                                className="bg-amber-500 hover:bg-amber-600 text-black font-bold shadow-lg shadow-amber-500/25 px-5 h-11 rounded-xl"
+                                className="bg-amber-500 hover:bg-amber-600 text-black font-bold shadow-md shadow-amber-500/25 px-5 h-11 rounded-xl cursor-pointer"
                             >
                                 <Plus className="w-4 h-4 mr-1.5 stroke-[3]" />
                                 เขียน JobSheet วันนี้
@@ -457,56 +457,56 @@ export default function JobSheetsPage() {
                     </div>
 
                     {/* Quick Stats Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t border-white/10">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t border-amber-500/15 dark:border-white/10">
                         {isAdminOrOwner ? (
                             <>
-                                <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                                    <span className="text-xs text-white/50 block mb-1">รายงานทั้งหมดในระบบ</span>
+                                <div className="bg-card/90 dark:bg-zinc-900/60 border border-border/80 dark:border-white/5 rounded-2xl p-4 shadow-2xs dark:shadow-none">
+                                    <span className="text-xs text-muted-foreground dark:text-white/50 block mb-1 font-medium">รายงานทั้งหมดในระบบ</span>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-2xl font-black text-white font-mono">{totalReports}</span>
-                                        <span className="text-xs text-amber-400/80">ฉบับ</span>
+                                        <span className="text-2xl font-black text-foreground dark:text-white font-mono">{totalReports}</span>
+                                        <span className="text-xs text-amber-600 dark:text-amber-400/80 font-medium">ฉบับ</span>
                                     </div>
                                 </div>
 
-                                <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                                    <span className="text-xs text-white/50 block mb-1">รายงานของฉัน</span>
+                                <div className="bg-card/90 dark:bg-zinc-900/60 border border-border/80 dark:border-white/5 rounded-2xl p-4 shadow-2xs dark:shadow-none">
+                                    <span className="text-xs text-muted-foreground dark:text-white/50 block mb-1 font-medium">รายงานของฉัน</span>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-2xl font-black text-amber-400 font-mono">{myReportsCount}</span>
-                                        <span className="text-xs text-white/40">ฉบับ</span>
+                                        <span className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">{myReportsCount}</span>
+                                        <span className="text-xs text-muted-foreground/80 dark:text-white/40">ฉบับ</span>
                                     </div>
                                 </div>
                             </>
                         ) : (
                             <>
-                                <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                                    <span className="text-xs text-white/50 block mb-1">รายงานของฉัน</span>
+                                <div className="bg-card/90 dark:bg-zinc-900/60 border border-border/80 dark:border-white/5 rounded-2xl p-4 shadow-2xs dark:shadow-none">
+                                    <span className="text-xs text-muted-foreground dark:text-white/50 block mb-1 font-medium">รายงานของฉัน</span>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-2xl font-black text-amber-400 font-mono">{myReportsCount}</span>
-                                        <span className="text-xs text-white/40">ฉบับ</span>
+                                        <span className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">{myReportsCount}</span>
+                                        <span className="text-xs text-muted-foreground/80 dark:text-white/40">ฉบับ</span>
                                     </div>
                                 </div>
 
-                                <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                                    <span className="text-xs text-white/50 block mb-1">สิทธิ์การเข้าถึง</span>
+                                <div className="bg-card/90 dark:bg-zinc-900/60 border border-border/80 dark:border-white/5 rounded-2xl p-4 shadow-2xs dark:shadow-none">
+                                    <span className="text-xs text-muted-foreground dark:text-white/50 block mb-1 font-medium">สิทธิ์การเข้าถึง</span>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-sm font-bold text-amber-400">เฉพาะของคุณ</span>
-                                        <span className="text-[10px] text-white/40">(ส่วนบุคคล)</span>
+                                        <span className="text-sm font-bold text-amber-600 dark:text-amber-400">เฉพาะของคุณ</span>
+                                        <span className="text-[10px] text-muted-foreground/80 dark:text-white/40">(ส่วนบุคคล)</span>
                                     </div>
                                 </div>
                             </>
                         )}
 
-                        <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                            <span className="text-xs text-white/50 block mb-1">งานที่บันทึกสำเร็จ</span>
+                        <div className="bg-card/90 dark:bg-zinc-900/60 border border-border/80 dark:border-white/5 rounded-2xl p-4 shadow-2xs dark:shadow-none">
+                            <span className="text-xs text-muted-foreground dark:text-white/50 block mb-1 font-medium">งานที่บันทึกสำเร็จ</span>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-2xl font-black text-emerald-400 font-mono">{totalTasksDone}</span>
-                                <span className="text-xs text-white/40">รายการ</span>
+                                <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{totalTasksDone}</span>
+                                <span className="text-xs text-muted-foreground/80 dark:text-white/40">รายการ</span>
                             </div>
                         </div>
 
-                        <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                            <span className="text-xs text-white/50 block mb-1">โครงการล่าสุด</span>
-                            <span className="text-sm font-bold text-white truncate block">
+                        <div className="bg-card/90 dark:bg-zinc-900/60 border border-border/80 dark:border-white/5 rounded-2xl p-4 shadow-2xs dark:shadow-none">
+                            <span className="text-xs text-muted-foreground dark:text-white/50 block mb-1 font-medium">โครงการล่าสุด</span>
+                            <span className="text-sm font-bold text-foreground dark:text-white truncate block">
                                 {latestSheet ? latestSheet.projectName : "ยังไม่มีข้อมูล"}
                             </span>
                         </div>
@@ -543,19 +543,19 @@ export default function JobSheetsPage() {
             {activeTab === "list" && (
                 <div className="space-y-6">
                     {/* Filters & View Toolbar */}
-                    <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-zinc-900/40 border border-white/10 rounded-2xl p-4">
+                    <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-card dark:bg-zinc-900/40 border border-border dark:border-white/10 rounded-2xl p-4 shadow-xs">
                         {/* Left Controls: Scope (Mine/All) + View Mode (Grouped/Cards) */}
                         <div className="flex items-center gap-2 flex-wrap shrink-0">
                             {/* Scope Toggle: Mine vs All (Only accessible to Admin/Owner) */}
                             {isAdminOrOwner ? (
-                                <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-white/10 shrink-0">
+                                <div className="flex items-center gap-1 bg-muted dark:bg-zinc-950 p-1 rounded-xl border border-border dark:border-white/10 shrink-0">
                                     <button
                                         type="button"
                                         onClick={() => setFilterScope("mine")}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                                             filterScope === "mine"
-                                                ? "bg-amber-500 text-black shadow-md"
-                                                : "text-white/60 hover:text-white"
+                                                ? "bg-amber-500 text-black shadow-xs font-bold"
+                                                : "text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white"
                                         }`}
                                     >
                                         <UserCheck className="w-3.5 h-3.5 inline mr-1" />
@@ -566,8 +566,8 @@ export default function JobSheetsPage() {
                                         onClick={() => setFilterScope("all")}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                                             filterScope === "all"
-                                                ? "bg-amber-500 text-black shadow-md"
-                                                : "text-white/60 hover:text-white"
+                                                ? "bg-amber-500 text-black shadow-xs font-bold"
+                                                : "text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white"
                                         }`}
                                     >
                                         <Users className="w-3.5 h-3.5 inline mr-1" />
@@ -575,21 +575,21 @@ export default function JobSheetsPage() {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-1.5 bg-zinc-950 px-3.5 py-1.5 rounded-xl border border-white/10 text-xs font-semibold text-amber-400 shrink-0">
+                                <div className="flex items-center gap-1.5 bg-muted dark:bg-zinc-950 px-3.5 py-1.5 rounded-xl border border-border dark:border-white/10 text-xs font-semibold text-amber-700 dark:text-amber-400 shrink-0">
                                     <UserCheck className="w-3.5 h-3.5" />
                                     <span>รายงานของฉัน ({myReportsCount})</span>
                                 </div>
                             )}
 
                             {/* View Mode Toggle: Grouped by Month/Week vs Flat Cards */}
-                            <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-white/10 shrink-0">
+                            <div className="flex items-center gap-1 bg-muted dark:bg-zinc-950 p-1 rounded-xl border border-border dark:border-white/10 shrink-0">
                                 <button
                                     type="button"
                                     onClick={() => setViewMode("grouped")}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                                         viewMode === "grouped"
-                                            ? "bg-amber-500 text-black shadow-md font-bold"
-                                            : "text-white/60 hover:text-white"
+                                            ? "bg-amber-500 text-black shadow-xs font-bold"
+                                            : "text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white"
                                     }`}
                                     title="จัดเรียงแบ่งตามสัปดาห์และเดือน พร้อมออกเอกสารสรุป"
                                 >
@@ -601,8 +601,8 @@ export default function JobSheetsPage() {
                                     onClick={() => setViewMode("cards")}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                                         viewMode === "cards"
-                                            ? "bg-amber-500 text-black shadow-md font-bold"
-                                            : "text-white/60 hover:text-white"
+                                            ? "bg-amber-500 text-black shadow-xs font-bold"
+                                            : "text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white"
                                     }`}
                                     title="มุมมองการ์ดทั้งหมด"
                                 >
@@ -616,12 +616,12 @@ export default function JobSheetsPage() {
                         <div className="flex flex-wrap items-center gap-2.5 flex-1 max-w-2xl justify-end">
                             {/* Search input */}
                             <div className="relative flex-1 min-w-[200px]">
-                                <Search className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
+                                <Search className="w-4 h-4 text-muted-foreground/60 dark:text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <Input
                                     placeholder="ค้นหาชื่องาน, โครงการ, เลขที่..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9 bg-zinc-950 border-white/10 text-white text-xs h-9"
+                                    className="pl-9 bg-background dark:bg-zinc-950 border-border dark:border-white/10 text-foreground dark:text-white text-xs h-9"
                                 />
                             </div>
 
@@ -629,7 +629,7 @@ export default function JobSheetsPage() {
                             <select
                                 value={selectedProjectFilter}
                                 onChange={(e) => setSelectedProjectFilter(e.target.value)}
-                                className="h-9 px-3 rounded-lg bg-zinc-950 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
+                                className="h-9 px-3 rounded-lg bg-background dark:bg-zinc-950 border border-border dark:border-white/10 text-foreground dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
                             >
                                 <option value="all">ทุกโครงการ & งานทั้งหมด</option>
                                 <option value="general">📦 งานทั่วไป / นอกโครงการ</option>
@@ -647,7 +647,7 @@ export default function JobSheetsPage() {
                                 type="date"
                                 value={selectedDateFilter}
                                 onChange={(e) => setSelectedDateFilter(e.target.value)}
-                                className="w-auto h-9 bg-zinc-950 border-white/10 text-white text-xs"
+                                className="w-auto h-9 bg-background dark:bg-zinc-950 border-border dark:border-white/10 text-foreground dark:text-white text-xs"
                             />
 
                             {(searchQuery || selectedProjectFilter !== "all" || selectedDateFilter) && (
@@ -659,7 +659,7 @@ export default function JobSheetsPage() {
                                         setSelectedProjectFilter("all");
                                         setSelectedDateFilter("");
                                     }}
-                                    className="h-9 text-xs text-white/60 hover:text-white"
+                                    className="h-9 text-xs text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white"
                                 >
                                     ล้างตัวกรอง
                                 </Button>
@@ -669,17 +669,17 @@ export default function JobSheetsPage() {
 
                     {/* JobSheets Content Area */}
                     {isLoading ? (
-                        <div className="p-12 text-center text-white/40 text-sm">
+                        <div className="p-12 text-center text-muted-foreground text-sm">
                             กำลังโหลดรายการ JobSheet...
                         </div>
                     ) : filteredSheets.length === 0 ? (
-                        <div className="border border-dashed border-white/10 rounded-3xl p-12 text-center space-y-4">
-                            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-amber-400">
-                                <FileText className="w-8 h-8 opacity-60" />
+                        <div className="border border-dashed border-border dark:border-white/10 rounded-3xl p-12 text-center space-y-4 bg-muted/20 dark:bg-transparent">
+                            <div className="w-16 h-16 rounded-2xl bg-muted dark:bg-white/5 border border-border dark:border-white/10 flex items-center justify-center mx-auto text-amber-500 dark:text-amber-400 shadow-2xs">
+                                <FileText className="w-8 h-8 opacity-70" />
                             </div>
                             <div className="space-y-1">
-                                <h3 className="text-base font-bold text-white">ยังไม่มีบันทึก JobSheet</h3>
-                                <p className="text-xs text-white/50 max-w-sm mx-auto">
+                                <h3 className="text-base font-bold text-foreground dark:text-white">ยังไม่มีบันทึก JobSheet</h3>
+                                <p className="text-xs text-muted-foreground dark:text-white/50 max-w-sm mx-auto">
                                     {filterScope === "mine"
                                         ? "คุณยังไม่ได้เขียนรายงาน JobSheet ประจำวัน กดปุ่มด้านล่างเพื่อเริ่มสร้างฉบับแรกได้ทันที"
                                         : "ยังไม่มีใครสร้างรายงานในระบบสำหรับตัวกรองนี้"}
@@ -687,7 +687,7 @@ export default function JobSheetsPage() {
                             </div>
                             <Button
                                 onClick={() => setActiveTab("create")}
-                                className="bg-amber-500 hover:bg-amber-600 text-black font-semibold text-xs"
+                                className="bg-amber-500 hover:bg-amber-600 text-black font-semibold text-xs cursor-pointer shadow-xs"
                             >
                                 <Plus className="w-3.5 h-3.5 mr-1.5" />
                                 สร้าง JobSheet ใหม่
@@ -699,14 +699,14 @@ export default function JobSheetsPage() {
                             {monthGroups.map((monthGroup) => (
                                 <div key={monthGroup.monthKey} className="space-y-6">
                                     {/* Month Header Banner */}
-                                    <div className="flex items-center justify-between border-b border-white/10 pb-3 pt-2">
+                                    <div className="flex items-center justify-between border-b border-border dark:border-white/10 pb-3 pt-2">
                                         <div className="flex items-center gap-2.5">
-                                            <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                                            <div className="p-2 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 dark:border-amber-500/30 text-amber-600 dark:text-amber-400">
                                                 <Calendar className="w-4 h-4" />
                                             </div>
-                                            <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
+                                            <h2 className="text-lg sm:text-xl font-black text-foreground dark:text-white tracking-tight flex items-center gap-2">
                                                 {monthGroup.monthLabel}
-                                                <span className="text-xs font-mono font-medium text-white/50 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
+                                                <span className="text-xs font-mono font-medium text-muted-foreground dark:text-white/50 bg-muted dark:bg-white/5 px-2.5 py-0.5 rounded-full border border-border dark:border-white/10">
                                                     {monthGroup.totalSheets} ฉบับ
                                                 </span>
                                             </h2>
@@ -718,36 +718,36 @@ export default function JobSheetsPage() {
                                         {monthGroup.weeks.map((week) => (
                                             <div key={week.weekKey} className="space-y-4">
                                                 {/* Week Divider & Action Bar */}
-                                                <div className="bg-gradient-to-r from-zinc-900/90 via-zinc-900/60 to-zinc-950/80 border border-white/10 hover:border-amber-500/30 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl transition-all relative overflow-hidden group">
+                                                <div className="bg-card dark:bg-gradient-to-r dark:from-zinc-900/90 dark:via-zinc-900/60 dark:to-zinc-950/80 border border-border dark:border-white/10 hover:border-amber-500/40 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs hover:shadow-md transition-all relative overflow-hidden group">
                                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500" />
 
                                                     <div className="flex flex-col gap-2 pl-2">
                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                            <span className="text-xs font-black text-amber-400 bg-amber-500/15 px-2.5 py-1 rounded-lg border border-amber-500/30 font-mono">
+                                                            <span className="text-xs font-black text-amber-700 dark:text-amber-400 bg-amber-500/15 px-2.5 py-1 rounded-lg border border-amber-500/30 font-mono">
                                                                 {week.weekLabel}
                                                             </span>
                                                             {week.isCurrentWeek && (
-                                                                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30 animate-pulse">
+                                                                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30 animate-pulse">
                                                                     สัปดาห์นี้
                                                                 </span>
                                                             )}
-                                                            <span className="text-xs sm:text-sm font-bold text-white/80">
+                                                            <span className="text-xs sm:text-sm font-bold text-foreground/85 dark:text-white/80">
                                                                 {week.dateRangeLabel}
                                                             </span>
                                                         </div>
 
                                                         {/* Mini Stats Badges */}
-                                                        <div className="flex items-center gap-2 flex-wrap text-xs text-white/70">
-                                                            <span className="inline-flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-lg border border-white/5 font-medium">
-                                                                <FileText className="w-3.5 h-3.5 text-amber-400" />
+                                                        <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground dark:text-white/70">
+                                                            <span className="inline-flex items-center gap-1.5 bg-muted/70 dark:bg-black/40 px-2.5 py-1 rounded-lg border border-border/70 dark:border-white/5 font-medium text-foreground/80 dark:text-white/80">
+                                                                <FileText className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                                                                 <strong>{week.sheets.length}</strong> วันบันทึก
                                                             </span>
-                                                            <span className="inline-flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-lg border border-white/5 font-medium">
-                                                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                                            <span className="inline-flex items-center gap-1.5 bg-muted/70 dark:bg-black/40 px-2.5 py-1 rounded-lg border border-border/70 dark:border-white/5 font-medium text-foreground/80 dark:text-white/80">
+                                                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                                                 <strong>{week.totalTasksDone}/{week.totalTasks}</strong> งานสำเร็จ
                                                             </span>
                                                             {week.uniqueProjects.length > 0 && (
-                                                                <span className="text-white/40 truncate max-w-[240px] sm:max-w-md text-[11px]">
+                                                                <span className="text-muted-foreground dark:text-white/40 truncate max-w-[240px] sm:max-w-md text-[11px]">
                                                                     🏢 {week.uniqueProjects.join(" • ")}
                                                                 </span>
                                                             )}
@@ -759,7 +759,7 @@ export default function JobSheetsPage() {
                                                         <Button
                                                             type="button"
                                                             onClick={() => handleOpenWeeklySummary(week)}
-                                                            className="h-10 text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-extrabold px-4 sm:px-5 rounded-xl shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all cursor-pointer"
+                                                            className="h-10 text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-extrabold px-4 sm:px-5 rounded-xl shadow-md shadow-amber-500/20 active:scale-[0.98] transition-all cursor-pointer"
                                                         >
                                                             <FileText className="w-4 h-4 mr-2 stroke-[2.5]" />
                                                             ออกเอกสารสรุปสัปดาห์
@@ -777,16 +777,16 @@ export default function JobSheetsPage() {
                                                         return (
                                                             <div
                                                                 key={sheet.id}
-                                                                className="bg-zinc-900/60 border border-white/10 hover:border-amber-500/40 rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all duration-300 group shadow-lg hover:shadow-amber-500/5 relative overflow-hidden"
+                                                                className="bg-card dark:bg-zinc-900/60 border border-border dark:border-white/10 hover:border-amber-500/40 rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all duration-300 group shadow-xs hover:shadow-md dark:hover:shadow-amber-500/5 relative overflow-hidden"
                                                             >
                                                                 <div className="space-y-3">
                                                                     {/* Top Tag Row */}
                                                                     <div className="flex items-center justify-between gap-2">
-                                                                        <span className="font-mono text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                                                                        <span className="font-mono text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
                                                                             {sheet.reportNumber}
                                                                         </span>
-                                                                        <span className="text-[11px] text-white/50 flex items-center gap-1 font-mono">
-                                                                            <Calendar className="w-3 h-3 text-white/40" />
+                                                                        <span className="text-[11px] text-muted-foreground dark:text-white/50 flex items-center gap-1 font-mono">
+                                                                            <Calendar className="w-3 h-3 text-muted-foreground/70 dark:text-white/40" />
                                                                             {sheet.date}
                                                                         </span>
                                                                     </div>
@@ -795,31 +795,31 @@ export default function JobSheetsPage() {
                                                                     <div>
                                                                         <div className="flex items-center gap-1.5 flex-wrap mb-1">
                                                                             {sheet.isMultiProject && (
-                                                                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                                                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25 dark:border-amber-500/30">
                                                                                     🗂️ หลายโครงการ & งานทั่วไป
                                                                                 </span>
                                                                             )}
                                                                         </div>
-                                                                        <h3 className="font-bold text-white text-base group-hover:text-amber-300 transition-colors line-clamp-1">
+                                                                        <h3 className="font-bold text-card-foreground dark:text-white text-base group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors line-clamp-1">
                                                                             {sheet.title}
                                                                         </h3>
-                                                                        <p className="text-xs text-white/60 flex items-center gap-1.5 mt-0.5 truncate">
+                                                                        <p className="text-xs text-muted-foreground dark:text-white/60 flex items-center gap-1.5 mt-0.5 truncate">
                                                                             <Building2 className="w-3.5 h-3.5 text-primary shrink-0" />
                                                                             <span className="truncate">{sheet.projectName}</span>
                                                                             {sheet.subProjectName && (
-                                                                                <span className="text-white/40 truncate">({sheet.subProjectName})</span>
+                                                                                <span className="text-muted-foreground/70 dark:text-white/40 truncate">({sheet.subProjectName})</span>
                                                                             )}
                                                                         </p>
                                                                     </div>
 
                                                                     {/* Weather & Status Badges */}
                                                                     <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-white/70 border border-white/5">
-                                                                            <CloudSun className="w-3 h-3 text-amber-400" />
+                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/70 dark:bg-white/5 text-foreground/80 dark:text-white/70 border border-border/70 dark:border-white/5">
+                                                                            <CloudSun className="w-3 h-3 text-amber-500 dark:text-amber-400" />
                                                                             {sheet.weather?.condition ? sheet.weather.condition.split("(")[0].trim() : "แจ่มใส"}
                                                                             {sheet.weather?.temperature ? ` ${sheet.weather.temperature}°C` : ""}
                                                                         </span>
-                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                                                                             <CheckCircle2 className="w-3 h-3" />
                                                                             เสร็จ {completedCount}/{sheet.workItems?.length || 0}
                                                                         </span>
@@ -827,27 +827,27 @@ export default function JobSheetsPage() {
 
                                                                     {/* Work items snippet */}
                                                                     {sheet.workItems && sheet.workItems.length > 0 && (
-                                                                        <div className="bg-zinc-950/60 rounded-xl p-2.5 text-xs text-white/70 space-y-1">
-                                                                            <span className="text-[10px] text-white/40 uppercase tracking-wider block font-semibold">
+                                                                        <div className="bg-muted/40 dark:bg-zinc-950/60 border border-border/50 dark:border-white/5 rounded-xl p-2.5 text-xs text-foreground/80 dark:text-white/70 space-y-1">
+                                                                            <span className="text-[10px] text-muted-foreground dark:text-white/40 uppercase tracking-wider block font-semibold">
                                                                                 รายการงานเด่น:
                                                                             </span>
                                                                             {sheet.workItems.slice(0, 2).map((item, idx) => (
                                                                                 <div key={idx} className="flex items-center justify-between text-[11px] truncate">
                                                                                     <span className="truncate">
                                                                                         {item.projectName ? (
-                                                                                            <strong className="text-amber-400/90 font-normal mr-1">
+                                                                                            <strong className="text-amber-600 dark:text-amber-400/90 font-medium mr-1">
                                                                                                 [{item.projectName}]
                                                                                             </strong>
                                                                                         ) : null}
                                                                                         {item.task}
                                                                                     </span>
-                                                                                    <span className="text-white/40 shrink-0 text-[10px] ml-2 font-mono">
+                                                                                    <span className="text-muted-foreground dark:text-white/40 shrink-0 text-[10px] ml-2 font-mono">
                                                                                         {item.quantity}
                                                                                     </span>
                                                                                 </div>
                                                                             ))}
                                                                             {sheet.workItems.length > 2 && (
-                                                                                <span className="text-[10px] text-amber-400/80 block mt-0.5">
+                                                                                <span className="text-[10px] text-amber-600 dark:text-amber-400/80 block mt-0.5 font-medium">
                                                                                     + อีก {sheet.workItems.length - 2} รายการ
                                                                                 </span>
                                                                             )}
@@ -855,10 +855,10 @@ export default function JobSheetsPage() {
                                                                     )}
 
                                                                     {/* Reporter footer */}
-                                                                    <div className="flex items-center justify-between text-[11px] text-white/40 pt-1">
-                                                                        <span>ผู้บันทึก: <strong className="text-white/70">{sheet.reportedBy || sheet.createdByName}</strong></span>
+                                                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground dark:text-white/40 pt-1">
+                                                                        <span>ผู้บันทึก: <strong className="text-foreground/80 dark:text-white/70">{sheet.reportedBy || sheet.createdByName}</strong></span>
                                                                         {isMySheet && (
-                                                                            <span className="text-[10px] bg-white/10 px-1.5 py-0.2 rounded text-white/60">
+                                                                            <span className="text-[10px] bg-muted dark:bg-white/10 px-1.5 py-0.5 rounded text-muted-foreground dark:text-white/60 border border-border/50 dark:border-transparent">
                                                                                 ของฉัน
                                                                             </span>
                                                                         )}
@@ -866,14 +866,14 @@ export default function JobSheetsPage() {
                                                                 </div>
 
                                                                 {/* Actions Toolbar */}
-                                                                <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-white/10">
+                                                                <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-border dark:border-white/10">
                                                                     <div className="flex items-center gap-1">
                                                                         {canEditOrDelete && (
                                                                             <>
                                                                                 <button
                                                                                     type="button"
                                                                                     onClick={() => startEdit(sheet)}
-                                                                                    className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                                                                                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
                                                                                     title="แก้ไขรายงาน"
                                                                                 >
                                                                                     <Edit3 className="w-4 h-4" />
@@ -881,7 +881,7 @@ export default function JobSheetsPage() {
                                                                                 <button
                                                                                     type="button"
                                                                                     onClick={() => setDeletingSheetId(sheet.id)}
-                                                                                    className="p-1.5 rounded-lg text-white/50 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                                                                    className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:text-white/50 dark:hover:text-rose-400 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
                                                                                     title="ลบรายงาน"
                                                                                 >
                                                                                     <Trash2 className="w-4 h-4" />
@@ -894,7 +894,7 @@ export default function JobSheetsPage() {
                                                                         <Button
                                                                             size="sm"
                                                                             onClick={() => openPreview(sheet)}
-                                                                            className="h-8 text-xs bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg shadow-sm"
+                                                                            className="h-8 text-xs bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg shadow-xs cursor-pointer"
                                                                         >
                                                                             <Eye className="w-3.5 h-3.5 mr-1" />
                                                                             เปิด Sheet / โหลด
@@ -922,16 +922,16 @@ export default function JobSheetsPage() {
                                 return (
                                     <div
                                         key={sheet.id}
-                                        className="bg-zinc-900/60 border border-white/10 hover:border-amber-500/40 rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all duration-300 group shadow-lg hover:shadow-amber-500/5 relative overflow-hidden"
+                                        className="bg-card dark:bg-zinc-900/60 border border-border dark:border-white/10 hover:border-amber-500/40 rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all duration-300 group shadow-xs hover:shadow-md dark:hover:shadow-amber-500/5 relative overflow-hidden"
                                     >
                                         <div className="space-y-3">
                                             {/* Top Tag Row */}
                                             <div className="flex items-center justify-between gap-2">
-                                                <span className="font-mono text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                                                <span className="font-mono text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
                                                     {sheet.reportNumber}
                                                 </span>
-                                                <span className="text-[11px] text-white/50 flex items-center gap-1 font-mono">
-                                                    <Calendar className="w-3 h-3 text-white/40" />
+                                                <span className="text-[11px] text-muted-foreground dark:text-white/50 flex items-center gap-1 font-mono">
+                                                    <Calendar className="w-3 h-3 text-muted-foreground/70 dark:text-white/40" />
                                                     {sheet.date}
                                                 </span>
                                             </div>
@@ -940,31 +940,31 @@ export default function JobSheetsPage() {
                                             <div>
                                                 <div className="flex items-center gap-1.5 flex-wrap mb-1">
                                                     {sheet.isMultiProject && (
-                                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25 dark:border-amber-500/30">
                                                             🗂️ หลายโครงการ & งานทั่วไป
                                                         </span>
                                                     )}
                                                 </div>
-                                                <h3 className="font-bold text-white text-base group-hover:text-amber-300 transition-colors line-clamp-1">
+                                                <h3 className="font-bold text-card-foreground dark:text-white text-base group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors line-clamp-1">
                                                     {sheet.title}
                                                 </h3>
-                                                <p className="text-xs text-white/60 flex items-center gap-1.5 mt-0.5 truncate">
+                                                <p className="text-xs text-muted-foreground dark:text-white/60 flex items-center gap-1.5 mt-0.5 truncate">
                                                     <Building2 className="w-3.5 h-3.5 text-primary shrink-0" />
                                                     <span className="truncate">{sheet.projectName}</span>
                                                     {sheet.subProjectName && (
-                                                        <span className="text-white/40 truncate">({sheet.subProjectName})</span>
+                                                        <span className="text-muted-foreground/70 dark:text-white/40 truncate">({sheet.subProjectName})</span>
                                                     )}
                                                 </p>
                                             </div>
 
                                             {/* Weather & Status Badges */}
                                             <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-white/70 border border-white/5">
-                                                    <CloudSun className="w-3 h-3 text-amber-400" />
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/70 dark:bg-white/5 text-foreground/80 dark:text-white/70 border border-border/70 dark:border-white/5">
+                                                    <CloudSun className="w-3 h-3 text-amber-500 dark:text-amber-400" />
                                                     {sheet.weather?.condition ? sheet.weather.condition.split("(")[0].trim() : "แจ่มใส"}
                                                     {sheet.weather?.temperature ? ` ${sheet.weather.temperature}°C` : ""}
                                                 </span>
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                                                     <CheckCircle2 className="w-3 h-3" />
                                                     เสร็จ {completedCount}/{sheet.workItems?.length || 0}
                                                 </span>
@@ -972,27 +972,27 @@ export default function JobSheetsPage() {
 
                                             {/* Work items snippet */}
                                             {sheet.workItems && sheet.workItems.length > 0 && (
-                                                <div className="bg-zinc-950/60 rounded-xl p-2.5 text-xs text-white/70 space-y-1">
-                                                    <span className="text-[10px] text-white/40 uppercase tracking-wider block font-semibold">
+                                                <div className="bg-muted/40 dark:bg-zinc-950/60 border border-border/50 dark:border-white/5 rounded-xl p-2.5 text-xs text-foreground/80 dark:text-white/70 space-y-1">
+                                                    <span className="text-[10px] text-muted-foreground dark:text-white/40 uppercase tracking-wider block font-semibold">
                                                         รายการงานเด่น:
                                                     </span>
                                                     {sheet.workItems.slice(0, 2).map((item, idx) => (
                                                         <div key={idx} className="flex items-center justify-between text-[11px] truncate">
                                                             <span className="truncate">
                                                                 {item.projectName ? (
-                                                                    <strong className="text-amber-400/90 font-normal mr-1">
+                                                                    <strong className="text-amber-600 dark:text-amber-400/90 font-medium mr-1">
                                                                         [{item.projectName}]
                                                                     </strong>
                                                                 ) : null}
                                                                 {item.task}
                                                             </span>
-                                                            <span className="text-white/40 shrink-0 text-[10px] ml-2 font-mono">
+                                                            <span className="text-muted-foreground dark:text-white/40 shrink-0 text-[10px] ml-2 font-mono">
                                                                 {item.quantity}
                                                             </span>
                                                         </div>
                                                     ))}
                                                     {sheet.workItems.length > 2 && (
-                                                        <span className="text-[10px] text-amber-400/80 block mt-0.5">
+                                                        <span className="text-[10px] text-amber-600 dark:text-amber-400/80 block mt-0.5 font-medium">
                                                             + อีก {sheet.workItems.length - 2} รายการ
                                                         </span>
                                                     )}
@@ -1000,10 +1000,10 @@ export default function JobSheetsPage() {
                                             )}
 
                                             {/* Reporter footer */}
-                                            <div className="flex items-center justify-between text-[11px] text-white/40 pt-1">
-                                                <span>ผู้บันทึก: <strong className="text-white/70">{sheet.reportedBy || sheet.createdByName}</strong></span>
+                                            <div className="flex items-center justify-between text-[11px] text-muted-foreground dark:text-white/40 pt-1">
+                                                <span>ผู้บันทึก: <strong className="text-foreground/80 dark:text-white/70">{sheet.reportedBy || sheet.createdByName}</strong></span>
                                                 {isMySheet && (
-                                                    <span className="text-[10px] bg-white/10 px-1.5 py-0.2 rounded text-white/60">
+                                                    <span className="text-[10px] bg-muted dark:bg-white/10 px-1.5 py-0.5 rounded text-muted-foreground dark:text-white/60 border border-border/50 dark:border-transparent">
                                                         ของฉัน
                                                     </span>
                                                 )}
@@ -1011,14 +1011,14 @@ export default function JobSheetsPage() {
                                         </div>
 
                                         {/* Actions Toolbar */}
-                                        <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-white/10">
+                                        <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-border dark:border-white/10">
                                             <div className="flex items-center gap-1">
                                                 {canEditOrDelete && (
                                                     <>
                                                         <button
                                                             type="button"
                                                             onClick={() => startEdit(sheet)}
-                                                            className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                                                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
                                                             title="แก้ไขรายงาน"
                                                         >
                                                             <Edit3 className="w-4 h-4" />
@@ -1026,7 +1026,7 @@ export default function JobSheetsPage() {
                                                         <button
                                                             type="button"
                                                             onClick={() => setDeletingSheetId(sheet.id)}
-                                                            className="p-1.5 rounded-lg text-white/50 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                                            className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:text-white/50 dark:hover:text-rose-400 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
                                                             title="ลบรายงาน"
                                                         >
                                                             <Trash2 className="w-4 h-4" />
@@ -1039,7 +1039,7 @@ export default function JobSheetsPage() {
                                                 <Button
                                                     size="sm"
                                                     onClick={() => openPreview(sheet)}
-                                                    className="h-8 text-xs bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg shadow-sm"
+                                                    className="h-8 text-xs bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg shadow-xs cursor-pointer"
                                                 >
                                                     <Eye className="w-3.5 h-3.5 mr-1" />
                                                     เปิด Sheet / โหลด
