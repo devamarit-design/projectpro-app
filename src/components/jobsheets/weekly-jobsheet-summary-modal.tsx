@@ -419,7 +419,7 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
 
                             {/* Section 1: Weekly Executive KPIs */}
                             <div className="grid grid-cols-4 gap-3 mb-6">
-                                <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-center">
+                                <div className="bg-zinc-50 border border-zinc-200 rounded-[4px] p-3 text-center">
                                     <span className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">วันลงบันทึกงาน</span>
                                     <div className="flex items-baseline justify-center gap-1">
                                         <span className="text-2xl font-black text-zinc-900 font-mono">{totalDaysRecorded}</span>
@@ -428,7 +428,7 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                                     <span className="text-[9px] text-zinc-400 mt-0.5 block">ในสัปดาห์นี้</span>
                                 </div>
 
-                                <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-center">
+                                <div className="bg-zinc-50 border border-zinc-200 rounded-[4px] p-3 text-center">
                                     <span className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">งานที่ดำเนินการ</span>
                                     <div className="flex items-baseline justify-center gap-1">
                                         <span className="text-2xl font-black text-emerald-600 font-mono">{totalTasksCompleted}</span>
@@ -437,7 +437,7 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                                     <span className="text-[9px] font-bold text-emerald-600 mt-0.5 block">{completionRate}% สำเร็จ</span>
                                 </div>
 
-                                <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-center">
+                                <div className="bg-zinc-50 border border-zinc-200 rounded-[4px] p-3 text-center">
                                     <span className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">กำลังพลสะสม</span>
                                     <div className="flex items-baseline justify-center gap-1">
                                         <span className="text-2xl font-black text-amber-600 font-mono">{totalManDays}</span>
@@ -446,7 +446,7 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                                     <span className="text-[9px] text-zinc-400 mt-0.5 block">{manpowerList.length} ตำแหน่งหน้าที่</span>
                                 </div>
 
-                                <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-center">
+                                <div className="bg-zinc-50 border border-zinc-200 rounded-[4px] p-3 text-center">
                                     <span className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">จำนวนโครงการ</span>
                                     <div className="flex items-baseline justify-center gap-1">
                                         <span className="text-2xl font-black text-indigo-600 font-mono">{weekData.uniqueProjects.length || 1}</span>
@@ -466,7 +466,7 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                                     <span className="text-[10px] text-zinc-500">เรียงตามวันที่ปฏิบัติงานจริง</span>
                                 </div>
 
-                                <table className="w-full text-left text-xs border border-zinc-200 rounded-lg overflow-hidden">
+                                <table className="w-full text-left text-xs border border-zinc-200 rounded-[3px] overflow-hidden">
                                     <thead className="bg-zinc-100 text-[10px] uppercase font-bold text-zinc-700 border-b border-zinc-200">
                                         <tr>
                                             <th className="py-2 px-2.5 w-24">วัน / วันที่</th>

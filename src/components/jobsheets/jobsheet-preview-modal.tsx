@@ -689,7 +689,7 @@ export function JobSheetPreviewModal({
                         <div
                             ref={sheetRef}
                             id="jobsheet-printable-paper"
-                            className="bg-white text-zinc-900 shadow-2xl rounded-sm p-8 sm:p-10 font-sans print:shadow-none print:p-6 print:m-0 print:w-full print:max-w-none border border-zinc-200"
+                            className="bg-white text-zinc-900 shadow-2xl rounded-none sm:rounded-[4px] p-8 sm:p-10 font-sans print:shadow-none print:p-6 print:m-0 print:w-full print:max-w-none border border-zinc-200"
                             style={{
                                 width: "820px",
                                 minWidth: "820px",
@@ -753,7 +753,7 @@ export function JobSheetPreviewModal({
                             </div>
 
                             {/* Top Metadata Strip: Clean, Professional, Wide */}
-                            <div className="bg-zinc-50 border border-zinc-300 rounded p-3 mb-5 grid grid-cols-4 gap-3 text-xs">
+                            <div className="bg-zinc-50 border border-zinc-300 rounded-[4px] p-3 mb-5 grid grid-cols-4 gap-3 text-xs">
                                 <div>
                                     <span className="text-zinc-500 block text-[11px] font-medium">ชื่อผู้ปฏิบัติงาน / ผู้รายงาน:</span>
                                     <span className="font-bold text-zinc-900 text-sm">{reporterName}</span>
@@ -788,7 +788,7 @@ export function JobSheetPreviewModal({
                                     </span>
                                 </div>
 
-                                <div className="border border-zinc-400 rounded-sm overflow-hidden">
+                                <div className="border border-zinc-400 rounded-[3px] overflow-hidden">
                                     <table className="w-full text-left border-collapse table-fixed">
                                         <thead>
                                             <tr className="bg-zinc-900 text-white font-bold text-xs uppercase tracking-wider">
@@ -851,22 +851,22 @@ export function JobSheetPreviewModal({
                                                             {/* 4. สถานะ */}
                                                             <td className="py-3 px-1 text-center align-top border-r border-zinc-200">
                                                                 {item.status === "completed" && (
-                                                                    <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 whitespace-nowrap">
+                                                                    <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-[3px] text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 whitespace-nowrap">
                                                                         <Check className="w-3 h-3 stroke-[3]" /> เสร็จสิ้น
                                                                     </span>
                                                                 )}
                                                                 {item.status === "in_progress" && (
-                                                                    <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300 whitespace-nowrap">
+                                                                    <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-[3px] text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300 whitespace-nowrap">
                                                                         <Clock className="w-3 h-3" /> ดำเนินการ
                                                                     </span>
                                                                 )}
                                                                 {item.status === "pending" && (
-                                                                    <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 whitespace-nowrap">
+                                                                    <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-[3px] text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 whitespace-nowrap">
                                                                         รอดำเนินการ
                                                                     </span>
                                                                 )}
                                                                 {item.status === "delayed" && (
-                                                                    <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 whitespace-nowrap">
+                                                                    <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-[3px] text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 whitespace-nowrap">
                                                                         ติดปัญหา
                                                                     </span>
                                                                 )}
@@ -899,7 +899,7 @@ export function JobSheetPreviewModal({
                             {(jobsheet.obstacles || jobsheet.safetyNotes) && (
                                 <div className="grid grid-cols-2 gap-3 mb-5 text-xs">
                                     {jobsheet.obstacles && (
-                                        <div className="border border-zinc-300 rounded p-2.5 bg-amber-50/20 break-words [overflow-wrap:anywhere]">
+                                        <div className="border border-zinc-300 rounded-[4px] p-2.5 bg-amber-50/20 break-words [overflow-wrap:anywhere]">
                                             <span className="font-bold text-amber-900 block mb-1">
                                                 ⚠️ ปัญหา / อุปสรรคหน้างาน:
                                             </span>
@@ -907,7 +907,7 @@ export function JobSheetPreviewModal({
                                         </div>
                                     )}
                                     {jobsheet.safetyNotes && (
-                                        <div className="border border-zinc-300 rounded p-2.5 bg-emerald-50/20 break-words [overflow-wrap:anywhere]">
+                                        <div className="border border-zinc-300 rounded-[4px] p-2.5 bg-emerald-50/20 break-words [overflow-wrap:anywhere]">
                                             <span className="font-bold text-emerald-900 block mb-1">
                                                 🛡️ ความปลอดภัยหน้างาน:
                                             </span>
@@ -930,7 +930,7 @@ export function JobSheetPreviewModal({
                                                 ? `/api/proxy-image?url=${encodeURIComponent(src)}`
                                                 : src;
                                             return (
-                                                <div key={i} className="aspect-video rounded border border-zinc-200 overflow-hidden bg-zinc-100">
+                                                <div key={i} className="aspect-video rounded-[4px] border border-zinc-200 overflow-hidden bg-zinc-100">
                                                     <img
                                                         src={proxiedSrc}
                                                         alt={`Site photo ${i + 1}`}
