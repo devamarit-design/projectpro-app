@@ -205,6 +205,7 @@ export function JobSheetForm({
     }, [selectedProjectId, projects]);
 
     // Sync state if initialData changes (e.g. clicking edit on different jobsheets)
+    const initialDataId = initialData?.id;
     useEffect(() => {
         if (!initialData) return;
         setDate(initialData.date || new Date().toISOString().split("T")[0]);
@@ -229,7 +230,7 @@ export function JobSheetForm({
         setReportedByRole(initialData.reportedByRole || "");
         setInspectedBy(initialData.inspectedBy || "");
         setPhotos(initialData.photos || []);
-    }, [initialData, projects]);
+    }, [initialDataId]);
 
     // Work item handlers
     const addWorkItem = (presetTask?: string, presetCategory?: string, presetTime?: string) => {
@@ -273,12 +274,22 @@ export function JobSheetForm({
             status: "in_progress",
             notes: ""
         };
-        setWorkItems([...workItems, newItem]);
+        setWorkItems((prev) => [...prev, newItem]);
     };
 
-    const updateWorkItem = (id: string, field: keyof JobSheetWorkItem, value: any) => {
-        setWorkItems(
-            workItems.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    const updateWorkItem = (
+        id: string,
+        fieldOrUpdates: keyof JobSheetWorkItem | Partial<JobSheetWorkItem>,
+        value?: any
+    ) => {
+        setWorkItems((prev) =>
+            prev.map((item) => {
+                if (item.id !== id) return item;
+                if (typeof fieldOrUpdates === "string") {
+                    return { ...item, [fieldOrUpdates]: value };
+                }
+                return { ...item, ...fieldOrUpdates };
+            })
         );
     };
 
@@ -287,17 +298,19 @@ export function JobSheetForm({
             toast.error("ควรมีรายการงานอย่างน้อย 1 รายการ");
             return;
         }
-        setWorkItems(workItems.filter((item) => item.id !== id));
+        setWorkItems((prev) => prev.filter((item) => item.id !== id));
     };
 
     const moveWorkItem = (index: number, direction: "up" | "down") => {
         const targetIndex = direction === "up" ? index - 1 : index + 1;
-        if (targetIndex < 0 || targetIndex >= workItems.length) return;
-        const newItems = [...workItems];
-        const temp = newItems[index];
-        newItems[index] = newItems[targetIndex];
-        newItems[targetIndex] = temp;
-        setWorkItems(newItems);
+        setWorkItems((prev) => {
+            if (targetIndex < 0 || targetIndex >= prev.length) return prev;
+            const newItems = [...prev];
+            const temp = newItems[index];
+            newItems[index] = newItems[targetIndex];
+            newItems[targetIndex] = temp;
+            return newItems;
+        });
     };
 
     // Add photo with client-side compression (< 200KB per photo)
@@ -747,6 +760,7 @@ export function JobSheetForm({
                                             <select
                                                 value={
                                                     item.projectId ||
+                                                    projects.find((p) => p.name === item.projectName)?.id ||
                                                     (item.projectName?.includes("จัดซื้อ")
                                                         ? "procurement"
                                                         : item.projectName?.includes("โรงงาน")
@@ -758,21 +772,34 @@ export function JobSheetForm({
                                                 onChange={(e) => {
                                                     const val = e.target.value;
                                                     if (val === "general") {
-                                                        updateWorkItem(item.id, "projectId", "");
-                                                        updateWorkItem(item.id, "projectName", "งานทั่วไป / ธุรการ");
+                                                        updateWorkItem(item.id, {
+                                                            projectId: "",
+                                                            projectName: "งานทั่วไป / ธุรการ"
+                                                        });
                                                     } else if (val === "procurement") {
-                                                        updateWorkItem(item.id, "projectId", "");
-                                                        updateWorkItem(item.id, "projectName", "จัดซื้อ / จัดส่งวัสดุ");
+                                                        updateWorkItem(item.id, {
+                                                            projectId: "",
+                                                            projectName: "จัดซื้อ / จัดส่งวัสดุ"
+                                                        });
                                                     } else if (val === "workshop") {
-                                                        updateWorkItem(item.id, "projectId", "");
-                                                        updateWorkItem(item.id, "projectName", "โรงงาน / โกดัง / ซ่อมบำรุง");
+                                                        updateWorkItem(item.id, {
+                                                            projectId: "",
+                                                            projectName: "โรงงาน / โกดัง / ซ่อมบำรุง"
+                                                        });
                                                     } else if (val === "") {
-                                                        updateWorkItem(item.id, "projectId", "");
-                                                        updateWorkItem(item.id, "projectName", projectName || "งานทั่วไป");
+                                                        const fallbackName = (selectedProjectId && selectedProjectId !== "multi" && selectedProjectId !== "general")
+                                                            ? (projects.find((p) => p.id === selectedProjectId)?.name || projectName || "งานทั่วไป")
+                                                            : (projectName || "งานทั่วไป");
+                                                        updateWorkItem(item.id, {
+                                                            projectId: "",
+                                                            projectName: fallbackName
+                                                        });
                                                     } else {
                                                         const found = projects.find((p) => p.id === val);
-                                                        updateWorkItem(item.id, "projectId", val);
-                                                        updateWorkItem(item.id, "projectName", found ? found.name : "");
+                                                        updateWorkItem(item.id, {
+                                                            projectId: val,
+                                                            projectName: found ? found.name : ""
+                                                        });
                                                     }
                                                 }}
                                                 className={`w-full text-xs font-semibold px-3 py-1.5 rounded-lg border appearance-none pr-8 focus:outline-none transition-all truncate h-9 cursor-pointer ${
