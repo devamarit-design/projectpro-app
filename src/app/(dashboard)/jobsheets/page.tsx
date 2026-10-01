@@ -403,7 +403,7 @@ export default function JobSheetsPage() {
                                 JobSheet <span className="text-amber-400 font-mono">/</span> Daily Report
                             </h1>
                             <p className="text-sm text-white/60 max-w-2xl leading-relaxed">
-                                ระบบบันทึกงานประจำวันหน้างาน รายการงานที่ทำ สภาพอากาศ กำลังพล และดาวน์โหลดเป็น A4 JobSheet ในรูปแบบ PDF หรือภาพความละเอียดสูง (PNG) ส่งเข้า LINE หรือลูกค้าง่ายๆ
+                                ระบบบันทึกงานประจำวันหน้างาน รายการงานที่ทำ สภาพอากาศ และดาวน์โหลดเป็น A4 JobSheet ในรูปแบบ PDF หรือภาพความละเอียดสูง (PNG) ส่งเข้า LINE หรือลูกค้าง่ายๆ
                             </p>
                         </div>
 
@@ -682,12 +682,6 @@ export default function JobSheetsPage() {
                                                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                                                                 <strong>{week.totalTasksDone}/{week.totalTasks}</strong> งานสำเร็จ
                                                             </span>
-                                                            {week.totalManpower > 0 && (
-                                                                <span className="inline-flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-lg border border-white/5 font-medium">
-                                                                    <Users className="w-3.5 h-3.5 text-blue-400" />
-                                                                    <strong>{week.totalManpower}</strong> คน-วัน
-                                                                </span>
-                                                            )}
                                                             {week.uniqueProjects.length > 0 && (
                                                                 <span className="text-white/40 truncate max-w-[240px] sm:max-w-md text-[11px]">
                                                                     🏢 {week.uniqueProjects.join(" • ")}
@@ -712,7 +706,6 @@ export default function JobSheetsPage() {
                                                 {/* Cards in this Week */}
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                     {week.sheets.map((sheet) => {
-                                                        const totalWorkers = sheet.manpower?.reduce((acc, c) => acc + (Number(c.count) || 0), 0) || 0;
                                                         const completedCount = sheet.workItems?.filter((w) => w.status === "completed").length || 0;
                                                         const isMySheet = sheet.createdBy === currentUserId;
 
@@ -754,16 +747,12 @@ export default function JobSheetsPage() {
                                                                         </p>
                                                                     </div>
 
-                                                                    {/* Weather & Worker Badges */}
+                                                                    {/* Weather & Status Badges */}
                                                                     <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                                                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-white/70 border border-white/5">
                                                                             <CloudSun className="w-3 h-3 text-amber-400" />
                                                                             {sheet.weather?.condition ? sheet.weather.condition.split("(")[0].trim() : "แจ่มใส"}
                                                                             {sheet.weather?.temperature ? ` ${sheet.weather.temperature}°C` : ""}
-                                                                        </span>
-                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-white/70 border border-white/5">
-                                                                            <Users className="w-3 h-3 text-blue-400" />
-                                                                            {totalWorkers} คน
                                                                         </span>
                                                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                                                             <CheckCircle2 className="w-3 h-3" />
@@ -861,7 +850,6 @@ export default function JobSheetsPage() {
                         /* Flat Cards Grid */
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {filteredSheets.map((sheet) => {
-                                const totalWorkers = sheet.manpower?.reduce((acc, c) => acc + (Number(c.count) || 0), 0) || 0;
                                 const completedCount = sheet.workItems?.filter((w) => w.status === "completed").length || 0;
                                 const isMySheet = sheet.createdBy === currentUserId;
 
@@ -903,16 +891,12 @@ export default function JobSheetsPage() {
                                                 </p>
                                             </div>
 
-                                            {/* Weather & Worker Badges */}
+                                            {/* Weather & Status Badges */}
                                             <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-white/70 border border-white/5">
                                                     <CloudSun className="w-3 h-3 text-amber-400" />
                                                     {sheet.weather?.condition ? sheet.weather.condition.split("(")[0].trim() : "แจ่มใส"}
                                                     {sheet.weather?.temperature ? ` ${sheet.weather.temperature}°C` : ""}
-                                                </span>
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-white/70 border border-white/5">
-                                                    <Users className="w-3 h-3 text-blue-400" />
-                                                    {totalWorkers} คน
                                                 </span>
                                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                                     <CheckCircle2 className="w-3 h-3" />

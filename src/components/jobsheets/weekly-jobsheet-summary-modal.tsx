@@ -145,18 +145,6 @@ export function WeeklyJobSheetSummaryModal({
     const totalTasksCompleted = allWorkItems.filter(w => w.status === "completed").length;
     const completionRate = allWorkItems.length > 0 ? Math.round((totalTasksCompleted / allWorkItems.length) * 100) : 0;
 
-    // Manpower rollup
-    const manpowerMap: Record<string, number> = {};
-    for (const sheet of chronologicalSheets) {
-        for (const m of sheet.manpower || []) {
-            if (m.count > 0) {
-                manpowerMap[m.role] = (manpowerMap[m.role] || 0) + Number(m.count);
-            }
-        }
-    }
-    const manpowerList = Object.entries(manpowerMap).map(([role, total]) => ({ role, total })).sort((a, b) => b.total - a.total);
-    const totalManDays = manpowerList.reduce((acc, c) => acc + c.total, 0);
-
     // Consolidated materials & equipment
     const materialsList = Array.from(new Set(chronologicalSheets.map(s => s.materialsReceived?.trim()).filter(Boolean)));
     const equipmentList = Array.from(new Set(chronologicalSheets.map(s => s.equipment?.trim()).filter(Boolean)));
@@ -208,7 +196,6 @@ export function WeeklyJobSheetSummaryModal({
 
 📊 ภาพรวมสัปดาห์:
 • งานที่บันทึก: ${allWorkItems.length} รายการ (เสร็จแล้ว ${totalTasksCompleted} รายการ / ${completionRate}%)
-• กำลังพลสะสม: ${totalManDays} คน-วัน
 • โครงการ: ${weekData.uniqueProjects.join(", ") || "งานประจำวันทั่วไป"}
 
 🔨 สรุปงานรายวัน:
@@ -236,7 +223,7 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                     รายงานสรุปการปฏิบัติงานประจำสัปดาห์ ({weekData.dateRangeLabel})
                 </DialogTitle>
                 <DialogDescription className="sr-only">
-                    เอกสารสรุป JobSheet รายสัปดาห์ รวบรวมงานรายวัน กำลังพล และวัสดุ
+                    เอกสารสรุป JobSheet รายสัปดาห์ รวบรวมงานรายวันและวัสดุ
                 </DialogDescription>
 
                 {/* Top Action Toolbar (Hidden during Print) */}
@@ -250,7 +237,7 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                                 สรุป JobSheet สัปดาห์: {weekData.dateRangeLabel}
                             </h2>
                             <p className="text-[10px] text-white/50 truncate">
-                                {totalDaysRecorded} วันทำงาน • {totalTasksCompleted}/{allWorkItems.length} งานสำเร็จ • {totalManDays} คน-วัน
+                                {totalDaysRecorded} วันทำงาน • {totalTasksCompleted}/{allWorkItems.length} งานสำเร็จ
                             </p>
                         </div>
                     </div>
@@ -418,7 +405,7 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                             </div>
 
                             {/* Section 1: Weekly Executive KPIs */}
-                            <div className="grid grid-cols-4 gap-3 mb-6">
+                            <div className="grid grid-cols-3 gap-3 mb-6">
                                 <div className="bg-zinc-50 border border-zinc-200 rounded-[4px] p-3 text-center">
                                     <span className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">วันลงบันทึกงาน</span>
                                     <div className="flex items-baseline justify-center gap-1">
@@ -435,15 +422,6 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                                         <span className="text-[11px] text-zinc-500 font-medium">/ {allWorkItems.length}</span>
                                     </div>
                                     <span className="text-[9px] font-bold text-emerald-600 mt-0.5 block">{completionRate}% สำเร็จ</span>
-                                </div>
-
-                                <div className="bg-zinc-50 border border-zinc-200 rounded-[4px] p-3 text-center">
-                                    <span className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">กำลังพลสะสม</span>
-                                    <div className="flex items-baseline justify-center gap-1">
-                                        <span className="text-2xl font-black text-amber-600 font-mono">{totalManDays}</span>
-                                        <span className="text-[11px] text-zinc-500 font-medium">คน-วัน</span>
-                                    </div>
-                                    <span className="text-[9px] text-zinc-400 mt-0.5 block">{manpowerList.length} ตำแหน่งหน้าที่</span>
                                 </div>
 
                                 <div className="bg-zinc-50 border border-zinc-200 rounded-[4px] p-3 text-center">
@@ -473,14 +451,12 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                                             <th className="py-2 px-2.5 w-32">โครงการ / ไซต์งาน</th>
                                             <th className="py-2 px-2.5">สรุปงานสำคัญที่ปฏิบัติ</th>
                                             <th className="py-2 px-2.5 w-24 text-center">สภาพอากาศ</th>
-                                            <th className="py-2 px-2.5 w-20 text-center">กำลังพล</th>
                                             <th className="py-2 px-2.5 w-20 text-center">สถานะ</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-200">
                                         {chronologicalSheets.map((sheet, idx) => {
                                             const dayName = getDayOfWeekThai(sheet.date);
-                                            const workersCount = sheet.manpower?.reduce((acc, c) => acc + (Number(c.count) || 0), 0) || 0;
                                             const completed = sheet.workItems?.filter(w => w.status === "completed").length || 0;
                                             const total = sheet.workItems?.length || 0;
 
@@ -521,9 +497,6 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                                                         {sheet.weather?.temperature && (
                                                             <span className="text-zinc-400 font-mono">{sheet.weather.temperature}°C</span>
                                                         )}
-                                                    </td>
-                                                    <td className="py-2 px-2.5 align-top text-center font-bold text-zinc-800 font-mono">
-                                                        {workersCount} คน
                                                     </td>
                                                     <td className="py-2 px-2.5 align-top text-center">
                                                         <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${
@@ -606,77 +579,49 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                                 </div>
                             </div>
 
-                            {/* Section 4 & 5: Two Column Grid (Manpower Allocation + Materials & Safety) */}
+                            {/* Section 3 & 4: Two Column Grid (Materials & Equipment + Safety & Obstacles) */}
                             <div className="grid grid-cols-2 gap-4 mb-6">
-                                {/* Left: Manpower Summary */}
-                                <div className="border border-zinc-200 rounded-lg p-3 bg-zinc-50/50">
-                                    <div className="flex items-center justify-between border-b border-zinc-200 pb-1.5 mb-2">
-                                        <h4 className="text-[11px] font-black uppercase text-zinc-800 flex items-center gap-1">
-                                            <Users className="w-3 h-3 text-amber-600" /> 3. กำลังพลสะสมรายสัปดาห์
-                                        </h4>
-                                        <span className="text-[10px] font-bold text-amber-700 font-mono">
-                                            รวม {totalManDays} คน-วัน
-                                        </span>
-                                    </div>
-
-                                    {manpowerList.length > 0 ? (
-                                        <div className="divide-y divide-zinc-200 text-xs">
-                                            {manpowerList.map((m, idx) => (
-                                                <div key={idx} className="flex items-center justify-between py-1 text-[11px]">
-                                                    <span className="text-zinc-700 font-medium">{m.role}</span>
-                                                    <span className="font-bold font-mono text-zinc-900">{m.total} คน-วัน</span>
-                                                </div>
-                                            ))}
+                                {/* Left: Materials & Equipment */}
+                                <div className="border border-zinc-200 rounded-[4px] p-3 bg-zinc-50/50">
+                                    <h4 className="text-[11px] font-black uppercase text-zinc-800 flex items-center gap-1 border-b border-zinc-200 pb-1.5 mb-2">
+                                        <Package className="w-3 h-3 text-amber-600" /> 3. วัสดุเข้าหน้างาน & เครื่องจักร
+                                    </h4>
+                                    <div className="space-y-1.5 text-[11px]">
+                                        <div>
+                                            <span className="font-bold text-zinc-700 block text-[10px]">วัสดุก่อสร้างที่ตรวจรับ:</span>
+                                            <p className="text-zinc-600">
+                                                {materialsList.length > 0 ? materialsList.join(" • ") : "ไม่มีการตรวจรับวัสดุพิเศษในสัปดาห์นี้"}
+                                            </p>
                                         </div>
-                                    ) : (
-                                        <p className="text-zinc-400 italic text-[11px] py-2 text-center">ไม่มีข้อมูลกำลังพล</p>
-                                    )}
+                                        <div>
+                                            <span className="font-bold text-zinc-700 block text-[10px]">เครื่องจักร / อุปกรณ์สำคัญ:</span>
+                                            <p className="text-zinc-600">
+                                                {equipmentList.length > 0 ? equipmentList.join(" • ") : "เครื่องมือประจำไซต์งานทั่วไป"}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Right: Materials & Safety */}
-                                <div className="space-y-3">
-                                    {/* Materials & Equipment */}
-                                    <div className="border border-zinc-200 rounded-lg p-3 bg-zinc-50/50">
-                                        <h4 className="text-[11px] font-black uppercase text-zinc-800 flex items-center gap-1 border-b border-zinc-200 pb-1.5 mb-2">
-                                            <Package className="w-3 h-3 text-amber-600" /> 4. วัสดุเข้าหน้างาน & เครื่องจักร
-                                        </h4>
-                                        <div className="space-y-1.5 text-[11px]">
-                                            <div>
-                                                <span className="font-bold text-zinc-700 block text-[10px]">วัสดุก่อสร้างที่ตรวจรับ:</span>
-                                                <p className="text-zinc-600">
-                                                    {materialsList.length > 0 ? materialsList.join(" • ") : "ไม่มีการตรวจรับวัสดุพิเศษในสัปดาห์นี้"}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <span className="font-bold text-zinc-700 block text-[10px]">เครื่องจักร / อุปกรณ์สำคัญ:</span>
-                                                <p className="text-zinc-600">
-                                                    {equipmentList.length > 0 ? equipmentList.join(" • ") : "เครื่องมือประจำไซต์งานทั่วไป"}
-                                                </p>
-                                            </div>
+                                {/* Right: Safety & Obstacles */}
+                                <div className="border border-zinc-200 rounded-[4px] p-3 bg-zinc-50/50">
+                                    <h4 className="text-[11px] font-black uppercase text-zinc-800 flex items-center gap-1 border-b border-zinc-200 pb-1.5 mb-2">
+                                        <ShieldCheck className="w-3 h-3 text-amber-600" /> 4. ความปลอดภัย & ปัญหาอุปสรรค
+                                    </h4>
+                                    <div className="space-y-1.5 text-[11px]">
+                                        <div>
+                                            <span className="font-bold text-zinc-700 block text-[10px]">มาตรการความปลอดภัย:</span>
+                                            <p className="text-zinc-600">
+                                                {safetyList.length > 0 ? safetyList.join(" • ") : "การปฏิบัติงานเป็นไปด้วยความเรียบร้อย สวมหมวกนิรภัยและ PPE ครบถ้วน"}
+                                            </p>
                                         </div>
-                                    </div>
-
-                                    {/* Obstacles & Safety */}
-                                    <div className="border border-zinc-200 rounded-lg p-3 bg-zinc-50/50">
-                                        <h4 className="text-[11px] font-black uppercase text-zinc-800 flex items-center gap-1 border-b border-zinc-200 pb-1.5 mb-2">
-                                            <ShieldCheck className="w-3 h-3 text-amber-600" /> 5. ความปลอดภัย & ปัญหาอุปสรรค
-                                        </h4>
-                                        <div className="space-y-1.5 text-[11px]">
+                                        {obstaclesList.length > 0 && (
                                             <div>
-                                                <span className="font-bold text-zinc-700 block text-[10px]">มาตรการความปลอดภัย:</span>
-                                                <p className="text-zinc-600">
-                                                    {safetyList.length > 0 ? safetyList.join(" • ") : "การปฏิบัติงานเป็นไปด้วยความเรียบร้อย สวมหมวกนิรภัยและ PPE ครบถ้วน"}
+                                                <span className="font-bold text-rose-700 block text-[10px]">ปัญหา / อุปสรรคที่พบ:</span>
+                                                <p className="text-rose-600 font-medium">
+                                                    {obstaclesList.join(" • ")}
                                                 </p>
                                             </div>
-                                            {obstaclesList.length > 0 && (
-                                                <div>
-                                                    <span className="font-bold text-rose-700 block text-[10px]">ปัญหา / อุปสรรคที่พบ:</span>
-                                                    <p className="text-rose-600 font-medium">
-                                                        {obstaclesList.join(" • ")}
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
