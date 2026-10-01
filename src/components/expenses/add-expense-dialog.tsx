@@ -485,17 +485,19 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                         return cleanItem
                     })
 
+                    const safeDate = date || new Date().toISOString().split('T')[0]
                     const expenseData: Parameters<typeof addExpense>[0] = {
                         title: title || payee || "New Expense",
                         amount: `฿${subtotal.toLocaleString()}`,
                         totalValue: subtotal,
-                        date,
+                        date: safeDate,
                         category: items[0]?.category || "Other",
                         items: finalItems,
                         payee: payee || "",
                         status,
                         vatIncluded,
                         projectId: globalProjectId || "",
+                        ...(currentOrg?.id ? { orgId: currentOrg.id } : {})
                     }
 
                     if (globalSubProjectId) expenseData.subProjectId = globalSubProjectId
@@ -516,6 +518,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                         itemsByProjectSubProject[key].push(item)
                     })
 
+                    const safeDate = date || new Date().toISOString().split('T')[0]
                     await Promise.all(Object.entries(itemsByProjectSubProject).map(async ([key, groupItems]) => {
                         const [projectId, subProjectId] = key.split("__")
                         const groupTotal = groupItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
@@ -530,13 +533,14 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                             title: groupTitle,
                             amount: `฿${groupTotal.toLocaleString()}`,
                             totalValue: groupTotal,
-                            date,
+                            date: safeDate,
                             category: groupItems[0]?.category || "Other",
                             items: groupItems,
                             payee: payee || "",
                             status,
                             vatIncluded,
-                            projectId: projectId === "unassigned" ? "" : projectId
+                            projectId: projectId === "unassigned" ? "" : projectId,
+                            ...(currentOrg?.id ? { orgId: currentOrg.id } : {})
                         }
                         if (subProjectId && subProjectId !== "none") expenseData.subProjectId = subProjectId
                         if (status === 'Advanced' && paidBy) expenseData.paidBy = paidBy

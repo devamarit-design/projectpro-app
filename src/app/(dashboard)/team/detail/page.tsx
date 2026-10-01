@@ -133,7 +133,13 @@ function UserDetailContent() {
         })
         const completed = userTasks.filter(t => t.status === 'Done').length
 
-        const userExpenses = expenses.filter(e => e.paidBy === user.name || e.paidBy === user.id)
+        const userExpenses = expenses.filter(e =>
+            e.paidBy === user.name ||
+            e.paidBy === user.id ||
+            e.payee === user.name ||
+            e.createdBy === user.id ||
+            e.createdByName === user.name
+        )
         const totalExp = userExpenses.reduce((sum, e) => sum + (e.totalValue || 0), 0)
 
         const involvedProjectIds = new Set(userTasks.map(t => t.projectId))

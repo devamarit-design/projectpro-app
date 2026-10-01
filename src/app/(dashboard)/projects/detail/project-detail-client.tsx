@@ -297,16 +297,21 @@ export default function ProjectDetailClient() {
     // Match incomes by projectId OR by project name (for backward compatibility with old data)
     const allIncomesForProject = incomes.filter(i => i.projectId === id || i.projectId === project?.name)
     const rawProjectExpenses = expenses.filter(e => e.projectId === id || e.items?.some(i => i.projectId === id))
-    // Filter: If user has FINANCIAL_VIEW, show all. Else, show only their own (Payee/PaidBy).
+    // Filter: If user has FINANCIAL_VIEW, show all. Else, show only their own (Payee/PaidBy/CreatedBy).
     const allProjectExpenses = hasPermission(currentTeam?.role, "FINANCIAL_VIEW")
         ? rawProjectExpenses
-        : rawProjectExpenses.filter(e => e.payee === currentUser?.name || e.paidBy === currentUser?.name)
+        : rawProjectExpenses.filter(e =>
+            e.payee === currentUser?.name ||
+            e.paidBy === currentUser?.name ||
+            (currentUser?.id && e.createdBy === currentUser.id) ||
+            (currentUser?.name && e.createdByName === currentUser.name)
+        )
     const allProjectIncomes = allIncomesForProject.filter(i => i.type === 'Invoice' && (i.status === 'Paid' || i.status === 'Invoiced' || i.status === 'Accepted')) // Only count Invoices to avoid double counting with Receipts
 
     // 2. Extract available months from both expenses and incomes
     const availableMonths = Array.from(new Set([
-        ...allProjectExpenses.map(e => e.date.substring(0, 7)),
-        ...allProjectIncomes.map(i => i.date.substring(0, 7))
+        ...allProjectExpenses.map(e => (e.date || "").substring(0, 7)).filter(Boolean),
+        ...allProjectIncomes.map(i => (i.date || "").substring(0, 7)).filter(Boolean)
     ])).sort().reverse()
 
     // 3. Filter data based on selection

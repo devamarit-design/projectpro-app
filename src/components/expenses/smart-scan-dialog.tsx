@@ -187,11 +187,12 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
                 }
             }
 
+            const safeDate = data.date || new Date().toISOString().split("T")[0]
             await addExpense({
                 title: `Bill from ${data.merchant}`,
                 amount: `฿${data.total.toLocaleString()}`,
                 totalValue: data.total,
-                date: data.date,
+                date: safeDate,
                 category: data.items[0]?.category || "Other",
                 payee: data.merchant,
                 status: "Pending",
@@ -218,10 +219,13 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
     const handleSave = () => {
         if (!extractedData) return
 
+        const safeDate = extractedData.date || new Date().toISOString().split("T")[0]
+
         if (onScanComplete) {
             // Pass back all data including the receipt image
             onScanComplete({
                 ...extractedData,
+                date: safeDate,
                 receiptImage: previewUrl || undefined
             })
         } else {
@@ -230,7 +234,7 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
                 title: `Bill from ${extractedData.merchant}`,
                 amount: `฿${extractedData.total.toLocaleString()}`,
                 totalValue: extractedData.total,
-                date: extractedData.date,
+                date: safeDate,
                 category: extractedData.items[0]?.category || "Other",
                 payee: extractedData.merchant,
                 status: "Pending",

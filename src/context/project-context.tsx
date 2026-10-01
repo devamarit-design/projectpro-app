@@ -140,6 +140,7 @@ export interface Expense {
     createdAt?: string // Timestamp
     updatedAt?: string // Timestamp
     createdBy?: string // User ID of creator
+    createdByName?: string // Display name of creator
 }
 
 export interface Project {

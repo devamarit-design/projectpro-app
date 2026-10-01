@@ -81,27 +81,35 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         setIsLoading(true)
 
         // 1. Expenses (Active & Ordered)
-        // QUERY: Remove limit to ensure all expenses are loaded
+        // QUERY: Query by orgId and sort client-side to ensure docs with custom/missing dates are never dropped
         const qExpenses = query(
             collection(db, "expenses"),
-            where("orgId", "==", currentTeam.id),
-            orderBy("date", "desc")
+            where("orgId", "==", currentTeam.id)
         )
         const unsubExpenses = onSnapshot(qExpenses, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as Expense))
+            // Sort client-side by date / createdAt descending
+            data.sort((a, b) => {
+                const timeA = new Date(a.date || a.createdAt || 0).getTime()
+                const timeB = new Date(b.date || b.createdAt || 0).getTime()
+                return timeB - timeA
+            })
             // CLIENT-SIDE FILTER: Include if isArchived is false OR undefined AND isDeleted is not true
             setExpenses(data.filter(d => d.isArchived !== true && d.isDeleted !== true))
         }, (error) => console.error("[FinanceContext] Expenses sync error:", error))
 
         // 2. Incomes (Active & Ordered)
-        // QUERY: Remove limit to ensure all incomes are loaded
         const qIncomes = query(
             collection(db, "incomes"),
-            where("orgId", "==", currentTeam.id),
-            orderBy("date", "desc")
+            where("orgId", "==", currentTeam.id)
         )
         const unsubIncomes = onSnapshot(qIncomes, (snap) => {
             const data = snap.docs.map(d => ({ ...d.data(), id: d.id } as IncomeDocument))
+            data.sort((a, b) => {
+                const timeA = new Date(a.date || a.createdAt || 0).getTime()
+                const timeB = new Date(b.date || b.createdAt || 0).getTime()
+                return timeB - timeA
+            })
             // CLIENT-SIDE FILTER
             setIncomes(data.filter(d => d.isArchived !== true && d.isDeleted !== true))
         }, (error) => console.error("[FinanceContext] Incomes sync error:", error))
@@ -162,17 +170,23 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
 
     // Finance Actions
     const addExpense = useCallback(async (expenseData: Omit<Expense, "id" | "createdAt" | "orgId">) => {
-        if (!currentTeam) return
+        const targetOrgId = (expenseData as any).orgId || currentTeam?.id || currentUser?.orgIds?.[0] || (typeof window !== "undefined" ? localStorage.getItem("lastOrgId") : null)
+        if (!targetOrgId) {
+            console.error("[FinanceContext] Cannot add expense: missing organization ID")
+            return
+        }
         try {
             const payload = {
                 ...expenseData,
-                orgId: currentTeam.id,
+                date: expenseData.date || new Date().toISOString().split("T")[0],
+                orgId: targetOrgId,
                 createdAt: new Date().toISOString(),
-                createdBy: currentUser?.id
+                createdBy: currentUser?.id || "",
+                createdByName: currentUser?.name || ""
             }
             const docRef = await addDoc(collection(db, "expenses"), payload)
             // Fire-and-forget: don't block the caller waiting for activity log
-            logActivity(db, currentTeam.id, {
+            logActivity(db, targetOrgId, {
                 action: "CREATE",
                 entityType: "EXPENSE",
                 entityId: docRef.id,
