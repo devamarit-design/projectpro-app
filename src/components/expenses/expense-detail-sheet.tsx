@@ -201,7 +201,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                     onClick={onClose}
                 />
 
-                <div className="relative w-full max-w-md h-full bg-card border-l border-border shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col text-foreground">
+                <div className="relative w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl h-full bg-card border-l border-border shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col text-foreground">
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 pt-[calc(1.5rem+env(safe-area-inset-top))] border-b border-border shrink-0 relative z-50">
                         <div className="flex items-center gap-3">
@@ -512,13 +512,22 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                             </h3>
 
                             {/* Items */}
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 {(currentItems.length > 0 ? currentItems : (isEditing ? [] : [])).map((item, idx) => (
-                                    <div key={item.id || idx} className={cn("flex flex-col sm:flex-row sm:items-center justify-between text-sm py-2 border-b border-white/5 last:border-0 gap-2", isEditing && "items-stretch")}>
+                                    <div
+                                        key={item.id || idx}
+                                        className={cn(
+                                            "transition-all",
+                                            isEditing
+                                                ? "p-3 rounded-xl bg-muted/30 border border-border/70 space-y-2.5"
+                                                : "flex items-center justify-between text-sm py-2 border-b border-border/40 last:border-0 gap-3"
+                                        )}
+                                    >
                                         {isEditing ? (
                                             <>
-                                                <div className="flex-1 flex gap-2 min-w-0">
-                                                    <div className="w-[110px] shrink-0">
+                                                {/* Top row: Category, Description, and Delete button */}
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <div className="w-28 sm:w-32 shrink-0">
                                                         <select
                                                             value={item.category}
                                                             onChange={(e) => {
@@ -526,7 +535,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                                                 newItems[idx] = { ...item, category: e.target.value as any }
                                                                 setEditForm(prev => ({ ...prev, items: newItems }))
                                                             }}
-                                                            className="w-full bg-background border border-input rounded-lg px-2 py-2 text-xs focus:outline-none focus:border-primary/50 h-full text-foreground"
+                                                            className="w-full bg-background border border-input rounded-lg px-2.5 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
                                                         >
                                                             <option value="Material">Material</option>
                                                             <option value="Labor">Labor</option>
@@ -541,42 +550,53 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                                             newItems[idx] = { ...item, description: e.target.value }
                                                             setEditForm(prev => ({ ...prev, items: newItems }))
                                                         }}
-                                                        className="flex-1 bg-background border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 min-w-[100px] text-foreground"
-                                                        placeholder="Item description"
+                                                        className="flex-1 min-w-0 bg-background border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                                                        placeholder="รายละเอียดรายการ (Item description)"
                                                     />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newItems = currentItems.filter((_, i) => i !== idx)
+                                                            setEditForm(prev => ({ ...prev, items: newItems }))
+                                                        }}
+                                                        className="p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-colors shrink-0"
+                                                        title="ลบรายการ"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </div>
-                                                <div className="flex items-center gap-2 pl-0 sm:pl-2">
-                                                    <div className="flex-1 sm:w-28">
+
+                                                {/* Bottom row: Amount with currency label */}
+                                                <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/40">
+                                                    <span className="text-xs font-medium text-muted-foreground">
+                                                        ยอดเงิน (Amount):
+                                                    </span>
+                                                    <div className="relative w-40 sm:w-48 shrink-0">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">฿</span>
                                                         <input
                                                             type="number"
-                                                            value={item.amount}
+                                                            step="any"
+                                                            value={item.amount || ""}
                                                             onChange={(e) => {
                                                                 const newItems = [...currentItems]
                                                                 newItems[idx] = { ...item, amount: parseFloat(e.target.value) || 0 }
                                                                 setEditForm(prev => ({ ...prev, items: newItems }))
                                                             }}
-                                                            className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm text-right font-mono focus:outline-none focus:border-primary/50 text-foreground"
+                                                            className="w-full bg-background border border-input rounded-lg pl-7 pr-3 py-1.5 text-sm text-right font-mono font-bold focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
                                                             placeholder="0.00"
                                                         />
                                                     </div>
-                                                    <button
-                                                        onClick={() => {
-                                                            const newItems = currentItems.filter((_, i) => i !== idx)
-                                                            setEditForm(prev => ({ ...prev, items: newItems }))
-                                                        }}
-                                                        className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors shrink-0"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
                                                 </div>
                                             </>
                                         ) : (
                                             <>
-                                                <div className="truncate pr-4 text-muted-foreground">
-                                                    {item.description || "Unspecified Item"}
-                                                    <span className="text-[10px] opacity-50 ml-2">({item.category})</span>
+                                                <div className="truncate pr-4 text-muted-foreground flex items-center gap-2 min-w-0">
+                                                    <span className="truncate text-foreground font-medium">{item.description || "Unspecified Item"}</span>
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0 border border-border/50">
+                                                        {item.category}
+                                                    </span>
                                                 </div>
-                                                <div className="font-mono">฿{item.amount.toLocaleString()}</div>
+                                                <div className="font-mono font-bold text-foreground shrink-0">฿{item.amount.toLocaleString()}</div>
                                             </>
                                         )}
                                     </div>
