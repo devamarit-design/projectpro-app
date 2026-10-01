@@ -689,12 +689,13 @@ export function JobSheetPreviewModal({
                         <div
                             ref={sheetRef}
                             id="jobsheet-printable-paper"
-                            className="bg-white text-zinc-900 shadow-2xl rounded-none sm:rounded-[4px] p-8 sm:p-10 font-sans print:shadow-none print:p-6 print:m-0 print:w-full print:max-w-none border border-zinc-200"
+                            className="bg-white text-zinc-900 shadow-2xl rounded-none p-8 sm:p-10 font-sans print:shadow-none print:p-6 print:m-0 print:w-full print:max-w-none border border-zinc-200"
                             style={{
                                 width: "820px",
                                 minWidth: "820px",
                                 minHeight: "1160px",
-                                fontFamily: FONT_FAMILY_STACK
+                                fontFamily: FONT_FAMILY_STACK,
+                                borderRadius: 0
                             }}
                         >
                             {/* Company Header (Using User's Company Logo & Name, NOT App Logo) */}
@@ -753,7 +754,7 @@ export function JobSheetPreviewModal({
                             </div>
 
                             {/* Top Metadata Strip: Clean, Professional, Wide */}
-                            <div className="bg-zinc-50 border border-zinc-300 rounded-[4px] p-3 mb-5 grid grid-cols-4 gap-3 text-xs">
+                            <div className="bg-zinc-50 border border-zinc-300 rounded-none p-3 mb-5 grid grid-cols-4 gap-3 text-xs" style={{ borderRadius: 0 }}>
                                 <div>
                                     <span className="text-zinc-500 block text-[11px] font-medium">ชื่อผู้ปฏิบัติงาน / ผู้รายงาน:</span>
                                     <span className="font-bold text-zinc-900 text-sm">{reporterName}</span>
@@ -788,10 +789,10 @@ export function JobSheetPreviewModal({
                                     </span>
                                 </div>
 
-                                <div className="border border-zinc-400 rounded-[3px] overflow-hidden">
-                                    <table className="w-full text-left border-collapse table-fixed">
+                                <div className="border border-zinc-400 rounded-none overflow-hidden" style={{ borderRadius: 0 }}>
+                                    <table className="w-full text-left border-collapse table-fixed" style={{ borderRadius: 0 }}>
                                         <thead>
-                                            <tr className="bg-zinc-900 text-white font-bold text-xs uppercase tracking-wider">
+                                            <tr className="bg-zinc-900 text-white font-bold text-xs uppercase tracking-wider" style={{ borderRadius: 0 }}>
                                                 <th className="py-2.5 px-2 w-[42px] text-center border-r border-zinc-700">ลำดับ</th>
                                                 <th className="py-2.5 px-3 w-[175px] border-r border-zinc-700">โครงการ / โซน / เวลา</th>
                                                 <th className="py-2.5 px-3.5 border-r border-zinc-700">รายละเอียดงานที่ปฏิบัติ (Work Activities & Progress)</th>
@@ -899,7 +900,7 @@ export function JobSheetPreviewModal({
                             {(jobsheet.obstacles || jobsheet.safetyNotes) && (
                                 <div className="grid grid-cols-2 gap-3 mb-5 text-xs">
                                     {jobsheet.obstacles && (
-                                        <div className="border border-zinc-300 rounded-[4px] p-2.5 bg-amber-50/20 break-words [overflow-wrap:anywhere]">
+                                        <div className="border border-zinc-300 rounded-none p-2.5 bg-amber-50/20 break-words [overflow-wrap:anywhere]" style={{ borderRadius: 0 }}>
                                             <span className="font-bold text-amber-900 block mb-1">
                                                 ⚠️ ปัญหา / อุปสรรคหน้างาน:
                                             </span>
@@ -907,7 +908,7 @@ export function JobSheetPreviewModal({
                                         </div>
                                     )}
                                     {jobsheet.safetyNotes && (
-                                        <div className="border border-zinc-300 rounded-[4px] p-2.5 bg-emerald-50/20 break-words [overflow-wrap:anywhere]">
+                                        <div className="border border-zinc-300 rounded-none p-2.5 bg-emerald-50/20 break-words [overflow-wrap:anywhere]" style={{ borderRadius: 0 }}>
                                             <span className="font-bold text-emerald-900 block mb-1">
                                                 🛡️ ความปลอดภัยหน้างาน:
                                             </span>
@@ -930,7 +931,7 @@ export function JobSheetPreviewModal({
                                                 ? `/api/proxy-image?url=${encodeURIComponent(src)}`
                                                 : src;
                                             return (
-                                                <div key={i} className="aspect-video rounded-[4px] border border-zinc-200 overflow-hidden bg-zinc-100">
+                                                <div key={i} className="aspect-video rounded-none border border-zinc-200 overflow-hidden bg-zinc-100" style={{ borderRadius: 0 }}>
                                                     <img
                                                         src={proxiedSrc}
                                                         alt={`Site photo ${i + 1}`}

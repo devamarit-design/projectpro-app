@@ -466,7 +466,7 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                                     <span className="text-[10px] text-zinc-500">เรียงตามวันที่ปฏิบัติงานจริง</span>
                                 </div>
 
-                                <table className="w-full text-left text-xs border border-zinc-200 rounded-[3px] overflow-hidden">
+                                <table className="w-full text-left text-xs border border-zinc-200 rounded-none overflow-hidden" style={{ borderRadius: 0 }}>
                                     <thead className="bg-zinc-100 text-[10px] uppercase font-bold text-zinc-700 border-b border-zinc-200">
                                         <tr>
                                             <th className="py-2 px-2.5 w-24">วัน / วันที่</th>
