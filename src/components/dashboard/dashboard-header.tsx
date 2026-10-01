@@ -128,7 +128,7 @@ function getWeatherDetails(code: number, isDay: boolean) {
             label: "ท้องฟ้าแจ่มใส",
             en: "Clear Sky",
             icon: isDay ? Sun : Moon,
-            color: isDay ? "text-amber-400" : "text-indigo-300",
+            color: isDay ? "text-amber-500 dark:text-amber-400" : "text-indigo-600 dark:text-indigo-300",
             bgTint: isDay ? "from-amber-500/20" : "from-indigo-500/20",
             bgImage: isDay ? "/assets/dashboard/weather-sunny.jpg" : "/assets/dashboard/weather-night.jpg",
             advisory: "☀️ สภาพอากาศแจ่มใส เหมาะสำหรับงานเทคอนกรีต งานโครงสร้าง และงานกลางแจ้งทุกประเภท",
@@ -140,7 +140,7 @@ function getWeatherDetails(code: number, isDay: boolean) {
             label: code === 3 ? "ท้องฟ้ามีเมฆมาก" : "มีเมฆบางส่วน",
             en: code === 3 ? "Overcast" : "Partly Cloudy",
             icon: isDay ? CloudSun : CloudMoon,
-            color: isDay ? "text-sky-300" : "text-indigo-300",
+            color: isDay ? "text-sky-600 dark:text-sky-300" : "text-indigo-600 dark:text-indigo-300",
             bgTint: isDay ? "from-sky-500/20" : "from-indigo-500/20",
             bgImage: isDay ? "/assets/dashboard/weather-cloudy.jpg" : "/assets/dashboard/weather-night.jpg",
             advisory: "⛅ สภาพอากาศดี อุณหภูมิกำลังดี ปลอดโปร่งสำหรับการปฏิบัติงานหน้างาน",
@@ -152,7 +152,7 @@ function getWeatherDetails(code: number, isDay: boolean) {
             label: "มีหมอกลง",
             en: "Foggy",
             icon: CloudFog,
-            color: "text-slate-300",
+            color: "text-slate-600 dark:text-slate-300",
             bgTint: "from-slate-500/20",
             bgImage: "/assets/dashboard/weather-fog.jpg",
             advisory: "🌫️ มีหมอกในพื้นที่ ระมัดระวังทัศนวิสัยในการขับขี่และควบคุมเครื่องจักรหนัก",
@@ -164,7 +164,7 @@ function getWeatherDetails(code: number, isDay: boolean) {
             label: code >= 65 || code === 82 ? "ฝนตกหนัก" : "มีฝนตก",
             en: "Rain Showers",
             icon: CloudRain,
-            color: "text-blue-400",
+            color: "text-blue-600 dark:text-blue-400",
             bgTint: "from-blue-600/30",
             bgImage: "/assets/dashboard/weather-rain.jpg",
             advisory: "🌧️ มีฝนตก ระวังงานโครงสร้าง งานเทคอนกรีต และความปลอดภัยระบบไฟฟ้าหน้างาน",
@@ -176,7 +176,7 @@ function getWeatherDetails(code: number, isDay: boolean) {
             label: "พายุฝนฟ้าคะนอง",
             en: "Thunderstorm",
             icon: CloudLightning,
-            color: "text-purple-400",
+            color: "text-purple-600 dark:text-purple-400",
             bgTint: "from-purple-600/30",
             bgImage: "/assets/dashboard/weather-thunder.jpg",
             advisory: "⚡ มีพายุฟ้าคะนอง งดงานบนที่สูงและงานติดตั้งเครนเพื่อความปลอดภัยสูงสุด",
@@ -187,7 +187,7 @@ function getWeatherDetails(code: number, isDay: boolean) {
         label: "อากาศทั่วไป",
         en: "Normal",
         icon: isDay ? Sun : Moon,
-        color: isDay ? "text-amber-400" : "text-indigo-300",
+        color: isDay ? "text-amber-500 dark:text-amber-400" : "text-indigo-600 dark:text-indigo-300",
         bgTint: isDay ? "from-amber-500/20" : "from-indigo-500/20",
         bgImage: isDay ? "/assets/dashboard/weather-sunny.jpg" : "/assets/dashboard/weather-night.jpg",
         advisory: "✨ สภาพอากาศปกติ สามารถดำเนินงานได้ตามแผนงาน",
@@ -427,7 +427,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
             {/* 1. Main Weather & Site Forecast Hero Card */}
             <div
                 className={cn(
-                    "relative rounded-3xl border border-white/10 shadow-2xl transition-all duration-300 group min-h-[280px] sm:min-h-[300px] flex flex-col justify-between p-4 sm:p-6 md:p-8",
+                    "relative rounded-3xl border border-border/80 dark:border-white/10 shadow-lg dark:shadow-2xl transition-all duration-300 group min-h-[280px] sm:min-h-[300px] flex flex-col justify-between p-4 sm:p-6 md:p-8 bg-card/60 dark:bg-transparent overflow-hidden",
                     isAdmin ? "lg:col-span-7 xl:col-span-8" : "lg:col-span-12"
                 )}
             >
@@ -437,21 +437,21 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                         key={weatherInfo?.bgImage || "/assets/dashboard/weather-bg.jpg"}
                         src={weatherInfo?.bgImage || "/assets/dashboard/weather-bg.jpg"}
                         alt="Weather & Construction Skyline"
-                        className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.02] transition-all duration-1000 pointer-events-none animate-in fade-in duration-700"
+                        className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.02] transition-all duration-1000 pointer-events-none animate-in fade-in duration-700 opacity-25 dark:opacity-100"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/75 to-black/50 pointer-events-none" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/85 to-white/60 dark:from-black/90 dark:via-black/75 dark:to-black/50 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-white/40 dark:from-black/85 dark:via-transparent dark:to-black/30 pointer-events-none" />
 
                     {/* Ambient glow light orb */}
                     {weatherInfo && (
-                        <div className={cn("absolute -top-20 -left-20 w-72 h-72 rounded-full blur-[100px] pointer-events-none opacity-40 transition-colors duration-1000", weatherInfo.bgTint)} />
+                        <div className={cn("absolute -top-20 -left-20 w-72 h-72 rounded-full blur-[100px] pointer-events-none opacity-20 dark:opacity-40 transition-colors duration-1000", weatherInfo.bgTint)} />
                     )}
                 </div>
 
                 {/* TOP ROW: Date & Location Selector */}
                 <div className="relative z-30 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
                     {/* Date Pill */}
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-white/80 text-xs sm:text-sm font-medium bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-sm">
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-foreground/80 dark:text-white/80 text-xs sm:text-sm font-medium bg-background/80 dark:bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-border/80 dark:border-white/10 shadow-xs dark:shadow-sm">
                         <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
                         <span className="truncate">{formattedDate}</span>
                     </div>
@@ -462,22 +462,22 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                             <button
                                 onClick={() => setShowLocationMenu(!showLocationMenu)}
                                 className={cn(
-                                    "flex items-center gap-1.5 text-xs bg-black/50 hover:bg-black/70 backdrop-blur-md px-2.5 sm:px-3 py-1.5 rounded-full border transition-all shadow-sm max-w-[220px] sm:max-w-none cursor-pointer",
+                                    "flex items-center gap-1.5 text-xs backdrop-blur-md px-2.5 sm:px-3 py-1.5 rounded-full border transition-all shadow-xs dark:shadow-sm max-w-[220px] sm:max-w-none cursor-pointer",
                                     selectedLocation.isGPS
-                                        ? "text-emerald-300 border-emerald-500/40 bg-emerald-950/30 hover:bg-emerald-950/50"
-                                        : "text-white/90 border-white/15 hover:border-primary/40"
+                                        ? "text-emerald-700 dark:text-emerald-300 border-emerald-500/40 bg-emerald-50/80 dark:bg-emerald-950/30 hover:bg-emerald-100/80 dark:hover:bg-emerald-950/50"
+                                        : "text-foreground dark:text-white/90 bg-background/80 dark:bg-black/50 hover:bg-background dark:hover:bg-black/70 border-border/80 dark:border-white/15 hover:border-primary/40"
                                 )}
                                 title="เลือกพื้นที่ไซต์งาน / กดระบุพิกัด GPS"
                             >
                                 <MapPin className={cn(
                                     "w-3.5 h-3.5 shrink-0",
-                                    selectedLocation.isGPS ? "text-emerald-400 animate-pulse" : "text-rose-400"
+                                    selectedLocation.isGPS ? "text-emerald-500 dark:text-emerald-400 animate-pulse" : "text-rose-500 dark:text-rose-400"
                                 )} />
                                 <span className="font-semibold truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[240px]">
                                     {selectedLocation.name}
                                 </span>
                                 {selectedLocation.accuracy && (
-                                    <span className="hidden sm:inline-block text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+                                    <span className="hidden sm:inline-block text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
                                         ±{selectedLocation.accuracy}ม.
                                     </span>
                                 )}
@@ -647,7 +647,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                         <button
                             onClick={() => fetchWeather(selectedLocation.lat, selectedLocation.lon, selectedLocation.name)}
                             disabled={isLoadingWeather}
-                            className="p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/15 text-white/80 hover:text-white transition-all shadow-sm shrink-0 cursor-pointer"
+                            className="p-1.5 rounded-full bg-background/80 hover:bg-background dark:bg-black/40 dark:hover:bg-black/60 backdrop-blur-md border border-border/80 dark:border-white/15 text-foreground/80 hover:text-foreground dark:text-white/80 dark:hover:text-white transition-all shadow-xs dark:shadow-sm shrink-0 cursor-pointer"
                             title="รีเฟรชข้อมูลสภาพอากาศ"
                         >
                             <RefreshCw className={cn("w-3.5 h-3.5", isLoadingWeather && "animate-spin text-primary")} />
@@ -657,7 +657,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                         {onDownload && isAdmin && (
                             <button
                                 onClick={onDownload}
-                                className="hidden sm:flex items-center gap-1.5 text-xs text-white bg-primary/30 hover:bg-primary/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-primary/40 font-medium transition-all shadow-sm active:scale-95"
+                                className="hidden sm:flex items-center gap-1.5 text-xs text-primary-foreground bg-primary/90 hover:bg-primary dark:text-white dark:bg-primary/30 dark:hover:bg-primary/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-primary/40 font-medium transition-all shadow-sm active:scale-95"
                                 title="ออกรายงาน PDF"
                             >
                                 <Download className="w-3.5 h-3.5" />
@@ -672,38 +672,38 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                     {/* Left: Greeting & User Name */}
                     <div className="space-y-1 sm:space-y-1.5">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 inline-flex items-center gap-1">
+                            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30 inline-flex items-center gap-1">
                                 <Sparkles className="w-3 h-3" />
                                 {currentTeam?.role || "Member"}
                             </span>
-                            <span className="text-[11px] sm:text-xs text-white/60">
+                            <span className="text-[11px] sm:text-xs text-muted-foreground dark:text-white/60">
                                 อัปเดต {weather?.updatedAt || "เมื่อสักครู่"}
                             </span>
                         </div>
-                        <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight break-words">
+                        <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-foreground dark:text-white tracking-tight leading-tight break-words">
                             {greeting},{" "}
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-primary/90">
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-amber-500 dark:from-white dark:via-white/90 dark:to-primary/90">
                                 {currentUser?.name?.split(" ")[0] || "Amarit"}
                             </span>
                         </h1>
-                        <p className="text-xs sm:text-sm text-white/70 font-medium flex items-start sm:items-center gap-1.5 leading-snug">
-                            <HardHat className="w-4 h-4 text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
+                        <p className="text-xs sm:text-sm text-muted-foreground dark:text-white/70 font-medium flex items-start sm:items-center gap-1.5 leading-snug">
+                            <HardHat className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
                             <span className="break-words">แดชบอร์ดติดตามสภาพงาน และข้อมูลโครงการประจำวัน</span>
                         </p>
                     </div>
 
                     {/* Right: Weather Metrics Display */}
                     {weather && weatherInfo && (
-                        <div className="flex items-center gap-3 sm:gap-4 bg-black/40 backdrop-blur-md border border-white/10 p-2.5 sm:p-4 rounded-2xl shrink-0 self-start md:self-auto max-w-full">
-                            <div className="p-2 sm:p-2.5 rounded-xl bg-white/10 text-white shadow-inner flex items-center justify-center shrink-0">
+                        <div className="flex items-center gap-3 sm:gap-4 bg-background/80 dark:bg-black/40 backdrop-blur-md border border-border/80 dark:border-white/10 p-2.5 sm:p-4 rounded-2xl shrink-0 self-start md:self-auto max-w-full shadow-xs dark:shadow-none">
+                            <div className="p-2 sm:p-2.5 rounded-xl bg-slate-100 dark:bg-white/10 text-foreground dark:text-white shadow-inner flex items-center justify-center shrink-0">
                                 <WeatherIcon className={cn("w-7 h-7 sm:w-10 sm:h-10 animate-pulse", weatherInfo.color)} />
                             </div>
                             <div className="min-w-0">
                                 <div className="flex items-baseline gap-1.5 flex-wrap">
-                                    <span className="text-2xl sm:text-4xl font-black font-mono text-white tracking-tight">
+                                    <span className="text-2xl sm:text-4xl font-black font-mono text-foreground dark:text-white tracking-tight">
                                         {weather.temperature}°C
                                     </span>
-                                    <span className="text-xs text-white/70 font-medium">
+                                    <span className="text-xs text-muted-foreground dark:text-white/70 font-medium">
                                         (รู้สึก {weather.apparentTemperature}°)
                                     </span>
                                 </div>
@@ -711,7 +711,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                                     <span className={cn("text-xs font-bold", weatherInfo.color)}>
                                         {weatherInfo.label}
                                     </span>
-                                    <span className="text-[10px] text-white/50">
+                                    <span className="text-[10px] text-muted-foreground/80 dark:text-white/50">
                                         {weatherInfo.en}
                                     </span>
                                 </div>
@@ -721,22 +721,22 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                 </div>
 
                 {/* BOTTOM ROW: Weather Detail Pills & Site Advisory */}
-                <div className="relative z-10 space-y-2.5 sm:space-y-3 pt-3 border-t border-white/10">
+                <div className="relative z-10 space-y-2.5 sm:space-y-3 pt-3 border-t border-border/80 dark:border-white/10">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         {/* Weather Spec Pills */}
                         {weather && (
-                            <div className="flex items-center gap-1.5 sm:gap-2.5 text-[11px] sm:text-xs text-white/80 flex-wrap w-full">
-                                <div className="flex items-center gap-1 bg-black/30 px-2 sm:px-2.5 py-1 rounded-lg border border-white/5">
-                                    <Droplets className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-400 shrink-0" />
-                                    <span>ความชื้น: <strong className="text-white font-mono">{weather.humidity}%</strong></span>
+                            <div className="flex items-center gap-1.5 sm:gap-2.5 text-[11px] sm:text-xs text-foreground/80 dark:text-white/80 flex-wrap w-full">
+                                <div className="flex items-center gap-1 bg-background/90 dark:bg-black/30 px-2 sm:px-2.5 py-1 rounded-lg border border-border/80 dark:border-white/5 shadow-2xs dark:shadow-none">
+                                    <Droplets className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-500 dark:text-blue-400 shrink-0" />
+                                    <span>ความชื้น: <strong className="text-foreground dark:text-white font-mono">{weather.humidity}%</strong></span>
                                 </div>
-                                <div className="flex items-center gap-1 bg-black/30 px-2 sm:px-2.5 py-1 rounded-lg border border-white/5">
-                                    <Wind className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-teal-300 shrink-0" />
-                                    <span>ความเร็วลม: <strong className="text-white font-mono">{weather.windSpeed} km/h</strong></span>
+                                <div className="flex items-center gap-1 bg-background/90 dark:bg-black/30 px-2 sm:px-2.5 py-1 rounded-lg border border-border/80 dark:border-white/5 shadow-2xs dark:shadow-none">
+                                    <Wind className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-teal-600 dark:text-teal-300 shrink-0" />
+                                    <span>ความเร็วลม: <strong className="text-foreground dark:text-white font-mono">{weather.windSpeed} km/h</strong></span>
                                 </div>
-                                <div className="flex items-center gap-1 bg-black/30 px-2 sm:px-2.5 py-1 rounded-lg border border-white/5">
-                                    <Thermometer className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 shrink-0" />
-                                    <span>ดัชนีความร้อน: <strong className="text-white font-mono">{weather.apparentTemperature}°C</strong></span>
+                                <div className="flex items-center gap-1 bg-background/90 dark:bg-black/30 px-2 sm:px-2.5 py-1 rounded-lg border border-border/80 dark:border-white/5 shadow-2xs dark:shadow-none">
+                                    <Thermometer className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
+                                    <span>ดัชนีความร้อน: <strong className="text-foreground dark:text-white font-mono">{weather.apparentTemperature}°C</strong></span>
                                 </div>
                             </div>
                         )}
@@ -747,10 +747,10 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                         <div
                             className={cn(
                                 "flex items-start sm:items-center gap-2 p-2.5 sm:p-3 rounded-xl text-xs sm:text-sm font-medium border backdrop-blur-md transition-colors w-full",
-                                weatherInfo.advisoryType === "good" && "bg-emerald-500/10 border-emerald-500/20 text-emerald-300",
-                                weatherInfo.advisoryType === "warning" && "bg-amber-500/10 border-amber-500/20 text-amber-300",
-                                weatherInfo.advisoryType === "caution" && "bg-blue-500/10 border-blue-500/20 text-blue-300",
-                                weatherInfo.advisoryType === "danger" && "bg-rose-500/15 border-rose-500/30 text-rose-300 animate-pulse"
+                                weatherInfo.advisoryType === "good" && "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300",
+                                weatherInfo.advisoryType === "warning" && "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-300",
+                                weatherInfo.advisoryType === "caution" && "bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-300",
+                                weatherInfo.advisoryType === "danger" && "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-500/15 dark:border-rose-500/30 dark:text-rose-300 animate-pulse"
                             )}
                         >
                             <span className="flex-1 break-words leading-relaxed">{weatherInfo.advisory}</span>
@@ -765,42 +765,42 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                     {/* Financial Card */}
                     <Link
                         href="/financial"
-                        className="relative flex-1 group overflow-hidden rounded-3xl border border-amber-500/20 hover:border-amber-500/50 p-6 min-h-[160px] shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col justify-between"
+                        className="relative flex-1 group overflow-hidden rounded-3xl border border-amber-500/30 hover:border-amber-500/60 dark:border-amber-500/20 dark:hover:border-amber-500/50 p-6 min-h-[160px] shadow-lg hover:shadow-xl dark:shadow-xl dark:hover:shadow-2xl transition-all duration-300 flex flex-col justify-between bg-gradient-to-br from-amber-50/70 via-white to-orange-50/50 dark:bg-none"
                     >
                         {/* Background Image */}
                         <img
                             src="/assets/dashboard/financial-bg.jpg"
                             alt="Financial Background"
-                            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 pointer-events-none"
+                            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 pointer-events-none opacity-20 dark:opacity-100"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/35 group-hover:from-black/85 transition-colors pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-white/95 via-white/80 to-white/40 dark:from-black/95 dark:via-black/60 dark:to-black/35 group-hover:from-white/90 dark:group-hover:from-black/85 transition-colors pointer-events-none" />
                         <div className="absolute -top-10 -right-10 w-44 h-44 bg-amber-500/15 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/25 transition-colors duration-700" />
 
                         {/* Top Badge */}
                         <div className="relative z-10 flex items-center justify-between">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-bold uppercase tracking-wider">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-700 border border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-400 text-[11px] font-bold uppercase tracking-wider">
                                 <FileBarChart className="w-3.5 h-3.5" />
                                 Financial
                             </span>
-                            <span className="text-[10px] text-amber-400/80 font-mono font-semibold bg-black/40 px-2 py-0.5 rounded-full border border-white/5">
+                            <span className="text-[10px] text-amber-700 dark:text-amber-400/80 font-mono font-semibold bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded-full border border-amber-200/60 dark:border-white/5 shadow-2xs dark:shadow-none">
                                 Report & Analysis
                             </span>
                         </div>
 
                         {/* Title & Description */}
                         <div className="relative z-10 my-2">
-                            <h3 className="font-extrabold text-lg sm:text-xl text-white group-hover:text-amber-300 transition-colors">
+                            <h3 className="font-extrabold text-lg sm:text-xl text-foreground group-hover:text-amber-600 dark:text-white dark:group-hover:text-amber-300 transition-colors">
                                 การเงินและรายงาน
                             </h3>
-                            <p className="text-white/70 text-xs mt-0.5 line-clamp-1">
+                            <p className="text-muted-foreground dark:text-white/70 text-xs mt-0.5 line-clamp-1">
                                 สรุปกระแสเงินสด รายรับ-รายจ่าย และกำไรโครงการ
                             </p>
                         </div>
 
                         {/* Bottom Action */}
-                        <div className="relative z-10 flex items-center justify-between pt-2 border-t border-white/10">
-                            <span className="text-xs text-white/60">ดูรายงานภาพรวม</span>
-                            <div className="bg-amber-500/20 group-hover:bg-amber-500/30 text-amber-300 px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 border border-amber-500/30 transition-all group-hover:translate-x-1">
+                        <div className="relative z-10 flex items-center justify-between pt-2 border-t border-amber-500/20 dark:border-white/10">
+                            <span className="text-xs text-muted-foreground dark:text-white/60">ดูรายงานภาพรวม</span>
+                            <div className="bg-amber-500/15 group-hover:bg-amber-500/25 text-amber-700 dark:bg-amber-500/20 dark:group-hover:bg-amber-500/30 dark:text-amber-300 px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 border border-amber-500/30 transition-all group-hover:translate-x-1">
                                 View <ArrowRight className="w-3 h-3" />
                             </div>
                         </div>
@@ -809,42 +809,42 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                     {/* Team & Assets Card */}
                     <Link
                         href="/team"
-                        className="relative flex-1 group overflow-hidden rounded-3xl border border-blue-500/20 hover:border-blue-500/50 p-6 min-h-[160px] shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col justify-between"
+                        className="relative flex-1 group overflow-hidden rounded-3xl border border-blue-500/30 hover:border-blue-500/60 dark:border-blue-500/20 dark:hover:border-blue-500/50 p-6 min-h-[160px] shadow-lg hover:shadow-xl dark:shadow-xl dark:hover:shadow-2xl transition-all duration-300 flex flex-col justify-between bg-gradient-to-br from-blue-50/70 via-white to-cyan-50/50 dark:bg-none"
                     >
                         {/* Background Image */}
                         <img
                             src="/assets/dashboard/team-bg.jpg"
                             alt="Team Background"
-                            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 pointer-events-none"
+                            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 pointer-events-none opacity-20 dark:opacity-100"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/35 group-hover:from-black/85 transition-colors pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-white/95 via-white/80 to-white/40 dark:from-black/95 dark:via-black/60 dark:to-black/35 group-hover:from-white/90 dark:group-hover:from-black/85 transition-colors pointer-events-none" />
                         <div className="absolute -top-10 -right-10 w-44 h-44 bg-blue-500/15 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/25 transition-colors duration-700" />
 
                         {/* Top Badge */}
                         <div className="relative z-10 flex items-center justify-between">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[11px] font-bold uppercase tracking-wider">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-700 border border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-400 text-[11px] font-bold uppercase tracking-wider">
                                 <Trophy className="w-3.5 h-3.5" />
                                 Team & Assets
                             </span>
-                            <span className="text-[10px] text-blue-400/80 font-mono font-semibold bg-black/40 px-2 py-0.5 rounded-full border border-white/5">
+                            <span className="text-[10px] text-blue-700 dark:text-blue-400/80 font-mono font-semibold bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded-full border border-blue-200/60 dark:border-white/5 shadow-2xs dark:shadow-none">
                                 Manage Team & Site
                             </span>
                         </div>
 
                         {/* Title & Description */}
                         <div className="relative z-10 my-2">
-                            <h3 className="font-extrabold text-lg sm:text-xl text-white group-hover:text-blue-300 transition-colors">
+                            <h3 className="font-extrabold text-lg sm:text-xl text-foreground group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-300 transition-colors">
                                 ทีมงานและไซต์งาน
                             </h3>
-                            <p className="text-white/70 text-xs mt-0.5 line-clamp-1">
+                            <p className="text-muted-foreground dark:text-white/70 text-xs mt-0.5 line-clamp-1">
                                 จัดการสมาชิก ช่าง ผู้รับเหมา และเครื่องจักรหน้างาน
                             </p>
                         </div>
 
                         {/* Bottom Action */}
-                        <div className="relative z-10 flex items-center justify-between pt-2 border-t border-white/10">
-                            <span className="text-xs text-white/60">สำรวจทีมงาน</span>
-                            <div className="bg-blue-500/20 group-hover:bg-blue-500/30 text-blue-300 px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 border border-blue-500/30 transition-all group-hover:translate-x-1">
+                        <div className="relative z-10 flex items-center justify-between pt-2 border-t border-blue-500/20 dark:border-white/10">
+                            <span className="text-xs text-muted-foreground dark:text-white/60">สำรวจทีมงาน</span>
+                            <div className="bg-blue-500/15 group-hover:bg-blue-500/25 text-blue-700 dark:bg-blue-500/20 dark:group-hover:bg-blue-500/30 dark:text-blue-300 px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 border border-blue-500/30 transition-all group-hover:translate-x-1">
                                 Explore <ArrowRight className="w-3 h-3" />
                             </div>
                         </div>

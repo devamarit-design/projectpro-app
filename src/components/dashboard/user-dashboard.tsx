@@ -66,7 +66,7 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
                                 {t.dashboard.view_all || "View All"}
                             </Link>
                         </div>
-                        <div className="bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-sm">
+                        <div className="bg-card/70 dark:bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-border dark:border-white/10 shadow-sm">
                             <WallFeed variant="widget" />
                         </div>
                     </div>
