@@ -27,8 +27,13 @@ import {
     Navigation,
     ShieldAlert,
     CheckCircle2,
-    HardHat
+    HardHat,
+    Search,
+    Crosshair,
+    Building2,
+    X
 } from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 interface DashboardHeaderProps {
@@ -46,14 +51,76 @@ interface WeatherData {
     updatedAt: string
 }
 
-const SITE_LOCATIONS = [
-    { id: "chonburi", name: "ชลบุรี (บางละมุง/พัทยา)", lat: 12.9276, lon: 100.8771 },
-    { id: "bangkok", name: "กรุงเทพมหานคร", lat: 13.7563, lon: 100.5018 },
-    { id: "rayong", name: "ระยอง", lat: 12.6814, lon: 101.2816 },
-    { id: "chiangmai", name: "เชียงใหม่", lat: 18.7883, lon: 98.9853 },
-    { id: "phuket", name: "ภูเก็ต", lat: 7.8804, lon: 98.3923 },
-    { id: "khonkaen", name: "ขอนแก่น", lat: 16.4419, lon: 102.8359 },
+export interface LocationOption {
+    id: string
+    name: string
+    lat: number
+    lon: number
+    isGPS?: boolean
+    accuracy?: number
+    region?: string
+}
+
+const POPULAR_LOCATIONS: LocationOption[] = [
+    { id: "bangkok", name: "กรุงเทพมหานคร", lat: 13.7563, lon: 100.5018, region: "กทม.และปริมณฑล" },
+    { id: "nonthaburi", name: "นนทบุรี", lat: 13.8591, lon: 100.5217, region: "กทม.และปริมณฑล" },
+    { id: "samutprakan", name: "สมุทรปราการ (บางพลี/บางปู)", lat: 13.5991, lon: 100.5998, region: "กทม.และปริมณฑล" },
+    { id: "pathumthani", name: "ปทุมธานี (รังสิต/คลองหลวง)", lat: 14.0208, lon: 100.5250, region: "กทม.และปริมณฑล" },
+    { id: "samutsakhon", name: "สมุทรสาคร (มหาชัย)", lat: 13.5475, lon: 100.2744, region: "กทม.และปริมณฑล" },
+    { id: "chonburi", name: "ชลบุรี (เมือง/ศรีราชา)", lat: 13.3611, lon: 100.9847, region: "ภาคตะวันออก" },
+    { id: "pattaya", name: "พัทยา / บางละมุง (ชลบุรี)", lat: 12.9276, lon: 100.8771, region: "ภาคตะวันออก" },
+    { id: "rayong", name: "ระยอง (เมือง/มาบตาพุด)", lat: 12.6814, lon: 101.2816, region: "ภาคตะวันออก" },
+    { id: "chachoengsao", name: "ฉะเชิงเทรา", lat: 13.6904, lon: 101.0779, region: "ภาคตะวันออก" },
+    { id: "ayutthaya", name: "พระนครศรีอยุธยา (โรจนะ)", lat: 14.3532, lon: 100.5684, region: "ภาคกลาง" },
+    { id: "saraburi", name: "สระบุรี (แก่งคอย)", lat: 14.5289, lon: 100.9101, region: "ภาคกลาง" },
+    { id: "chiangmai", name: "เชียงใหม่ (เมือง/หางดง)", lat: 18.7883, lon: 98.9853, region: "ภาคเหนือ" },
+    { id: "chiangrai", name: "เชียงราย", lat: 19.9105, lon: 99.8406, region: "ภาคเหนือ" },
+    { id: "korat", name: "นครราชสีมา (โคราช/ปากช่อง)", lat: 14.9799, lon: 102.0978, region: "ภาคอีสาน" },
+    { id: "khonkaen", name: "ขอนแก่น", lat: 16.4419, lon: 102.8359, region: "ภาคอีสาน" },
+    { id: "phuket", name: "ภูเก็ต (เมือง/ถลาง)", lat: 7.8804, lon: 98.3923, region: "ภาคใต้" },
+    { id: "surat", name: "สุราษฎร์ธานี (สมุย)", lat: 9.1382, lon: 99.3217, region: "ภาคใต้" },
+    { id: "songkhla", name: "สงขลา (หาดใหญ่)", lat: 7.0084, lon: 100.4767, region: "ภาคใต้" },
+    { id: "huahin", name: "ประจวบคีรีขันธ์ (หัวหิน)", lat: 12.5684, lon: 99.9577, region: "ภาคใต้" },
 ]
+
+// Accurate Thai Reverse Geocoding helper
+async function resolveThaiLocation(lat: number, lon: number, accuracy?: number): Promise<string> {
+    try {
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=th`)
+        if (res.ok) {
+            const data = await res.json()
+            const rawProvince = (data.principalSubdivision || data.city || "").replace(/^จังหวัด/, "").trim()
+            const districtObj = data.localityInfo?.administrative?.find((a: any) => a.adminLevel === 6)
+            const rawDistrict = (districtObj?.name || data.city || "").trim()
+            const subDistrict = (data.locality || "").trim()
+
+            const isBkk = rawProvince.includes("กรุงเทพ") || rawDistrict.includes("เขต")
+
+            if (isBkk) {
+                const district = rawDistrict.replace(/^เขต/, "เขต")
+                return district ? `${district}, กรุงเทพฯ` : "กรุงเทพมหานคร"
+            }
+
+            if (subDistrict.includes("พัทยา")) {
+                return `พัทยา (บางละมุง, ชลบุรี)`
+            }
+
+            if (rawDistrict && rawProvince) {
+                const district = rawDistrict.startsWith("อำเภอ") || rawDistrict.startsWith("อ.") 
+                    ? rawDistrict.replace(/^อำเภอ/, "อ.")
+                    : `อ.${rawDistrict}`
+                return `${district}, ${rawProvince}`
+            }
+
+            if (rawProvince) return rawProvince
+            if (rawDistrict) return rawDistrict
+        }
+    } catch (e) {
+        console.warn("Reverse geocode failed:", e)
+    }
+
+    return `พิกัด (${lat.toFixed(4)}, ${lon.toFixed(4)})`
+}
 
 function getWeatherDetails(code: number, isDay: boolean) {
     if (code === 0) {
@@ -129,16 +196,17 @@ function getWeatherDetails(code: number, isDay: boolean) {
 }
 
 export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
-    const { currentUser, currentTeam } = useProjects()
+    const { currentUser, currentTeam, projects } = useProjects()
     const { t, locale } = useTranslation()
     const isAdmin = currentTeam?.role === 'Owner' || currentTeam?.role === 'Admin'
 
     // Selected site location state
-    const [selectedLocation, setSelectedLocation] = useState(SITE_LOCATIONS[0])
+    const [selectedLocation, setSelectedLocation] = useState<LocationOption>(POPULAR_LOCATIONS[0])
     const [weather, setWeather] = useState<WeatherData | null>(null)
     const [isLoadingWeather, setIsLoadingWeather] = useState(false)
     const [isLocatingGPS, setIsLocatingGPS] = useState(false)
     const [showLocationMenu, setShowLocationMenu] = useState(false)
+    const [searchQuery, setSearchQuery] = useState("")
 
     // Time-based greeting
     const hour = new Date().getHours()
@@ -182,7 +250,6 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
             }
         } catch (error) {
             console.error("Weather fetch failed, falling back to default:", error)
-            // Graceful fallback
             setWeather({
                 temperature: 32,
                 apparentTemperature: 35,
@@ -198,36 +265,159 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
         }
     }, [hour])
 
-    // Initial weather load
+    // Auto-detect location on initial load (LocalStorage -> Granted GPS -> IP Geolocation)
+    useEffect(() => {
+        let hasResolved = false
+
+        // 1. Try saved location from localStorage
+        try {
+            const saved = localStorage.getItem("hipsloth_weather_location")
+            if (saved) {
+                const parsed = JSON.parse(saved)
+                if (parsed?.lat && parsed?.lon) {
+                    setSelectedLocation(parsed)
+                    hasResolved = true
+                }
+            }
+        } catch (e) {
+            console.warn("Error reading saved location:", e)
+        }
+
+        const autoDetectIP = async () => {
+            try {
+                const res = await fetch("https://ipwho.is/")
+                if (res.ok) {
+                    const data = await res.json()
+                    if (data?.success && data?.latitude && data?.longitude) {
+                        const lat = data.latitude
+                        const lon = data.longitude
+                        const name = await resolveThaiLocation(lat, lon)
+                        const locData: LocationOption = { id: "ip", name, lat, lon, isGPS: false }
+                        setSelectedLocation(locData)
+                        try {
+                            localStorage.setItem("hipsloth_weather_location", JSON.stringify(locData))
+                        } catch (e) {}
+                    }
+                }
+            } catch (err) {
+                console.warn("IP geolocation fallback error:", err)
+            }
+        }
+
+        // 2. If geolocation permission is already granted, auto-detect high-accuracy GPS silently
+        if (typeof navigator !== "undefined" && navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({ name: "geolocation" }).then((perm) => {
+                if (perm.state === "granted") {
+                    navigator.geolocation.getCurrentPosition(
+                        async (pos) => {
+                            const lat = pos.coords.latitude
+                            const lon = pos.coords.longitude
+                            const accuracy = Math.round(pos.coords.accuracy)
+                            const name = await resolveThaiLocation(lat, lon, accuracy)
+                            const loc: LocationOption = { id: "gps", name, lat, lon, isGPS: true, accuracy }
+                            setSelectedLocation(loc)
+                            try {
+                                localStorage.setItem("hipsloth_weather_location", JSON.stringify(loc))
+                            } catch (e) {}
+                        },
+                        () => {
+                            if (!hasResolved) autoDetectIP()
+                        },
+                        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+                    )
+                } else if (!hasResolved) {
+                    autoDetectIP()
+                }
+            }).catch(() => {
+                if (!hasResolved) autoDetectIP()
+            })
+        } else if (!hasResolved) {
+            autoDetectIP()
+        }
+    }, [])
+
+    // Weather load when location changes
     useEffect(() => {
         fetchWeather(selectedLocation.lat, selectedLocation.lon, selectedLocation.name)
     }, [selectedLocation, fetchWeather])
 
-    // Detect browser GPS
+    // High-accuracy GPS Detection on user click
     const handleGPSDetect = () => {
         if (!navigator.geolocation) {
-            alert("อุปกรณ์ของคุณไม่รองรับการระบุพิกัดตำแหน่ง (Geolocation)")
+            toast.error("อุปกรณ์ของคุณไม่รองรับการระบุพิกัดตำแหน่ง (Geolocation)")
             return
         }
         setIsLocatingGPS(true)
+        toast.info("กำลังรับสัญญาณดาวเทียม GPS เพื่อระบุพิกัดหน้างานที่แม่นยำ...")
+
         navigator.geolocation.getCurrentPosition(
-            (pos) => {
+            async (pos) => {
                 const lat = pos.coords.latitude
                 const lon = pos.coords.longitude
-                const gpsLocation = { id: "gps", name: "พิกัดปัจจุบัน (GPS หน้างาน)", lat, lon }
+                const accuracy = Math.round(pos.coords.accuracy)
+                const name = await resolveThaiLocation(lat, lon, accuracy)
+                const gpsLocation: LocationOption = {
+                    id: "gps",
+                    name,
+                    lat,
+                    lon,
+                    isGPS: true,
+                    accuracy
+                }
                 setSelectedLocation(gpsLocation)
+                try {
+                    localStorage.setItem("hipsloth_weather_location", JSON.stringify(gpsLocation))
+                } catch (e) {}
                 setShowLocationMenu(false)
                 setIsLocatingGPS(false)
-                fetchWeather(lat, lon, gpsLocation.name)
+                fetchWeather(lat, lon, name)
+                toast.success(`พบพิกัดหน้างาน: ${name} (แม่นยำ ±${accuracy} ม.)`)
             },
             (err) => {
-                console.warn("Geolocation permission denied or error:", err)
+                console.warn("Geolocation permission error:", err)
                 setIsLocatingGPS(false)
-                alert("ไม่สามารถเข้าถึงตำแหน่งของคุณได้ กรุณาเปิดสิทธิ์ระบุตำแหน่งในเบราว์เซอร์")
+                toast.error("ไม่สามารถเข้าถึง GPS ได้ กรุณาเปิดสิทธิ์ระบุตำแหน่งในเบราว์เซอร์")
             },
-            { timeout: 10000 }
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
         )
     }
+
+    // Filter locations by search query
+    const filteredLocations = React.useMemo(() => {
+        if (!searchQuery.trim()) return POPULAR_LOCATIONS
+        const q = searchQuery.toLowerCase().trim()
+        return POPULAR_LOCATIONS.filter(l =>
+            l.name.toLowerCase().includes(q) ||
+            l.region?.toLowerCase().includes(q)
+        )
+    }, [searchQuery])
+
+    // Project sites with locations
+    const projectSites = React.useMemo(() => {
+        if (!projects || projects.length === 0) return []
+        const sites: { id: string, name: string, projectTitle: string, locationStr: string, lat: number, lon: number }[] = []
+        const seen = new Set<string>()
+
+        projects.forEach(p => {
+            if (p.location && p.location.trim()) {
+                const locKey = p.location.trim().toLowerCase()
+                if (!seen.has(locKey)) {
+                    seen.add(locKey)
+                    // Match to known coordinate if possible, or fallback to Bangkok
+                    const matched = POPULAR_LOCATIONS.find(l => l.name.toLowerCase().includes(locKey) || locKey.includes(l.name.toLowerCase()))
+                    sites.push({
+                        id: `proj-${p.id}`,
+                        name: `ไซต์ ${p.name} (${p.location})`,
+                        projectTitle: p.name,
+                        locationStr: p.location.trim(),
+                        lat: matched?.lat || 13.7563,
+                        lon: matched?.lon || 100.5018
+                    })
+                }
+            }
+        })
+        return sites
+    }, [projects])
 
     const weatherInfo = weather ? getWeatherDetails(weather.weatherCode, weather.isDay) : null
     const WeatherIcon = weatherInfo ? weatherInfo.icon : Sun
@@ -269,13 +459,26 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                         <div className="relative z-50">
                             <button
                                 onClick={() => setShowLocationMenu(!showLocationMenu)}
-                                className="flex items-center gap-1.5 text-xs text-white/90 bg-black/50 hover:bg-black/70 backdrop-blur-md px-2.5 sm:px-3 py-1.5 rounded-full border border-white/15 transition-all shadow-sm group-hover:border-primary/40 max-w-[200px] sm:max-w-none"
-                                title="เลือกพื้นที่ไซต์งาน"
+                                className={cn(
+                                    "flex items-center gap-1.5 text-xs bg-black/50 hover:bg-black/70 backdrop-blur-md px-2.5 sm:px-3 py-1.5 rounded-full border transition-all shadow-sm max-w-[220px] sm:max-w-none cursor-pointer",
+                                    selectedLocation.isGPS
+                                        ? "text-emerald-300 border-emerald-500/40 bg-emerald-950/30 hover:bg-emerald-950/50"
+                                        : "text-white/90 border-white/15 hover:border-primary/40"
+                                )}
+                                title="เลือกพื้นที่ไซต์งาน / กดระบุพิกัด GPS"
                             >
-                                <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                                <span className="font-medium truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[220px]">
+                                <MapPin className={cn(
+                                    "w-3.5 h-3.5 shrink-0",
+                                    selectedLocation.isGPS ? "text-emerald-400 animate-pulse" : "text-rose-400"
+                                )} />
+                                <span className="font-semibold truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[240px]">
                                     {selectedLocation.name}
                                 </span>
+                                {selectedLocation.accuracy && (
+                                    <span className="hidden sm:inline-block text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+                                        ±{selectedLocation.accuracy}ม.
+                                    </span>
+                                )}
                             </button>
 
                             {/* Dropdown Menu */}
@@ -285,35 +488,141 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                                         className="fixed inset-0 z-40 cursor-default"
                                         onClick={() => setShowLocationMenu(false)}
                                     />
-                                    <div className="absolute right-0 top-full mt-2 w-56 bg-background/98 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 origin-top-right p-1.5">
-                                        <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-white/5">
-                                            เลือกตำแหน่งสภาพอากาศ
+                                    <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-[#13151f] text-popover-foreground border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 origin-top-right p-2">
+                                        {/* Header */}
+                                        <div className="px-2 py-1.5 flex items-center justify-between border-b border-white/10 mb-1.5">
+                                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                                <Crosshair className="w-3 h-3 text-primary" /> เลือกพิกัดไซต์งาน / สภาพอากาศ
+                                            </span>
+                                            {selectedLocation.isGPS && (
+                                                <span className="text-[9px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                                    GPS เชื่อมต่อแล้ว
+                                                </span>
+                                            )}
                                         </div>
-                                    <button
-                                        onClick={handleGPSDetect}
-                                        disabled={isLocatingGPS}
-                                        className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-primary/20 text-primary font-semibold flex items-center gap-2 transition-colors my-1"
-                                    >
-                                        <Navigation className={cn("w-3.5 h-3.5", isLocatingGPS && "animate-spin")} />
-                                        <span>{isLocatingGPS ? "กำลังตรวจพิกัด GPS..." : "📍 ใช้พิกัดปัจจุบัน (GPS)"}</span>
-                                    </button>
-                                    <div className="h-px bg-white/5 my-1" />
-                                    {SITE_LOCATIONS.map((loc) => (
+
+                                        {/* GPS Quick Action Button */}
                                         <button
-                                            key={loc.id}
-                                            onClick={() => {
-                                                setSelectedLocation(loc)
-                                                setShowLocationMenu(false)
-                                            }}
+                                            onClick={handleGPSDetect}
+                                            disabled={isLocatingGPS}
                                             className={cn(
-                                                "w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-muted/40 transition-colors flex items-center justify-between",
-                                                selectedLocation.id === loc.id ? "bg-primary/10 text-primary font-bold" : "text-foreground"
+                                                "w-full text-left p-2.5 rounded-xl border text-xs font-semibold flex items-center gap-2.5 transition-all mb-2 cursor-pointer shadow-sm",
+                                                isLocatingGPS
+                                                    ? "bg-primary/20 border-primary/40 text-primary"
+                                                    : "bg-emerald-500/15 border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-300 hover:border-emerald-400/50"
                                             )}
                                         >
-                                            <span>{loc.name}</span>
-                                            {selectedLocation.id === loc.id && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                            <Navigation className={cn("w-4 h-4 shrink-0 text-emerald-400", isLocatingGPS && "animate-spin text-primary")} />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-bold leading-tight">
+                                                    {isLocatingGPS ? "กำลังจับพิกัดดาวเทียม GPS..." : "📍 ระบุพิกัดปัจจุบัน (GPS แม่นยำสูง)"}
+                                                </p>
+                                                <p className="text-[10px] text-emerald-400/80 font-normal mt-0.5 truncate">
+                                                    ค้นหาตำแหน่งหน้างานจริงจากดาวเทียมและเสาสัญญาณ
+                                                </p>
+                                            </div>
                                         </button>
-                                    ))}
+
+                                        {/* Search Input */}
+                                        <div className="relative mb-2">
+                                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                                            <input
+                                                type="text"
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                placeholder="ค้นหาจังหวัด หรือพื้นที่..."
+                                                className="w-full pl-8 pr-7 py-1.5 rounded-lg text-xs bg-white/5 border border-white/10 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary/40"
+                                            />
+                                            {searchQuery && (
+                                                <button
+                                                    onClick={() => setSearchQuery("")}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Scrollable list */}
+                                        <div className="max-h-60 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                            {/* Project Sites */}
+                                            {projectSites.length > 0 && !searchQuery && (
+                                                <div className="mb-2">
+                                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                                                        <Building2 className="w-3 h-3 text-amber-400" /> ไซต์งานโครงการของคุณ
+                                                    </div>
+                                                    {projectSites.map((site) => (
+                                                        <button
+                                                            key={site.id}
+                                                            onClick={() => {
+                                                                const loc: LocationOption = {
+                                                                    id: site.id,
+                                                                    name: site.name,
+                                                                    lat: site.lat,
+                                                                    lon: site.lon,
+                                                                    isGPS: false
+                                                                }
+                                                                setSelectedLocation(loc)
+                                                                try {
+                                                                    localStorage.setItem("hipsloth_weather_location", JSON.stringify(loc))
+                                                                } catch (e) {}
+                                                                setShowLocationMenu(false)
+                                                            }}
+                                                            className="w-full text-left px-2.5 py-1.5 text-xs rounded-lg hover:bg-white/10 transition-colors flex items-center justify-between group cursor-pointer"
+                                                        >
+                                                            <div className="min-w-0">
+                                                                <p className="font-semibold text-foreground truncate group-hover:text-primary">
+                                                                    {site.projectTitle}
+                                                                </p>
+                                                                <p className="text-[10px] text-muted-foreground truncate">
+                                                                    {site.locationStr}
+                                                                </p>
+                                                            </div>
+                                                            {selectedLocation.id === site.id && <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />}
+                                                        </button>
+                                                    ))}
+                                                    <div className="h-px bg-white/5 my-1.5" />
+                                                </div>
+                                            )}
+
+                                            {/* Popular Hubs / Filtered list */}
+                                            <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                                {searchQuery ? "ผลการค้นหา" : "จังหวัดและพื้นที่ก่อสร้างหลัก"}
+                                            </div>
+
+                                            {filteredLocations.length === 0 ? (
+                                                <p className="text-center text-xs text-muted-foreground py-3">
+                                                    ไม่พบพื้นที่ที่ค้นหา
+                                                </p>
+                                            ) : (
+                                                filteredLocations.map((loc) => (
+                                                    <button
+                                                        key={loc.id}
+                                                        onClick={() => {
+                                                            setSelectedLocation(loc)
+                                                            try {
+                                                                localStorage.setItem("hipsloth_weather_location", JSON.stringify(loc))
+                                                            } catch (e) {}
+                                                            setShowLocationMenu(false)
+                                                        }}
+                                                        className={cn(
+                                                            "w-full text-left px-2.5 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-between group cursor-pointer",
+                                                            selectedLocation.id === loc.id
+                                                                ? "bg-primary/20 text-primary font-bold"
+                                                                : "hover:bg-white/10 text-foreground"
+                                                        )}
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <p className="truncate">{loc.name}</p>
+                                                            {loc.region && (
+                                                                <p className="text-[9px] text-muted-foreground/70 truncate">{loc.region}</p>
+                                                            )}
+                                                        </div>
+                                                        {selectedLocation.id === loc.id && <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />}
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
                                 </>
                             )}
@@ -323,7 +632,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                         <button
                             onClick={() => fetchWeather(selectedLocation.lat, selectedLocation.lon, selectedLocation.name)}
                             disabled={isLoadingWeather}
-                            className="p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/15 text-white/80 hover:text-white transition-all shadow-sm shrink-0"
+                            className="p-1.5 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/15 text-white/80 hover:text-white transition-all shadow-sm shrink-0 cursor-pointer"
                             title="รีเฟรชข้อมูลสภาพอากาศ"
                         >
                             <RefreshCw className={cn("w-3.5 h-3.5", isLoadingWeather && "animate-spin text-primary")} />
