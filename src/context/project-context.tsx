@@ -343,7 +343,7 @@ export interface Team extends CompanyProfile {
     id: string
     name: string
     logo?: string // Emoji or Image URL
-    role: "Owner" | "Admin" | "Manager" | "Accountant" | "Staff"
+    role: "Owner" | "Admin" | "Manager" | "Accountant" | "Staff" | "Guest"
 }
 
 interface CoreProjectContextType {
@@ -880,7 +880,7 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
         const userRole = userOrgData && typeof userOrgData !== 'string' ? userOrgData.role : null
 
         const member = currentOrg.members?.find(m => m.userId === currentUser.id)
-        const role = (currentOrg.ownerId === currentUser.id ? "Owner" : (userRole || member?.role || "Staff")) as "Owner" | "Admin" | "Manager" | "Accountant" | "Staff"
+        const role = (currentOrg.ownerId === currentUser.id ? "Owner" : (userRole || member?.role || "Staff")) as "Owner" | "Admin" | "Manager" | "Accountant" | "Staff" | "Guest"
 
         return {
             id: currentOrg.id,
@@ -908,7 +908,7 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
             const userRole = userOrgData && typeof userOrgData !== 'string' ? userOrgData.role : null
 
             const member = org.members?.find(m => m.userId === currentUser.id)
-            const role = (org.ownerId === currentUser.id ? "Owner" : (userRole || member?.role || "Staff")) as "Owner" | "Admin" | "Manager" | "Accountant" | "Staff"
+            const role = (org.ownerId === currentUser.id ? "Owner" : (userRole || member?.role || "Staff")) as "Owner" | "Admin" | "Manager" | "Accountant" | "Staff" | "Guest"
 
             return {
                 id: org.id,

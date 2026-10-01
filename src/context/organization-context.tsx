@@ -62,7 +62,7 @@ export interface Organization {
 
 export interface OrgMember {
     userId: string
-    role: "Owner" | "Admin" | "Manager" | "Accountant" | "Staff"
+    role: "Owner" | "Admin" | "Manager" | "Accountant" | "Staff" | "Guest"
     joinedAt: string
 }
 

@@ -13,6 +13,7 @@ import { PromoCards } from "@/components/dashboard/promo-cards"
 import { useState } from "react"
 import { WallFeed } from "@/components/wall/wall-feed"
 import Link from "next/link"
+import { ClipboardList, Plus } from "lucide-react"
 
 import dynamic from "next/dynamic"
 
