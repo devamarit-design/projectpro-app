@@ -506,7 +506,9 @@ export default function ProjectsPage() {
                                                             budget: budgetValue,
                                                             expenses: projectExpenses,
                                                             imageUrl: project.image || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80",
-                                                            status: project.status
+                                                            status: project.status,
+                                                            location: project.location,
+                                                            mapUrl: project.mapUrl
                                                         }}
                                                         columns={columns as 1 | 2 | 3}
                                                         priority={sectionIdx === 0 && idx < 4}

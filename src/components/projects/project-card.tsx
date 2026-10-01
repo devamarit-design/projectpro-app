@@ -1,7 +1,8 @@
 import Link from "next/link"
 import Image from "next/image"
-import { User, ListChecks } from "lucide-react"
+import { User, ListChecks, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useProjectRealtimeWeather } from "@/lib/project-weather"
 
 interface ProjectCardProps {
     id: string
@@ -12,6 +13,8 @@ interface ProjectCardProps {
     expenses: number
     imageUrl: string
     status: string
+    location?: string
+    mapUrl?: string
 }
 
 interface ProjectCardComponentProps {
@@ -21,6 +24,13 @@ interface ProjectCardComponentProps {
 }
 
 export function ProjectCard({ project, columns = 1, priority = false }: ProjectCardComponentProps) {
+    // Real-time project weather & map coordinates
+    const { weather, mapsUrl } = useProjectRealtimeWeather({
+        location: project.location,
+        mapUrl: project.mapUrl,
+        name: project.name,
+    })
+
     // Calculate expense progress percentage (expenses / budget)
     const budgetValue = project.budget || 1 // Avoid division by zero
     const expensePercent = Math.min(100, Math.max(0, Math.round((project.expenses / budgetValue) * 100)))
@@ -93,16 +103,16 @@ export function ProjectCard({ project, columns = 1, priority = false }: ProjectC
                     columns === 1 ? "p-4 sm:p-5" : "p-3 sm:p-4"
                 )}>
                     {/* Top Row */}
-                    <div className="flex justify-between items-start gap-1">
-                        <div className="flex flex-col gap-0.5 sm:gap-1 flex-1 min-w-0 pr-1 sm:pr-2">
+                    <div className="flex justify-between items-start gap-1.5">
+                        <div className="flex flex-col gap-0.5 sm:gap-1 flex-1 min-w-0 pr-1">
                             <h3 className={cn(
-                                "font-bold leading-tight drop-shadow-md tracking-tight text-foreground truncate",
+                                "font-bold leading-tight drop-shadow-md tracking-tight text-white dark:text-foreground truncate",
                                 columns === 1 ? "text-lg sm:text-xl" : "text-sm sm:text-lg"
                             )}>
                                 {project.name}
                             </h3>
                             <p className={cn(
-                                "text-foreground/70 flex items-center gap-1 font-medium drop-shadow-sm",
+                                "text-white/80 dark:text-foreground/70 flex items-center gap-1 font-medium drop-shadow-sm",
                                 columns === 1 ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs"
                             )}>
                                 <User className={cn(columns === 1 ? "w-3.5 h-3.5" : "w-3 h-3")} />
@@ -110,23 +120,76 @@ export function ProjectCard({ project, columns = 1, priority = false }: ProjectC
                             </p>
                         </div>
 
-                        {/* Status: Dot or Badge */}
-                        {showStatusAsDot ? (
-                            <div
-                                className={cn(
-                                    "w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0 shadow-sm border border-white/20 mt-1",
-                                    dotColor
-                                )}
-                                title={label}
-                            />
-                        ) : (
-                            <span className={cn(
-                                "px-2 sm:px-2.5 py-0.5 sm:py-1 backdrop-blur-sm rounded-lg text-[9px] sm:text-[10px] font-bold border uppercase tracking-wider shadow-sm shrink-0",
-                                badgeStyle
-                            )}>
-                                {label}
-                            </span>
-                        )}
+                        {/* Right Controls: Real-time Weather Symbol + Status Dot/Badge */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            {weather && (() => {
+                                const WeatherIcon = weather.icon
+                                return (
+                                    <div
+                                        onClick={(e) => {
+                                            if (mapsUrl) {
+                                                e.preventDefault()
+                                                e.stopPropagation()
+                                                window.open(mapsUrl, "_blank", "noopener,noreferrer")
+                                            }
+                                        }}
+                                        role={mapsUrl ? "button" : undefined}
+                                        tabIndex={mapsUrl ? 0 : undefined}
+                                        className={cn(
+                                            "group/weather flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:py-1 rounded-full",
+                                            "bg-black/50 dark:bg-black/60 hover:bg-black/75 backdrop-blur-md",
+                                            "border border-white/20 text-white shadow-sm transition-all duration-200",
+                                            mapsUrl ? "cursor-pointer hover:scale-105 active:scale-95 hover:border-white/40" : "cursor-default"
+                                        )}
+                                        title={`สภาพอากาศ Real-time: ${weather.label} ${weather.temperature}°C (${weather.locationName})${mapsUrl ? " • คลิกเพื่อเปิดพิกัดแผนที่ (Google Maps)" : ""}`}
+                                    >
+                                        {/* Live pulsing green indicator */}
+                                        <span className="relative flex h-1.5 w-1.5 shrink-0">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                        </span>
+
+                                        {/* Weather Icon */}
+                                        <WeatherIcon className={cn("w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0", weather.iconColor)} />
+
+                                        {/* Temperature */}
+                                        <span className="text-[11px] sm:text-xs font-bold tabular-nums text-white drop-shadow-sm">
+                                            {weather.temperature}°
+                                        </span>
+
+                                        {/* Location Name in 1-column mode */}
+                                        {columns === 1 && (
+                                            <span className="hidden sm:inline-block text-[10px] text-white/80 font-medium truncate max-w-[120px] border-l border-white/20 pl-1.5">
+                                                {weather.locationName}
+                                            </span>
+                                        )}
+
+                                        {/* Map Pin Indicator */}
+                                        {mapsUrl && (
+                                            <MapPin className="w-2.5 h-2.5 text-rose-400/90 group-hover/weather:text-rose-300 transition-colors shrink-0" />
+                                        )}
+                                    </div>
+                                )
+                            })()}
+
+                            {/* Status: Dot or Badge */}
+                            {showStatusAsDot ? (
+                                <div
+                                    className={cn(
+                                        "w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0 shadow-sm border border-white/20",
+                                        dotColor
+                                    )}
+                                    title={label}
+                                />
+                            ) : (
+                                <span className={cn(
+                                    "px-2 sm:px-2.5 py-0.5 sm:py-1 backdrop-blur-sm rounded-lg text-[9px] sm:text-[10px] font-bold border uppercase tracking-wider shadow-sm shrink-0",
+                                    badgeStyle
+                                )}>
+                                    {label}
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     {/* Bottom Row */}
