@@ -1,6 +1,5 @@
-"use client"
-
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { X, ScanLine, FileText, Sparkles } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
 
@@ -18,11 +17,28 @@ export function ExpenseEntrySelectionDialog({
     onSelectScan
 }: ExpenseEntrySelectionDialogProps) {
     const { t } = useTranslation()
+    const [mounted, setMounted] = React.useState(false)
 
-    if (!isOpen) return null
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
 
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center font-sans p-4">
+    React.useEffect(() => {
+        if (isOpen) {
+            document.body.classList.add("modal-open")
+            const prevOverflow = document.body.style.overflow
+            document.body.style.overflow = "hidden"
+            return () => {
+                document.body.classList.remove("modal-open")
+                document.body.style.overflow = prevOverflow
+            }
+        }
+    }, [isOpen])
+
+    if (!isOpen || !mounted || typeof document === "undefined") return null
+
+    return createPortal(
+        <div className="fixed inset-0 z-[120] flex items-center justify-center font-sans p-4">
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
                 onClick={onClose}
@@ -92,8 +108,9 @@ export function ExpenseEntrySelectionDialog({
                             </p>
                         </div>
                     </button>
+                    </div>
                 </div>
-            </div>
-        </div>
-    )
-}
+            </div>,
+            document.body
+        )
+    }

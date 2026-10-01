@@ -1,6 +1,5 @@
-"use client"
-
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { db } from "@/lib/firebase"
 import { collection, addDoc } from "firebase/firestore"
 import { X, Receipt, ScanLine, Plus, Trash2, Layers, User, Building, Camera, Upload, CheckCircle2, ChevronDown, ChevronUp, Check, ArrowRight, ArrowLeft, Sparkles, Image as ImageIcon } from "lucide-react"
@@ -36,6 +35,24 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     const { addExpense, addProject, addTask, addSubProject, addUser, addVendor, addWorker, projects, tasks, users, vendors, workers, currentUser } = useProjects()
     const { currentOrg } = useOrganization()
     const { t } = useTranslation()
+
+    const [mounted, setMounted] = React.useState(false)
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    // Lock body scroll and set modal-open class when open
+    React.useEffect(() => {
+        if (isOpen) {
+            document.body.classList.add("modal-open")
+            const prevOverflow = document.body.style.overflow
+            document.body.style.overflow = "hidden"
+            return () => {
+                document.body.classList.remove("modal-open")
+                document.body.style.overflow = prevOverflow
+            }
+        }
+    }, [isOpen])
 
     const [isScanOpen, setIsScanOpen] = React.useState(false)
 
@@ -151,7 +168,80 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         }
     }, [isOpen, defaultProjectId, startScanning, defaultDate, initialData])
 
-    if (!isOpen) return null
+    // Clean, sorted, deduplicated vendors & workers options
+    const payeeOptions = React.useMemo(() => {
+        const isLabor = items[0]?.category === 'Labor'
+        if (isLabor) {
+            const seen = new Set<string>()
+            const filteredWorkers = workers
+                .filter(w => {
+                    if (!w.name || !w.name.trim() || w.status === 'Inactive') return false
+                    const key = w.name.trim().toLowerCase()
+                    if (seen.has(key)) return false
+                    seen.add(key)
+                    return true
+                })
+                .sort((a, b) => a.name.trim().localeCompare(b.name.trim(), 'th'))
+                .map(w => ({ value: w.name.trim(), label: w.name.trim(), description: w.role }))
+
+            return [
+                { value: "NEW", label: `➕ ${t.expenses.dialog.add_new_person} `, description: "เพิ่มคนงานใหม่" },
+                ...filteredWorkers
+            ]
+        }
+
+        const cat = items[0]?.category || "Material"
+        const seen = new Set<string>()
+        const filteredVendors = vendors
+            .filter(v => {
+                if (!v.name || !v.name.trim() || v.status === 'Inactive') return false
+                if (cat === 'Sub-contract' && v.category !== 'Sub-contract') return false
+                if (cat === 'Material' && v.category !== 'Material') return false
+                const key = v.name.trim().toLowerCase()
+                if (seen.has(key)) return false
+                seen.add(key)
+                return true
+            })
+            .sort((a, b) => a.name.trim().localeCompare(b.name.trim(), 'th'))
+            .map(v => ({ value: v.name.trim(), label: v.name.trim(), description: v.category }))
+
+        return [
+            { value: "NEW", label: `➕ ${t.expenses.dialog.add_new_vendor} `, description: "เพิ่มร้านค้า/ผู้รับเหมาใหม่" },
+            ...filteredVendors
+        ]
+    }, [items, workers, vendors, t.expenses.dialog.add_new_person, t.expenses.dialog.add_new_vendor])
+
+    const projectOptions = React.useMemo(() => {
+        const seen = new Set<string>()
+        const validProjects = projects
+            .filter(p => {
+                if (!p.name || !p.name.trim()) return false
+                if (seen.has(p.id)) return false
+                seen.add(p.id)
+                return true
+            })
+            .sort((a, b) => a.name.trim().localeCompare(b.name.trim(), 'th'))
+            .map(p => ({ value: p.id, label: p.name.trim(), description: p.customer }))
+
+        return [
+            { value: "NEW", label: "+ Add New Project...", description: "สร้างโปรเจคใหม่" },
+            ...validProjects
+        ]
+    }, [projects])
+
+    const subProjectOptions = React.useMemo(() => {
+        const currentProj = projects.find(p => p.id === globalProjectId)
+        const subList = currentProj?.subProjects || []
+        const validSub = subList
+            .filter(sp => sp && sp.name && sp.name.trim())
+            .sort((a, b) => a.name.trim().localeCompare(b.name.trim(), 'th'))
+            .map(sp => ({ value: sp.id, label: sp.name.trim() }))
+
+        return [
+            { value: "NEW", label: t.expenses.dialog.add_new_sub_project, description: "สร้างงานย่อยใหม่" },
+            ...validSub
+        ]
+    }, [projects, globalProjectId, t.expenses.dialog.add_new_sub_project])
 
     // Quick Add Handler
     const handleQuickAdd = (e: React.FormEvent) => {
@@ -565,7 +655,9 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         )
     }
 
-    return (
+    if (!isOpen || !mounted || typeof document === "undefined") return null
+
+    const dialogContent = (
         <>
             {/* Quick Add Dialog Overlay */}
             {quickAdd && (
@@ -653,16 +745,16 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 </div>
             )}
 
-            <div className="fixed inset-0 z-[100] flex items-center justify-center font-sans overflow-hidden p-2 sm:p-4">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center font-sans overflow-hidden p-0 sm:p-4">
                 <SmartScanDialog
                     isOpen={isScanOpen}
                     onClose={() => setIsScanOpen(false)}
                     onScanComplete={handleScanComplete}
                 />
 
-                <SafeBackdrop onClose={onClose} className="absolute inset-0 bg-background/60 backdrop-blur-sm transition-opacity" />
+                <SafeBackdrop onClose={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity" />
 
-                <div className="relative glass-card w-full max-w-[calc(100vw-1rem)] sm:max-w-2xl lg:max-w-5xl xl:max-w-6xl h-[90vh] max-h-[90vh] p-0 rounded-2xl shadow-2xl border border-white/10 flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+                <div className="relative glass-card w-full sm:max-w-2xl lg:max-w-5xl xl:max-w-6xl h-full sm:h-[90vh] max-h-[100dvh] sm:max-h-[90vh] p-0 rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-white/10 flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden bg-background">
 
                     {/* Dialog Header */}
                     <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/10 shrink-0">
@@ -878,25 +970,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
                                                         <div className="pl-9 min-w-0 w-full">
                                                             <SearchableCombobox
-                                                                options={items[0]?.category === 'Labor' ? [
-                                                                    ...workers
-                                                                        .filter(w => w.status !== 'Inactive')
-                                                                        .sort((a, b) => a.name.localeCompare(b.name, 'th'))
-                                                                        .map(w => ({ value: w.name, label: w.name, description: w.role })),
-                                                                    { value: "NEW", label: `➕ ${t.expenses.dialog.add_new_person} `, description: "เพิ่มคนงานใหม่" }
-                                                                ] : [
-                                                                    ...vendors
-                                                                        .filter(v => {
-                                                                            if (v.status === 'Inactive') return false
-                                                                            const cat = items[0]?.category || "Material"
-                                                                            if (cat === 'Sub-contract') return v.category === 'Sub-contract'
-                                                                            if (cat === 'Material') return v.category === 'Material'
-                                                                            return true
-                                                                        })
-                                                                        .sort((a, b) => a.name.localeCompare(b.name, 'th'))
-                                                                        .map(v => ({ value: v.name, label: v.name, description: v.category })),
-                                                                    { value: "NEW", label: `➕ ${t.expenses.dialog.add_new_vendor} `, description: "เพิ่มร้านค้า/ผู้รับเหมาใหม่" }
-                                                                ]}
+                                                                options={payeeOptions}
                                                                 value={payee}
                                                                 onChange={(val) => {
                                                                     const currentCat = items[0]?.category || "Material"
@@ -953,12 +1027,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                                 {t.expenses.dialog.project}
                                                             </label>
                                                             <SearchableCombobox
-                                                                options={[
-                                                                    { value: "NEW", label: "+ Add New Project...", description: "สร้างโปรเจคใหม่" },
-                                                                    ...projects
-                                                                        .sort((a, b) => a.name.localeCompare(b.name, 'th'))
-                                                                        .map(p => ({ value: p.id, label: p.name, description: p.customer }))
-                                                                ]}
+                                                                options={projectOptions}
                                                                 value={globalProjectId}
                                                                 onChange={(val) => handleSelectChange(val, setGlobalProjectId, 'project')}
                                                                 placeholder="Select Project..."
@@ -970,10 +1039,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                                 {t.expenses.dialog.task} / Sub-project
                                                             </label>
                                                             <SearchableCombobox
-                                                                options={[
-                                                                    { value: "NEW", label: t.expenses.dialog.add_new_sub_project, description: "สร้างงานย่อยใหม่" },
-                                                                    ...(projects.find(p => p.id === globalProjectId)?.subProjects?.map(sp => ({ value: sp.id, label: sp.name })) || [])
-                                                                ]}
+                                                                options={subProjectOptions}
                                                                 value={globalSubProjectId}
                                                                 onChange={(val) => handleSelectChange(val, setGlobalSubProjectId, 'sub-project', globalProjectId)}
                                                                 disabled={!globalProjectId}
@@ -1473,7 +1539,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                         </div>
 
                         {/* Full-width Sticky Footer with Live Grand Total & Save Button */}
-                        <div className="p-3.5 sm:p-5 border-t border-white/10 bg-background/80 backdrop-blur-md shrink-0 flex items-center justify-between gap-3 min-w-0 w-full">
+                        <div className="p-3.5 sm:p-5 border-t border-white/10 bg-background/95 backdrop-blur-md shrink-0 flex items-center justify-between gap-3 min-w-0 w-full pb-[max(0.875rem,env(safe-area-inset-bottom))]">
                             <div className="min-w-0 flex items-center gap-3">
                                 <div>
                                     <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block leading-tight">ยอดรวมทั้งสิ้น</span>
@@ -1515,5 +1581,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             </div>
         </>
     )
+
+    return createPortal(dialogContent, document.body)
 }
 

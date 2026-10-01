@@ -1,6 +1,5 @@
-"use client"
-
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { X, Calendar, User, Trash2, Save, Building, Tag, DollarSign, Receipt, Info, Check, CheckCircle2, ShoppingBag, Camera, Upload, Layout, Archive, Clock, Plus } from "lucide-react"
 import { useProjects, Expense, ExpenseCategory, ExpenseItem } from "@/context/project-context"
 import { useOrganization } from "@/context/organization-context"
@@ -20,6 +19,23 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
     const { currentOrg } = useOrganization()
 
     const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Owner'
+
+    const [mounted, setMounted] = React.useState(false)
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    React.useEffect(() => {
+        if (expenseId) {
+            document.body.classList.add("modal-open")
+            const prevOverflow = document.body.style.overflow
+            document.body.style.overflow = "hidden"
+            return () => {
+                document.body.classList.remove("modal-open")
+                document.body.style.overflow = prevOverflow
+            }
+        }
+    }, [expenseId])
 
     // Find the expense
     const expense = React.useMemo(() =>
@@ -42,7 +58,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
         }
     }, [expense])
 
-    if (!expenseId || !expense) return null
+    if (!expenseId || !expense || !mounted || typeof document === "undefined") return null
 
     const handleDelete = () => {
         if (confirm("Are you sure you want to delete this expense?")) {
@@ -167,7 +183,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
 
     const isArchived = expense.isArchived
 
-    return (
+    return createPortal(
         <>
             <ConfirmDialog
                 isOpen={showArchiveConfirm}
@@ -181,7 +197,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
             />
             <div className="fixed inset-0 z-[100] flex justify-end font-sans">
                 <div
-                    className="absolute inset-0 bg-background/60 backdrop-blur-sm transition-opacity"
+                    className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
                     onClick={onClose}
                 />
 
@@ -762,6 +778,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                     </div>
                 </div>
             </div>
-        </>
+        </>,
+        document.body
     )
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { Search, ChevronDown, Check, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -36,14 +37,29 @@ export default function SearchableCombobox({
 }: SearchableComboboxProps) {
     const [isOpen, setIsOpen] = React.useState(false)
     const [searchQuery, setSearchQuery] = React.useState("")
+    const [mounted, setMounted] = React.useState(false)
+    const [coords, setCoords] = React.useState<{
+        top?: number
+        bottom?: number
+        left: number
+        width: number
+        openUpward: boolean
+    } | null>(null)
+
     const containerRef = React.useRef<HTMLDivElement>(null)
+    const dropdownRef = React.useRef<HTMLDivElement>(null)
     const inputRef = React.useRef<HTMLInputElement>(null)
 
-    // Filter options based on search query
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    // Filter options based on search query and remove empty/invalid options
     const filteredOptions = React.useMemo(() => {
-        if (!searchQuery) return options
-        const query = searchQuery.toLowerCase()
-        return options.filter(
+        const validOptions = options.filter(opt => opt && typeof opt.label === 'string' && opt.label.trim().length > 0)
+        if (!searchQuery) return validOptions
+        const query = searchQuery.toLowerCase().trim()
+        return validOptions.filter(
             option =>
                 option.label.toLowerCase().includes(query) ||
                 option.description?.toLowerCase().includes(query)
@@ -53,10 +69,65 @@ export default function SearchableCombobox({
     // Find selected option
     const selectedOption = options.find(opt => opt.value === value)
 
+    // Calculate fixed screen coordinates for the frontmost portal
+    const updatePosition = React.useCallback(() => {
+        if (!containerRef.current) return
+        const rect = containerRef.current.getBoundingClientRect()
+
+        // If trigger moved off viewport entirely, close dropdown
+        if (rect.bottom < -50 || rect.top > window.innerHeight + 50) {
+            setIsOpen(false)
+            return
+        }
+
+        const spaceBelow = window.innerHeight - rect.bottom
+        const spaceAbove = rect.top
+        const openUpward = dropdownPosition === "top" ||
+            (dropdownPosition !== "bottom" && spaceBelow < 250 && spaceAbove > spaceBelow) ||
+            (dropdownPosition === "bottom" && spaceBelow < 210 && spaceAbove > 240)
+
+        const padding = 8
+        const width = Math.min(rect.width, window.innerWidth - padding * 2)
+        const left = Math.max(padding, Math.min(rect.left, window.innerWidth - width - padding))
+
+        setCoords({
+            top: rect.bottom + 6,
+            bottom: window.innerHeight - rect.top + 6,
+            left,
+            width,
+            openUpward,
+        })
+    }, [dropdownPosition])
+
+    // Update position on open, scroll, or resize
+    React.useEffect(() => {
+        if (!isOpen) return
+
+        updatePosition()
+
+        const handleScrollOrResize = () => {
+            updatePosition()
+        }
+
+        window.addEventListener("scroll", handleScrollOrResize, { capture: true, passive: true })
+        window.addEventListener("resize", handleScrollOrResize, { passive: true })
+
+        return () => {
+            window.removeEventListener("scroll", handleScrollOrResize, { capture: true })
+            window.removeEventListener("resize", handleScrollOrResize)
+        }
+    }, [isOpen, updatePosition])
+
     // Handle click outside to close
     React.useEffect(() => {
+        if (!isOpen) return
+
         const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+            const target = event.target as Node
+            if (
+                containerRef.current && !containerRef.current.contains(target) &&
+                dropdownRef.current && !dropdownRef.current.contains(target)
+            ) {
                 setIsOpen(false)
                 setSearchQuery("")
             }
@@ -64,7 +135,7 @@ export default function SearchableCombobox({
 
         document.addEventListener("mousedown", handleClickOutside)
         return () => document.removeEventListener("mousedown", handleClickOutside)
-    }, [])
+    }, [isOpen])
 
     // Focus input when opened
     React.useEffect(() => {
@@ -86,13 +157,24 @@ export default function SearchableCombobox({
     }
 
     return (
-        <div ref={containerRef} className={cn("relative", className)}>
+        <div ref={containerRef} className={cn("relative min-w-0 w-full", className)}>
             {/* Trigger Button */}
             <div
                 role="button"
                 tabIndex={disabled ? -1 : 0}
-                onClick={() => !disabled && setIsOpen(!isOpen)}
-                onKeyDown={(e) => !disabled && (e.key === "Enter" || e.key === " ") && setIsOpen(!isOpen)}
+                onClick={() => {
+                    if (!disabled) {
+                        updatePosition()
+                        setIsOpen(!isOpen)
+                    }
+                }}
+                onKeyDown={(e) => {
+                    if (!disabled && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault()
+                        updatePosition()
+                        setIsOpen(!isOpen)
+                    }
+                }}
                 className={cn(
                     "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-left transition-all cursor-pointer",
                     "bg-muted/30 border-white/10 hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50",
@@ -102,7 +184,7 @@ export default function SearchableCombobox({
             >
                 <span className={cn(
                     "truncate text-sm",
-                    selectedOption ? "text-foreground" : "text-muted-foreground"
+                    selectedOption ? "text-foreground font-medium" : "text-muted-foreground"
                 )}>
                     {selectedOption?.label || placeholder}
                 </span>
@@ -117,24 +199,34 @@ export default function SearchableCombobox({
                         </button>
                     )}
                     <ChevronDown className={cn(
-                        "w-4 h-4 text-muted-foreground transition-transform",
+                        "w-4 h-4 text-muted-foreground transition-transform duration-200",
                         isOpen && "rotate-180"
                     )} />
                 </div>
             </div>
 
-            {/* Dropdown */}
-            {isOpen && (
-                <div className={cn(
-                    "absolute z-50 w-full rounded-xl border shadow-xl",
-                    "bg-card/95 backdrop-blur-xl border-white/10",
-                    "animate-in fade-in-0 zoom-in-95 duration-150",
-                    dropdownPosition === "bottom"
-                        ? "top-full mt-1 slide-in-from-top-2"
-                        : "bottom-full mb-1 slide-in-from-bottom-2"
-                )}>
+            {/* Dropdown Menu Portaled to document.body (Frontmost layer z-[99999]) */}
+            {isOpen && mounted && coords && typeof document !== "undefined" && createPortal(
+                <div
+                    ref={dropdownRef}
+                    style={{
+                        position: "fixed",
+                        left: `${coords.left}px`,
+                        width: `${coords.width}px`,
+                        ...(coords.openUpward
+                            ? { bottom: `${coords.bottom}px` }
+                            : { top: `${coords.top}px` }),
+                        zIndex: 99999,
+                    }}
+                    className={cn(
+                        "rounded-xl border shadow-2xl overflow-hidden pointer-events-auto",
+                        "bg-[#13151f] text-popover-foreground border-white/20",
+                        "animate-in fade-in-0 zoom-in-95 duration-150",
+                        coords.openUpward ? "slide-in-from-bottom-2" : "slide-in-from-top-2"
+                    )}
+                >
                     {/* Search Input */}
-                    <div className="px-2 pb-2">
+                    <div className="p-2 pb-1.5 bg-[#13151f] border-b border-white/10">
                         <div className="relative">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <input
@@ -145,7 +237,7 @@ export default function SearchableCombobox({
                                 placeholder={searchPlaceholder}
                                 className={cn(
                                     "w-full pl-8 pr-3 py-2 rounded-lg text-sm",
-                                    "bg-muted/30 border border-white/10 focus:border-primary/50",
+                                    "bg-white/5 border border-white/10 text-foreground focus:border-primary/50",
                                     "focus:outline-none focus:ring-1 focus:ring-primary/30",
                                     "placeholder:text-muted-foreground"
                                 )}
@@ -154,47 +246,57 @@ export default function SearchableCombobox({
                     </div>
 
                     {/* Options List */}
-                    <div className="max-h-60 overflow-y-auto px-1 overscroll-contain touch-pan-y">
+                    <div className="max-h-60 overflow-y-auto p-1 space-y-0.5 overscroll-contain touch-pan-y bg-[#13151f] custom-scrollbar">
                         {filteredOptions.length === 0 ? (
                             <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                                 {emptyMessage}
                             </div>
                         ) : (
-                            filteredOptions.map((option) => (
-                                <button
-                                    key={option.value}
-                                    type="button"
-                                    onClick={() => !option.disabled && handleSelect(option.value)}
-                                    disabled={option.disabled}
-                                    className={cn(
-                                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
-                                        "hover:bg-white/5",
-                                        option.disabled && "opacity-50 cursor-not-allowed",
-                                        value === option.value && "bg-primary/10"
-                                    )}
-                                >
-                                    <div className="flex-1 min-w-0">
-                                        <p className={cn(
-                                            "text-sm font-medium truncate",
-                                            value === option.value && "text-primary"
-                                        )}>
-                                            {option.label}
-                                        </p>
-                                        {option.description && (
-                                            <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                                {option.description}
-                                            </p>
+                            filteredOptions.map((option) => {
+                                const isActionItem = option.value === "NEW" || option.label.startsWith("➕") || option.label.startsWith("+")
+                                return (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        onClick={() => !option.disabled && handleSelect(option.value)}
+                                        disabled={option.disabled}
+                                        className={cn(
+                                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors cursor-pointer",
+                                            isActionItem
+                                                ? "bg-primary/10 border border-primary/20 text-primary font-bold hover:bg-primary/20 my-1"
+                                                : "hover:bg-white/10 text-foreground",
+                                            option.disabled && "opacity-50 cursor-not-allowed",
+                                            value === option.value && !isActionItem && "bg-primary/20 text-primary font-semibold"
                                         )}
-                                    </div>
-                                    {value === option.value && (
-                                        <Check className="w-4 h-4 text-primary shrink-0" />
-                                    )}
-                                </button>
-                            ))
+                                    >
+                                        <div className="flex-1 min-w-0">
+                                            <p className={cn(
+                                                "text-sm font-medium truncate",
+                                                (value === option.value || isActionItem) && "text-primary"
+                                            )}>
+                                                {option.label}
+                                            </p>
+                                            {option.description && (
+                                                <p className={cn(
+                                                    "text-xs truncate mt-0.5",
+                                                    isActionItem ? "text-primary/70" : "text-muted-foreground"
+                                                )}>
+                                                    {option.description}
+                                                </p>
+                                            )}
+                                        </div>
+                                        {value === option.value && !isActionItem && (
+                                            <Check className="w-4 h-4 text-primary shrink-0" />
+                                        )}
+                                    </button>
+                                )
+                            })
                         )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     )
 }
+

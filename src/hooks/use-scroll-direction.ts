@@ -6,18 +6,22 @@ export function useScrollDirection() {
 
     useEffect(() => {
         let ticking = false;
-        let container: HTMLElement | Window | null = null;
-        let retryInterval: NodeJS.Timeout;
+        let container: HTMLElement | null = null;
+        let retryInterval: NodeJS.Timeout | null = null;
+
+        const getScrollY = () => {
+            const elScroll = container ? container.scrollTop : 0;
+            const winScroll = typeof window !== 'undefined' ? window.scrollY : 0;
+            return Math.max(elScroll, winScroll);
+        };
 
         const updateScrollDirection = () => {
-            if (!container) return;
+            const scrollY = getScrollY();
 
-            const scrollY = container instanceof HTMLElement ? container.scrollTop : window.scrollY;
-
-            // 1. Force "up" (show) status when at the very top of the page
-            if (scrollY <= 0) {
+            // 1. Force "up" (show bars) when near the very top of the page
+            if (scrollY <= 20) {
                 setScrollDirection("up");
-                lastScrollY.current = scrollY;
+                lastScrollY.current = Math.max(0, scrollY);
                 ticking = false;
                 return;
             }
@@ -25,18 +29,12 @@ export function useScrollDirection() {
             const threshold = 10;
             const diff = scrollY - lastScrollY.current;
 
-            if (Math.abs(diff) < threshold) {
-                ticking = false;
-                return;
+            if (Math.abs(diff) >= threshold) {
+                const newDirection = diff > 0 ? "down" : "up";
+                setScrollDirection(prev => (prev !== newDirection ? newDirection : prev));
+                lastScrollY.current = scrollY;
             }
 
-            const newDirection = diff > 0 ? "down" : "up";
-
-            if (newDirection !== scrollDirection) {
-                setScrollDirection(newDirection);
-            }
-
-            lastScrollY.current = scrollY;
             ticking = false;
         };
 
@@ -47,33 +45,39 @@ export function useScrollDirection() {
             }
         };
 
-        // Retry logic to find the container
-        const bindListener = () => {
+        // Listen on window as well for mobile/browser viewport scrolls
+        window.addEventListener("scroll", onScroll, { passive: true });
+
+        // Retry logic to find and attach to main-scroll-container
+        const bindContainerListener = () => {
             const el = document.getElementById("main-scroll-container");
-            if (el) {
+            if (el && el !== container) {
+                if (container) {
+                    container.removeEventListener("scroll", onScroll);
+                }
                 container = el;
-                lastScrollY.current = el.scrollTop;
+                lastScrollY.current = getScrollY();
                 el.addEventListener("scroll", onScroll, { passive: true });
-                if (retryInterval) clearInterval(retryInterval);
-                // console.log("Bound scroll listener to main-scroll-container");
+                if (retryInterval) {
+                    clearInterval(retryInterval);
+                    retryInterval = null;
+                }
             }
         };
 
-        // Try immediately
-        bindListener();
-
-        // If not found, keep trying for a bit
+        bindContainerListener();
         if (!container) {
-            retryInterval = setInterval(bindListener, 500);
+            retryInterval = setInterval(bindContainerListener, 300);
         }
 
         return () => {
             if (retryInterval) clearInterval(retryInterval);
+            window.removeEventListener("scroll", onScroll);
             if (container) {
                 container.removeEventListener("scroll", onScroll);
             }
         };
-    }, [scrollDirection]);
+    }, []);
 
     return scrollDirection;
 }

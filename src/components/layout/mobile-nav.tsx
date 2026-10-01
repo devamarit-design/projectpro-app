@@ -50,7 +50,19 @@ export function MobileNav() {
     const [showMoreMenu, setShowMoreMenu] = React.useState(false)
     const [showFinanceMenu, setShowFinanceMenu] = React.useState(false)
     const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false)
+    const [isModalOpen, setIsModalOpen] = React.useState(false)
     const scrollDirection = useScrollDirection()
+
+    React.useEffect(() => {
+        const checkModal = () => {
+            setIsModalOpen(document.body.classList.contains("modal-open"))
+        }
+        checkModal()
+
+        const observer = new MutationObserver(checkModal)
+        observer.observe(document.body, { attributes: true, attributeFilter: ["class"] })
+        return () => observer.disconnect()
+    }, [])
 
     // Main 4 Items: Finance, Add, Project, More
 
@@ -302,8 +314,8 @@ export function MobileNav() {
             {/* Bottom Nav - 5 Items: Home, Project, Add, Finance, More */}
             <nav
                 className={cn(
-                    "fixed bottom-4 left-4 right-4 z-40 bg-background/80 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl md:hidden block pb-2 pt-2 transition-transform duration-300",
-                    scrollDirection === "down" ? "translate-y-24" : "translate-y-0"
+                    "fixed bottom-4 left-4 right-4 z-40 bg-background/80 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl md:hidden block pb-2 pt-2 transition-all duration-300",
+                    (scrollDirection === "down" || isModalOpen) ? "translate-y-28 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
                 )}
             >
                 <div className="flex items-center justify-around h-14 px-2">
