@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, Plus, Shield, Mail, Phone, MoreHorizontal, Trash2, Edit, Link as LinkIcon, Copy, Check } from "lucide-react"
+import { Search, Plus, Shield, Mail, Phone, MoreHorizontal, Trash2, Edit, Link as LinkIcon, Copy, Check, ChevronDown, ChevronUp } from "lucide-react"
 import { addDoc, collection } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useProjects, User } from "@/context/project-context"
@@ -165,33 +165,49 @@ export default function TeamPage() {
                         <Shield className="w-5 h-5 text-primary" />
                         <span className="font-bold text-sm">Role & Permissions Guide</span>
                     </div>
-                    {showRoleGuide ? <Check className="w-4 h-4 rotate-180 transition-transform" /> : <div className="text-xs text-muted-foreground">Show Details</div>}
+                    {showRoleGuide ? (
+                        <ChevronUp className="w-4 h-4 text-muted-foreground transition-transform" />
+                    ) : (
+                        <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform" />
+                    )}
                 </button>
                 {showRoleGuide && (
-                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-card text-sm animate-in slide-in-from-top-2">
-                        <div className="p-3 rounded-lg bg-orange-500/5 border border-orange-500/10 space-y-1">
-                            <div className="font-bold text-orange-600 flex items-center gap-2">
+                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 bg-card text-sm animate-in slide-in-from-top-2">
+                        <div className="p-3.5 rounded-xl bg-orange-500/5 border border-orange-500/15 space-y-1.5">
+                            <div className="font-bold text-orange-500 flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-orange-500" /> Owner
                             </div>
                             <p className="text-muted-foreground text-xs leading-relaxed">Full access. Can manage billing, delete team, and assign roles.</p>
                         </div>
-                        <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/10 space-y-1">
-                            <div className="font-bold text-purple-600 flex items-center gap-2">
+                        <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/15 space-y-1.5">
+                            <div className="font-bold text-purple-500 flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-purple-500" /> Admin
                             </div>
                             <p className="text-muted-foreground text-xs leading-relaxed">Can manage members, projects, and settings. Cannot delete Owner.</p>
                         </div>
-                        <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 space-y-1">
-                            <div className="font-bold text-blue-600 flex items-center gap-2">
+                        <div className="p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/15 space-y-1.5">
+                            <div className="font-bold text-blue-500 flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-blue-500" /> Manager
                             </div>
                             <p className="text-muted-foreground text-xs leading-relaxed">Can add projects, manage expenses, and view reports.</p>
                         </div>
-                        <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/10 space-y-1">
-                            <div className="font-bold text-green-600 flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-green-500" /> Staff / Accountant
+                        <div className="p-3.5 rounded-xl bg-cyan-500/5 border border-cyan-500/15 space-y-1.5">
+                            <div className="font-bold text-cyan-500 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-cyan-500" /> Accountant
                             </div>
-                            <p className="text-muted-foreground text-xs leading-relaxed">Can view projects and add expenses. Accountants see financial data.</p>
+                            <p className="text-muted-foreground text-xs leading-relaxed">Can manage income, expenses, and view all financial reports.</p>
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/15 space-y-1.5">
+                            <div className="font-bold text-emerald-500 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500" /> Staff
+                            </div>
+                            <p className="text-muted-foreground text-xs leading-relaxed">Can view assigned projects, record expenses, create JobSheets, and view Team Wall.</p>
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/15 space-y-1.5">
+                            <div className="font-bold text-amber-500 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-amber-500" /> Guest
+                            </div>
+                            <p className="text-muted-foreground text-xs leading-relaxed">Can only create/view JobSheets, view Team Wall, and manage personal settings.</p>
                         </div>
                     </div>
                 )}
@@ -253,11 +269,17 @@ export default function TeamPage() {
                                             ) : (
                                                 <span className={cn(
                                                     "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border",
-                                                    user.role === 'Admin' || user.role === 'Owner'
-                                                        ? "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-900"
-                                                        : user.role === 'Guest'
-                                                            ? "bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-900"
-                                                            : "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-900"
+                                                    user.role === 'Owner'
+                                                        ? "bg-orange-500/10 text-orange-600 border-orange-200 dark:border-orange-900"
+                                                        : user.role === 'Admin'
+                                                            ? "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-900"
+                                                            : user.role === 'Manager'
+                                                                ? "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-900"
+                                                                : user.role === 'Accountant'
+                                                                    ? "bg-cyan-500/10 text-cyan-600 border-cyan-200 dark:border-cyan-900"
+                                                                    : user.role === 'Guest'
+                                                                        ? "bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-900"
+                                                                        : "bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-900"
                                                 )}>
                                                     {user.role}
                                                 </span>
