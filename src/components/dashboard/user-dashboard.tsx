@@ -25,7 +25,7 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
     const { t } = useTranslation()
 
     return (
-        <div className="pb-20 space-y-6 pt-6">
+        <div className="pb-20 space-y-6">
             {!hideHeader && (
                 <>
                     {/* 1. Banner Carousel */}

@@ -33,7 +33,7 @@ function AdminDashboard() {
   const [showReportDialog, setShowReportDialog] = useState(false)
 
   return (
-    <div className="space-y-6 pb-20 pt-6">
+    <div className="space-y-6 pb-20">
       {/* 1. Banner Carousel */}
       <DashboardBanner />
 
