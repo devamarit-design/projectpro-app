@@ -11,6 +11,8 @@ import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 import { SafeBackdrop } from "@/components/ui/safe-backdrop"
 import { loadSubProjectPresets, createSubProjectsFromPreset, SubProjectPresetGroup, DEFAULT_PRESET_GROUPS } from "@/lib/subproject-presets"
 import { getSmartProjectCover } from "@/lib/project-covers"
+import { getProjectTheme, isCustomUploadedPhoto } from "@/lib/project-themes"
+import { ProjectCoverGraphic } from "@/components/projects/project-cover-graphic"
 import { CoverPresetPicker } from "@/components/projects/cover-preset-picker"
 
 interface AddProjectDialogProps {
@@ -36,10 +38,13 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
     const [isUploading, setIsUploading] = React.useState(false)
     const fileInputRef = React.useRef<HTMLInputElement>(null)
     const [showCoverPicker, setShowCoverPicker] = React.useState(false)
-    const autoSuggestedCover = React.useMemo(() => {
-        return getSmartProjectCover({ name: name || "Modern Architecture" })
-    }, [name])
-    const activeCover = coverImage || autoSuggestedCover
+    const activeTheme = React.useMemo(() => {
+        return getProjectTheme({ name: name || "Modern Architecture", imageUrl: coverImage })
+    }, [name, coverImage])
+    const hasCustomPhoto = React.useMemo(() => {
+        return isCustomUploadedPhoto(coverImage)
+    }, [coverImage])
+    const activeCover = coverImage || `theme:${activeTheme.id}`
 
     // Sub-project Preset State
     const [applyPreset, setApplyPreset] = React.useState(true)
@@ -131,7 +136,7 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
             expenses: "฿0",
             startDate: startDate || new Date().toISOString().split('T')[0],
             endDate: endDate || new Date().toISOString().split('T')[0],
-            image: coverImage || autoSuggestedCover,
+            image: coverImage || `theme:${activeTheme.id}`,
             description: "Quick added project",
             subProjects: initialSubProjects
         })
@@ -181,27 +186,41 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                                     onClick={() => setShowCoverPicker(prev => !prev)}
                                     className="text-xs text-primary hover:underline font-medium"
                                 >
-                                    {showCoverPicker ? "ซ่อนคลังรูปภาพ" : "เลือกรูปพรีเซ็ต / อัปโหลด"}
+                                    {showCoverPicker ? "ซ่อนตัวเลือกธีม" : "เลือกธีมสี & สัญลักษณ์ / อัปโหลด"}
                                 </button>
                             </div>
 
                             {/* Cover Preview Card */}
-                            <div className="relative w-full h-32 rounded-xl overflow-hidden border border-white/10 group shadow-sm bg-slate-900">
-                                <img
-                                    src={activeCover}
-                                    alt="Cover preview"
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-black/40" />
-                                <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/85 to-transparent flex items-end justify-between">
+                            <div className={cn(
+                                "relative w-full h-32 rounded-xl overflow-hidden border shadow-sm bg-slate-900 group",
+                                hasCustomPhoto ? "border-white/10" : activeTheme.borderColor
+                            )}>
+                                {hasCustomPhoto ? (
+                                    <>
+                                        <img
+                                            src={coverImage}
+                                            alt="Cover preview"
+                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        />
+                                        <div className="absolute inset-0 bg-black/40" />
+                                    </>
+                                ) : (
+                                    <ProjectCoverGraphic
+                                        theme={activeTheme}
+                                        name={name}
+                                        compact
+                                    />
+                                )}
+                                <div className="absolute inset-x-0 bottom-0 p-3 z-10 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex items-end justify-between pointer-events-none">
                                     <div>
                                         <span className={cn(
-                                            "text-[10px] font-bold px-2 py-0.5 rounded-md border",
-                                            coverImage
+                                            "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border backdrop-blur-md",
+                                            hasCustomPhoto
                                                 ? "bg-primary/20 text-primary border-primary/30"
-                                                : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                                : activeTheme.badgeBg
                                         )}>
-                                            {coverImage ? "เลือกรูปแล้ว" : "ระบบเลือกให้อัตโนมัติตามชื่อโครงการ"}
+                                            {!hasCustomPhoto && React.createElement(activeTheme.icon, { className: cn("w-3 h-3", activeTheme.iconColor) })}
+                                            <span>{hasCustomPhoto ? "ภาพถ่ายจริง" : activeTheme.categoryLabel}</span>
                                         </span>
                                         <p className="text-white text-xs font-semibold mt-1 truncate max-w-[260px] drop-shadow-sm">
                                             {name || "โครงการใหม่"}
@@ -210,9 +229,9 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                                     <button
                                         type="button"
                                         onClick={() => setShowCoverPicker(true)}
-                                        className="px-2.5 py-1 text-xs rounded-lg bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md transition-all font-medium"
+                                        className="pointer-events-auto px-2.5 py-1 text-xs rounded-lg bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md transition-all font-medium active:scale-95"
                                     >
-                                        เปลี่ยนรูป
+                                        เปลี่ยนธีมสี
                                     </button>
                                 </div>
                             </div>
@@ -230,7 +249,7 @@ export default function AddProjectDialog({ isOpen, onClose, onSuccess }: AddProj
                             {showCoverPicker && (
                                 <div className="p-3 bg-muted/20 border border-white/10 rounded-xl space-y-2 animate-in fade-in duration-200">
                                     <CoverPresetPicker
-                                        value={coverImage || autoSuggestedCover}
+                                        value={coverImage || activeCover}
                                         projectName={name}
                                         onChange={(url) => setCoverImage(url)}
                                         onUploadClick={() => fileInputRef.current?.click()}

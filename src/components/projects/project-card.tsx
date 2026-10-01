@@ -7,6 +7,8 @@ import { User, ListChecks, MapPin, Camera } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useProjectRealtimeWeather } from "@/lib/project-weather"
 import { getSmartProjectCover } from "@/lib/project-covers"
+import { isCustomUploadedPhoto, getProjectTheme } from "@/lib/project-themes"
+import { ProjectCoverGraphic } from "@/components/projects/project-cover-graphic"
 import { CoverPresetModal } from "@/components/projects/cover-preset-picker"
 import { useProjects } from "@/context/project-context"
 import { useOrganization } from "@/context/organization-context"
@@ -37,22 +39,37 @@ export function ProjectCard({ project, columns = 1, priority = false }: ProjectC
     const { updateProject } = useProjects()
     const { currentOrg } = useOrganization()
 
-    // Smart cover image resolution (replaces identical placeholders with distinct category-based presets)
-    const coverUrl = React.useMemo(() => {
-        return getSmartProjectCover({
+    // Distinguish between genuine user-uploaded photos vs graphic color themes
+    const hasCustomPhoto = React.useMemo(() => {
+        return isCustomUploadedPhoto(project.imageUrl)
+    }, [project.imageUrl])
+
+    // Architectural color & icon theme
+    const theme = React.useMemo(() => {
+        return getProjectTheme({
             id: project.id,
             name: project.name,
             imageUrl: project.imageUrl
         })
     }, [project.id, project.name, project.imageUrl])
 
+    // Fallback photo URL if custom photo is present
+    const coverUrl = React.useMemo(() => {
+        if (hasCustomPhoto) return project.imageUrl
+        return getSmartProjectCover({
+            id: project.id,
+            name: project.name,
+            imageUrl: project.imageUrl
+        })
+    }, [hasCustomPhoto, project.id, project.name, project.imageUrl])
+
     const handleSelectCover = async (newUrl: string) => {
         try {
             await updateProject(project.id, { image: newUrl })
-            toast.success("เปลี่ยนรูปหน้าปกสำเร็จ")
+            toast.success("เปลี่ยนรูปแบบโครงการสำเร็จ")
         } catch (e) {
             console.error("Failed to update project cover", e)
-            toast.error("ไม่สามารถบันทึกรูปหน้าปกได้")
+            toast.error("ไม่สามารถบันทึกได้")
         }
     }
 
@@ -113,26 +130,41 @@ export function ProjectCard({ project, columns = 1, priority = false }: ProjectC
     // Determine if we show full details (budget/tasks grid) - enabled for all modes
     const showFullDetails = true
 
+    const ThemeIcon = theme.icon
+
     return (
         <>
             <Link href={`/projects/detail?id=${project.id}`} className="group block h-full">
-                <div className="relative flex flex-col h-full bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden hover:shadow-md hover:border-border transition-all duration-300">
-                    {/* Full Background Image with Contrast Overlays */}
+                <div className={cn(
+                    "relative flex flex-col h-full bg-card rounded-xl border shadow-sm overflow-hidden hover:shadow-md transition-all duration-300",
+                    hasCustomPhoto ? "border-border/50 hover:border-border" : theme.borderColor
+                )}>
+                    {/* Background: Either Genuine Custom Photo OR Clean Graphic Color CAD Theme */}
                     <div className="absolute inset-0 z-0">
-                        <Image
-                            src={coverUrl}
-                            alt={project.name}
-                            fill
-                            priority={priority}
-                            className="object-cover transition-transform duration-700 group-hover:scale-105"
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        />
-                        {/* Ambient Dark Scrim to prevent eye strain from busy photos */}
-                        <div className="absolute inset-0 bg-black/35 dark:bg-black/45" />
-                        {/* Top Scrim Gradient for Title Readability */}
-                        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/85 via-black/40 to-transparent" />
-                        {/* Bottom Scrim Gradient for Metrics and Progress Bar */}
-                        <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-background via-background/85 to-transparent" />
+                        {hasCustomPhoto ? (
+                            <>
+                                <Image
+                                    src={coverUrl}
+                                    alt={project.name}
+                                    fill
+                                    priority={priority}
+                                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                />
+                                {/* Ambient Dark Scrim to prevent eye strain */}
+                                <div className="absolute inset-0 bg-black/35 dark:bg-black/45" />
+                                {/* Top Scrim Gradient for Title Readability */}
+                                <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/85 via-black/40 to-transparent" />
+                                {/* Bottom Scrim Gradient for Metrics and Progress Bar */}
+                                <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-background via-background/85 to-transparent" />
+                            </>
+                        ) : (
+                            <ProjectCoverGraphic
+                                theme={theme}
+                                name={project.name}
+                                compact={columns > 1}
+                            />
+                        )}
                     </div>
 
                     {/* Content Overlay */}
@@ -149,13 +181,22 @@ export function ProjectCard({ project, columns = 1, priority = false }: ProjectC
                                 )}>
                                     {project.name}
                                 </h3>
-                                <p className={cn(
-                                    "text-white/80 dark:text-foreground/70 flex items-center gap-1 font-medium drop-shadow-sm",
-                                    columns === 1 ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs"
-                                )}>
-                                    <User className={cn(columns === 1 ? "w-3.5 h-3.5" : "w-3 h-3")} />
-                                    <span className="truncate">{project.client}</span>
-                                </p>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <p className={cn(
+                                        "text-white/80 dark:text-foreground/70 flex items-center gap-1 font-medium drop-shadow-sm truncate",
+                                        columns === 1 ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs"
+                                    )}>
+                                        <User className={cn(columns === 1 ? "w-3.5 h-3.5" : "w-3 h-3")} />
+                                        <span className="truncate">{project.client}</span>
+                                    </p>
+                                    <span className={cn(
+                                        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border backdrop-blur-sm shadow-xs",
+                                        theme.badgeBg
+                                    )}>
+                                        <ThemeIcon className={cn("w-2.5 h-2.5 shrink-0", theme.iconColor)} />
+                                        <span className="truncate max-w-[100px]">{theme.categoryLabel}</span>
+                                    </span>
+                                </div>
                             </div>
 
                             {/* Right Controls: Quick Cover Edit + Real-time Weather Symbol + Status Dot/Badge */}

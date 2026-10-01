@@ -506,7 +506,7 @@ export default function ProjectsPage() {
                                                             taskCount: taskCount,
                                                             budget: budgetValue,
                                                             expenses: projectExpenses,
-                                                            imageUrl: getSmartProjectCover(project),
+                                                            imageUrl: project.image || "",
                                                             status: project.status,
                                                             location: project.location,
                                                             mapUrl: project.mapUrl

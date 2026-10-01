@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useState, useRef, useEffect } from "react"
 import { useTranslation } from "@/lib/i18n-context"
 import { ArrowLeft, Upload, Calendar as CalendarIcon, User, Loader2, MapPin, Globe, ExternalLink, Layers } from "lucide-react" // Added Loader2
@@ -11,6 +12,8 @@ import AddCustomerDialog from "@/components/customers/add-customer-dialog"
 import SearchableCombobox from "@/components/ui/searchable-combobox"
 import { loadSubProjectPresets, createSubProjectsFromPreset, SubProjectPresetGroup, DEFAULT_PRESET_GROUPS } from "@/lib/subproject-presets"
 import { getSmartProjectCover } from "@/lib/project-covers"
+import { getProjectTheme, isCustomUploadedPhoto } from "@/lib/project-themes"
+import { ProjectCoverGraphic } from "@/components/projects/project-cover-graphic"
 import { CoverPresetPicker } from "@/components/projects/cover-preset-picker"
 import { cn } from "@/lib/utils"
 
@@ -47,8 +50,9 @@ export default function NewProjectPage() {
         image: ""
     })
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const autoSuggestedCover = getSmartProjectCover({ name: formData.name || "Modern Project" })
-    const activeCover = formData.image || autoSuggestedCover
+    const activeTheme = getProjectTheme({ name: formData.name || "Modern Project", imageUrl: formData.image })
+    const hasCustomPhoto = isCustomUploadedPhoto(formData.image)
+    const activeCover = formData.image || `theme:${activeTheme.id}`
 
     // Quick Add Customer State
     const [showAddCustomer, setShowAddCustomer] = useState(false)
@@ -120,7 +124,7 @@ export default function NewProjectPage() {
             expenses: "฿0",
             startDate: formData.startDate,
             endDate: formData.endDate,
-            image: formData.image || autoSuggestedCover,
+            image: formData.image || `theme:${activeTheme.id}`,
             subProjects: initialSubProjects
         })
 
@@ -304,22 +308,44 @@ export default function NewProjectPage() {
                     </div>
 
                     {/* Preview banner */}
-                    <div className="relative w-full h-40 rounded-2xl overflow-hidden border border-white/10 bg-slate-900 group shadow-md">
-                        <img
-                            src={activeCover}
-                            alt="Cover Preview"
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-black/40" />
-                        <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex items-end justify-between">
+                    <div className={cn(
+                        "relative w-full h-40 rounded-2xl overflow-hidden border shadow-md bg-slate-900 group",
+                        hasCustomPhoto ? "border-white/10" : activeTheme.borderColor
+                    )}>
+                        {hasCustomPhoto ? (
+                            <>
+                                <img
+                                    src={formData.image}
+                                    alt="Cover Preview"
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-black/40" />
+                            </>
+                        ) : (
+                            <ProjectCoverGraphic
+                                theme={activeTheme}
+                                name={formData.name}
+                                compact={false}
+                            />
+                        )}
+                        <div className="absolute inset-x-0 bottom-0 p-4 z-10 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex items-end justify-between pointer-events-none">
                             <div>
-                                <span className="text-[10px] uppercase font-bold text-white/70 tracking-wider">
-                                    พรีวิวหน้าปกโครงการ
+                                <span className={cn(
+                                    "inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md border backdrop-blur-md",
+                                    hasCustomPhoto
+                                        ? "bg-primary/20 text-primary border-primary/30"
+                                        : activeTheme.badgeBg
+                                )}>
+                                    {!hasCustomPhoto && React.createElement(activeTheme.icon, { className: cn("w-3 h-3", activeTheme.iconColor) })}
+                                    <span>{hasCustomPhoto ? "ภาพถ่ายจริง" : activeTheme.categoryLabel}</span>
                                 </span>
-                                <p className="text-white font-bold text-sm sm:text-base truncate max-w-sm mt-0.5 drop-shadow-sm">
+                                <p className="text-white font-bold text-sm sm:text-base truncate max-w-sm mt-1 drop-shadow-sm">
                                     {formData.name || "ชื่อโครงการใหม่"}
                                 </p>
                             </div>
+                            <span className="text-xs text-white/80 font-medium">
+                                {hasCustomPhoto ? "Custom Photo" : activeTheme.title}
+                            </span>
                         </div>
                     </div>
 
@@ -334,7 +360,7 @@ export default function NewProjectPage() {
                     {/* Presets gallery */}
                     <div className="p-4 bg-muted/20 border border-white/10 rounded-2xl">
                         <CoverPresetPicker
-                            value={formData.image || autoSuggestedCover}
+                            value={formData.image || activeCover}
                             projectName={formData.name}
                             onChange={(url) => setFormData({ ...formData, image: url })}
                             onUploadClick={() => fileInputRef.current?.click()}

@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useState, useEffect, use, useMemo, useRef } from "react"
 import { useTranslation } from "@/lib/i18n-context"
 import { useProjects } from "@/context/project-context"
@@ -12,6 +13,8 @@ import { getExpenseAmountForProject } from "@/lib/project-utils"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { getSmartProjectCover } from "@/lib/project-covers"
+import { getProjectTheme, isCustomUploadedPhoto } from "@/lib/project-themes"
+import { ProjectCoverGraphic } from "@/components/projects/project-cover-graphic"
 import { CoverPresetPicker } from "@/components/projects/cover-preset-picker"
 
 import { useSearchParams } from "next/navigation"
@@ -54,7 +57,13 @@ export default function EditProjectClient() {
     })
     const [isUploading, setIsUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const resolvedCover = formData.image || getSmartProjectCover({ id, name: formData.name })
+    const activeTheme = useMemo(() => {
+        return getProjectTheme({ id, name: formData.name || project?.name, imageUrl: formData.image })
+    }, [id, formData.name, project?.name, formData.image])
+    const hasCustomPhoto = useMemo(() => {
+        return isCustomUploadedPhoto(formData.image)
+    }, [formData.image])
+    const activeCover = formData.image || `theme:${activeTheme.id}`
 
     // Quick Add Customer State
     const [showAddCustomer, setShowAddCustomer] = useState(false)
@@ -390,22 +399,44 @@ export default function EditProjectClient() {
                     </div>
 
                     {/* Preview banner */}
-                    <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-white/10 bg-slate-900 group shadow-md">
-                        <img
-                            src={resolvedCover}
-                            alt="Cover Preview"
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-black/40" />
-                        <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex items-end justify-between">
+                    <div className={cn(
+                        "relative w-full h-44 rounded-2xl overflow-hidden border shadow-md bg-slate-900 group",
+                        hasCustomPhoto ? "border-white/10" : activeTheme.borderColor
+                    )}>
+                        {hasCustomPhoto ? (
+                            <>
+                                <img
+                                    src={formData.image}
+                                    alt="Cover Preview"
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-black/40" />
+                            </>
+                        ) : (
+                            <ProjectCoverGraphic
+                                theme={activeTheme}
+                                name={formData.name || project?.name}
+                                compact={false}
+                            />
+                        )}
+                        <div className="absolute inset-x-0 bottom-0 p-4 z-10 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex items-end justify-between pointer-events-none">
                             <div>
-                                <span className="text-[10px] uppercase font-bold text-white/70 tracking-wider">
-                                    พรีวิวหน้าปกโครงการ
+                                <span className={cn(
+                                    "inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md border backdrop-blur-md",
+                                    hasCustomPhoto
+                                        ? "bg-primary/20 text-primary border-primary/30"
+                                        : activeTheme.badgeBg
+                                )}>
+                                    {!hasCustomPhoto && React.createElement(activeTheme.icon, { className: cn("w-3 h-3", activeTheme.iconColor) })}
+                                    <span>{hasCustomPhoto ? "ภาพถ่ายจริง" : activeTheme.categoryLabel}</span>
                                 </span>
-                                <p className="text-white font-bold text-base truncate max-w-sm mt-0.5 drop-shadow-sm">
+                                <p className="text-white font-bold text-base truncate max-w-sm mt-1 drop-shadow-sm">
                                     {formData.name || project?.name || "โครงการ"}
                                 </p>
                             </div>
+                            <span className="text-xs text-white/80 font-medium">
+                                {hasCustomPhoto ? "Custom Photo" : activeTheme.title}
+                            </span>
                         </div>
                     </div>
 
@@ -420,7 +451,7 @@ export default function EditProjectClient() {
                     {/* Presets gallery */}
                     <div className="p-4 bg-muted/20 border border-white/10 rounded-2xl">
                         <CoverPresetPicker
-                            value={formData.image || resolvedCover}
+                            value={formData.image || activeCover}
                             projectName={formData.name || project?.name}
                             projectId={id}
                             onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
