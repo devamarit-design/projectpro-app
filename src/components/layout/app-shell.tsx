@@ -44,7 +44,7 @@ export function AppShell({
             <Sidebar className="hidden lg:flex w-64 shrink-0 transition-all duration-300" />
 
             {/* Main Content */}
-            <div id="main-scroll-container" className="relative flex flex-col flex-1 min-w-0 w-full max-w-full overflow-y-auto transition-all duration-300 pb-16 lg:pb-0">
+            <div id="main-scroll-container" className="flex flex-col flex-1 min-w-0 w-full max-w-full overflow-y-auto overflow-x-hidden transition-all duration-300 pb-16 lg:pb-0">
                 <Header />
                 <main className="flex-1 p-3 sm:p-8 lg:p-10 bg-muted/20 w-full max-w-full overflow-x-hidden">
                     {children}

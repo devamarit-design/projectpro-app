@@ -9,7 +9,6 @@ import { useNotifications } from "@/context/notification-context"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { useScrollDirection } from "@/hooks/use-scroll-direction"
-import { useIsModalOpen } from "@/hooks/use-modal-open"
 import { cn } from "@/lib/utils"
 
 interface HeaderProps { }
@@ -20,7 +19,6 @@ export function Header({ }: HeaderProps) {
     const router = useRouter()
     const pathname = usePathname()
     const scrollDirection = useScrollDirection()
-    const isModalOpen = useIsModalOpen()
 
     // Dedicated form/creation popup pages where top search header should not be displayed
     const isPopupPage = Boolean(
@@ -39,16 +37,11 @@ export function Header({ }: HeaderProps) {
         return null
     }
 
-    // Hide searchbar when scrolling down OR when a popup/modal/sheet is open
-    const isHidden = Boolean(scrollDirection === "down" || isModalOpen)
-
     return (
         <header
             className={cn(
-                "sticky top-2 sm:top-4 z-40 flex h-14 sm:h-16 shrink-0 items-center gap-x-3 sm:gap-x-4 bg-background/80 backdrop-blur-xl rounded-2xl mx-3 sm:mx-4 mt-2 px-3 sm:px-6 lg:px-8 shadow-lg shadow-black/5 dark:shadow-black/40 border border-border/50 dark:border-white/10 overflow-x-auto scrollbar-hide transition-all duration-300",
-                isHidden
-                    ? "-translate-y-28 opacity-0 pointer-events-none"
-                    : "translate-y-0 opacity-100"
+                "sticky top-0 z-40 flex h-14 sm:h-16 shrink-0 items-center gap-x-3 sm:gap-x-4 bg-background/60 backdrop-blur-xl rounded-2xl mx-3 sm:mx-4 mt-2 px-3 sm:px-6 lg:px-8 border border-white/10 overflow-x-auto scrollbar-hide transition-transform duration-300",
+                scrollDirection === "down" ? "-translate-y-24" : "translate-y-0"
             )}
         >
             <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
