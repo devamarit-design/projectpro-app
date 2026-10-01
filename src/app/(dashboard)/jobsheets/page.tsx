@@ -89,6 +89,13 @@ export default function JobSheetsPage() {
     const orgId = currentTeam?.id || currentUser?.orgIds?.[0] || currentUser?.organizations?.[0]?.orgId || "default_org";
     const currentUserId = currentUser?.id || "";
 
+    // Role-based Access Control
+    const isAdminOrOwner = useMemo(() => {
+        const teamRole = currentTeam?.role;
+        const userRole = currentUser?.role;
+        return teamRole === "Owner" || teamRole === "Admin" || userRole === "Owner" || userRole === "Admin";
+    }, [currentTeam?.role, currentUser?.role]);
+
     // Data state
     const [jobsheets, setJobsheets] = useState<JobSheet[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -96,10 +103,17 @@ export default function JobSheetsPage() {
     // Filter states
     const [activeTab, setActiveTab] = useState<"list" | "create" | "edit">("list");
     const [viewMode, setViewMode] = useState<"grouped" | "cards">("grouped"); // Grouped by month/week by default!
-    const [filterScope, setFilterScope] = useState<"all" | "mine">("mine"); // Default to personal separation as requested!
+    const [filterScope, setFilterScope] = useState<"all" | "mine">("mine"); // Default to personal separation
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedProjectFilter, setSelectedProjectFilter] = useState("all");
     const [selectedDateFilter, setSelectedDateFilter] = useState("");
+
+    // Automatically enforce "mine" for non-admin users
+    useEffect(() => {
+        if (!isAdminOrOwner && filterScope !== "mine") {
+            setFilterScope("mine");
+        }
+    }, [isAdminOrOwner, filterScope]);
 
     // Preview & Edit states
     const [previewSheet, setPreviewSheet] = useState<JobSheet | null>(null);
@@ -110,6 +124,31 @@ export default function JobSheetsPage() {
     // Weekly Summary Modal state
     const [selectedWeekForSummary, setSelectedWeekForSummary] = useState<WeekGroupData | null>(null);
     const [isWeeklySummaryOpen, setIsWeeklySummaryOpen] = useState(false);
+
+    // Helper: Strict check if a JobSheet belongs to the current user
+    const checkIsMine = (sheet: JobSheet): boolean => {
+        if (!currentUserId && !currentUser?.id) return false;
+
+        // 1. Direct ID match
+        if (currentUserId && sheet.createdBy && sheet.createdBy === currentUserId) return true;
+        if (currentUser?.id && sheet.createdBy && sheet.createdBy === currentUser.id) return true;
+
+        // 2. Email match
+        if (currentUser?.email && (sheet as any).createdByEmail && (sheet as any).createdByEmail.toLowerCase() === currentUser.email.toLowerCase()) {
+            return true;
+        }
+
+        // 3. User display name match (case-insensitive exact comparison)
+        const userDisplayName = currentUser?.name?.trim().toLowerCase();
+        if (userDisplayName) {
+            const reporter = sheet.reportedBy?.trim().toLowerCase();
+            const creator = sheet.createdByName?.trim().toLowerCase();
+            if (reporter && reporter === userDisplayName) return true;
+            if (creator && creator === userDisplayName) return true;
+        }
+
+        return false;
+    };
 
     // Subscribe to Firestore jobsheets
     useEffect(() => {
@@ -131,19 +170,14 @@ export default function JobSheetsPage() {
         return () => unsubscribe();
     }, [orgId]);
 
-    // Filtered list
+    // Filtered list with strict role and scope enforcement
     const filteredSheets = useMemo(() => {
         return jobsheets.filter((sheet) => {
-            // Scope filter: mine vs all
-            if (filterScope === "mine") {
-                const isMine = 
-                    !currentUserId || 
-                    !sheet.createdBy || 
-                    sheet.createdBy === currentUserId || 
-                    sheet.createdBy === "current_user" ||
-                    (currentUser?.name && sheet.reportedBy?.toLowerCase() === currentUser.name.toLowerCase()) ||
-                    (currentUser?.name && sheet.createdByName?.toLowerCase() === currentUser.name.toLowerCase());
-                if (!isMine) return false;
+            // Strict Privacy Rule:
+            // Non-admin can NEVER see other people's sheets.
+            // Admin/Owner sees only their own when filterScope === "mine".
+            if (!isAdminOrOwner || filterScope === "mine") {
+                if (!checkIsMine(sheet)) return false;
             }
 
             // Search query
@@ -181,7 +215,7 @@ export default function JobSheetsPage() {
 
             return true;
         });
-    }, [jobsheets, filterScope, currentUserId, currentUser?.name, searchQuery, selectedProjectFilter, selectedDateFilter]);
+    }, [jobsheets, isAdminOrOwner, filterScope, currentUserId, currentUser?.id, currentUser?.name, currentUser?.email, searchQuery, selectedProjectFilter, selectedDateFilter]);
 
     // Group filtered sheets by Month and then by Week
     const monthGroups = useMemo(() => {
@@ -297,17 +331,16 @@ export default function JobSheetsPage() {
         return Array.from(mGroupsMap.values());
     }, [filteredSheets]);
 
-    // Stats
-    const totalReports = jobsheets.length;
-    const myReportsCount = jobsheets.filter((s) => {
-        return !currentUserId || !s.createdBy || s.createdBy === currentUserId || s.createdBy === "current_user" ||
-            (currentUser?.name && (s.reportedBy?.toLowerCase() === currentUser.name.toLowerCase() || s.createdByName?.toLowerCase() === currentUser.name.toLowerCase()));
-    }).length;
-    const totalTasksDone = jobsheets.reduce(
+    // Stats (Privacy-aware)
+    const mySheets = useMemo(() => jobsheets.filter(checkIsMine), [jobsheets, currentUserId, currentUser?.id, currentUser?.name, currentUser?.email]);
+    const myReportsCount = mySheets.length;
+    const totalReports = isAdminOrOwner ? jobsheets.length : myReportsCount;
+    const visibleSheetsForStats = (!isAdminOrOwner || filterScope === "mine") ? mySheets : jobsheets;
+    const totalTasksDone = visibleSheetsForStats.reduce(
         (acc, s) => acc + (s.workItems?.filter((w) => w.status === "completed").length || 0),
         0
     );
-    const latestSheet = jobsheets[0];
+    const latestSheet = visibleSheetsForStats[0];
 
     // Handlers with Optimistic Updates
     const handleSaveNew = async (data: Omit<JobSheet, "id" | "createdAt" | "updatedAt">) => {
@@ -320,8 +353,10 @@ export default function JobSheetsPage() {
             const saved = await createJobSheet(targetOrgId, {
                 ...data,
                 orgId: targetOrgId,
-                createdBy: currentUserId || currentUser?.id || "current_user",
-                createdByName: currentUser?.name || data.reportedBy || "ผู้รายงาน"
+                createdBy: currentUserId || currentUser?.id || "",
+                createdByName: currentUser?.name || data.reportedBy || "ผู้รายงาน",
+                createdByEmail: currentUser?.email || "",
+                createdByRole: currentTeam?.role || currentUser?.role || data.reportedByRole || ""
             });
             // Optimistic update so user sees it in list immediately
             setJobsheets(prev => [saved, ...prev.filter(s => s.id !== saved.id && (!saved.reportNumber || s.reportNumber !== saved.reportNumber))]);
@@ -423,21 +458,43 @@ export default function JobSheetsPage() {
 
                     {/* Quick Stats Grid */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t border-white/10">
-                        <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                            <span className="text-xs text-white/50 block mb-1">รายงานทั้งหมดในระบบ</span>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-2xl font-black text-white font-mono">{totalReports}</span>
-                                <span className="text-xs text-amber-400/80">ฉบับ</span>
-                            </div>
-                        </div>
+                        {isAdminOrOwner ? (
+                            <>
+                                <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
+                                    <span className="text-xs text-white/50 block mb-1">รายงานทั้งหมดในระบบ</span>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-2xl font-black text-white font-mono">{totalReports}</span>
+                                        <span className="text-xs text-amber-400/80">ฉบับ</span>
+                                    </div>
+                                </div>
 
-                        <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                            <span className="text-xs text-white/50 block mb-1">รายงานของฉัน</span>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-2xl font-black text-amber-400 font-mono">{myReportsCount}</span>
-                                <span className="text-xs text-white/40">ฉบับ</span>
-                            </div>
-                        </div>
+                                <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
+                                    <span className="text-xs text-white/50 block mb-1">รายงานของฉัน</span>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-2xl font-black text-amber-400 font-mono">{myReportsCount}</span>
+                                        <span className="text-xs text-white/40">ฉบับ</span>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
+                                    <span className="text-xs text-white/50 block mb-1">รายงานของฉัน</span>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-2xl font-black text-amber-400 font-mono">{myReportsCount}</span>
+                                        <span className="text-xs text-white/40">ฉบับ</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
+                                    <span className="text-xs text-white/50 block mb-1">สิทธิ์การเข้าถึง</span>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-sm font-bold text-amber-400">เฉพาะของคุณ</span>
+                                        <span className="text-[10px] text-white/40">(ส่วนบุคคล)</span>
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
                         <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
                             <span className="text-xs text-white/50 block mb-1">งานที่บันทึกสำเร็จ</span>
@@ -489,33 +546,40 @@ export default function JobSheetsPage() {
                     <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-zinc-900/40 border border-white/10 rounded-2xl p-4">
                         {/* Left Controls: Scope (Mine/All) + View Mode (Grouped/Cards) */}
                         <div className="flex items-center gap-2 flex-wrap shrink-0">
-                            {/* Scope Toggle: Mine vs All */}
-                            <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-white/10 shrink-0">
-                                <button
-                                    type="button"
-                                    onClick={() => setFilterScope("mine")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                        filterScope === "mine"
-                                            ? "bg-amber-500 text-black shadow-md"
-                                            : "text-white/60 hover:text-white"
-                                    }`}
-                                >
-                                    <UserCheck className="w-3.5 h-3.5 inline mr-1" />
-                                    รายงานของฉัน ({myReportsCount})
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setFilterScope("all")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                        filterScope === "all"
-                                            ? "bg-amber-500 text-black shadow-md"
-                                            : "text-white/60 hover:text-white"
-                                    }`}
-                                >
-                                    <Users className="w-3.5 h-3.5 inline mr-1" />
-                                    ทุกคนในทีม ({totalReports})
-                                </button>
-                            </div>
+                            {/* Scope Toggle: Mine vs All (Only accessible to Admin/Owner) */}
+                            {isAdminOrOwner ? (
+                                <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-white/10 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFilterScope("mine")}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                            filterScope === "mine"
+                                                ? "bg-amber-500 text-black shadow-md"
+                                                : "text-white/60 hover:text-white"
+                                        }`}
+                                    >
+                                        <UserCheck className="w-3.5 h-3.5 inline mr-1" />
+                                        รายงานของฉัน ({myReportsCount})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFilterScope("all")}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                            filterScope === "all"
+                                                ? "bg-amber-500 text-black shadow-md"
+                                                : "text-white/60 hover:text-white"
+                                        }`}
+                                    >
+                                        <Users className="w-3.5 h-3.5 inline mr-1" />
+                                        ทุกคนในทีม ({totalReports})
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-1.5 bg-zinc-950 px-3.5 py-1.5 rounded-xl border border-white/10 text-xs font-semibold text-amber-400 shrink-0">
+                                    <UserCheck className="w-3.5 h-3.5" />
+                                    <span>รายงานของฉัน ({myReportsCount})</span>
+                                </div>
+                            )}
 
                             {/* View Mode Toggle: Grouped by Month/Week vs Flat Cards */}
                             <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-white/10 shrink-0">
@@ -707,7 +771,8 @@ export default function JobSheetsPage() {
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                     {week.sheets.map((sheet) => {
                                                         const completedCount = sheet.workItems?.filter((w) => w.status === "completed").length || 0;
-                                                        const isMySheet = sheet.createdBy === currentUserId;
+                                                        const isMySheet = checkIsMine(sheet);
+                                                        const canEditOrDelete = isMySheet || isAdminOrOwner;
 
                                                         return (
                                                             <div
@@ -803,7 +868,7 @@ export default function JobSheetsPage() {
                                                                 {/* Actions Toolbar */}
                                                                 <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-white/10">
                                                                     <div className="flex items-center gap-1">
-                                                                        {isMySheet && (
+                                                                        {canEditOrDelete && (
                                                                             <>
                                                                                 <button
                                                                                     type="button"
@@ -851,7 +916,8 @@ export default function JobSheetsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {filteredSheets.map((sheet) => {
                                 const completedCount = sheet.workItems?.filter((w) => w.status === "completed").length || 0;
-                                const isMySheet = sheet.createdBy === currentUserId;
+                                const isMySheet = checkIsMine(sheet);
+                                const canEditOrDelete = isMySheet || isAdminOrOwner;
 
                                 return (
                                     <div
@@ -947,7 +1013,7 @@ export default function JobSheetsPage() {
                                         {/* Actions Toolbar */}
                                         <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-white/10">
                                             <div className="flex items-center gap-1">
-                                                {isMySheet && (
+                                                {canEditOrDelete && (
                                                     <>
                                                         <button
                                                             type="button"

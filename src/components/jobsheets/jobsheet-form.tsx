@@ -182,13 +182,22 @@ export function JobSheetForm({
     const [obstacles, setObstacles] = useState(initialData?.obstacles || "");
     const [safetyNotes, setSafetyNotes] = useState(initialData?.safetyNotes || "");
     const [reportedBy, setReportedBy] = useState(
-        initialData?.reportedBy || currentUser?.name || "เบียร์"
+        initialData?.reportedBy || currentUser?.name || ""
     );
     const [reportedByRole, setReportedByRole] = useState(
-        initialData?.reportedByRole || currentUser?.role || "ผู้ดูแลหน้างาน"
+        initialData?.reportedByRole || currentTeam?.role || currentUser?.role || "ผู้ดูแลหน้างาน"
     );
     const [inspectedBy, setInspectedBy] = useState(initialData?.inspectedBy || "");
     const [photos, setPhotos] = useState<string[]>(initialData?.photos || []);
+
+    useEffect(() => {
+        if (!reportedBy && currentUser?.name) {
+            setReportedBy(currentUser.name);
+        }
+        if (!reportedByRole && (currentTeam?.role || currentUser?.role)) {
+            setReportedByRole(currentTeam?.role || currentUser?.role || "ผู้ดูแลหน้างาน");
+        }
+    }, [currentUser?.name, currentTeam?.role, currentUser?.role, reportedBy, reportedByRole]);
 
     // When project mode changes
     useEffect(() => {
@@ -447,8 +456,8 @@ export function JobSheetForm({
             companyName: initialData?.companyName || companyProfile?.name || currentTeam?.name || "บริษัทของคุณ",
             companyLogo: initialData?.companyLogo || companyProfile?.logo || "",
             createdBy: initialData?.createdBy || currentUser?.id || "",
-            createdByName: initialData?.createdByName || currentUser?.name || reportedBy,
-            createdByRole: initialData?.createdByRole || currentUser?.role || reportedByRole,
+            createdByName: initialData?.createdByName || currentUser?.name || reportedBy || "ผู้รายงาน",
+            createdByRole: initialData?.createdByRole || currentTeam?.role || currentUser?.role || reportedByRole || "ผู้ดูแลหน้างาน",
             weather: {
                 condition: weatherCondition,
                 temperature: Number(temperature) || 30
@@ -461,8 +470,8 @@ export function JobSheetForm({
             safetyNotes,
             generalNotes: "",
             photos,
-            reportedBy: reportedBy || currentUser?.name || "เบียร์",
-            reportedByRole: reportedByRole || "ผู้ดูแลหน้างาน",
+            reportedBy: reportedBy || currentUser?.name || "ผู้รายงาน",
+            reportedByRole: reportedByRole || currentTeam?.role || currentUser?.role || "ผู้ดูแลหน้างาน",
             inspectedBy
         };
     };

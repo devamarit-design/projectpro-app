@@ -43,6 +43,7 @@ export interface JobSheet {
     createdByName: string;
     createdByRole?: string;
     createdByAvatar?: string;
+    createdByEmail?: string;
     weather: JobSheetWeather;
     workItems: JobSheetWorkItem[];
     manpower: JobSheetManpower[];
