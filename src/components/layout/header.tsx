@@ -5,26 +5,51 @@ import { Bell, Search, Globe } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { HeaderProfile } from "./header-profile"
 import { useTranslation } from "@/lib/i18n-context"
-
-interface HeaderProps { }
-
 import { useNotifications } from "@/context/notification-context"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
+import { useScrollDirection } from "@/hooks/use-scroll-direction"
+import { useIsModalOpen } from "@/hooks/use-modal-open"
+import { cn } from "@/lib/utils"
+
+interface HeaderProps { }
 
 export function Header({ }: HeaderProps) {
     const { locale, setLocale, t } = useTranslation()
     const { unreadCount } = useNotifications()
     const router = useRouter()
+    const pathname = usePathname()
+    const scrollDirection = useScrollDirection()
+    const isModalOpen = useIsModalOpen()
+
+    // Dedicated form/creation popup pages where top search header should not be displayed
+    const isPopupPage = Boolean(
+        pathname === "/projects/new" ||
+        pathname?.startsWith("/projects/edit") ||
+        pathname === "/income/create" ||
+        pathname?.startsWith("/settings/template-editor")
+    )
 
     const toggleLanguage = () => {
         const newLocale = locale === 'en' ? 'th' : 'en'
         setLocale(newLocale)
     }
 
+    if (isPopupPage) {
+        return null
+    }
+
+    // Hide searchbar when scrolling down OR when a popup/modal/sheet is open
+    const isHidden = Boolean(scrollDirection === "down" || isModalOpen)
+
     return (
         <header
-            className="sticky top-2 sm:top-4 z-40 flex h-14 sm:h-16 shrink-0 items-center gap-x-3 sm:gap-x-4 bg-background/80 backdrop-blur-xl rounded-2xl mx-3 sm:mx-4 mt-2 px-3 sm:px-6 lg:px-8 shadow-sm border border-white/10 overflow-x-auto scrollbar-hide"
+            className={cn(
+                "sticky top-2 sm:top-4 z-40 flex h-14 sm:h-16 shrink-0 items-center gap-x-3 sm:gap-x-4 bg-background/80 backdrop-blur-xl rounded-2xl mx-3 sm:mx-4 mt-2 px-3 sm:px-6 lg:px-8 shadow-sm border border-border/40 dark:border-white/10 overflow-x-auto scrollbar-hide transition-all duration-300",
+                isHidden
+                    ? "-translate-y-28 opacity-0 pointer-events-none"
+                    : "translate-y-0 opacity-100"
+            )}
         >
             <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
                 <div className="relative flex flex-1 items-center">

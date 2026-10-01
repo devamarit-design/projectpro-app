@@ -37,6 +37,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 import { useScrollDirection } from "@/hooks/use-scroll-direction"
+import { useIsModalOpen } from "@/hooks/use-modal-open"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
 import { useProjects } from "@/context/project-context"
@@ -50,19 +51,15 @@ export function MobileNav() {
     const [showMoreMenu, setShowMoreMenu] = React.useState(false)
     const [showFinanceMenu, setShowFinanceMenu] = React.useState(false)
     const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false)
-    const [isModalOpen, setIsModalOpen] = React.useState(false)
+    const isModalOpen = useIsModalOpen()
     const scrollDirection = useScrollDirection()
 
-    React.useEffect(() => {
-        const checkModal = () => {
-            setIsModalOpen(document.body.classList.contains("modal-open"))
-        }
-        checkModal()
-
-        const observer = new MutationObserver(checkModal)
-        observer.observe(document.body, { attributes: true, attributeFilter: ["class"] })
-        return () => observer.disconnect()
-    }, [])
+    const isPopupPage = Boolean(
+        pathname === "/projects/new" ||
+        pathname?.startsWith("/projects/edit") ||
+        pathname === "/income/create" ||
+        pathname?.startsWith("/settings/template-editor")
+    )
 
     // Main 4 Items: Finance, Add, Project, More
 
@@ -315,7 +312,7 @@ export function MobileNav() {
             <nav
                 className={cn(
                     "fixed bottom-4 left-4 right-4 z-40 bg-background/80 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl md:hidden block pb-2 pt-2 transition-all duration-300",
-                    (scrollDirection === "down" || isModalOpen) ? "translate-y-28 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
+                    (scrollDirection === "down" || isModalOpen || isPopupPage) ? "translate-y-28 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
                 )}
             >
                 <div className="flex items-center justify-around h-14 px-2">
