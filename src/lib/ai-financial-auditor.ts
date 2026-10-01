@@ -359,37 +359,57 @@ export function auditComprehensiveProjectExpenses(
         spCostMap.set(spId, currentSpStat)
     })
 
-    // 2. Check Duplicate Risks (same amount and same payee within 7 days, or exact title and amount)
+    // 2. Check Duplicate Risks
+    // Focus strictly on the SAME DATE, because routine recurring expenses (e.g. fuel, per diem allowances)
+    // naturally happen periodically on different days with identical amounts/payees.
     const duplicateRisks: DuplicateRiskItem[] = []
     for (let i = 0; i < projectExpenses.length; i++) {
         for (let j = i + 1; j < projectExpenses.length; j++) {
             const a = projectExpenses[i]
             const b = projectExpenses[j]
             if (!a.totalValue || a.totalValue <= 0) continue
-            if (a.totalValue === b.totalValue) {
-                // Case 1: Same title and amount
-                const cleanTitleA = a.title.trim().toLowerCase()
-                const cleanTitleB = b.title.trim().toLowerCase()
-                const isSameTitle = cleanTitleA.length > 2 && cleanTitleA === cleanTitleB
+            if (a.totalValue !== b.totalValue) continue
 
-                // Case 2: Same payee within 5 days
-                const isSamePayee = a.payee && b.payee && a.payee.trim().toLowerCase() === b.payee.trim().toLowerCase()
-                let isCloseDate = false
-                if (a.date && b.date) {
-                    const diffDays = Math.abs(new Date(a.date).getTime() - new Date(b.date).getTime()) / (1000 * 3600 * 24)
-                    if (diffDays <= 7) isCloseDate = true
-                }
+            const dateA = a.date ? a.date.trim() : ""
+            const dateB = b.date ? b.date.trim() : ""
 
-                if (isSameTitle || (isSamePayee && isCloseDate)) {
-                    duplicateRisks.push({
-                        expenseA: a,
-                        expenseB: b,
-                        reason: isSameTitle
-                            ? `ชื่อรายการ "${a.title}" และยอด ฿${a.totalValue.toLocaleString()} ตรงกันทุกประการ`
-                            : `ผู้รับเงิน "${a.payee}" ยอด ฿${a.totalValue.toLocaleString()} ตรงกัน และลงวันที่ใกล้กัน (${a.date} กับ ${b.date})`,
-                        subProjectName: getSpName(a.subProjectId)
-                    })
-                }
+            // If both transactions have dates and the dates are DIFFERENT -> routine separate transactions, NOT duplicate
+            if (dateA && dateB && dateA !== dateB) {
+                continue
+            }
+
+            const cleanTitleA = a.title.trim().toLowerCase()
+            const cleanTitleB = b.title.trim().toLowerCase()
+            const isSameTitle = cleanTitleA.length > 2 && cleanTitleA === cleanTitleB
+
+            const cleanPayeeA = a.payee ? a.payee.trim().toLowerCase() : ""
+            const cleanPayeeB = b.payee ? b.payee.trim().toLowerCase() : ""
+            const isSamePayee = cleanPayeeA.length > 2 && cleanPayeeA === cleanPayeeB
+
+            const isSameDate = (dateA && dateB && dateA === dateB) || (!dateA && !dateB)
+            const isOneMissingDate = (!dateA && dateB) || (dateA && !dateB)
+
+            if (isSameDate && isSameTitle) {
+                duplicateRisks.push({
+                    expenseA: a,
+                    expenseB: b,
+                    reason: `ชื่อรายการ "${a.title}" และยอด ฿${a.totalValue.toLocaleString()} ตรงกันในวันเดียวกัน (${dateA || "ไม่ระบุวัน"})`,
+                    subProjectName: getSpName(a.subProjectId)
+                })
+            } else if (isSameDate && isSamePayee) {
+                duplicateRisks.push({
+                    expenseA: a,
+                    expenseB: b,
+                    reason: `ผู้รับเงิน "${a.payee}" และยอด ฿${a.totalValue.toLocaleString()} ตรงกันในวันเดียวกัน (${dateA || "ไม่ระบุวัน"})`,
+                    subProjectName: getSpName(a.subProjectId)
+                })
+            } else if (isOneMissingDate && isSameTitle && isSamePayee) {
+                duplicateRisks.push({
+                    expenseA: a,
+                    expenseB: b,
+                    reason: `ชื่อ "${a.title}" ยอด ฿${a.totalValue.toLocaleString()} และผู้รับ "${a.payee}" ตรงกัน (รายการหนึ่งไม่ได้ระบุวันที่)`,
+                    subProjectName: getSpName(a.subProjectId)
+                })
             }
         }
     }

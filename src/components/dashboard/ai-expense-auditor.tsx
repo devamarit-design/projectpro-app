@@ -546,7 +546,7 @@ export function AIExpenseAuditor({ projectId }: AIExpenseAuditorProps) {
                                         รายการที่อาจจ่ายซ้ำซ้อน (Duplicate Payment Risk)
                                     </h4>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        ตรวจพบรายการที่มีชื่อ ยอดเงิน หรือร้านค้าตรงกันในวันใกล้เคียงกัน แนะนำให้ตรวจสอบเพื่อป้องกันเงินรั่วไหล
+                                        ตรวจพบรายการที่มีชื่อ ยอดเงิน หรือร้านค้าตรงกันในวันเดียวกัน เพื่อป้องกันการบันทึกหรือจ่ายเงินซ้ำซ้อน
                                     </p>
                                 </div>
                                 <span className="text-xs font-mono font-bold text-purple-300 shrink-0">
