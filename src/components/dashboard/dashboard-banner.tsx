@@ -68,11 +68,21 @@ export function DashboardBanner() {
                     )}
                 >
                     {/* Background */}
-                    <div className="absolute inset-0 bg-black">
+                    <div className="absolute inset-0 bg-background dark:bg-black">
                         {banner.url ? (
                             <>
-                                <Image src={banner.url as string} alt={banner.title || "Banner"} fill sizes="(max-width: 1024px) 100vw, 1024px" className="object-cover opacity-60" priority={index === 0} unoptimized />
-                                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+                                <Image
+                                    src={banner.url as string}
+                                    alt={banner.title || "Banner"}
+                                    fill
+                                    sizes="(max-width: 1024px) 100vw, 1024px"
+                                    className={cn("object-cover", banner.title ? "opacity-90 dark:opacity-60" : "opacity-100")}
+                                    priority={index === 0}
+                                    unoptimized
+                                />
+                                {banner.title && (
+                                    <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent dark:from-black/80 dark:via-black/40 dark:to-transparent" />
+                                )}
                             </>
                         ) : (
                             /* Fallback Gradient - Unique per slide */
@@ -122,18 +132,21 @@ export function DashboardBanner() {
                 </div>
             ))}
 
+            {/* Bottom Gradient Fade (Fade to White in Light Theme, Fade to Black in Dark Theme) */}
+            <div className="absolute inset-x-0 bottom-0 h-28 sm:h-40 bg-gradient-to-t from-background via-background/70 to-transparent pointer-events-none z-20" />
+
             {/* Navigation Arrows (Only show if > 1 slide) */}
             {activeBanners.length > 1 && (
                 <>
                     <button
                         onClick={prevSlide}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/20 hover:bg-black/40 text-white backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 hover:scale-110 border border-white/10"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-background/60 hover:bg-background/90 text-foreground dark:bg-black/20 dark:hover:bg-black/40 dark:text-white backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 hover:scale-110 border border-border/50 dark:border-white/10"
                     >
                         <ChevronLeft className="w-6 h-6" />
                     </button>
                     <button
                         onClick={nextSlide}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/20 hover:bg-black/40 text-white backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 hover:scale-110 border border-white/10"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-background/60 hover:bg-background/90 text-foreground dark:bg-black/20 dark:hover:bg-black/40 dark:text-white backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 hover:scale-110 border border-border/50 dark:border-white/10"
                     >
                         <ChevronRight className="w-6 h-6" />
                     </button>
@@ -149,7 +162,9 @@ export function DashboardBanner() {
                                 }}
                                 className={cn(
                                     "h-1.5 rounded-full transition-all duration-300",
-                                    idx === currentIndex ? "w-8 bg-white" : "w-2 bg-white/30 hover:bg-white/50"
+                                    idx === currentIndex
+                                        ? "w-8 bg-primary dark:bg-white shadow-sm"
+                                        : "w-2 bg-foreground/30 dark:bg-white/30 hover:bg-foreground/50 dark:hover:bg-white/50"
                                 )}
                             />
                         ))}
