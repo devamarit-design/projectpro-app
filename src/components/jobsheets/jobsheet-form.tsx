@@ -203,6 +203,33 @@ export function JobSheetForm({
         }
     }, [selectedProjectId, projects]);
 
+    // Sync state if initialData changes (e.g. clicking edit on different jobsheets)
+    useEffect(() => {
+        if (!initialData) return;
+        setDate(initialData.date || new Date().toISOString().split("T")[0]);
+        setReportNumber(initialData.reportNumber || "");
+        setTitle(initialData.title || "บันทึกการทำงานประจำวัน");
+        setSelectedProjectId(initialData.isMultiProject ? "multi" : initialData.projectId || (projects.length > 0 ? "multi" : "general"));
+        setProjectName(initialData.projectName || "ปฏิบัติงานหลายโครงการ & งานทั่วไป");
+        setSubProjectName(initialData.subProjectName || "");
+        setWeatherCondition(initialData.weather?.condition || "ท้องฟ้าแจ่มใส (Clear Sky)");
+        setTemperature(initialData.weather?.temperature ?? 30);
+        if (initialData.workItems && initialData.workItems.length > 0) {
+            setWorkItems(initialData.workItems);
+        }
+        if (initialData.manpower && initialData.manpower.length > 0) {
+            setManpower(initialData.manpower);
+        }
+        setEquipment(initialData.equipment || "");
+        setMaterialsReceived(initialData.materialsReceived || "");
+        setObstacles(initialData.obstacles || "");
+        setSafetyNotes(initialData.safetyNotes || "");
+        setReportedBy(initialData.reportedBy || "");
+        setReportedByRole(initialData.reportedByRole || "");
+        setInspectedBy(initialData.inspectedBy || "");
+        setPhotos(initialData.photos || []);
+    }, [initialData, projects]);
+
     // Work item handlers
     const addWorkItem = (presetTask?: string, presetCategory?: string, presetTime?: string) => {
         let initialProjId = selectedProjectId && selectedProjectId !== "multi" && selectedProjectId !== "general" ? selectedProjectId : "";
@@ -272,24 +299,34 @@ export function JobSheetForm({
         setWorkItems(newItems);
     };
 
-    // Add photo
-    const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Add photo with client-side compression (< 200KB per photo)
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
-        Array.from(files).forEach((file) => {
-            if (!file.type.startsWith("image/")) {
-                toast.error("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                if (event.target?.result) {
-                    setPhotos((prev) => [...prev, event.target!.result as string]);
+        const { compressImage } = await import("@/lib/image-utils");
+        const toastId = toast.loading("กำลังย่อขนาดรูปภาพ...");
+
+        try {
+            for (const file of Array.from(files)) {
+                if (!file.type.startsWith("image/") && !file.name.toLowerCase().endsWith(".heic") && !file.name.toLowerCase().endsWith(".heif")) {
+                    toast.error("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
+                    continue;
                 }
-            };
-            reader.readAsDataURL(file);
-        });
+                const compressed = await compressImage(file);
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    if (event.target?.result) {
+                        setPhotos((prev) => [...prev, event.target!.result as string]);
+                    }
+                };
+                reader.readAsDataURL(compressed);
+            }
+            toast.success("เพิ่มรูปภาพเรียบร้อยแล้ว", { id: toastId });
+        } catch (err) {
+            console.error("Compression error:", err);
+            toast.error("ย่อขนาดรูปภาพไม่สำเร็จ", { id: toastId });
+        }
     };
 
     const removePhoto = (index: number) => {
@@ -351,6 +388,37 @@ export function JobSheetForm({
             }
         }
 
+        // Clean and ensure every work item has valid, non-null fields
+        const cleanedWorkItems = workItems
+            .map((w, idx) => ({
+                id: w.id || String(idx + 1),
+                task: (w.task || "").trim() || (w.details ? w.details.split("\n")[0] : `รายการงานที่ ${idx + 1}`),
+                details: w.details || "",
+                projectId: w.projectId || "",
+                projectName: w.projectName || "",
+                timeSlot: w.timeSlot || "",
+                quantity: w.quantity || "",
+                location: w.location || "",
+                status: w.status || "in_progress",
+                notes: w.notes || ""
+            }))
+            .filter((w) => w.task.trim().length > 0 || (w.details && w.details.trim().length > 0));
+
+        const finalWorkItems = cleanedWorkItems.length > 0 ? cleanedWorkItems : [
+            {
+                id: "1",
+                task: "ปฏิบัติงานตามที่ได้รับมอบหมาย",
+                details: "",
+                projectId: "",
+                projectName: "",
+                timeSlot: "ทั้งวัน",
+                quantity: "",
+                location: "",
+                status: "completed" as const,
+                notes: ""
+            }
+        ];
+
         return {
             reportNumber,
             title,
@@ -358,7 +426,7 @@ export function JobSheetForm({
             projectId: selectedProjectId === "multi" || selectedProjectId === "general" ? "" : selectedProjectId,
             projectName: displayProjectName || "ปฏิบัติงานหลายโครงการ & งานทั่วไป",
             projectIds: involvedProjectIds,
-            isMultiProject: involvedProjectIds.length > 1 || selectedProjectId === "multi" || workItems.some((w) => !w.projectId || w.projectName?.includes("ทั่วไป")),
+            isMultiProject: involvedProjectIds.length > 1 || selectedProjectId === "multi" || finalWorkItems.some((w) => !w.projectId || w.projectName?.includes("ทั่วไป")),
             subProjectId: "",
             subProjectName,
             orgId: initialData?.orgId || currentTeam?.id || currentUser?.orgIds?.[0] || "",
@@ -371,7 +439,7 @@ export function JobSheetForm({
                 condition: weatherCondition,
                 temperature: Number(temperature) || 30
             },
-            workItems,
+            workItems: finalWorkItems,
             manpower: manpower.filter((m) => m.count > 0),
             equipment,
             materialsReceived,

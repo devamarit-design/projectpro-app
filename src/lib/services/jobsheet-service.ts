@@ -162,11 +162,11 @@ export function subscribeJobSheets(
                     } as JobSheet;
                 });
 
-                // Deduplicate in memory for UI presentation (keeps only the latest updated copy)
+                // Deduplicate in memory for UI presentation using unique document ID
                 const uniqueMap = new Map<string, JobSheet>();
 
                 for (const sheet of results) {
-                    const key = sheet.reportNumber?.trim() || `${sheet.date}_${sheet.projectName}_${sheet.reportedBy}`;
+                    const key = sheet.id;
                     if (!uniqueMap.has(key)) {
                         uniqueMap.set(key, sheet);
                     } else {
@@ -270,8 +270,6 @@ export async function updateJobSheet(
     const effectiveOrgId = (data.orgId && data.orgId !== "default_org") ? data.orgId : (orgId && orgId !== "default_org" ? orgId : "");
     if (effectiveOrgId) {
         updateData.orgId = effectiveOrgId;
-    } else {
-        delete updateData.orgId; // NEVER overwrite valid orgId with empty string
     }
 
     const cleanedPayload = cleanFirestoreData({
@@ -279,23 +277,46 @@ export async function updateJobSheet(
         updatedAt: nowIso
     });
 
-    // Update local immediately
-    const local = getLocalJobSheets(effectiveOrgId || orgId);
-    const existing = local.find(s => s.id === id);
-    if (existing) {
-        saveLocalJobSheet({ ...existing, ...cleanedPayload, updatedAt: nowIso });
+    // Update local cache directly by id or reportNumber
+    try {
+        if (typeof window !== "undefined") {
+            const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+            const all: JobSheet[] = raw ? JSON.parse(raw) : [];
+            const idx = all.findIndex(s => s.id === id || (data.reportNumber && s.reportNumber === data.reportNumber));
+            if (idx >= 0) {
+                all[idx] = { ...all[idx], ...cleanedPayload, updatedAt: nowIso };
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(all.slice(0, 50)));
+            } else {
+                saveLocalJobSheet({ id, ...cleanedPayload, updatedAt: nowIso } as JobSheet);
+            }
+        }
+    } catch (e) {
+        console.warn("Failed to update jobsheet in localStorage:", e);
     }
 
+    // Persist to Firestore
     try {
         if (!id.startsWith("local_")) {
             const docRef = doc(db, "jobsheets", id);
-            await updateDoc(docRef, {
+            // Use setDoc with merge: true so it succeeds whether the document already exists or needs creation
+            await setDoc(docRef, {
                 ...cleanedPayload,
                 updatedAt: serverTimestamp()
+            }, { merge: true });
+        } else {
+            // It was a local ID, promote to a real Firestore document
+            const colRef = collection(db, "jobsheets");
+            const docRef = await addDoc(colRef, {
+                ...cleanedPayload,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
             });
+            removeLocalJobSheet(id);
+            saveLocalJobSheet({ ...cleanedPayload, id: docRef.id, updatedAt: nowIso } as JobSheet);
         }
     } catch (error) {
-        console.error("Firestore update error, updated locally:", error);
+        console.error("Firestore update error:", error);
+        throw error;
     }
 }
 
