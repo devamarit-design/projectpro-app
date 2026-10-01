@@ -71,7 +71,7 @@ export function AIExpenseAuditor({ projectId }: AIExpenseAuditorProps) {
         try {
             setAnalysisStep("กำลังสแกนรายการค่าใช้จ่ายทั้งหมดในโครงการ...")
             await new Promise(r => setTimeout(r, 400))
-            setAnalysisStep("ตรวจสอบความสอดคล้องของหมวดหมู่ (ค่าน้ำมัน, ค่าแรง, ค่าเช่าเครื่องจักร, งานเหมา)...")
+            setAnalysisStep("ตรวจสอบความสอดคล้องของหมวดหมู่ (Material, Labor, Sub-contract, Other)...")
             await new Promise(r => setTimeout(r, 450))
             setAnalysisStep("ตรวจจับใบเสร็จ/สลิปที่ยังไม่ได้แนบ และค้นหารายการที่อาจซ้ำซ้อน...")
             await new Promise(r => setTimeout(r, 400))
@@ -311,7 +311,7 @@ export function AIExpenseAuditor({ projectId }: AIExpenseAuditorProps) {
                                 ฿{auditResult.totalFuelExpense.toLocaleString()}
                             </div>
                             <span className="text-[10px] text-muted-foreground block truncate">
-                                {auditResult.hiddenFuelCount > 0 ? `มีแฝงหมวดอื่น ฿${auditResult.hiddenFuelExpense.toLocaleString()}` : "บันทึกตรงหมวดครบ"}
+                                {auditResult.hiddenFuelCount > 0 ? `พบในหมวดอื่น ฿${auditResult.hiddenFuelExpense.toLocaleString()}` : "บันทึกในหมวด Other ถูกต้อง"}
                             </span>
                         </div>
                     </div>
@@ -408,7 +408,7 @@ export function AIExpenseAuditor({ projectId }: AIExpenseAuditorProps) {
                                         รายการที่ตรวจพบว่าอาจลงหมวดหมู่ผิด (Category Misclassifications)
                                     </h4>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        AI ตรวจพบคำระบุเฉพาะ (ค่าน้ำมัน, ค่าแรง, ค่าเช่าเครื่องจักร, ค่าอาหาร) ที่ถูกบันทึกผิดหมวด สามารถกดปุ่มปรับหมวดหมู่ให้ตรงได้ทันที
+                                        AI ตรวจสอบความถูกต้องของ 4 หมวดหลัก (Material, Labor, Sub-contract, Other) โดยค่าน้ำมันและเบี้ยเลี้ยงจะถูกจัดอยู่ในหมวด Other
                                     </p>
                                 </div>
                                 <span className="text-xs font-mono font-bold text-amber-300 shrink-0">
@@ -601,7 +601,7 @@ export function AIExpenseAuditor({ projectId }: AIExpenseAuditorProps) {
                             <div className="flex items-center justify-between">
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                                     <Fuel className="w-4 h-4 text-cyan-400" />
-                                    การกระจายตัวของค่าน้ำมันและยานพาหนะ (Fuel Distribution)
+                                    การกระจายตัวของค่าน้ำมันและยานพาหนะ (ในหมวด Other)
                                 </h4>
                                 <span className="text-xs text-cyan-300 font-mono font-bold">
                                     รวม ฿{auditResult.totalFuelExpense.toLocaleString()}

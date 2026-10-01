@@ -1,6 +1,6 @@
 import { SubProject, Expense, ExpenseCategory } from "@/context/project-context"
 
-export type AuditCategory = ExpenseCategory | "Fuel" | "Equipment"
+export type AuditCategory = ExpenseCategory
 
 export interface MisclassifiedExpenseItem {
     expense: Expense
@@ -67,7 +67,7 @@ export interface ProjectAuditResult {
     duplicateRisks: DuplicateRiskItem[]
     duplicateRisksCount: number
 
-    // 4. Fuel & Logistics Audit
+    // 4. Fuel & Logistics Audit (Tracked inside "Other" category)
     totalFuelExpense: number
     recordedFuelCount: number
     hiddenFuelCount: number
@@ -97,8 +97,15 @@ const FUEL_KEYWORDS = [
     "fuel", "gasoline", "diesel"
 ]
 
+// เบี้ยเลี้ยงพนักงานออฟฟิศ/ผู้บริหาร จัดอยู่ในหมวด "Other"
+const OFFICE_ALLOWANCE_KEYWORDS = [
+    "เบี้ยเลี้ยง", "เบี้ยเลี้ยงบอส", "เบี้ยเลี้ยงพนักงาน", "เบี้ยเลี้ยงช่าง",
+    "ค่าเบี้ยเลี้ยง", "allowance", "per diem"
+]
+
+// ค่าแรงช่าง/คนงานหน้างาน จัดอยู่ในหมวด "Labor"
 const LABOR_KEYWORDS = [
-    "ค่าแรง", "ค่าช่าง", "โอที", " ot", "ค่าล่วงเวลา", "เบี้ยเลี้ยง", "รายวัน",
+    "ค่าแรง", "ค่าช่าง", "โอที", " ot", "ค่าล่วงเวลา", "รายวัน",
     "ค่าจ้าง", "เหมาวัน", "ค่าคนงาน", "ค่าแรงช่าง", "wages", "labor"
 ]
 
@@ -158,14 +165,12 @@ export function auditComprehensiveProjectExpenses(
     let hiddenFuelExpense = 0
     const subProjectFuelMap = new Map<string, { total: number; items: Expense[] }>()
 
-    // Category breakdown totals
+    // Category breakdown totals - strictly the 4 canonical categories
     const catTotals: Record<AuditCategory, { amount: number; count: number }> = {
         Material: { amount: 0, count: 0 },
         Labor: { amount: 0, count: 0 },
         "Sub-contract": { amount: 0, count: 0 },
         Other: { amount: 0, count: 0 },
-        Equipment: { amount: 0, count: 0 },
-        Fuel: { amount: 0, count: 0 },
     }
 
     // Subproject stats map
@@ -184,14 +189,14 @@ export function auditComprehensiveProjectExpenses(
         const amount = exp.totalValue || 0
         totalAmount += amount
 
-        const currentCat = (exp.category as AuditCategory) || "Material"
-        if (catTotals[currentCat]) {
-            catTotals[currentCat].amount += amount
-            catTotals[currentCat].count += 1
-        } else {
-            catTotals.Other.amount += amount
-            catTotals.Other.count += 1
-        }
+        const rawCat = (exp.category as string) || "Material"
+        const currentCat: AuditCategory =
+            rawCat === "Material" || rawCat === "Labor" || rawCat === "Sub-contract"
+                ? rawCat
+                : "Other"
+
+        catTotals[currentCat].amount += amount
+        catTotals[currentCat].count += 1
 
         // Subproject stats
         const spId = exp.subProjectId || "unassigned"
@@ -206,12 +211,10 @@ export function auditComprehensiveProjectExpenses(
         }
         currentSpStat.totalAmount += amount
         currentSpStat.expenseCount += 1
-        if ((currentCat as string) === "Fuel") currentSpStat.fuel += amount
-        else if (currentCat === "Labor") currentSpStat.labor += amount
+        if (currentCat === "Labor") currentSpStat.labor += amount
         else if (currentCat === "Material") currentSpStat.material += amount
         else if (currentCat === "Sub-contract") currentSpStat.subcontract += amount
         else currentSpStat.other += amount
-        spCostMap.set(spId, currentSpStat)
 
         // Check Missing Slip: Has no receiptImage or receiptFile and amount >= 500
         const hasReceipt = Boolean(exp.receiptImage || (exp as any).receiptFile)
@@ -231,24 +234,40 @@ export function auditComprehensiveProjectExpenses(
         }
 
         // Check Misclassifications
-        // A. FUEL check
-        const fuelKw = matchKeywords(combinedText, FUEL_KEYWORDS)
-        const isCategorizedFuel = (currentCat as string) === "Fuel" || (exp as any).category === "fuel"
+        // A. Check for non-standard categories in DB (e.g. legacy "Fuel" or "Equipment")
+        if (rawCat === "Fuel" || rawCat === "Equipment") {
+            misclassifiedItems.push({
+                expense: exp,
+                detectedKeyword: rawCat,
+                currentCategory: rawCat,
+                suggestedCategory: "Other",
+                subProjectName: getSpName(exp.subProjectId),
+                reason: `ระบบใช้ 4 หมวดหมู่หลัก (Material, Labor, Sub-contract, Other) หมวด "${rawCat}" ควรปรับเป็น Other`
+            })
+        }
 
-        if (isCategorizedFuel || fuelKw) {
+        // B. FUEL check: Fuel and vehicles belong in "Other"
+        const fuelKw = matchKeywords(combinedText, FUEL_KEYWORDS)
+        const isFuel = fuelKw !== null || rawCat === "Fuel"
+
+        if (isFuel) {
             totalFuelExpense += amount
-            if (isCategorizedFuel) {
+            currentSpStat.fuel += amount
+
+            // Fuel belongs in "Other"
+            if (rawCat === "Other") {
                 recordedFuelCount++
-            } else {
+            } else if (rawCat !== "Fuel") {
+                // Erroneously placed in Material, Labor, or Sub-contract
                 hiddenFuelCount++
                 hiddenFuelExpense += amount
                 misclassifiedItems.push({
                     expense: exp,
                     detectedKeyword: fuelKw || "น้ำมัน",
-                    currentCategory: currentCat,
-                    suggestedCategory: "Fuel",
+                    currentCategory: rawCat,
+                    suggestedCategory: "Other",
                     subProjectName: getSpName(exp.subProjectId),
-                    reason: `ตรวจพบคำว่า "${fuelKw}" ที่เกี่ยวกับเชื้อเพลิง/น้ำมัน แต่ถูกจัดเป็นหมวด ${currentCat}`
+                    reason: `ตรวจพบคำว่า "${fuelKw || "น้ำมัน"}" ที่เกี่ยวกับค่าน้ำมันและยานพาหนะ ควรจัดอยู่ในหมวด Other (ปัจจุบันอยู่ ${rawCat})`
                 })
             }
 
@@ -258,29 +277,48 @@ export function auditComprehensiveProjectExpenses(
             subProjectFuelMap.set(spId, currentFuelSp)
         }
 
-        // B. LABOR check (if not already categorized as Labor)
-        if (currentCat !== "Labor") {
-            const laborKw = matchKeywords(combinedText, LABOR_KEYWORDS)
-            if (laborKw && !fuelKw) {
+        // C. OFFICE ALLOWANCE check: Allowances belong in "Other" (for office/executives)
+        const allowanceKw = matchKeywords(combinedText, OFFICE_ALLOWANCE_KEYWORDS)
+        if (allowanceKw) {
+            // Allowance belongs in "Other". If it is in Material, Labor, or Sub-contract, suggest Other
+            if (rawCat !== "Other" && rawCat !== "Fuel" && rawCat !== "Equipment") {
                 misclassifiedItems.push({
                     expense: exp,
-                    detectedKeyword: laborKw,
-                    currentCategory: currentCat,
-                    suggestedCategory: "Labor",
+                    detectedKeyword: allowanceKw,
+                    currentCategory: rawCat,
+                    suggestedCategory: "Other",
                     subProjectName: getSpName(exp.subProjectId),
-                    reason: `ตรวจพบคำว่า "${laborKw}" ที่เกี่ยวกับค่าแรงช่าง/คนงาน แต่ถูกจัดเป็นหมวด ${currentCat}`
+                    reason: `ตรวจพบคำว่า "${allowanceKw}" ซึ่งเป็นเบี้ยเลี้ยงพนักงานออฟฟิศ/ผู้บริหาร ควรจัดอยู่ในหมวด Other (ไม่ใช่ ${rawCat})`
                 })
             }
         }
 
-        // C. EQUIPMENT / MACHINE RENTAL check
-        if (currentCat === "Material") {
+        // D. LABOR check: Construction site labor belongs in "Labor"
+        // Note: Office allowances were already handled above and do NOT trigger Labor
+        if (rawCat !== "Labor") {
+            const laborKw = matchKeywords(combinedText, LABOR_KEYWORDS)
+            if (laborKw && !fuelKw && !allowanceKw && !misclassifiedItems.some(m => m.expense.id === exp.id)) {
+                if (rawCat === "Material" || (rawCat === "Other" && (laborKw.includes("แรง") || laborKw.includes("คนงาน") || laborKw.includes("ช่าง")))) {
+                    misclassifiedItems.push({
+                        expense: exp,
+                        detectedKeyword: laborKw,
+                        currentCategory: rawCat,
+                        suggestedCategory: "Labor",
+                        subProjectName: getSpName(exp.subProjectId),
+                        reason: `ตรวจพบคำว่า "${laborKw}" ที่เกี่ยวกับค่าแรงช่าง/คนงานหน้างาน แต่ถูกจัดเป็นหมวด ${rawCat}`
+                    })
+                }
+            }
+        }
+
+        // E. EQUIPMENT / MACHINE RENTAL check
+        if (rawCat === "Material") {
             const equipKw = matchKeywords(combinedText, EQUIPMENT_RENTAL_KEYWORDS)
-            if (equipKw && !fuelKw && !misclassifiedItems.some(m => m.expense.id === exp.id)) {
+            if (equipKw && !fuelKw && !allowanceKw && !misclassifiedItems.some(m => m.expense.id === exp.id)) {
                 misclassifiedItems.push({
                     expense: exp,
                     detectedKeyword: equipKw,
-                    currentCategory: currentCat,
+                    currentCategory: rawCat,
                     suggestedCategory: "Sub-contract",
                     subProjectName: getSpName(exp.subProjectId),
                     reason: `ตรวจพบคำว่า "${equipKw}" ซึ่งเป็นค่าเช่าเครื่องจักร/อุปกรณ์ ควรแยกจากค่าวัสดุ`
@@ -288,35 +326,37 @@ export function auditComprehensiveProjectExpenses(
             }
         }
 
-        // D. WELFARE & FOOD check
-        if (currentCat === "Material") {
+        // F. WELFARE & FOOD check
+        if (rawCat === "Material") {
             const foodKw = matchKeywords(combinedText, WELFARE_FOOD_KEYWORDS)
-            if (foodKw && !misclassifiedItems.some(m => m.expense.id === exp.id)) {
+            if (foodKw && !fuelKw && !allowanceKw && !misclassifiedItems.some(m => m.expense.id === exp.id)) {
                 misclassifiedItems.push({
                     expense: exp,
                     detectedKeyword: foodKw,
-                    currentCategory: currentCat,
+                    currentCategory: rawCat,
                     suggestedCategory: "Other",
                     subProjectName: getSpName(exp.subProjectId),
-                    reason: `ตรวจพบคำว่า "${foodKw}" ซึ่งเป็นสวัสดิการอาหาร/เครื่องดื่มคนงาน ไม่ใช่วัสดุก่อสร้าง`
+                    reason: `ตรวจพบคำว่า "${foodKw}" ซึ่งเป็นสวัสดิการอาหาร/เครื่องดื่มคนงาน ควรบันทึกในหมวด Other`
                 })
             }
         }
 
-        // E. SUBCONTRACT check
-        if (currentCat === "Material" || currentCat === "Labor") {
+        // G. SUBCONTRACT check
+        if (rawCat === "Material" || rawCat === "Labor") {
             const subKw = matchKeywords(combinedText, SUBCONTRACT_KEYWORDS)
-            if (subKw && !misclassifiedItems.some(m => m.expense.id === exp.id)) {
+            if (subKw && !fuelKw && !allowanceKw && !misclassifiedItems.some(m => m.expense.id === exp.id)) {
                 misclassifiedItems.push({
                     expense: exp,
                     detectedKeyword: subKw,
-                    currentCategory: currentCat,
+                    currentCategory: rawCat,
                     suggestedCategory: "Sub-contract",
                     subProjectName: getSpName(exp.subProjectId),
                     reason: `ตรวจพบคำว่า "${subKw}" ซึ่งเป็นงานจ้างเหมาบริการเฉพาะทาง`
                 })
             }
         }
+
+        spCostMap.set(spId, currentSpStat)
     })
 
     // 2. Check Duplicate Risks (same amount and same payee within 7 days, or exact title and amount)
@@ -359,18 +399,14 @@ export function auditComprehensiveProjectExpenses(
         Material: "#3b82f6", // blue
         Labor: "#f59e0b", // amber
         "Sub-contract": "#8b5cf6", // purple
-        Fuel: "#06b6d4", // cyan
         Other: "#64748b", // slate
-        Equipment: "#ec4899", // pink
     }
 
     const CATEGORY_LABELS: Record<AuditCategory, string> = {
         Material: "ค่าวัสดุ (Material)",
         Labor: "ค่าแรง (Labor)",
         "Sub-contract": "ค่าเหมาช่วง (Sub-contract)",
-        Fuel: "ค่าน้ำมัน (Fuel)",
-        Other: "อื่นๆ (Other)",
-        Equipment: "เครื่องมือ/เช่า (Equipment)",
+        Other: "อื่นๆ / น้ำมัน / เบี้ยเลี้ยง (Other)",
     }
 
     const categoryBreakdown: CategoryBreakdownStat[] = (Object.keys(catTotals) as AuditCategory[])
@@ -456,7 +492,7 @@ export function auditComprehensiveProjectExpenses(
 
     if (totalFuelExpense > 0) {
         strategicInsights.push(
-            `มีต้นทุนค่าน้ำมันและยานพาหนะรวม ฿${totalFuelExpense.toLocaleString()} กระจายใน ${fuelSubprojects.length} หมวดงาน ${hiddenFuelCount > 0 ? `(มีค่าน้ำมันแฝงในหมวดอื่น ฿${hiddenFuelExpense.toLocaleString()})` : ""}`
+            `มีต้นทุนค่าน้ำมันและยานพาหนะรวม ฿${totalFuelExpense.toLocaleString()} (จัดอยู่ในหมวด Other) กระจายใน ${fuelSubprojects.length} หมวดงาน ${hiddenFuelCount > 0 ? `(มีค่าน้ำมันค้างในหมวดอื่นที่ไม่ใช่ Other ฿${hiddenFuelExpense.toLocaleString()})` : ""}`
         )
     }
 
