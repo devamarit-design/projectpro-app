@@ -8,6 +8,8 @@ import { MobileNav } from "./mobile-nav"
 import { useProjects } from "@/context/project-context"
 import { TeamOnboarding } from "@/components/team/team-onboarding"
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration"
+import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
 
 export function AppShell({
     children,
@@ -17,9 +19,17 @@ export function AppShell({
     variant?: "default" | "fullscreen"
 }) {
     const { teams } = useProjects()
+    const pathname = usePathname()
 
     // Enable scroll position restoration for iOS back navigation
     useScrollRestoration("main-scroll-container")
+
+    const isPopupPage = Boolean(
+        pathname === "/projects/new" ||
+        pathname?.startsWith("/projects/edit") ||
+        pathname === "/income/create" ||
+        pathname?.startsWith("/settings/template-editor")
+    )
 
     // Guard: Force Team Creation
     if (teams.length === 0) {
@@ -43,12 +53,23 @@ export function AppShell({
             {/* Desktop Sidebar */}
             <Sidebar className="hidden lg:flex w-64 shrink-0 transition-all duration-300" />
 
-            {/* Main Content */}
-            <div id="main-scroll-container" className="flex flex-col flex-1 min-w-0 w-full max-w-full overflow-y-auto overflow-x-hidden transition-all duration-300 pb-16 lg:pb-0">
+            {/* Main Content Column */}
+            <div className="relative flex-1 min-w-0 h-full overflow-hidden flex flex-col">
+                {/* Floating Header */}
                 <Header />
-                <main className="flex-1 p-3 sm:p-8 lg:p-10 bg-muted/20 w-full max-w-full overflow-x-hidden">
-                    {children}
-                </main>
+
+                {/* Primary Page Scroll Container */}
+                <div
+                    id="main-scroll-container"
+                    className="flex-1 w-full h-full overflow-y-auto overflow-x-hidden scroll-smooth"
+                >
+                    <main className={cn(
+                        "min-h-full w-full p-3 sm:p-8 lg:p-10 bg-muted/20 pb-24 sm:pb-28",
+                        isPopupPage ? "pt-4 sm:pt-6" : "pt-20 sm:pt-24"
+                    )}>
+                        {children}
+                    </main>
+                </div>
             </div>
 
             {/* Mobile Navigation */}

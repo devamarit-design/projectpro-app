@@ -40,8 +40,8 @@ export function Header({ }: HeaderProps) {
     return (
         <header
             className={cn(
-                "sticky top-0 z-40 flex h-14 sm:h-16 shrink-0 items-center gap-x-3 sm:gap-x-4 bg-background/60 backdrop-blur-xl rounded-2xl mx-3 sm:mx-4 mt-2 px-3 sm:px-6 lg:px-8 border border-white/10 overflow-x-auto scrollbar-hide transition-transform duration-300",
-                scrollDirection === "down" ? "-translate-y-24" : "translate-y-0"
+                "absolute top-2 sm:top-3 left-3 right-3 sm:left-4 sm:right-4 z-40 flex h-14 sm:h-16 shrink-0 items-center gap-x-3 sm:gap-x-4 bg-background/60 backdrop-blur-xl rounded-2xl px-3 sm:px-6 lg:px-8 border border-white/10 shadow-lg shadow-black/10 overflow-x-auto scrollbar-hide transition-all duration-300",
+                scrollDirection === "down" ? "-translate-y-28 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
             )}
         >
             <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">

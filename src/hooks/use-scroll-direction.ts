@@ -12,8 +12,15 @@ export function useScrollDirection() {
         let container: HTMLElement | null = null;
         let retryInterval: NodeJS.Timeout | null = null;
 
+        const getScrollY = () => {
+            if (container) return container.scrollTop;
+            const el = document.getElementById("main-scroll-container");
+            if (el) return el.scrollTop;
+            return window.scrollY || document.documentElement.scrollTop || 0;
+        };
+
         const updateScrollDirection = () => {
-            const scrollY = container ? container.scrollTop : 0;
+            const scrollY = getScrollY();
 
             // Force "up" (show bars) when near the very top of the page
             if (scrollY <= 20) {
@@ -63,13 +70,16 @@ export function useScrollDirection() {
         };
 
         bindListener();
+        window.addEventListener("scroll", onScroll, { passive: true });
+
         if (!container) {
-            retryInterval = setInterval(bindListener, 300);
+            retryInterval = setInterval(bindListener, 200);
         }
 
         return () => {
             if (retryInterval) clearInterval(retryInterval);
             if (container) container.removeEventListener("scroll", onScroll);
+            window.removeEventListener("scroll", onScroll);
         };
     }, []); // ← empty deps: mount once, never re-create
 
