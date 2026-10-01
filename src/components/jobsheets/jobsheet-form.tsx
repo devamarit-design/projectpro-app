@@ -38,6 +38,7 @@ import {
     Layers
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface JobSheetFormProps {
     initialData?: JobSheet | null;
@@ -690,41 +691,59 @@ export function JobSheetForm({
                                 key={item.id}
                                 className="bg-zinc-900/80 border border-white/10 hover:border-amber-500/30 rounded-2xl p-3.5 sm:p-4 space-y-3 transition-all shadow-lg relative group"
                             >
-                                {/* CARD TOP ROW: Job Number + Project Selector + Time + Trash */}
-                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2.5">
-                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            <span className="text-xs font-mono font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                                                งานที่ #{index + 1}
-                                            </span>
+                                {/* CARD TOP ROW: Job Number + Reorder + Delete */}
+                                <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-2.5">
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <span className="text-xs font-mono font-black text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                                            งานที่ #{index + 1}
+                                        </span>
 
-                                            {/* Reorder Buttons: Move Up / Down */}
-                                            {workItems.length > 1 && (
-                                                <div className="flex items-center bg-black/40 border border-white/10 rounded-md p-0.5">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => moveWorkItem(index, "up")}
-                                                        disabled={index === 0}
-                                                        className="w-5 h-5 rounded flex items-center justify-center text-white/50 hover:text-amber-400 hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-white/40 transition-colors"
-                                                        title="สลับลำดับขึ้น (ย้ายไปก่อนหน้า)"
-                                                    >
-                                                        <ChevronUp className="w-3.5 h-3.5" />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => moveWorkItem(index, "down")}
-                                                        disabled={index === workItems.length - 1}
-                                                        className="w-5 h-5 rounded flex items-center justify-center text-white/50 hover:text-amber-400 hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-white/40 transition-colors"
-                                                        title="สลับลำดับลง (ย้ายไปถัดไป)"
-                                                    >
-                                                        <ChevronDown className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
+                                        {/* Reorder Buttons: Move Up / Down */}
+                                        {workItems.length > 1 && (
+                                            <div className="flex items-center bg-black/40 border border-white/10 rounded-lg p-0.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => moveWorkItem(index, "up")}
+                                                    disabled={index === 0}
+                                                    className="w-6 h-6 rounded flex items-center justify-center text-white/50 hover:text-amber-400 hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-white/40 transition-colors"
+                                                    title="สลับลำดับขึ้น (ย้ายไปก่อนหน้า)"
+                                                >
+                                                    <ChevronUp className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => moveWorkItem(index, "down")}
+                                                    disabled={index === workItems.length - 1}
+                                                    className="w-6 h-6 rounded flex items-center justify-center text-white/50 hover:text-amber-400 hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-white/40 transition-colors"
+                                                    title="สลับลำดับลง (ย้ายไปถัดไป)"
+                                                >
+                                                    <ChevronDown className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
 
-                                        {/* Project / Category Selector Pill */}
-                                        <div className="relative flex-1 max-w-xs">
+                                    {/* Delete Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => removeWorkItem(item.id)}
+                                        className="h-7 px-2 rounded-lg text-white/40 hover:text-rose-400 hover:bg-rose-500/10 flex items-center gap-1 text-xs transition-colors shrink-0 cursor-pointer"
+                                        title="ลบงานนี้"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <span className="text-[11px] hidden sm:inline">ลบงานนี้</span>
+                                    </button>
+                                </div>
+
+                                {/* METADATA ROW: Project & Time Slot (Roomy 2-column Grid) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-black/25 p-2.5 sm:p-3 rounded-xl border border-white/5">
+                                    {/* 1. โครงการ */}
+                                    <div>
+                                        <label className="text-[11px] text-white/60 font-semibold mb-1 flex items-center gap-1.5">
+                                            <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                            โครงการที่ปฏิบัติงาน
+                                        </label>
+                                        <div className="relative">
                                             <select
                                                 value={
                                                     item.projectId ||
@@ -756,10 +775,10 @@ export function JobSheetForm({
                                                         updateWorkItem(item.id, "projectName", found ? found.name : "");
                                                     }
                                                 }}
-                                                className={`w-full text-xs font-bold px-2.5 py-1 rounded-lg border appearance-none pr-6 focus:outline-none transition-all truncate ${
+                                                className={`w-full text-xs font-semibold px-3 py-1.5 rounded-lg border appearance-none pr-8 focus:outline-none transition-all truncate h-9 cursor-pointer ${
                                                     isGeneral
-                                                        ? "bg-zinc-800 text-zinc-300 border-zinc-700"
-                                                        : "bg-amber-500/10 text-amber-300 border-amber-500/30"
+                                                        ? "bg-zinc-900 text-zinc-300 border-zinc-700 focus:border-zinc-500"
+                                                        : "bg-amber-500/10 text-amber-300 border-amber-500/30 focus:border-amber-400"
                                                 }`}
                                             >
                                                 <option value="">-- โครงการหลัก / ตามฟอร์ม --</option>
@@ -776,21 +795,25 @@ export function JobSheetForm({
                                                     <option value="workshop">🏭 โรงงาน / โกดัง / ซ่อมบำรุง</option>
                                                 </optgroup>
                                             </select>
-                                            <ChevronDown className="w-3 h-3 text-white/40 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                            <ChevronDown className="w-3.5 h-3.5 text-white/40 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                                         </div>
                                     </div>
 
-                                    {/* Time Slot & Delete */}
-                                    <div className="flex items-center gap-1.5 shrink-0">
-                                        <div className="flex items-center gap-1">
-                                            <input
+                                    {/* 2. ช่วงเวลาทำงาน */}
+                                    <div>
+                                        <label className="text-[11px] text-white/60 font-semibold mb-1 flex items-center gap-1.5">
+                                            <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                            ช่วงเวลาทำงาน
+                                        </label>
+                                        <div className="flex items-center gap-1.5">
+                                            <Input
                                                 type="text"
-                                                placeholder="เช่น 9:00-12:00"
+                                                placeholder="เช่น ช่วงเช้า, 09:00 - 12:00"
                                                 value={item.timeSlot || ""}
                                                 onChange={(e) => updateWorkItem(item.id, "timeSlot", e.target.value)}
-                                                className="w-24 sm:w-28 bg-black/40 border border-white/10 text-[11px] text-white/90 rounded-lg px-2 py-1 placeholder:text-white/30 focus:border-amber-500/50 focus:outline-none"
+                                                className="bg-zinc-950 border-white/10 focus:border-amber-400 text-white text-xs h-9 flex-1 placeholder:text-white/30"
                                             />
-                                            <div className="relative">
+                                            <div className="relative shrink-0">
                                                 <select
                                                     value=""
                                                     onChange={(e) => {
@@ -798,30 +821,40 @@ export function JobSheetForm({
                                                             updateWorkItem(item.id, "timeSlot", e.target.value);
                                                         }
                                                     }}
-                                                    className="bg-zinc-800 text-white/60 text-[10px] rounded px-1.5 py-1 appearance-none focus:outline-none cursor-pointer border border-white/10"
+                                                    className="bg-zinc-800 hover:bg-zinc-700 text-white/80 text-xs rounded-lg px-2.5 h-9 appearance-none focus:outline-none cursor-pointer border border-white/10 font-semibold transition-colors pr-6"
                                                     title="เลือกช่วงเวลาด่วน"
                                                 >
-                                                    <option value="">▼</option>
+                                                    <option value="">+ เวลาด่วน</option>
+                                                    <option value="ทั้งวัน">⏱️ ทั้งวัน</option>
+                                                    <option value="ช่วงเช้า">🌅 ช่วงเช้า</option>
+                                                    <option value="ช่วงบ่าย">☀️ ช่วงบ่าย</option>
+                                                    <option value="ช่วงเย็น">🌆 ช่วงเย็น</option>
+                                                    <option value="ล่วงเวลา (OT)">🌙 ล่วงเวลา (OT)</option>
                                                     <option value="09:00 - 12:00">09:00 - 12:00</option>
                                                     <option value="13:00 - 16:30">13:00 - 16:30</option>
                                                     <option value="09:00 - 17:00">09:00 - 17:00</option>
-                                                    <option value="ช่วงเช้า">🌅 เช้า</option>
-                                                    <option value="ช่วงบ่าย">☀️ บ่าย</option>
-                                                    <option value="ช่วงเย็น">🌆 เย็น</option>
-                                                    <option value="ล่วงเวลา (OT)">🌙 OT</option>
-                                                    <option value="ทั้งวัน">⏱️ ทั้งวัน</option>
                                                 </select>
+                                                <ChevronDown className="w-3 h-3 text-white/40 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                                             </div>
                                         </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => removeWorkItem(item.id)}
-                                            className="w-7 h-7 rounded-lg text-white/40 hover:text-rose-400 hover:bg-rose-500/10 flex items-center justify-center transition-colors"
-                                            title="ลบงานนี้"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
+                                        {/* Quick Clickable Chips */}
+                                        <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                                            {["ทั้งวัน", "ช่วงเช้า", "ช่วงบ่าย", "ช่วงเย็น", "OT"].map((preset) => (
+                                                <button
+                                                    key={preset}
+                                                    type="button"
+                                                    onClick={() => updateWorkItem(item.id, "timeSlot", preset)}
+                                                    className={cn(
+                                                        "text-[10px] px-2 py-0.5 rounded-md border transition-all cursor-pointer",
+                                                        item.timeSlot === preset
+                                                            ? "bg-amber-500/25 text-amber-300 border-amber-500/50 font-bold"
+                                                            : "bg-white/5 text-white/50 border-white/5 hover:bg-white/10 hover:text-white"
+                                                    )}
+                                                >
+                                                    {preset}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -893,9 +926,9 @@ export function JobSheetForm({
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-white/50 block mb-1 font-medium">ปริมาณงาน / เวลา</label>
+                                        <label className="text-[10px] text-white/50 block mb-1 font-medium">ปริมาณงาน (ถ้ามี)</label>
                                         <Input
-                                            placeholder="เช่น 15 ตร.ม., 3 ชม."
+                                            placeholder="เช่น 15 ตร.ม., 10 จุด, 1 ชุด"
                                             value={item.quantity}
                                             onChange={(e) => updateWorkItem(item.id, "quantity", e.target.value)}
                                             className="bg-zinc-950 border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-white text-base sm:text-xs h-10 sm:h-9 placeholder:text-white/30"
