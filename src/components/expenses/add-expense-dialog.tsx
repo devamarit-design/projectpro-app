@@ -745,7 +745,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 </div>
             )}
 
-            <div className="fixed inset-0 z-[100] flex items-center justify-center font-sans overflow-hidden p-0 sm:p-4">
+            <div className="fixed inset-0 z-[100] flex flex-col sm:items-center sm:justify-center font-sans overflow-hidden p-0 sm:p-4">
                 <SmartScanDialog
                     isOpen={isScanOpen}
                     onClose={() => setIsScanOpen(false)}
@@ -756,29 +756,30 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                 <div className="relative glass-card w-full sm:max-w-2xl lg:max-w-5xl xl:max-w-6xl h-full sm:h-[90vh] max-h-[100dvh] sm:max-h-[90vh] p-0 rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-white/10 flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden bg-background">
 
-                    {/* Dialog Header */}
-                    <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/10 shrink-0">
-                        <div>
-                            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{t.expenses.dialog.title}</h2>
-                            <p className="text-xs sm:text-sm text-muted-foreground">{t.expenses.dialog.subtitle}</p>
+                    {/* Dialog Header with Safe Area for Mobile */}
+                    <div className="flex items-center justify-between px-4 py-3 sm:p-5 border-b border-white/10 shrink-0 bg-background/95 backdrop-blur-md pt-[max(0.875rem,env(safe-area-inset-top))]">
+                        <div className="min-w-0 pr-2">
+                            <h2 className="text-lg sm:text-2xl font-bold tracking-tight truncate">{t.expenses.dialog.title}</h2>
+                            <p className="text-xs sm:text-sm text-muted-foreground truncate hidden sm:block">{t.expenses.dialog.subtitle}</p>
                         </div>
                         <button
+                            type="button"
                             onClick={onClose}
-                            className="p-2 rounded-full hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white/80 hover:text-white flex items-center justify-center transition-all shrink-0 cursor-pointer shadow-sm border border-white/10"
                             aria-label="Close"
                         >
                             <X className="w-5 h-5" />
                         </button>
                     </div>
 
-                    {/* 3-Step Navigation Pills (Mobile only, hidden on Desktop since desktop shows side-by-side) */}
-                    <div className="px-4 sm:px-5 pt-3 shrink-0 lg:hidden">
-                        <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/5 rounded-xl border border-white/10 text-xs">
+                    {/* 3-Step Navigation Pills with Mobile Close Button */}
+                    <div className="px-3 sm:px-5 pt-2.5 pb-0.5 shrink-0 lg:hidden flex items-center gap-2">
+                        <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/5 rounded-xl border border-white/10 text-xs flex-1 min-w-0">
                             <button
                                 type="button"
                                 onClick={() => toggleSection(1)}
                                 className={cn(
-                                    "py-2 px-1.5 rounded-lg font-medium flex items-center justify-center gap-1.5 transition-all min-w-0",
+                                    "py-2 px-1.5 rounded-lg font-medium flex items-center justify-center gap-1.5 transition-all min-w-0 cursor-pointer",
                                     openSections[1]
                                         ? "bg-primary text-primary-foreground font-bold shadow-sm"
                                         : "text-muted-foreground hover:text-foreground hover:bg-white/5"
@@ -797,7 +798,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 type="button"
                                 onClick={() => toggleSection(2)}
                                 className={cn(
-                                    "py-2 px-1.5 rounded-lg font-medium flex items-center justify-center gap-1.5 transition-all min-w-0",
+                                    "py-2 px-1.5 rounded-lg font-medium flex items-center justify-center gap-1.5 transition-all min-w-0 cursor-pointer",
                                     openSections[2]
                                         ? "bg-primary text-primary-foreground font-bold shadow-sm"
                                         : "text-muted-foreground hover:text-foreground hover:bg-white/5"
@@ -816,7 +817,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 type="button"
                                 onClick={() => toggleSection(3)}
                                 className={cn(
-                                    "py-2 px-1.5 rounded-lg font-medium flex items-center justify-center gap-1.5 transition-all min-w-0",
+                                    "py-2 px-1.5 rounded-lg font-medium flex items-center justify-center gap-1.5 transition-all min-w-0 cursor-pointer",
                                     openSections[3]
                                         ? "bg-primary text-primary-foreground font-bold shadow-sm"
                                         : "text-muted-foreground hover:text-foreground hover:bg-white/5"
@@ -1556,7 +1557,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="hidden sm:inline-flex px-4 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all active:scale-95"
+                                    className="px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 active:scale-95 text-xs sm:text-sm font-bold text-muted-foreground hover:text-foreground transition-all cursor-pointer shrink-0"
                                 >
                                     ยกเลิก
                                 </button>
