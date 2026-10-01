@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react"
 import { Project, SubProject, useProjects } from "@/context/project-context"
 import { useOrganization } from "@/context/organization-context"
+import { cn } from "@/lib/utils"
 import {
     detectDuplicateSubProjects,
     loadSubProjectPresets,
@@ -169,40 +170,54 @@ export function SubProjectManagerModal({ isOpen, onClose, project }: SubProjectM
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                        className="p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors outline-none focus:outline-none focus-visible:outline-none cursor-pointer"
+                        title="ปิดหน้าต่าง"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* Sub-Tabs */}
-                <div className="flex border-b border-white/10 px-6 pt-3 bg-muted/10 gap-3">
-                    <button
-                        onClick={() => setActiveTab("merge")}
-                        className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all ${activeTab === "merge"
-                            ? "border-primary text-primary"
-                            : "border-transparent text-muted-foreground hover:text-foreground"
-                            }`}
-                    >
-                        <GitMerge className="w-4 h-4" />
-                        <span>รวมโปรเจคย่อยที่ซ้ำกัน (Merge)</span>
-                        {duplicateClusters.length > 0 && (
-                            <span className="px-1.5 py-0.2 bg-amber-500/20 text-amber-400 text-[10px] rounded-full border border-amber-500/30">
-                                พบ {duplicateClusters.length} จุด
-                            </span>
-                        )}
-                    </button>
+                {/* Sub-Tabs (Clean Segmented Tabs - No ugly borders or outlines) */}
+                <div className="px-6 py-2.5 bg-muted/20 border-b border-white/5">
+                    <div className="flex p-1 bg-muted/50 dark:bg-black/30 rounded-xl gap-1">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab("merge")}
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all flex-1 justify-center outline-none focus:outline-none focus-visible:outline-none cursor-pointer select-none",
+                                activeTab === "merge"
+                                    ? "bg-background text-foreground shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                            )}
+                        >
+                            <GitMerge className="w-4 h-4 text-primary shrink-0" />
+                            <span>รวมโปรเจคย่อยที่ซ้ำกัน (Merge)</span>
+                            {duplicateClusters.length > 0 && (
+                                <span className={cn(
+                                    "px-1.5 py-0.5 text-[10px] rounded-full font-bold",
+                                    activeTab === "merge"
+                                        ? "bg-amber-500/20 text-amber-400"
+                                        : "bg-amber-500/10 text-amber-400/80"
+                                )}>
+                                    พบ {duplicateClusters.length} จุด
+                                </span>
+                            )}
+                        </button>
 
-                    <button
-                        onClick={() => setActiveTab("preset")}
-                        className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all ${activeTab === "preset"
-                            ? "border-primary text-primary"
-                            : "border-transparent text-muted-foreground hover:text-foreground"
-                            }`}
-                    >
-                        <Layers className="w-4 h-4" />
-                        <span>นำเข้าจากพรีเซ็ตมาตรฐาน (Presets)</span>
-                    </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab("preset")}
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all flex-1 justify-center outline-none focus:outline-none focus-visible:outline-none cursor-pointer select-none",
+                                activeTab === "preset"
+                                    ? "bg-background text-foreground shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                            )}
+                        >
+                            <Layers className="w-4 h-4 text-primary shrink-0" />
+                            <span>นำเข้าจากพรีเซ็ตมาตรฐาน (Presets)</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}
@@ -437,7 +452,7 @@ export function SubProjectManagerModal({ isOpen, onClose, project }: SubProjectM
                 <div className="p-6 border-t border-white/10 flex justify-end shrink-0 bg-muted/20">
                     <button
                         onClick={onClose}
-                        className="px-6 py-2.5 bg-white/10 hover:bg-white/15 text-foreground rounded-xl text-xs font-semibold transition-colors"
+                        className="px-6 py-2.5 bg-white/10 hover:bg-white/15 text-foreground rounded-xl text-xs font-semibold transition-colors outline-none focus:outline-none focus-visible:outline-none cursor-pointer"
                     >
                         ปิดหน้าต่าง
                     </button>
