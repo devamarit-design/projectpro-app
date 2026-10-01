@@ -93,9 +93,10 @@ export function MobileNav() {
         if (isGuest) {
             return [
                 {
-                    title: "เอกสาร",
+                    title: "การสื่อสารและเอกสาร",
                     items: [
                         { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList, color: "text-amber-400 bg-amber-500/10" },
+                        { href: "/wall", label: "Team Wall", icon: Newspaper, color: "text-pink-500 bg-pink-500/10" },
                     ]
                 },
                 {
@@ -155,6 +156,7 @@ export function MobileNav() {
         if (isGuest) {
             return [
                 { href: "/jobsheets", label: "เขียน JobSheet", icon: ClipboardList, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
+                { href: "/wall?action=new", label: "Post Wall", icon: Newspaper, color: "text-pink-500 from-pink-500/20 to-pink-500/5" },
             ]
         }
 

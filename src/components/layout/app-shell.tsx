@@ -36,7 +36,6 @@ export function AppShell({
                 "/partners",
                 "/team",
                 "/contracts",
-                "/wall",
                 "/announcements",
                 "/bored",
                 "/trash",

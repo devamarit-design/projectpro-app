@@ -205,6 +205,37 @@ function GuestDashboard() {
           </div>
         </div>
       </div>
+
+      {/* 5. Team Wall Widget */}
+      <div className="w-full mt-6 mb-8">
+        <div className="flex items-center justify-between px-1 mb-2">
+          <h3 className="font-semibold text-xl flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-pink-500/20 to-rose-500/20 text-pink-500">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-4 h-4"
+              >
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                <line x1="3" x2="21" y1="9" y2="9" />
+                <path d="M9 21V9" />
+              </svg>
+            </div>
+            Team Wall
+          </h3>
+          <Link href="/wall" className="text-sm text-muted-foreground hover:text-primary hover:underline font-medium">
+            View All
+          </Link>
+        </div>
+        <div className="bg-muted/30 dark:bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-border/50 dark:border-white/10 shadow-sm">
+          <WallFeed variant="widget" />
+        </div>
+      </div>
     </div>
   )
 }

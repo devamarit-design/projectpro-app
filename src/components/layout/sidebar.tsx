@@ -50,6 +50,7 @@ export function Sidebar({ className }: { className?: string }) {
             items: [
                 { href: "/", label: t.common.dashboard, icon: LayoutDashboard },
                 { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList },
+                { href: "/wall", label: "Team Wall", icon: Newspaper },
             ]
         },
         {
