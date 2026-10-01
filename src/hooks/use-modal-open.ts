@@ -12,42 +12,30 @@ export function useIsModalOpen() {
             // 1. Check for standard modal-open class on body
             const hasModalOpenClass = document.body.classList.contains("modal-open")
 
-            // 2. Check for scroll lock attributes (Radix / Headless UI / UI kits)
+            // 2. Check for Radix scroll lock attribute
             const hasScrollLocked = document.body.getAttribute("data-scroll-locked") === "1"
-            const hasOverflowHidden = document.body.style.overflow === "hidden"
 
-            // 3. Check for open Dialog, Sheet, Drawer, or Alert dialogs
-            const hasDialog = !!document.querySelector('[role="dialog"], [role="alertdialog"]')
-            const hasRadixOpen = !!document.querySelector('[data-state="open"][role="dialog"], [data-state="open"][role="alertdialog"]')
-            const hasPortal = !!document.querySelector('[data-radix-portal]')
-
-            // 4. Check for high z-index overlay popups and backdrops
-            const hasCustomBackdrop = !!document.querySelector(
-                '.fixed.inset-0.z-\\[100\\], .fixed.inset-0.z-\\[160\\], .fixed.inset-0.z-\\[200\\], .fixed.inset-0.z-\\[9999\\]'
+            // 3. Check for open Radix Dialog / Sheet / Alert dialog
+            const hasRadixOpen = !!document.querySelector(
+                '[data-state="open"][role="dialog"], [data-state="open"][role="alertdialog"], [data-state="open"].fixed.inset-0'
             )
 
-            const isOpen = Boolean(
-                hasModalOpenClass ||
-                hasScrollLocked ||
-                hasOverflowHidden ||
-                hasDialog ||
-                hasRadixOpen ||
-                hasPortal ||
-                hasCustomBackdrop
-            )
+            // 4. Custom data-modal-open attribute
+            const hasCustomModal = !!document.querySelector('[data-modal-open="true"]')
 
+            const isOpen = Boolean(hasModalOpenClass || hasScrollLocked || hasRadixOpen || hasCustomModal)
             setIsModalOpen(isOpen)
         }
 
         checkModal()
 
-        // MutationObserver to track any modal appearing/disappearing dynamically
+        // MutationObserver to track when a modal is opened or closed
         const observer = new MutationObserver(checkModal)
         observer.observe(document.body, {
             attributes: true,
             childList: true,
             subtree: true,
-            attributeFilter: ["class", "data-state", "style"],
+            attributeFilter: ["class", "data-state", "data-scroll-locked"],
         })
 
         return () => observer.disconnect()

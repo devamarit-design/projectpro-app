@@ -4,11 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 
 export function useScrollDirection() {
-    const [scrollDirection, setScrollDirection] = useState<"up" | "down" | null>("up");
+    const [scrollDirection, setScrollDirection] = useState<"up" | "down" | null>(null);
     const lastScrollY = useRef(0);
     const pathname = usePathname();
 
-    // 1. Reset to "up" whenever navigating to a new route so the header is never stuck hidden
+    // 1. Reset to "up" whenever navigating to a new route
     useEffect(() => {
         setScrollDirection("up");
         lastScrollY.current = 0;
@@ -16,38 +16,37 @@ export function useScrollDirection() {
 
     useEffect(() => {
         let ticking = false;
-        let container: HTMLElement | null = null;
+        let container: HTMLElement | Window | null = null;
         let retryInterval: NodeJS.Timeout | null = null;
 
-        const getScrollY = () => {
-            const elScroll = container ? container.scrollTop : 0;
-            const winScroll = typeof window !== 'undefined' ? window.scrollY : 0;
-            return Math.max(elScroll, winScroll);
-        };
-
         const updateScrollDirection = () => {
-            const scrollY = getScrollY();
+            if (!container) return;
 
-            // 1. Force "up" (show bars) when near the very top of the page (or on iOS rubber-band bounce)
-            if (scrollY <= 30) {
+            const scrollY = container instanceof HTMLElement ? container.scrollTop : window.scrollY;
+
+            // 1. Force "up" (show bars) when near the very top of the page
+            if (scrollY <= 20) {
                 setScrollDirection("up");
                 lastScrollY.current = Math.max(0, scrollY);
                 ticking = false;
                 return;
             }
 
+            const threshold = 10;
             const diff = scrollY - lastScrollY.current;
 
-            // Highly responsive when scrolling up: even a slight upward scroll (diff < -6) brings the header down
-            if (diff < -6) {
-                setScrollDirection("up");
-                lastScrollY.current = scrollY;
-            } else if (diff > 12 && scrollY > 50) {
-                // Only hide when scrolling down by at least 12px and past the top threshold
-                setScrollDirection("down");
-                lastScrollY.current = scrollY;
+            if (Math.abs(diff) < threshold) {
+                ticking = false;
+                return;
             }
 
+            const newDirection = diff > 0 ? "down" : "up";
+
+            if (newDirection !== scrollDirection) {
+                setScrollDirection(newDirection);
+            }
+
+            lastScrollY.current = scrollY;
             ticking = false;
         };
 
@@ -58,39 +57,38 @@ export function useScrollDirection() {
             }
         };
 
-        // Listen on window for general scrolling and mobile viewport
-        window.addEventListener("scroll", onScroll, { passive: true });
-
-        // Retry logic to find and attach to main-scroll-container
-        const bindContainerListener = () => {
+        // Attach listener to main-scroll-container
+        const bindListener = () => {
             const el = document.getElementById("main-scroll-container");
-            if (el && el !== container) {
-                if (container) {
-                    container.removeEventListener("scroll", onScroll);
-                }
+            if (el) {
                 container = el;
-                lastScrollY.current = getScrollY();
+                lastScrollY.current = el.scrollTop;
                 el.addEventListener("scroll", onScroll, { passive: true });
                 if (retryInterval) {
                     clearInterval(retryInterval);
                     retryInterval = null;
                 }
+            } else if (typeof window !== "undefined") {
+                container = window;
+                window.addEventListener("scroll", onScroll, { passive: true });
             }
         };
 
-        bindContainerListener();
-        if (!container) {
-            retryInterval = setInterval(bindContainerListener, 300);
+        bindListener();
+
+        if (!container || container === window) {
+            retryInterval = setInterval(bindListener, 400);
         }
 
         return () => {
             if (retryInterval) clearInterval(retryInterval);
-            window.removeEventListener("scroll", onScroll);
-            if (container) {
+            if (container instanceof HTMLElement) {
                 container.removeEventListener("scroll", onScroll);
+            } else if (typeof window !== "undefined") {
+                window.removeEventListener("scroll", onScroll);
             }
         };
-    }, []);
+    }, [scrollDirection]);
 
     return scrollDirection;
 }

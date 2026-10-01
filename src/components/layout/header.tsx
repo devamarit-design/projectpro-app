@@ -45,7 +45,7 @@ export function Header({ }: HeaderProps) {
     return (
         <header
             className={cn(
-                "sticky top-2 sm:top-4 z-40 flex h-14 sm:h-16 shrink-0 items-center gap-x-3 sm:gap-x-4 bg-background/80 backdrop-blur-xl rounded-2xl mx-3 sm:mx-4 mt-2 px-3 sm:px-6 lg:px-8 shadow-sm border border-border/40 dark:border-white/10 overflow-x-auto scrollbar-hide transition-all duration-300",
+                "sticky top-2 sm:top-4 z-40 flex h-14 sm:h-16 shrink-0 items-center gap-x-3 sm:gap-x-4 bg-background/80 backdrop-blur-xl rounded-2xl mx-3 sm:mx-4 mt-2 px-3 sm:px-6 lg:px-8 shadow-lg shadow-black/5 dark:shadow-black/40 border border-border/50 dark:border-white/10 overflow-x-auto scrollbar-hide transition-all duration-300",
                 isHidden
                     ? "-translate-y-28 opacity-0 pointer-events-none"
                     : "translate-y-0 opacity-100"
