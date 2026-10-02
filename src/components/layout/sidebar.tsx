@@ -28,7 +28,8 @@ import {
     MessageSquare,
     ClipboardList,
     Globe,
-    Package
+    Package,
+    ExternalLink
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -81,7 +82,7 @@ export function Sidebar({ className }: { className?: string }) {
         {
             title: "COMMUNICATION",
             items: [
-                { href: "https://paa-project-assistant-ai.vercel.app", label: "Chat Hub (External)", icon: MessageSquare },
+                { href: "https://bbspm.dev-amarit.workers.dev", label: "บริหารโครงการ", icon: FolderKanban, external: true },
             ]
         },
         {
@@ -159,50 +160,27 @@ export function Sidebar({ className }: { className?: string }) {
 
                                 const isActive = item.href === "/"
                                     ? (pathname === "/" || pathname === "/financial")
-                                    : (pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href)))
+                                    : (pathname === item.href || (item.href !== "/" && !item.href.startsWith("http") && pathname?.startsWith(item.href)))
 
-                                // Special handling for Chat Hub (External)
-                                if (item.label === "Chat Hub (External)") {
+                                // External Link handling
+                                if (item.external || item.href.startsWith("http")) {
                                     return (
-                                        <button
+                                        <a
                                             key={item.href}
-                                            onClick={async (e) => {
-                                                e.preventDefault();
-                                                try {
-                                                    // Dynamic import to avoid SSR issues if any, or just to keep it clean
-                                                    const { getChatHubToken } = await import("@/lib/functions-client");
-                                                    // Check if toast is available, if not, native alert or just proceed? 
-                                                    // Assuming no toast in this component context easily without hook.
-                                                    // We'll just change window location. 
-
-                                                    // Show some visual feedback? Simple cursor wait for now.
-                                                    document.body.style.cursor = 'wait';
-
-                                                    const result = await getChatHubToken();
-
-                                                    document.body.style.cursor = 'default';
-
-                                                    if (result.token) {
-                                                        window.location.href = `https://paa-project-assistant-ai.vercel.app/login?token=${result.token}`;
-                                                    } else {
-                                                        console.error("Failed to get token", result.error);
-                                                        // Fallback
-                                                        window.open("https://paa-project-assistant-ai.vercel.app", "_blank");
-                                                    }
-                                                } catch (err) {
-                                                    console.error("Error navigating to chat hub", err);
-                                                    document.body.style.cursor = 'default';
-                                                    window.open("https://paa-project-assistant-ai.vercel.app", "_blank");
-                                                }
-                                            }}
+                                            href={item.href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
                                             className={cn(
-                                                "flex w-full items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group text-left",
+                                                "flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 group text-left",
                                                 "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                                             )}
                                         >
-                                            <item.icon className={cn("w-4 h-4 transition-colors", "group-hover:text-sidebar-primary")} />
-                                            <span className="text-sm">{item.label}</span>
-                                        </button>
+                                            <div className="flex items-center gap-3">
+                                                <item.icon className={cn("w-4 h-4 transition-colors", "group-hover:text-sidebar-primary")} />
+                                                <span className="text-sm">{item.label}</span>
+                                            </div>
+                                            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-sidebar-foreground/70 transition-colors" />
+                                        </a>
                                     )
                                 }
 
