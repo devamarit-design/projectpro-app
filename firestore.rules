@@ -58,7 +58,7 @@ service cloud.firestore {
     // --- Public Access Rules (Preview & Onboarding) ---
     
     match /invites/{inviteId} {
-       allow read: if isAuthenticated(); 
+       allow read: if true; // Allow public read so invite links work for unauthenticated users (preview org before login)
        allow create, update: if isAuthenticated();
     }
 
