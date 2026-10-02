@@ -807,8 +807,8 @@ export function JobSheetPreviewModal({
                                                 <th className="py-2.5 px-2 w-[42px] text-center border-r border-zinc-700">ลำดับ</th>
                                                 <th className="py-2.5 px-3 w-[175px] border-r border-zinc-700">โครงการ / โซน / เวลา</th>
                                                 <th className="py-2.5 px-3.5 border-r border-zinc-700">รายละเอียดงานที่ปฏิบัติ (Work Activities & Progress)</th>
-                                                <th className="py-2.5 px-1.5 w-[96px] text-center border-r border-zinc-700">สถานะ</th>
-                                                <th className="py-2.5 px-2.5 w-[85px]">หมายเหตุ</th>
+                                                <th className="py-2.5 px-1 w-[52px] text-center border-r border-zinc-700" title="สถานะ">สถานะ</th>
+                                                <th className="py-2.5 px-3 w-[130px]">หมายเหตุ</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-zinc-300 text-xs">
@@ -858,36 +858,71 @@ export function JobSheetPreviewModal({
                                                                         <span className="font-bold text-zinc-900 break-words">{item.quantity}</span>
                                                                     </div>
                                                                 )}
+                                                                {/* รูปถ่ายแนบเฉพาะของงานนี้ (ถ้ามี) */}
+                                                                {item.photos && item.photos.length > 0 && (
+                                                                    <div className="mt-2.5 pt-2 border-t border-zinc-200/80">
+                                                                        <span className="text-[10px] text-zinc-500 font-semibold block mb-1.5 flex items-center gap-1">
+                                                                            <ImageIcon className="w-3 h-3 text-sky-600" />
+                                                                            รูปแนบงานนี้ ({item.photos.length}):
+                                                                        </span>
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {item.photos.map((pSrc, pIdx) => {
+                                                                                const proxied = pSrc.startsWith("http") && !pSrc.includes("/api/proxy-image")
+                                                                                    ? `/api/proxy-image?url=${encodeURIComponent(pSrc)}`
+                                                                                    : pSrc;
+                                                                                return (
+                                                                                    <div key={pIdx} className="w-14 h-14 rounded border border-zinc-300 overflow-hidden bg-zinc-100 shrink-0">
+                                                                                        <img src={proxied} alt={`Item ${idx + 1} photo ${pIdx + 1}`} className="w-full h-full object-cover" />
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                             </td>
 
-                                                            {/* 4. สถานะ */}
+                                                            {/* 4. สถานะ (Compact Icon + Color Badge เพื่อเพิ่มพื้นที่ให้หมายเหตุ) */}
                                                             <td className="py-3 px-1 text-center align-top border-r border-zinc-200">
-                                                                {item.status === "completed" && (
-                                                                    <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-[3px] text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 whitespace-nowrap">
-                                                                        <Check className="w-3 h-3 stroke-[3]" /> เสร็จสิ้น
-                                                                    </span>
-                                                                )}
-                                                                {item.status === "in_progress" && (
-                                                                    <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-[3px] text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300 whitespace-nowrap">
-                                                                        <Clock className="w-3 h-3" /> ดำเนินการ
-                                                                    </span>
-                                                                )}
-                                                                {item.status === "pending" && (
-                                                                    <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-[3px] text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 whitespace-nowrap">
-                                                                        รอดำเนินการ
-                                                                    </span>
-                                                                )}
-                                                                {item.status === "delayed" && (
-                                                                    <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-[3px] text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 whitespace-nowrap">
-                                                                        ติดปัญหา
-                                                                    </span>
-                                                                )}
+                                                                <div className="flex flex-col items-center justify-center pt-0.5">
+                                                                    {item.status === "completed" && (
+                                                                        <span 
+                                                                            className="w-7 h-7 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-700 border border-emerald-300 shadow-2xs"
+                                                                            title="เสร็จสิ้น (Completed)"
+                                                                        >
+                                                                            <Check className="w-4 h-4 stroke-[3]" />
+                                                                        </span>
+                                                                    )}
+                                                                    {item.status === "in_progress" && (
+                                                                        <span 
+                                                                            className="w-7 h-7 rounded-full flex items-center justify-center bg-blue-100 text-blue-700 border border-blue-300 shadow-2xs"
+                                                                            title="กำลังดำเนินการ (In Progress)"
+                                                                        >
+                                                                            <Clock className="w-4 h-4 stroke-[2.5]" />
+                                                                        </span>
+                                                                    )}
+                                                                    {item.status === "pending" && (
+                                                                        <span 
+                                                                            className="w-7 h-7 rounded-full flex items-center justify-center bg-amber-100 text-amber-700 border border-amber-300 shadow-2xs"
+                                                                            title="รอดำเนินการ (Pending)"
+                                                                        >
+                                                                            <Clock className="w-4 h-4 stroke-[2]" />
+                                                                        </span>
+                                                                    )}
+                                                                    {item.status === "delayed" && (
+                                                                        <span 
+                                                                            className="w-7 h-7 rounded-full flex items-center justify-center bg-rose-100 text-rose-700 border border-rose-300 shadow-2xs"
+                                                                            title="ติดปัญหา / ล่าช้า (Delayed)"
+                                                                        >
+                                                                            <AlertTriangle className="w-4 h-4 stroke-[2.5]" />
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </td>
 
-                                                            {/* 5. หมายเหตุ */}
-                                                            <td className="py-3 px-2.5 text-zinc-700 text-xs align-top leading-relaxed break-words [overflow-wrap:anywhere]">
+                                                            {/* 5. หมายเหตุ (กว้างขึ้น จุข้อความได้ชัดเจน) */}
+                                                            <td className="py-3 px-3 text-zinc-800 text-xs align-top leading-relaxed break-words [overflow-wrap:anywhere]">
                                                                 {item.notes ? (
-                                                                    <span className="font-medium text-zinc-800 break-words">{item.notes}</span>
+                                                                    <span className="font-normal text-zinc-900 break-words leading-snug">{item.notes}</span>
                                                                 ) : (
                                                                     <span className="text-zinc-300">-</span>
                                                                 )}

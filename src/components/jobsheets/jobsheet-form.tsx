@@ -35,7 +35,8 @@ import {
     Factory,
     Check,
     AlertTriangle,
-    Layers
+    Layers,
+    Image as ImageIcon
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -354,6 +355,60 @@ export function JobSheetForm({
 
     const removePhoto = (index: number) => {
         setPhotos(photos.filter((_, i) => i !== index));
+    };
+
+    // Upload photo attached specifically to a work item
+    const handleWorkItemPhotoUpload = async (itemId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const { compressImage } = await import("@/lib/image-utils");
+        const toastId = toast.loading("กำลังย่อขนาดรูปภาพสำหรับงานนี้...");
+
+        try {
+            const newPhotoUrls: string[] = [];
+            for (const file of Array.from(files)) {
+                if (!file.type.startsWith("image/") && !file.name.toLowerCase().endsWith(".heic") && !file.name.toLowerCase().endsWith(".heif")) {
+                    toast.error("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
+                    continue;
+                }
+                const compressed = await compressImage(file);
+                const dataUrl = await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => resolve((event.target?.result as string) || "");
+                    reader.readAsDataURL(compressed);
+                });
+                if (dataUrl) newPhotoUrls.push(dataUrl);
+            }
+
+            setWorkItems((prev) =>
+                prev.map((item) => {
+                    if (item.id !== itemId) return item;
+                    return {
+                        ...item,
+                        photos: [...(item.photos || []), ...newPhotoUrls]
+                    };
+                })
+            );
+            toast.success(`แนบรูปภาพสำหรับงานนี้เรียบร้อย (${newPhotoUrls.length} รูป)`, { id: toastId });
+        } catch (err) {
+            console.error("Item photo compression error:", err);
+            toast.error("แนบรูปภาพไม่สำเร็จ", { id: toastId });
+        } finally {
+            e.target.value = "";
+        }
+    };
+
+    const removeWorkItemPhoto = (itemId: string, photoIndex: number) => {
+        setWorkItems((prev) =>
+            prev.map((item) => {
+                if (item.id !== itemId) return item;
+                return {
+                    ...item,
+                    photos: (item.photos || []).filter((_, i) => i !== photoIndex)
+                };
+            })
+        );
     };
 
     // Auto-fetch live weather
@@ -1010,6 +1065,45 @@ export function JobSheetForm({
                                         onChange={(e) => updateWorkItem(item.id, "notes", e.target.value)}
                                         className="bg-background dark:bg-zinc-950/60 border-border dark:border-white/10 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 text-foreground dark:text-white/90 text-base sm:text-xs h-10 sm:h-8 placeholder:text-muted-foreground/40"
                                     />
+                                </div>
+
+                                {/* Item Specific Photos (แนบรูปเฉพาะของงานนี้) */}
+                                <div className="pt-2 border-t border-border/50 dark:border-white/5 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[11px] font-semibold text-foreground/80 dark:text-white/70 flex items-center gap-1.5">
+                                            <ImageIcon className="w-3.5 h-3.5 text-amber-500" />
+                                            <span>รูปถ่ายเฉพาะของงานนี้ ({item.photos?.length || 0})</span>
+                                        </label>
+                                        <label className="cursor-pointer text-[11px] text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 font-medium flex items-center gap-1 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-lg border border-amber-500/20 transition-colors">
+                                            <Upload className="w-3 h-3" />
+                                            <span>+ แนบรูปงานนี้</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={(e) => handleWorkItemPhotoUpload(item.id, e)}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    </div>
+
+                                    {item.photos && item.photos.length > 0 && (
+                                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 pt-1">
+                                            {item.photos.map((photoUrl, photoIdx) => (
+                                                <div key={photoIdx} className="relative aspect-video rounded-lg overflow-hidden border border-border dark:border-white/10 group bg-muted dark:bg-black shadow-2xs">
+                                                    <img src={photoUrl} alt={`Task ${item.task} photo ${photoIdx + 1}`} className="w-full h-full object-cover" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeWorkItemPhoto(item.id, photoIdx)}
+                                                        className="absolute top-1 right-1 p-0.5 rounded-full bg-black/70 text-white hover:bg-rose-500 transition-colors cursor-pointer"
+                                                        title="ลบรูปนี้"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );

@@ -11,6 +11,7 @@ export interface JobSheetWorkItem {
     location: string;
     status: JobSheetStatus;
     notes?: string;
+    photos?: string[]; // รูปถ่ายแนบเฉพาะของรายการงานนี้
 }
 
 export interface JobSheetManpower {
