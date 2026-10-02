@@ -191,6 +191,7 @@ export interface User {
         theme?: any // Avoid circular dependency, typed as AppTheme in usage
     }
     hasOnboarded?: boolean // New flag for onboarding flow
+    quickActions?: string[] // Custom shortcut icons on dashboard
     createdAt?: string // Timestamp
     updatedAt?: string // Timestamp
 }
