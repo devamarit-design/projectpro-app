@@ -61,6 +61,17 @@ export function JobSheetPreviewModal({
 
     const { companyProfile, currentUser, currentTeam } = useProjects();
 
+    const isAdminOrOwner = Boolean(
+        currentTeam?.role && (currentTeam.role.toLowerCase() === "owner" || currentTeam.role.toLowerCase() === "admin")
+    );
+
+    const isMySheet = Boolean(currentUser && jobsheet && (
+        (jobsheet.createdBy && jobsheet.createdBy === currentUser.id) ||
+        (jobsheet.createdByName && jobsheet.createdByName.trim().toLowerCase() === currentUser.name?.trim().toLowerCase()) ||
+        (jobsheet.reportedBy && jobsheet.reportedBy.trim().toLowerCase() === currentUser.name?.trim().toLowerCase())
+    ));
+    const canEdit = isMySheet || isAdminOrOwner;
+
     useEffect(() => {
         setLogoFailed(false);
     }, [open, jobsheet?.companyLogo, companyProfile?.logo]);
@@ -292,7 +303,7 @@ export function JobSheetPreviewModal({
         };
     };
 
-    const FONT_FAMILY_STACK = "'Kanit', var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Thai', 'Sukhumvit Set', sans-serif";
+    const FONT_FAMILY_STACK = "var(--font-sans), 'Prompt', 'Kanit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Thai', 'Sukhumvit Set', sans-serif";
 
     const captureFilter = (domNode: Node) => {
         if (domNode instanceof HTMLElement) {
@@ -524,7 +535,7 @@ export function JobSheetPreviewModal({
                                 {showSignatures ? "มีลงนาม" : "ไม่มีลงนาม"}
                             </Button>
 
-                            {onEdit && (
+                            {onEdit && canEdit && (
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -602,7 +613,7 @@ export function JobSheetPreviewModal({
                                 </DialogTitle>
                             </div>
 
-                            {onEdit && (
+                            {onEdit && canEdit && (
                                 <Button
                                     variant="outline"
                                     size="sm"

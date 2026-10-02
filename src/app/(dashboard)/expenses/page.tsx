@@ -20,6 +20,7 @@ import { useSettings } from "@/context/settings-context"
 import { saveAs } from "file-saver"
 import { pdf } from "@react-pdf/renderer"
 import { ExpensesPDF } from "@/components/expenses/expenses-pdf"
+import { FinancialPageCover } from "@/components/financials/financial-page-cover"
 
 const FINANCIAL_TARGETS_KEY = "financial-targets" // Keep for legacy cleanup or remove if not needed, but safe to keep constant
 
@@ -361,70 +362,83 @@ function ExpensesContent() {
                 }}
             />
 
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <FinancialPageCover
+                type="expenses"
+                title={
+                    <>
                         {t.expenses.title} <span className="text-sm font-normal text-muted-foreground hidden sm:inline-block">/ Financials</span>
-                    </h1>
-                    <p className="text-muted-foreground mt-1">{t.expenses.subtitle}</p>
-                </div>
-                <div className="relative z-20 flex flex-wrap items-center gap-2 sm:gap-3">
-                    {/* Export Button */}
-                    <div className="relative" ref={exportRef}>
-                        <button
-                            onClick={() => setIsExportOpen(!isExportOpen)}
-                            className={cn(
-                                "flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-muted/50 border border-border text-foreground rounded-xl font-medium shadow-sm hover:bg-muted transition-all text-sm sm:text-base whitespace-nowrap",
-                                isExportOpen && "bg-muted ring-2 ring-primary/20"
+                    </>
+                }
+                subtitle={t.expenses.subtitle}
+                badgeText="EXPENSES & COST CONTROL"
+                badgeIcon={<Wallet className="w-3.5 h-3.5 text-emerald-400" />}
+                mood={mood}
+                dateLabel={new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                primaryMetricLabel="Limit"
+                primaryMetricValue={`฿${finTargets.expenseLimit.toLocaleString()}`}
+                secondaryMetricLabel="Spent"
+                secondaryMetricValue={`฿${monthlyTotalExpense.toLocaleString()}`}
+                percent={expensePercent}
+                isAlert={monthlyTotalExpense > finTargets.expenseLimit}
+                actions={
+                    <>
+                        {/* Export Button */}
+                        <div className="relative" ref={exportRef}>
+                            <button
+                                onClick={() => setIsExportOpen(!isExportOpen)}
+                                className={cn(
+                                    "flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-background/80 dark:bg-black/50 backdrop-blur-md border border-white/15 dark:border-white/10 text-foreground rounded-xl font-medium shadow-sm hover:bg-background dark:hover:bg-black/70 transition-all text-xs sm:text-sm whitespace-nowrap cursor-pointer",
+                                    isExportOpen && "ring-2 ring-primary/30"
+                                )}
+                            >
+                                <FileDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400" />
+                                Export
+                            </button>
+                            {/* Dropdown Menu - Click & Left Aligned */}
+                            {isExportOpen && (
+                                <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 w-48 bg-card border border-border dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 origin-top-right">
+                                    <button
+                                        onClick={() => {
+                                            handleExportCSV()
+                                            setIsExportOpen(false)
+                                        }}
+                                        className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3 cursor-pointer"
+                                    >
+                                        <span className="font-medium text-xs sm:text-sm">Export CSV</span>
+                                    </button>
+                                    <div className="h-px bg-border dark:bg-white/10" />
+                                    <button
+                                        onClick={() => {
+                                            handleExportPDF()
+                                            setIsExportOpen(false)
+                                        }}
+                                        className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3 cursor-pointer"
+                                    >
+                                        <span className="font-medium text-xs sm:text-sm">Export PDF (with Images)</span>
+                                    </button>
+                                </div>
                             )}
+                        </div>
+
+                        <button
+                            onClick={() => setIsContractOpen(true)}
+                            className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-background/80 dark:bg-black/50 backdrop-blur-md border border-white/15 dark:border-white/10 text-foreground rounded-xl font-medium shadow-sm hover:bg-background dark:hover:bg-black/70 transition-all text-xs sm:text-sm whitespace-nowrap cursor-pointer"
                         >
-                            <FileDown className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
-                            Export
+                            <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+                            {t.expenses.create_contract}
                         </button>
-                        {/* Dropdown Menu - Click & Left Aligned */}
-                        {isExportOpen && (
-                            <div className="absolute left-0 top-full mt-2 w-48 bg-background border border-border rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 origin-top-left">
-                                <button
-                                    onClick={() => {
-                                        handleExportCSV()
-                                        setIsExportOpen(false)
-                                    }}
-                                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
-                                >
-                                    <span className="font-medium text-sm">Export CSV</span>
-                                </button>
-                                <div className="h-px bg-border" />
-                                <button
-                                    onClick={() => {
-                                        handleExportPDF()
-                                        setIsExportOpen(false)
-                                    }}
-                                    className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3"
-                                >
-                                    <span className="font-medium text-sm">Export PDF (with Images)</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
 
-                    <button
-                        onClick={() => setIsContractOpen(true)}
-                        className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-muted/50 border border-border text-foreground rounded-xl font-medium shadow-sm hover:bg-muted transition-all text-sm sm:text-base whitespace-nowrap"
-                    >
-                        <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
-                        {t.expenses.create_contract}
-                    </button>
-
-                    {/* Add Expense Button - Opens Selection */}
-                    <button
-                        onClick={() => setIsSelectionOpen(true)}
-                        className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg hover:opacity-90 active:scale-95 transition-all text-sm sm:text-base whitespace-nowrap"
-                    >
-                        <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                        {t.expenses.add_expense}
-                    </button>
-                </div>
-            </div>
+                        {/* Add Expense Button - Opens Selection */}
+                        <button
+                            onClick={() => setIsSelectionOpen(true)}
+                            className="flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-4.5 sm:py-2 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg hover:opacity-90 active:scale-95 transition-all text-xs sm:text-sm whitespace-nowrap cursor-pointer"
+                        >
+                            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            {t.expenses.add_expense}
+                        </button>
+                    </>
+                }
+            />
 
             <SmartScanDialog
                 isOpen={isSmartScanOpen}
@@ -438,45 +452,6 @@ function ExpensesContent() {
                 }}
                 autoSave={false}
             />
-
-            {/* Mood Card - Expenses (Enhanced) */}
-            <div className={`p-6 sm:p-8 rounded-3xl border border-white/10 ${mood.bg} flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden animate-in zoom-in duration-500 slide-in-from-bottom-4`}>
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <mood.icon className="w-32 h-32" />
-                </div>
-
-                <div className="flex items-center gap-6 relative z-10 w-full sm:w-auto">
-                    <div className="text-6xl sm:text-7xl filter drop-shadow-lg animate-bounce duration-[2000ms]">{mood.emoji}</div>
-                    <div className="flex-1">
-                        <div className={`font-black text-2xl sm:text-3xl ${mood.color} tracking-tight mb-1`}>{mood.label}</div>
-                        <div className="text-sm font-semibold text-muted-foreground uppercase opacity-80 mb-2 tracking-wide">
-                            {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                        </div>
-                        <div className="text-base sm:text-lg text-muted-foreground font-medium">
-                            Limit: <span className="text-foreground">฿{finTargets.expenseLimit.toLocaleString()}</span>
-                        </div>
-                        <div className="text-base sm:text-lg text-muted-foreground font-medium">
-                            Spent: <span className={`font-bold ${monthlyTotalExpense > finTargets.expenseLimit ? 'text-red-500' : 'text-foreground'}`}>฿{monthlyTotalExpense.toLocaleString()}</span>
-                            <span className="text-sm ml-2 opacity-80">({expensePercent}%)</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Progress Bar & Status */}
-                <div className="w-full sm:w-[40%] relative z-10">
-                    <div className="h-4 w-full bg-black/10 rounded-full overflow-hidden backdrop-blur-sm border border-black/5">
-                        <div
-                            className={`h-full rounded-full transition-all duration-1000 ease-out shadow-sm ${monthlyTotalExpense > finTargets.expenseLimit ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-emerald-500 to-emerald-400'}`}
-                            style={{ width: `${Math.min(100, expensePercent)}%` }}
-                        />
-                    </div>
-                    <div className="flex justify-between mt-2 text-xs font-semibold uppercase tracking-wider opacity-60">
-                        <span>0%</span>
-                        <span>50%</span>
-                        <span>100%</span>
-                    </div>
-                </div>
-            </div>
 
             {/* Expense Summary Cards (Scrollable) - Contained */}
             <div className="overflow-hidden">

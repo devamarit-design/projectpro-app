@@ -9,6 +9,7 @@ import {
     deleteJobSheet 
 } from "@/lib/services/jobsheet-service";
 import { useProjects } from "@/context/project-context";
+import { useOrganization } from "@/context/organization-context";
 import { JobSheetForm } from "@/components/jobsheets/jobsheet-form";
 import { JobSheetPreviewModal } from "@/components/jobsheets/jobsheet-preview-modal";
 import { Button } from "@/components/ui/button";
@@ -85,16 +86,52 @@ function getWeekBoundaries(dateStr: string) {
 }
 
 export default function JobSheetsPage() {
+    const { currentOrg } = useOrganization();
     const { currentTeam, currentUser, projects } = useProjects();
-    const orgId = currentTeam?.id || currentUser?.orgIds?.[0] || currentUser?.organizations?.[0]?.orgId || "default_org";
+    const orgId = currentOrg?.id || currentTeam?.id || currentUser?.orgIds?.[0] || currentUser?.organizations?.[0]?.orgId || "default_org";
     const currentUserId = currentUser?.id || "";
 
-    // Role-based Access Control
+    // Role-based Access Control:
+    // Only Admin and Owner of this ACTIVE workspace can see reports of everyone in the team.
+    // If the active role is Guest, Staff, Manager, Accountant, etc., they can ONLY see their own reports.
+    // NEVER fall back to global currentUser.role, because a user can be Owner in their personal space but Guest here!
     const isAdminOrOwner = useMemo(() => {
-        const teamRole = currentTeam?.role;
-        const userRole = currentUser?.role;
-        return teamRole === "Owner" || teamRole === "Admin" || userRole === "Owner" || userRole === "Admin";
-    }, [currentTeam?.role, currentUser?.role]);
+        if (!currentUser?.id) return false;
+
+        // 1. Is user the owner of this organization in Firestore?
+        if (currentOrg?.ownerId && currentOrg.ownerId === currentUser.id) {
+            return true;
+        }
+
+        // 2. Check currentOrg members list (source of truth)
+        if (currentOrg?.members && Array.isArray(currentOrg.members)) {
+            const member = currentOrg.members.find(m => m.userId === currentUser.id);
+            if (member && member.role) {
+                const r = member.role.trim().toLowerCase();
+                return r === "owner" || r === "admin";
+            }
+        }
+
+        // 3. Check currentUser.organizations array for this specific orgId
+        if (currentUser.organizations && Array.isArray(currentUser.organizations)) {
+            const orgMembership = currentUser.organizations.find(o => 
+                (typeof o === "string" ? o : o.orgId) === orgId
+            );
+            if (orgMembership && typeof orgMembership !== "string" && orgMembership.role) {
+                const r = orgMembership.role.trim().toLowerCase();
+                return r === "owner" || r === "admin";
+            }
+        }
+
+        // 4. Check currentTeam.role
+        if (currentTeam?.role) {
+            const r = currentTeam.role.trim().toLowerCase();
+            return r === "owner" || r === "admin";
+        }
+
+        // Default: strictly FALSE. Do NOT fallback to global currentUser.role!
+        return false;
+    }, [currentOrg, currentTeam?.role, currentUser?.id, currentUser?.organizations, orgId]);
 
     // Data state
     const [jobsheets, setJobsheets] = useState<JobSheet[]>([]);
@@ -394,6 +431,12 @@ export default function JobSheetsPage() {
 
     const handleDelete = async () => {
         if (!deletingSheetId) return;
+        const targetSheet = jobsheets.find(s => s.id === deletingSheetId);
+        if (targetSheet && !checkIsMine(targetSheet) && !isAdminOrOwner) {
+            toast.error("คุณสามารถลบได้เฉพาะ JobSheet ของตนเองเท่านั้น");
+            setDeletingSheetId(null);
+            return;
+        }
         const targetOrgId = orgId || "default_org";
         try {
             await deleteJobSheet(targetOrgId, deletingSheetId);
@@ -407,11 +450,19 @@ export default function JobSheetsPage() {
     };
 
     const openPreview = (sheet: JobSheet) => {
+        if (!checkIsMine(sheet) && !isAdminOrOwner) {
+            toast.error("คุณสามารถเปิดดูได้เฉพาะ JobSheet ของตนเองเท่านั้น");
+            return;
+        }
         setPreviewSheet(sheet);
         setIsPreviewOpen(true);
     };
 
     const startEdit = (sheet: JobSheet) => {
+        if (!checkIsMine(sheet) && !isAdminOrOwner) {
+            toast.error("คุณสามารถแก้ไขได้เฉพาะ JobSheet ของตนเองเท่านั้น");
+            return;
+        }
         setEditingSheet(sheet);
         setActiveTab("edit");
     };

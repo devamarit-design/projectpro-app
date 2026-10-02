@@ -253,18 +253,24 @@ export function ThemeSettings() {
                         <Type className="w-4 h-4" />
                         {t.settings.theme.font}
                     </label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-lg">
-                        {['Kanit', 'Sarabun', 'Inter', 'Prompt'].map((font) => (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 max-w-2xl">
+                        {[
+                            { id: 'Prompt', label: 'Prompt', fontVar: 'var(--font-prompt)' },
+                            { id: 'Kanit', label: 'Kanit', fontVar: 'var(--font-kanit)' },
+                            { id: 'IBM Plex Sans Thai', label: 'IBM Plex Thai', fontVar: 'var(--font-ibm)' },
+                            { id: 'Sarabun', label: 'Sarabun', fontVar: 'var(--font-sarabun)' },
+                            { id: 'Inter', label: 'Inter', fontVar: 'var(--font-inter)' },
+                        ].map((item) => (
                             <button
-                                key={font}
-                                onClick={() => handleChange('font', font)}
-                                className={`flex flex-col items-center justify-center gap-1 p-3 rounded-xl border-2 transition-all ${draftTheme.font === font
+                                key={item.id}
+                                onClick={() => handleChange('font', item.id)}
+                                className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all ${draftTheme.font === item.id
                                     ? 'border-primary/60 bg-primary/10 shadow-sm ring-2 ring-primary/20'
                                     : 'border-border hover:border-primary/50 hover:bg-muted'
                                     }`}
                             >
-                                <span className={`text-xl font-bold ${draftTheme.font === font ? 'text-foreground' : ''}`} style={{ fontFamily: font }}>Aa</span>
-                                <span className={`text-xs font-medium ${draftTheme.font === font ? 'text-primary' : ''}`}>{font}</span>
+                                <span className={`text-xl font-bold ${draftTheme.font === item.id ? 'text-foreground' : ''}`} style={{ fontFamily: item.fontVar }}>Aa กข</span>
+                                <span className={`text-xs font-medium ${draftTheme.font === item.id ? 'text-primary' : ''}`}>{item.label}</span>
                             </button>
                         ))}
                     </div>

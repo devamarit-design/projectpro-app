@@ -158,7 +158,7 @@ const defaultTheme: AppTheme = {
     color: 'orange',
     mode: 'light',
     radius: 0.5,
-    font: 'Kanit'
+    font: 'Prompt'
 }
 
 const defaultTeamSettings: TeamSettings = {
@@ -579,10 +579,16 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         document.documentElement.style.setProperty('--radius', radiusValue)
 
         // Apply Global Font
-        document.body.style.fontFamily = activeTheme.font === 'Kanit' ? 'var(--font-sans), sans-serif'
-            : activeTheme.font === 'Sarabun' ? 'Sarabun, sans-serif'
-                : activeTheme.font === 'Inter' ? 'Inter, sans-serif'
-                    : 'Prompt, sans-serif'
+        const fontMap: Record<string, string> = {
+            'Prompt': 'var(--font-prompt), sans-serif',
+            'Kanit': 'var(--font-kanit), sans-serif',
+            'Sarabun': 'var(--font-sarabun), sans-serif',
+            'IBM Plex Sans Thai': 'var(--font-ibm), sans-serif',
+            'Inter': 'var(--font-inter), sans-serif',
+        }
+        const selectedFont = fontMap[activeTheme.font] || 'var(--font-prompt), sans-serif'
+        document.body.style.fontFamily = selectedFont
+        document.documentElement.style.setProperty('--font-sans', selectedFont)
 
         // Apply Mode
         if (activeTheme.mode === 'dark') {

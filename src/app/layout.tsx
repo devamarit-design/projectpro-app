@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Kanit } from "next/font/google";
+import { Prompt, Kanit, Sarabun, Inter, IBM_Plex_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LanguageProvider } from "@/lib/i18n-context";
@@ -16,10 +16,38 @@ import { FirestoreRecoverToast } from "@/components/firestore-recover-toast";
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 
+const promptFont = Prompt({
+  subsets: ["latin", "thai"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-prompt",
+  display: "swap",
+});
+
 const kanit = Kanit({
   subsets: ["latin", "thai"],
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-sans",
+  variable: "--font-kanit",
+  display: "swap",
+});
+
+const sarabun = Sarabun({
+  subsets: ["latin", "thai"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800"],
+  variable: "--font-sarabun",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const ibmPlexSansThai = IBM_Plex_Sans_Thai({
+  subsets: ["latin", "thai"],
+  weight: ["100", "200", "300", "400", "500", "600", "700"],
+  variable: "--font-ibm",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -86,7 +114,7 @@ export default function RootLayout({
   console.log("[System] Current Version: 1.2.0 - RootLayout Mounted")
   return (
     <html lang="th" suppressHydrationWarning>
-      <body className={`${kanit.variable} font-sans antialiased overflow-x-hidden`} suppressHydrationWarning>
+      <body className={`${promptFont.variable} ${kanit.variable} ${sarabun.variable} ${inter.variable} ${ibmPlexSansThai.variable} font-sans antialiased overflow-x-hidden`} suppressHydrationWarning>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
