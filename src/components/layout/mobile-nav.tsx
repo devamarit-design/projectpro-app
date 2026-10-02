@@ -115,6 +115,12 @@ export function MobileNav() {
 
         return [
             {
+                title: "COMMUNICATION",
+                items: [
+                    { href: "https://bbspm.dev-amarit.workers.dev", label: "บริหารโครงการ", icon: FolderKanban, color: "text-blue-500 bg-blue-500/10", external: true },
+                ]
+            },
+            {
                 title: "เอกสาร", // Documents
                 items: [
                     { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 bg-amber-500/10" },
@@ -281,22 +287,46 @@ export function MobileNav() {
                                     <div className="h-px w-full bg-white/10" />
                                 </div>
                                 <div className="grid grid-cols-4 gap-2">
-                                    {group.items.map((item, index) => (
-                                        <Link
-                                            key={index}
-                                            href={item.href}
-                                            onClick={() => setShowMoreMenu(false)}
-                                            className="flex flex-col items-center gap-1.5 group p-1"
-                                        >
-                                            <div className={cn(
-                                                "w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm transition-transform group-hover:scale-105 group-active:scale-95",
-                                                item.color
-                                            )}>
-                                                <item.icon className="w-5 h-5" />
-                                            </div>
-                                            <span className="text-[9px] font-normal text-muted-foreground group-hover:text-foreground transition-colors text-center leading-tight line-clamp-1 w-full overflow-hidden text-ellipsis px-0.5">{item.label}</span>
-                                        </Link>
-                                    ))}
+                                    {group.items.map((item: any, index: number) => {
+                                        const isExternal = item.external || item.href.startsWith("http")
+                                        const content = (
+                                            <>
+                                                <div className={cn(
+                                                    "w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm transition-transform group-hover:scale-105 group-active:scale-95",
+                                                    item.color
+                                                )}>
+                                                    <item.icon className="w-5 h-5" />
+                                                </div>
+                                                <span className="text-[9px] font-normal text-muted-foreground group-hover:text-foreground transition-colors text-center leading-tight line-clamp-1 w-full overflow-hidden text-ellipsis px-0.5">{item.label}</span>
+                                            </>
+                                        )
+
+                                        if (isExternal) {
+                                            return (
+                                                <a
+                                                    key={index}
+                                                    href={item.href}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    onClick={() => setShowMoreMenu(false)}
+                                                    className="flex flex-col items-center gap-1.5 group p-1"
+                                                >
+                                                    {content}
+                                                </a>
+                                            )
+                                        }
+
+                                        return (
+                                            <Link
+                                                key={index}
+                                                href={item.href}
+                                                onClick={() => setShowMoreMenu(false)}
+                                                className="flex flex-col items-center gap-1.5 group p-1"
+                                            >
+                                                {content}
+                                            </Link>
+                                        )
+                                    })}
                                 </div>
                             </div>
                         ))}

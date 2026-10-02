@@ -340,7 +340,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         // 3. Prepare User to Org Members update
         const newMember: OrgMember = {
             userId: firebaseUser.uid,
-            role: "Staff",
+            role: "Guest",
             joinedAt: new Date().toISOString()
         }
 
@@ -373,7 +373,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
             const organizationIds = userData?.organizationIds || [] // Robustness check
 
             batch.set(userRef, {
-                organizations: [...existingOrgs, { orgId: orgId, role: "Staff" }],
+                organizations: [...existingOrgs, { orgId: orgId, role: "Guest" }],
                 orgIds: Array.from(new Set([...orgIds, orgId])),
                 teamIds: Array.from(new Set([...teamIds, orgId])),
                 organizationIds: Array.from(new Set([...organizationIds, orgId])) // Add for extra safety

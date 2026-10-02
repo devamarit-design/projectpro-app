@@ -68,7 +68,7 @@ export default function InviteMemberDialog({ isOpen, onClose }: InviteMemberDial
             await addUser({
                 name: email.split('@')[0], // Use email prefix as temporary name
                 email: email,
-                role: "Staff", // Default role for invites
+                role: "Guest", // Default role for invites is Guest
                 phone: ""
             })
 

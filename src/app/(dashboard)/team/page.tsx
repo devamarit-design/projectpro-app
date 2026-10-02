@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, Plus, Shield, Mail, Phone, MoreHorizontal, Trash2, Edit, Link as LinkIcon, Copy, Check, ChevronDown, ChevronUp } from "lucide-react"
+import { Search, Plus, Shield, Mail, Phone, MoreHorizontal, Trash2, Edit, Link as LinkIcon, Copy, Check, ChevronDown, ChevronUp, Users } from "lucide-react"
 import { addDoc, collection } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useProjects, User } from "@/context/project-context"
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import { hasPermission } from "@/lib/permissions"
 import { useTranslation } from "@/lib/i18n-context"
 import Link from "next/link"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 // Components
 import AddUserDialog from "./add-user-dialog"
@@ -45,14 +46,49 @@ export default function TeamPage() {
     }, [openMenuId])
 
 
+    const [selectedRoleFilter, setSelectedRoleFilter] = React.useState<string>("all")
+    const [pendingRoleChange, setPendingRoleChange] = React.useState<{ user: User; newRole: string } | null>(null)
+
     // Filtered Data
     const displayUsers = React.useMemo(() => {
-        return users.filter(user =>
-            user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.role?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.email?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-    }, [users, searchQuery])
+        return users.filter(user => {
+            const matchesSearch = 
+                user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                user.role?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+            
+            if (!matchesSearch) return false
+            if (selectedRoleFilter === "all") return true
+            return user.role === selectedRoleFilter
+        })
+    }, [users, searchQuery, selectedRoleFilter])
+
+    // Role definitions for grouping
+    const roleCategories = [
+        { key: "Owner", label: "Owner", desc: "เจ้าขององค์กร / สิทธิ์สูงสุด", color: "text-orange-500", bg: "bg-orange-500/10", border: "border-orange-500/20" },
+        { key: "Admin", label: "Admin", desc: "ผู้ดูแลระบบ", color: "text-purple-500", bg: "bg-purple-500/10", border: "border-purple-500/20" },
+        { key: "Manager", label: "Manager", desc: "ผู้จัดการโครงการ", color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+        { key: "Accountant", label: "Accountant", desc: "บัญชี / การเงิน", color: "text-cyan-500", bg: "bg-cyan-500/10", border: "border-cyan-500/20" },
+        { key: "Staff", label: "Staff", desc: "ทีมงาน / หน้างาน", color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+        { key: "Guest", label: "Guest", desc: "บุคคลภายนอก / ผู้สังเกตการณ์", color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+    ]
+
+    // Group users by role when "all" is selected
+    const groupedUsers = React.useMemo(() => {
+        const groups: { [key: string]: User[] } = {}
+        roleCategories.forEach(cat => { groups[cat.key] = [] })
+        groups["Other"] = []
+
+        displayUsers.forEach(u => {
+            const r = u.role || "Guest"
+            if (groups[r]) {
+                groups[r].push(u)
+            } else {
+                groups["Other"].push(u)
+            }
+        })
+        return groups
+    }, [displayUsers])
 
     const handleEdit = (user: User) => {
         setEditingUser(user)
@@ -66,12 +102,156 @@ export default function TeamPage() {
         }
     }
 
+    const confirmRoleChange = () => {
+        if (pendingRoleChange && updateUser) {
+            // @ts-ignore
+            updateUser(pendingRoleChange.user.id, { role: pendingRoleChange.newRole })
+            setPendingRoleChange(null)
+        }
+    }
+
     const [inviteLink, setInviteLink] = React.useState("")
     const [isCopied, setIsCopied] = React.useState(false)
 
     const handleInvite = () => {
         setIsInviteOpen(true)
     }
+
+    // Component to render individual user card
+    const renderUserCard = (user: User) => (
+        <Link href={`/team/detail?userId=${user.id}`} key={user.id} className="block group">
+            <div className="bg-card border border-border/50 hover:border-primary/50 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 h-full relative">
+                <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                        {/* Avatar */}
+                        <div className={cn(
+                            "w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold shadow-inner",
+                            user.role === 'Admin' || user.role === 'Owner' ? "bg-purple-500/10 text-purple-500" : "bg-blue-500/10 text-blue-500"
+                        )}>
+                            {user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-base group-hover:text-primary transition-colors">{user.name}</h3>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                {/* Role Selector for Owner, Static for others */}
+                                {currentTeam?.role === 'Owner' && user.role !== 'Owner' ? (
+                                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="relative group/select">
+                                        <select
+                                            value={user.role}
+                                            onChange={(e) => {
+                                                const newRole = e.target.value;
+                                                if (newRole !== user.role) {
+                                                    setPendingRoleChange({ user, newRole })
+                                                }
+                                            }}
+                                            className="appearance-none bg-transparent pl-2 pr-6 py-0.5 text-[10px] font-bold uppercase tracking-wider border rounded-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 hover:bg-muted/50 transition-colors border-dashed border-primary/50 text-primary"
+                                        >
+                                            <option value="Admin">Admin</option>
+                                            <option value="Manager">Manager</option>
+                                            <option value="Accountant">Accountant</option>
+                                            <option value="Staff">Staff</option>
+                                            <option value="Guest">Guest</option>
+                                        </select>
+                                        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-primary/50">
+                                            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <span className={cn(
+                                        "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border",
+                                        user.role === 'Owner'
+                                            ? "bg-orange-500/10 text-orange-600 border-orange-200 dark:border-orange-900"
+                                            : user.role === 'Admin'
+                                                ? "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-900"
+                                                : user.role === 'Manager'
+                                                    ? "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-900"
+                                                    : user.role === 'Accountant'
+                                                        ? "bg-cyan-500/10 text-cyan-600 border-cyan-200 dark:border-cyan-900"
+                                                        : user.role === 'Guest'
+                                                            ? "bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-900"
+                                                            : "bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-900"
+                                    )}>
+                                        {user.role}
+                                    </span>
+                                )}
+
+                                <span className={cn(
+                                    "w-2 h-2 rounded-full",
+                                    user.status === 'Active' ? "bg-green-500" :
+                                        user.status === 'Pending' ? "bg-orange-500" : "bg-gray-300"
+                                )} title={user.status} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Actions Dropdown / Buttons */}
+                    <div className="relative z-10">
+                        {(hasPermission(currentTeam?.role, "USER_UPDATE") || (hasPermission(currentTeam?.role, "USER_DELETE") && user.role !== 'Owner')) && (
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault() // Prevent navigation
+                                    e.stopPropagation()
+                                    setOpenMenuId(openMenuId === user.id ? null : user.id)
+                                }}
+                                className="action-menu-trigger p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                            >
+                                <MoreHorizontal className="w-5 h-5" />
+                            </button>
+                        )}
+
+                        {/* Custom Dropdown */}
+                        {openMenuId === user.id && (
+                            <div className="absolute right-0 top-full mt-1 w-32 bg-card border border-border shadow-xl rounded-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                                <div className="p-1">
+                                    {hasPermission(currentUser, "USER_UPDATE") && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault()
+                                                setOpenMenuId(null)
+                                                handleEdit(user)
+                                            }}
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
+                                        >
+                                            <Edit className="w-3.5 h-3.5" />
+                                            {t.common.edit}
+                                        </button>
+                                    )}
+                                    {hasPermission(currentUser, "USER_DELETE") && user.role !== 'Owner' && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault()
+                                                setOpenMenuId(null)
+                                                setShowDeleteConfirm(user)
+                                            }}
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            {t.common.delete}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                    {user.email && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Mail className="w-3.5 h-3.5" />
+                            <span className="truncate">{user.email}</span>
+                        </div>
+                    )}
+                    {user.phone && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Phone className="w-3.5 h-3.5" />
+                            <span className="font-mono">{user.phone}</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </Link>
+    )
 
 
     return (
@@ -213,8 +393,8 @@ export default function TeamPage() {
                 )}
             </div>
 
-            {/* Search */}
-            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl p-2 -mx-2 rounded-xl flex gap-3 border border-border/50 shadow-sm">
+            {/* Search and Role Filter Bar */}
+            <div className="space-y-3 sticky top-0 z-10 bg-background/95 backdrop-blur-xl p-2 -mx-2 rounded-xl border border-border/50 shadow-sm">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
@@ -225,153 +405,132 @@ export default function TeamPage() {
                         className="w-full bg-muted/50 border-none rounded-lg pl-9 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 transition-all"
                     />
                 </div>
+
+                {/* Filter Pills by Role */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                    <button
+                        onClick={() => setSelectedRoleFilter("all")}
+                        className={cn(
+                            "px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5",
+                            selectedRoleFilter === "all"
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                    >
+                        <span>ทั้งหมด</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/10 dark:bg-white/10">
+                            {users.length}
+                        </span>
+                    </button>
+                    {roleCategories.map(cat => {
+                        const count = users.filter(u => u.role === cat.key).length
+                        if (count === 0 && selectedRoleFilter !== cat.key) return null
+                        return (
+                            <button
+                                key={cat.key}
+                                onClick={() => setSelectedRoleFilter(cat.key)}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5",
+                                    selectedRoleFilter === cat.key
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                )}
+                            >
+                                <span className={cn("w-2 h-2 rounded-full", cat.bg.replace('/10', ''))} />
+                                <span>{cat.label}</span>
+                                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/10 dark:bg-white/10">
+                                    {count}
+                                </span>
+                            </button>
+                        )
+                    })}
+                </div>
             </div>
 
-            {/* Users Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {displayUsers.map(user => (
-                    <Link href={`/team/detail?userId=${user.id}`} key={user.id} className="block group">
-                        <div className="bg-card border border-border/50 hover:border-primary/50 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 h-full relative">
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-3">
-                                    {/* Avatar */}
-                                    <div className={cn(
-                                        "w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold shadow-inner",
-                                        user.role === 'Admin' || user.role === 'Owner' ? "bg-purple-500/10 text-purple-500" : "bg-blue-500/10 text-blue-500"
-                                    )}>
-                                        {user.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-base group-hover:text-primary transition-colors">{user.name}</h3>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            {/* Role Selector for Owner, Static for others */}
-                                            {currentTeam?.role === 'Owner' && user.role !== 'Owner' ? (
-                                                <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="relative group/select">
-                                                    <select
-                                                        value={user.role}
-                                                        onChange={(e) => {
-                                                            const newRole = e.target.value;
-                                                            // @ts-ignore
-                                                            if (updateUser) updateUser(user.id, { role: newRole });
-                                                        }}
-                                                        className="appearance-none bg-transparent pl-2 pr-6 py-0.5 text-[10px] font-bold uppercase tracking-wider border rounded-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 hover:bg-muted/50 transition-colors border-dashed border-primary/50 text-primary"
-                                                    >
-                                                        <option value="Admin">Admin</option>
-                                                        <option value="Manager">Manager</option>
-                                                        <option value="Accountant">Accountant</option>
-                                                        <option value="Staff">Staff</option>
-                                                        <option value="Guest">Guest</option>
-                                                    </select>
-                                                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-primary/50">
-                                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <span className={cn(
-                                                    "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border",
-                                                    user.role === 'Owner'
-                                                        ? "bg-orange-500/10 text-orange-600 border-orange-200 dark:border-orange-900"
-                                                        : user.role === 'Admin'
-                                                            ? "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-900"
-                                                            : user.role === 'Manager'
-                                                                ? "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-900"
-                                                                : user.role === 'Accountant'
-                                                                    ? "bg-cyan-500/10 text-cyan-600 border-cyan-200 dark:border-cyan-900"
-                                                                    : user.role === 'Guest'
-                                                                        ? "bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-900"
-                                                                        : "bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-900"
-                                                )}>
-                                                    {user.role}
-                                                </span>
-                                            )}
+            {/* Role Grouped Users Display */}
+            {selectedRoleFilter === "all" ? (
+                <div className="space-y-8">
+                    {roleCategories.map(cat => {
+                        const groupMembers = groupedUsers[cat.key] || []
+                        if (groupMembers.length === 0) return null
 
-                                            <span className={cn(
-                                                "w-2 h-2 rounded-full",
-                                                user.status === 'Active' ? "bg-green-500" :
-                                                    user.status === 'Pending' ? "bg-orange-500" : "bg-gray-300"
-                                            )} title={user.status} />
+                        return (
+                            <div key={cat.key} className="space-y-3">
+                                {/* Category Header */}
+                                <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className={cn("px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border", cat.bg, cat.color, cat.border)}>
+                                            {cat.label}
                                         </div>
+                                        <span className="text-xs text-muted-foreground font-medium hidden sm:inline">
+                                            {cat.desc}
+                                        </span>
                                     </div>
+                                    <span className="text-xs font-bold text-muted-foreground">
+                                        {groupMembers.length} คน
+                                    </span>
                                 </div>
 
-                                {/* Actions Dropdown / Buttons */}
-                                <div className="relative z-10">
-                                    {(hasPermission(currentTeam?.role, "USER_UPDATE") || (hasPermission(currentTeam?.role, "USER_DELETE") && user.role !== 'Owner')) && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.preventDefault() // Prevent navigation
-                                                e.stopPropagation()
-                                                setOpenMenuId(openMenuId === user.id ? null : user.id)
-                                            }}
-                                            className="action-menu-trigger p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                                        >
-                                            <MoreHorizontal className="w-5 h-5" />
-                                        </button>
-                                    )}
-
-                                    {/* Custom Dropdown */}
-                                    {openMenuId === user.id && (
-                                        <div className="absolute right-0 top-full mt-1 w-32 bg-card border border-border shadow-xl rounded-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                                            <div className="p-1">
-                                                {hasPermission(currentUser, "USER_UPDATE") && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.preventDefault()
-                                                            setOpenMenuId(null)
-                                                            handleEdit(user)
-                                                        }}
-                                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
-                                                    >
-                                                        <Edit className="w-3.5 h-3.5" />
-                                                        {t.common.edit}
-                                                    </button>
-                                                )}
-                                                {hasPermission(currentUser, "USER_DELETE") && user.role !== 'Owner' && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.preventDefault()
-                                                            setOpenMenuId(null)
-                                                            setShowDeleteConfirm(user)
-                                                        }}
-                                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                        {t.common.delete}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
+                                {/* Category Cards Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                    {groupMembers.map(user => renderUserCard(user))}
                                 </div>
-
-
                             </div>
+                        )
+                    })}
 
-                            <div className="mt-4 space-y-2">
-                                {user.email && (
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <Mail className="w-3.5 h-3.5" />
-                                        <span className="truncate">{user.email}</span>
+                    {groupedUsers["Other"] && groupedUsers["Other"].length > 0 && (
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border bg-zinc-500/10 text-zinc-400 border-zinc-500/20">
+                                        Other Roles
                                     </div>
-                                )}
-                                {user.phone && (
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <Phone className="w-3.5 h-3.5" />
-                                        <span className="font-mono">{user.phone}</span>
-                                    </div>
-                                )}
+                                </div>
+                                <span className="text-xs font-bold text-muted-foreground">
+                                    {groupedUsers["Other"].length} คน
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                {groupedUsers["Other"].map(user => renderUserCard(user))}
                             </div>
                         </div>
-                    </Link>
-                ))}
+                    )}
 
-                {displayUsers.length === 0 && (
-                    <div className="col-span-full py-12 text-center text-muted-foreground bg-muted/20 rounded-2xl border border-dashed border-border">
-                        <Shield className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                        <p>{t.team.empty}</p>
+                    {displayUsers.length === 0 && (
+                        <div className="col-span-full py-12 text-center text-muted-foreground bg-muted/20 rounded-2xl border border-dashed border-border">
+                            <Shield className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                            <p>{t.team.empty}</p>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                /* Filtered View (Single Category) */
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {displayUsers.map(user => renderUserCard(user))}
                     </div>
-                )}
-            </div>
+
+                    {displayUsers.length === 0 && (
+                        <div className="col-span-full py-12 text-center text-muted-foreground bg-muted/20 rounded-2xl border border-dashed border-border">
+                            <Shield className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                            <p>{t.team.empty}</p>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Confirm Role Change Dialog */}
+            <ConfirmDialog
+                isOpen={!!pendingRoleChange}
+                onClose={() => setPendingRoleChange(null)}
+                onConfirm={confirmRoleChange}
+                title="ยืนยันการเปลี่ยน Role สมาชิก"
+                message={`คุณแน่ใจหรือไม่ว่าต้องการเปลี่ยนสิทธิ์ของ "${pendingRoleChange?.user.name}" จาก ${pendingRoleChange?.user.role} เป็น ${pendingRoleChange?.newRole}?`}
+                confirmText="เปลี่ยนสิทธิ์"
+                cancelText="ยกเลิก"
+                variant="warning"
+            />
 
             {/* Add/Edit Dialog */}
             <AddUserDialog
@@ -431,11 +590,6 @@ export default function TeamPage() {
                     </div>
                 )
             }
-            <AddUserDialog
-                isOpen={isAddOpen}
-                onClose={() => setIsAddOpen(false)}
-                initialData={editingUser}
-            />
             <InviteMemberDialog
                 isOpen={isInviteOpen}
                 onClose={() => setIsInviteOpen(false)}
