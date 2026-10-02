@@ -37,7 +37,8 @@ import {
     ChevronRight,
     Sparkles,
     LayoutGrid,
-    CalendarRange
+    CalendarRange,
+    Image as ImageIcon
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -824,6 +825,8 @@ export default function JobSheetsPage() {
                                                         const completedCount = sheet.workItems?.filter((w) => w.status === "completed").length || 0;
                                                         const isMySheet = checkIsMine(sheet);
                                                         const canEditOrDelete = isMySheet || isAdminOrOwner;
+                                                        const totalItemPhotos = sheet.workItems?.reduce((acc, w) => acc + (w.photos?.length || 0), 0) || 0;
+                                                        const totalPhotos = (sheet.photos?.length || 0) + totalItemPhotos;
 
                                                         return (
                                                             <div
@@ -874,6 +877,12 @@ export default function JobSheetsPage() {
                                                                             <CheckCircle2 className="w-3 h-3" />
                                                                             เสร็จ {completedCount}/{sheet.workItems?.length || 0}
                                                                         </span>
+                                                                        {totalPhotos > 0 && (
+                                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium">
+                                                                                <ImageIcon className="w-3 h-3" />
+                                                                                {totalPhotos} รูป
+                                                                            </span>
+                                                                        )}
                                                                     </div>
 
                                                                     {/* Work items snippet */}
@@ -969,6 +978,8 @@ export default function JobSheetsPage() {
                                 const completedCount = sheet.workItems?.filter((w) => w.status === "completed").length || 0;
                                 const isMySheet = checkIsMine(sheet);
                                 const canEditOrDelete = isMySheet || isAdminOrOwner;
+                                const totalItemPhotos = sheet.workItems?.reduce((acc, w) => acc + (w.photos?.length || 0), 0) || 0;
+                                const totalPhotos = (sheet.photos?.length || 0) + totalItemPhotos;
 
                                 return (
                                     <div
@@ -1019,6 +1030,12 @@ export default function JobSheetsPage() {
                                                     <CheckCircle2 className="w-3 h-3" />
                                                     เสร็จ {completedCount}/{sheet.workItems?.length || 0}
                                                 </span>
+                                                {totalPhotos > 0 && (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium">
+                                                        <ImageIcon className="w-3 h-3" />
+                                                        {totalPhotos} รูป
+                                                    </span>
+                                                )}
                                             </div>
 
                                             {/* Work items snippet */}

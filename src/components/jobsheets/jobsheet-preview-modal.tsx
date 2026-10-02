@@ -859,8 +859,18 @@ export function JobSheetPreviewModal({
                                                                                     ? `/api/proxy-image?url=${encodeURIComponent(pSrc)}`
                                                                                     : pSrc;
                                                                                 return (
-                                                                                    <div key={pIdx} className="w-14 h-14 rounded border border-zinc-300 overflow-hidden bg-zinc-100 shrink-0">
-                                                                                        <img src={proxied} alt={`Item ${idx + 1} photo ${pIdx + 1}`} className="w-full h-full object-cover" />
+                                                                                    <div 
+                                                                                        key={pIdx} 
+                                                                                        className="w-14 h-14 rounded border border-zinc-300 overflow-hidden bg-zinc-100 shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
+                                                                                        onClick={() => window.open(pSrc, "_blank")}
+                                                                                        title="คลิกเพื่อดูรูปขนาดเต็ม"
+                                                                                    >
+                                                                                        <img 
+                                                                                            src={proxied} 
+                                                                                            alt={`Item ${idx + 1} photo ${pIdx + 1}`} 
+                                                                                            className="w-full h-full object-cover" 
+                                                                                            crossOrigin="anonymous"
+                                                                                        />
                                                                                     </div>
                                                                                 );
                                                                             })}
@@ -965,11 +975,18 @@ export function JobSheetPreviewModal({
                                                 ? `/api/proxy-image?url=${encodeURIComponent(src)}`
                                                 : src;
                                             return (
-                                                <div key={i} className="aspect-video rounded-none border border-zinc-200 overflow-hidden bg-zinc-100" style={{ borderRadius: 0 }}>
+                                                <div 
+                                                    key={i} 
+                                                    className="aspect-video rounded-none border border-zinc-200 overflow-hidden bg-zinc-100 cursor-pointer hover:opacity-85 transition-opacity" 
+                                                    style={{ borderRadius: 0 }}
+                                                    onClick={() => window.open(src, "_blank")}
+                                                    title="คลิกเพื่อดูภาพขนาดเต็ม"
+                                                >
                                                     <img
                                                         src={proxiedSrc}
                                                         alt={`Site photo ${i + 1}`}
                                                         className="w-full h-full object-cover"
+                                                        crossOrigin="anonymous"
                                                         onError={(e) => {
                                                             (e.currentTarget as HTMLElement).style.display = "none";
                                                         }}

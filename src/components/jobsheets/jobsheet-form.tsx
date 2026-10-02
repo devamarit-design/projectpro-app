@@ -36,7 +36,8 @@ import {
     Check,
     AlertTriangle,
     Layers,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -139,15 +140,19 @@ export function JobSheetForm({
     const [workItems, setWorkItems] = useState<JobSheetWorkItem[]>(() => {
         if (initialData?.workItems && initialData.workItems.length > 0) {
             return initialData.workItems.map((item) => {
-                if (!item.details && item.task && item.task.includes("\n")) {
-                    const lines = item.task.split("\n");
+                const currentItem: JobSheetWorkItem = {
+                    ...item,
+                    photos: Array.isArray(item.photos) ? item.photos : []
+                };
+                if (!currentItem.details && currentItem.task && currentItem.task.includes("\n")) {
+                    const lines = currentItem.task.split("\n");
                     return {
-                        ...item,
+                        ...currentItem,
                         task: lines[0].trim(),
                         details: lines.slice(1).join("\n").trim()
                     };
                 }
-                return item;
+                return currentItem;
             });
         }
         return [
@@ -161,10 +166,14 @@ export function JobSheetForm({
                 quantity: "",
                 location: "",
                 status: "in_progress",
-                notes: ""
+                notes: "",
+                photos: []
             }
         ];
     });
+
+    const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
+    const [isUploadingGeneral, setIsUploadingGeneral] = useState(false);
 
     // Manpower (Default count 0 to not clutter)
     const [manpower, setManpower] = useState<JobSheetManpower[]>(
@@ -227,7 +236,12 @@ export function JobSheetForm({
         setWeatherCondition(initialData.weather?.condition || "ท้องฟ้าแจ่มใส (Clear Sky)");
         setTemperature(initialData.weather?.temperature ?? 30);
         if (initialData.workItems && initialData.workItems.length > 0) {
-            setWorkItems(initialData.workItems);
+            setWorkItems(
+                initialData.workItems.map((item) => ({
+                    ...item,
+                    photos: Array.isArray(item.photos) ? item.photos : []
+                }))
+            );
         }
         if (initialData.manpower && initialData.manpower.length > 0) {
             setManpower(initialData.manpower);
@@ -282,7 +296,8 @@ export function JobSheetForm({
             quantity: "",
             location: "",
             status: "in_progress",
-            notes: ""
+            notes: "",
+            photos: []
         };
         setWorkItems((prev) => [...prev, newItem]);
     };
@@ -323,33 +338,48 @@ export function JobSheetForm({
         });
     };
 
-    // Add photo with client-side compression (< 200KB per photo)
+    // Add photo with client-side compression and Firebase Storage upload (< 300KB per photo)
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
         const { compressImage } = await import("@/lib/image-utils");
-        const toastId = toast.loading("กำลังย่อขนาดรูปภาพ...");
+        const { uploadImage } = await import("@/lib/upload");
+        const toastId = toast.loading("กำลังเตรียมและอัปโหลดรูปภาพ...");
+        setIsUploadingGeneral(true);
 
         try {
+            const orgId = initialData?.orgId || currentTeam?.id || currentUser?.orgIds?.[0] || "general";
+            const newPhotoUrls: string[] = [];
+
             for (const file of Array.from(files)) {
                 if (!file.type.startsWith("image/") && !file.name.toLowerCase().endsWith(".heic") && !file.name.toLowerCase().endsWith(".heif")) {
                     toast.error("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
                     continue;
                 }
                 const compressed = await compressImage(file);
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    if (event.target?.result) {
-                        setPhotos((prev) => [...prev, event.target!.result as string]);
-                    }
-                };
-                reader.readAsDataURL(compressed);
+                let photoUrl = "";
+                try {
+                    photoUrl = await uploadImage(compressed, `organizations/${orgId}/jobsheets/general`);
+                } catch (uploadErr) {
+                    console.warn("Storage upload failed, falling back to data URL:", uploadErr);
+                    photoUrl = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (event) => resolve((event.target?.result as string) || "");
+                        reader.readAsDataURL(compressed);
+                    });
+                }
+                if (photoUrl) newPhotoUrls.push(photoUrl);
             }
-            toast.success("เพิ่มรูปภาพเรียบร้อยแล้ว", { id: toastId });
+
+            setPhotos((prev) => [...prev, ...newPhotoUrls]);
+            toast.success(`เพิ่มรูปภาพเรียบร้อยแล้ว (${newPhotoUrls.length} รูป)`, { id: toastId });
         } catch (err) {
-            console.error("Compression error:", err);
-            toast.error("ย่อขนาดรูปภาพไม่สำเร็จ", { id: toastId });
+            console.error("Compression/upload error:", err);
+            toast.error("ย่อขนาดหรืออัปโหลดรูปภาพไม่สำเร็จ", { id: toastId });
+        } finally {
+            setIsUploadingGeneral(false);
+            e.target.value = "";
         }
     };
 
@@ -363,22 +393,32 @@ export function JobSheetForm({
         if (!files || files.length === 0) return;
 
         const { compressImage } = await import("@/lib/image-utils");
-        const toastId = toast.loading("กำลังย่อขนาดรูปภาพสำหรับงานนี้...");
+        const { uploadImage } = await import("@/lib/upload");
+        const toastId = toast.loading("กำลังเตรียมและอัปโหลดรูปภาพสำหรับงานนี้...");
+        setUploadingItemId(itemId);
 
         try {
+            const orgId = initialData?.orgId || currentTeam?.id || currentUser?.orgIds?.[0] || "general";
             const newPhotoUrls: string[] = [];
+
             for (const file of Array.from(files)) {
                 if (!file.type.startsWith("image/") && !file.name.toLowerCase().endsWith(".heic") && !file.name.toLowerCase().endsWith(".heif")) {
                     toast.error("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
                     continue;
                 }
                 const compressed = await compressImage(file);
-                const dataUrl = await new Promise<string>((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (event) => resolve((event.target?.result as string) || "");
-                    reader.readAsDataURL(compressed);
-                });
-                if (dataUrl) newPhotoUrls.push(dataUrl);
+                let photoUrl = "";
+                try {
+                    photoUrl = await uploadImage(compressed, `organizations/${orgId}/jobsheets/work-items`);
+                } catch (uploadErr) {
+                    console.warn("Storage upload failed, falling back to data URL:", uploadErr);
+                    photoUrl = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (event) => resolve((event.target?.result as string) || "");
+                        reader.readAsDataURL(compressed);
+                    });
+                }
+                if (photoUrl) newPhotoUrls.push(photoUrl);
             }
 
             setWorkItems((prev) =>
@@ -392,9 +432,10 @@ export function JobSheetForm({
             );
             toast.success(`แนบรูปภาพสำหรับงานนี้เรียบร้อย (${newPhotoUrls.length} รูป)`, { id: toastId });
         } catch (err) {
-            console.error("Item photo compression error:", err);
+            console.error("Item photo upload error:", err);
             toast.error("แนบรูปภาพไม่สำเร็จ", { id: toastId });
         } finally {
+            setUploadingItemId(null);
             e.target.value = "";
         }
     };
@@ -478,7 +519,8 @@ export function JobSheetForm({
                 quantity: w.quantity || "",
                 location: w.location || "",
                 status: w.status || "in_progress",
-                notes: w.notes || ""
+                notes: w.notes || "",
+                photos: Array.isArray(w.photos) ? w.photos : []
             }))
             .filter((w) => w.task.trim().length > 0 || (w.details && w.details.trim().length > 0));
 
@@ -493,7 +535,8 @@ export function JobSheetForm({
                 quantity: "",
                 location: "",
                 status: "completed" as const,
-                notes: ""
+                notes: "",
+                photos: []
             }
         ];
 
@@ -1074,28 +1117,55 @@ export function JobSheetForm({
                                             <ImageIcon className="w-3.5 h-3.5 text-amber-500" />
                                             <span>รูปถ่ายเฉพาะของงานนี้ ({item.photos?.length || 0})</span>
                                         </label>
-                                        <label className="cursor-pointer text-[11px] text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 font-medium flex items-center gap-1 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-lg border border-amber-500/20 transition-colors">
-                                            <Upload className="w-3 h-3" />
-                                            <span>+ แนบรูปงานนี้</span>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                multiple
-                                                onChange={(e) => handleWorkItemPhotoUpload(item.id, e)}
-                                                className="hidden"
-                                            />
+                                        <label className={cn(
+                                            "cursor-pointer text-[11px] font-medium flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors",
+                                            uploadingItemId === item.id 
+                                                ? "bg-muted text-muted-foreground border-border cursor-not-allowed pointer-events-none"
+                                                : "text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20"
+                                        )}>
+                                            {uploadingItemId === item.id ? (
+                                                <>
+                                                    <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
+                                                    <span>กำลังอัปโหลด...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Upload className="w-3 h-3" />
+                                                    <span>+ แนบรูปงานนี้</span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        multiple
+                                                        disabled={uploadingItemId === item.id}
+                                                        onChange={(e) => handleWorkItemPhotoUpload(item.id, e)}
+                                                        className="hidden"
+                                                    />
+                                                </>
+                                            )}
                                         </label>
                                     </div>
 
                                     {item.photos && item.photos.length > 0 && (
                                         <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 pt-1">
                                             {item.photos.map((photoUrl, photoIdx) => (
-                                                <div key={photoIdx} className="relative aspect-video rounded-lg overflow-hidden border border-border dark:border-white/10 group bg-muted dark:bg-black shadow-2xs">
-                                                    <img src={photoUrl} alt={`Task ${item.task} photo ${photoIdx + 1}`} className="w-full h-full object-cover" />
+                                                <div 
+                                                    key={photoIdx} 
+                                                    className="relative aspect-video rounded-lg overflow-hidden border border-border dark:border-white/10 group bg-muted dark:bg-black shadow-2xs hover:border-amber-500/50 transition-colors"
+                                                >
+                                                    <img 
+                                                        src={photoUrl} 
+                                                        alt={`Task ${item.task} photo ${photoIdx + 1}`} 
+                                                        className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform" 
+                                                        onClick={() => window.open(photoUrl, "_blank")}
+                                                        title="คลิกเพื่อดูรูปภาพขนาดเต็ม"
+                                                    />
                                                     <button
                                                         type="button"
-                                                        onClick={() => removeWorkItemPhoto(item.id, photoIdx)}
-                                                        className="absolute top-1 right-1 p-0.5 rounded-full bg-black/70 text-white hover:bg-rose-500 transition-colors cursor-pointer"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            removeWorkItemPhoto(item.id, photoIdx);
+                                                        }}
+                                                        className="absolute top-1 right-1 p-1 rounded-full bg-black/75 hover:bg-rose-500 text-white transition-colors cursor-pointer shadow-xs"
                                                         title="ลบรูปนี้"
                                                     >
                                                         <X className="w-3 h-3" />
@@ -1128,16 +1198,31 @@ export function JobSheetForm({
                         <Shield className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                         ข้อมูลผู้จัดทำและลงนามท้ายแผ่น (Signatures)
                     </span>
-                    <label className="cursor-pointer text-[11px] text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 flex items-center gap-1 font-medium">
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>{photos.length > 0 ? `${photos.length} รูปถ่าย` : "+ แนบรูปหน้างาน (ถ้ามี)"}</span>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handlePhotoUpload}
-                            className="hidden"
-                        />
+                    <label className={cn(
+                        "cursor-pointer text-[11px] font-medium flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors",
+                        isUploadingGeneral
+                            ? "bg-muted text-muted-foreground border-border cursor-not-allowed pointer-events-none"
+                            : "text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20"
+                    )}>
+                        {isUploadingGeneral ? (
+                            <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                                <span>กำลังอัปโหลดรูป...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>{photos.length > 0 ? `${photos.length} รูปถ่าย` : "+ แนบรูปหน้างาน (ถ้ามี)"}</span>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    disabled={isUploadingGeneral}
+                                    onChange={handlePhotoUpload}
+                                    className="hidden"
+                                />
+                            </>
+                        )}
                     </label>
                 </div>
 
@@ -1178,12 +1263,25 @@ export function JobSheetForm({
                     <div className="pt-2 border-t border-border/60 dark:border-white/5">
                         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                             {photos.map((src, idx) => (
-                                <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border border-border dark:border-white/10 group bg-muted dark:bg-black shadow-2xs">
-                                    <img src={src} alt="site" className="w-full h-full object-cover" />
+                                <div 
+                                    key={idx} 
+                                    className="relative aspect-video rounded-lg overflow-hidden border border-border dark:border-white/10 group bg-muted dark:bg-black shadow-2xs hover:border-amber-500/50 transition-colors"
+                                >
+                                    <img 
+                                        src={src} 
+                                        alt={`site photo ${idx + 1}`} 
+                                        className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform" 
+                                        onClick={() => window.open(src, "_blank")}
+                                        title="คลิกเพื่อดูรูปภาพขนาดเต็ม"
+                                    />
                                     <button
                                         type="button"
-                                        onClick={() => removePhoto(idx)}
-                                        className="absolute top-1 right-1 p-0.5 rounded-full bg-black/70 text-white hover:bg-rose-500 transition-colors cursor-pointer"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            removePhoto(idx);
+                                        }}
+                                        className="absolute top-1 right-1 p-1 rounded-full bg-black/75 hover:bg-rose-500 text-white transition-colors cursor-pointer shadow-xs"
+                                        title="ลบรูปนี้"
                                     >
                                         <X className="w-3 h-3" />
                                     </button>

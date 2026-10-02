@@ -144,7 +144,10 @@ export function subscribeJobSheets(
                         createdByRole: data.createdByRole || "",
                         createdByAvatar: data.createdByAvatar || "",
                         weather: data.weather || { condition: "ท้องฟ้าแจ่มใส (Clear Sky)" },
-                        workItems: data.workItems || [],
+                        workItems: (data.workItems || []).map((w: any) => ({
+                            ...w,
+                            photos: Array.isArray(w.photos) ? w.photos : []
+                        })),
                         manpower: data.manpower || [],
                         equipment: data.equipment || "",
                         materialsReceived: data.materialsReceived || "",
