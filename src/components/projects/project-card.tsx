@@ -172,126 +172,189 @@ export function ProjectCard({ project, columns = 1, priority = false }: ProjectC
                         "relative z-10 flex flex-col h-full justify-between",
                         columns === 1 ? "p-4 sm:p-5" : "p-3 sm:p-4"
                     )}>
-                        {/* Top Row */}
-                        <div className="flex justify-between items-start gap-2">
-                            <div className="flex flex-col gap-1 flex-1 min-w-0 pr-1">
-                                <h3 
-                                    className={cn(
-                                        "font-bold leading-snug drop-shadow-md tracking-tight text-white dark:text-foreground line-clamp-2 break-words",
-                                        columns === 1 ? "text-lg sm:text-xl" : "text-sm sm:text-base"
-                                    )}
-                                    title={project.name}
-                                >
-                                    {project.name}
-                                </h3>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                    {project.client && (
-                                        <p 
-                                            className={cn(
-                                                "text-white/80 dark:text-foreground/70 flex items-center gap-1 font-medium drop-shadow-sm",
-                                                columns === 1 ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs"
-                                            )}
-                                            title={project.client}
-                                        >
-                                            <User className={cn(columns === 1 ? "w-3.5 h-3.5" : "w-3 h-3 shrink-0")} />
-                                            <span className="truncate max-w-[120px] sm:max-w-[150px]">{project.client}</span>
-                                        </p>
-                                    )}
-                                    <span className={cn(
-                                        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border backdrop-blur-sm shadow-xs shrink-0",
-                                        theme.badgeBg
-                                    )}>
-                                        <ThemeIcon className={cn("w-2.5 h-2.5 shrink-0", theme.iconColor)} />
-                                        <span className="truncate max-w-[110px]">{theme.categoryLabel}</span>
-                                    </span>
+                        {/* Top Area */}
+                        {columns === 1 ? (
+                            /* 1 Column Layout: Wide card */
+                            <div className="flex justify-between items-start gap-4">
+                                <div className="flex flex-col gap-1.5 flex-1 min-w-0 pr-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className={cn(
+                                            "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border backdrop-blur-sm shadow-xs shrink-0",
+                                            theme.badgeBg
+                                        )}>
+                                            <ThemeIcon className={cn("w-3 h-3 shrink-0", theme.iconColor)} />
+                                            <span>{theme.categoryLabel}</span>
+                                        </span>
+                                        {project.client && (
+                                            <p 
+                                                className="text-white/80 dark:text-foreground/70 flex items-center gap-1 font-medium drop-shadow-sm text-xs sm:text-sm"
+                                                title={project.client}
+                                            >
+                                                <User className="w-3.5 h-3.5 shrink-0" />
+                                                <span className="truncate max-w-[200px]">{project.client}</span>
+                                            </p>
+                                        )}
+                                    </div>
+                                    <h3 
+                                        className="font-bold leading-snug drop-shadow-md tracking-tight text-white dark:text-foreground text-lg sm:text-xl line-clamp-2"
+                                        title={project.name}
+                                    >
+                                        {project.name}
+                                    </h3>
                                 </div>
-                            </div>
 
-                            {/* Right Controls: Quick Cover Edit + Real-time Weather Symbol + Status Dot/Badge */}
-                            <div className="flex items-center gap-1.5 shrink-0">
-                                {/* Quick Cover Edit Button (subtle on hover) */}
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault()
-                                        e.stopPropagation()
-                                        setShowCoverModal(true)
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center gap-1 px-2 py-0.5 sm:py-1 rounded-full bg-black/60 hover:bg-black/80 text-white/90 hover:text-white border border-white/20 hover:border-white/40 backdrop-blur-md text-[10px] sm:text-xs font-medium shadow-sm transition-all duration-200 active:scale-95 shrink-0"
-                                    title="เปลี่ยนรูปหน้าปกโครงการ"
-                                >
-                                    <Camera className="w-3 h-3 text-primary" />
-                                    <span className="hidden sm:inline">เปลี่ยนปก</span>
-                                </button>
-                                {weather && (() => {
-                                    const WeatherIcon = weather.icon
-                                    return (
-                                        <div
-                                            onClick={(e) => {
-                                                if (mapsUrl) {
-                                                    e.preventDefault()
-                                                    e.stopPropagation()
-                                                    window.open(mapsUrl, "_blank", "noopener,noreferrer")
-                                                }
-                                            }}
-                                            role={mapsUrl ? "button" : undefined}
-                                            tabIndex={mapsUrl ? 0 : undefined}
-                                            className={cn(
-                                                "group/weather flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:py-1 rounded-full",
-                                                "bg-black/50 dark:bg-black/60 hover:bg-black/75 backdrop-blur-md",
-                                                "border border-white/20 text-white shadow-sm transition-all duration-200",
-                                                mapsUrl ? "cursor-pointer hover:scale-105 active:scale-95 hover:border-white/40" : "cursor-default"
-                                            )}
-                                            title={`สภาพอากาศ Real-time: ${weather.label} ${weather.temperature}°C (${weather.locationName})${mapsUrl ? " • คลิกเพื่อเปิดพิกัดแผนที่ (Google Maps)" : ""}`}
-                                        >
-                                            {/* Live pulsing green indicator */}
-                                            <span className="relative flex h-1.5 w-1.5 shrink-0">
-                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                                            </span>
-
-                                            {/* Weather Icon */}
-                                            <WeatherIcon className={cn("w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0", weather.iconColor)} />
-
-                                            {/* Temperature */}
-                                            <span className="text-[11px] sm:text-xs font-bold tabular-nums text-white drop-shadow-sm">
-                                                {weather.temperature}°
-                                            </span>
-
-                                            {/* Location Name in 1-column mode */}
-                                            {columns === 1 && (
+                                {/* Right Controls */}
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    {/* Quick Cover Edit Button (subtle on hover) */}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                            setShowCoverModal(true)
+                                        }}
+                                        className="opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center gap-1 px-2 py-0.5 sm:py-1 rounded-full bg-black/60 hover:bg-black/80 text-white/90 hover:text-white border border-white/20 hover:border-white/40 backdrop-blur-md text-[10px] sm:text-xs font-medium shadow-sm transition-all duration-200 active:scale-95 shrink-0"
+                                        title="เปลี่ยนรูปหน้าปกโครงการ"
+                                    >
+                                        <Camera className="w-3 h-3 text-primary" />
+                                        <span className="hidden sm:inline">เปลี่ยนปก</span>
+                                    </button>
+                                    {weather && (() => {
+                                        const WeatherIcon = weather.icon
+                                        return (
+                                            <div
+                                                onClick={(e) => {
+                                                    if (mapsUrl) {
+                                                        e.preventDefault()
+                                                        e.stopPropagation()
+                                                        window.open(mapsUrl, "_blank", "noopener,noreferrer")
+                                                    }
+                                                }}
+                                                role={mapsUrl ? "button" : undefined}
+                                                tabIndex={mapsUrl ? 0 : undefined}
+                                                className={cn(
+                                                    "group/weather flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:py-1 rounded-full",
+                                                    "bg-black/50 dark:bg-black/60 hover:bg-black/75 backdrop-blur-md",
+                                                    "border border-white/20 text-white shadow-sm transition-all duration-200",
+                                                    mapsUrl ? "cursor-pointer hover:scale-105 active:scale-95 hover:border-white/40" : "cursor-default"
+                                                )}
+                                                title={`สภาพอากาศ Real-time: ${weather.label} ${weather.temperature}°C (${weather.locationName})${mapsUrl ? " • คลิกเพื่อเปิดพิกัดแผนที่ (Google Maps)" : ""}`}
+                                            >
+                                                <span className="relative flex h-1.5 w-1.5 shrink-0">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                                </span>
+                                                <WeatherIcon className={cn("w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0", weather.iconColor)} />
+                                                <span className="text-[11px] sm:text-xs font-bold tabular-nums text-white drop-shadow-sm">
+                                                    {weather.temperature}°
+                                                </span>
                                                 <span className="hidden sm:inline-block text-[10px] text-white/80 font-medium truncate max-w-[120px] border-l border-white/20 pl-1.5">
                                                     {weather.locationName}
                                                 </span>
-                                            )}
-
-                                            {/* Map Pin Indicator */}
-                                            {mapsUrl && (
-                                                <MapPin className="w-2.5 h-2.5 text-rose-400/90 group-hover/weather:text-rose-300 transition-colors shrink-0" />
-                                            )}
-                                        </div>
-                                    )
-                                })()}
-
-                                {/* Status: Dot or Badge */}
-                                {showStatusAsDot ? (
-                                    <div
-                                        className={cn(
-                                            "w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0 shadow-sm border border-white/20",
-                                            dotColor
-                                        )}
-                                        title={label}
-                                    />
-                                ) : (
+                                                {mapsUrl && (
+                                                    <MapPin className="w-2.5 h-2.5 text-rose-400/90 group-hover/weather:text-rose-300 transition-colors shrink-0" />
+                                                )}
+                                            </div>
+                                        )
+                                    })()}
                                     <span className={cn(
                                         "px-2 sm:px-2.5 py-0.5 sm:py-1 backdrop-blur-sm rounded-lg text-[9px] sm:text-[10px] font-bold border uppercase tracking-wider shadow-sm shrink-0",
                                         badgeStyle
                                     )}>
                                         {label}
                                     </span>
-                                )}
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            /* 2 or 3 Columns Layout (Mobile Grid): Title gets 100% full width so Thai project name is never truncated */
+                            <div className="flex flex-col gap-1.5 w-full">
+                                {/* Top Utility Bar: Category on Left, Weather & Status Dot on Right */}
+                                <div className="flex items-center justify-between gap-1 w-full">
+                                    <span className={cn(
+                                        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border backdrop-blur-sm shadow-xs shrink-0 max-w-[45%]",
+                                        theme.badgeBg
+                                    )}>
+                                        <ThemeIcon className={cn("w-2.5 h-2.5 shrink-0", theme.iconColor)} />
+                                        <span className="truncate">{theme.categoryLabel}</span>
+                                    </span>
+
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        {weather && (() => {
+                                            const WeatherIcon = weather.icon
+                                            return (
+                                                <div
+                                                    onClick={(e) => {
+                                                        if (mapsUrl) {
+                                                            e.preventDefault()
+                                                            e.stopPropagation()
+                                                            window.open(mapsUrl, "_blank", "noopener,noreferrer")
+                                                        }
+                                                    }}
+                                                    role={mapsUrl ? "button" : undefined}
+                                                    tabIndex={mapsUrl ? 0 : undefined}
+                                                    className={cn(
+                                                        "group/weather flex items-center gap-1 px-1.5 py-0.5 rounded-full",
+                                                        "bg-black/50 dark:bg-black/60 hover:bg-black/75 backdrop-blur-md",
+                                                        "border border-white/20 text-white shadow-sm transition-all duration-200",
+                                                        mapsUrl ? "cursor-pointer active:scale-95 hover:border-white/40" : "cursor-default"
+                                                    )}
+                                                    title={`สภาพอากาศ Real-time: ${weather.label} ${weather.temperature}°C (${weather.locationName})${mapsUrl ? " • คลิกเพื่อเปิดพิกัดแผนที่ (Google Maps)" : ""}`}
+                                                >
+                                                    <span className="relative flex h-1.5 w-1.5 shrink-0">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                                    </span>
+                                                    <WeatherIcon className={cn("w-2.5 h-2.5 shrink-0", weather.iconColor)} />
+                                                    <span className="text-[10px] font-bold tabular-nums text-white drop-shadow-sm">
+                                                        {weather.temperature}°
+                                                    </span>
+                                                    {mapsUrl && (
+                                                        <MapPin className="w-2 h-2 text-rose-400/90 shrink-0" />
+                                                    )}
+                                                </div>
+                                            )
+                                        })()}
+
+                                        {showStatusAsDot ? (
+                                            <div
+                                                className={cn(
+                                                    "w-2.5 h-2.5 rounded-full shrink-0 shadow-sm border border-white/20",
+                                                    dotColor
+                                                )}
+                                                title={label}
+                                            />
+                                        ) : (
+                                            <span className={cn(
+                                                "px-1.5 py-0.5 backdrop-blur-sm rounded text-[9px] font-bold border uppercase tracking-wider shadow-sm shrink-0",
+                                                badgeStyle
+                                            )}>
+                                                {label}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Project Title (FULL 100% WIDTH OF CARD - no longer squeezed!) */}
+                                <div className="space-y-0.5 pt-0.5">
+                                    <h3 
+                                        className="font-bold leading-snug drop-shadow-md tracking-tight text-white dark:text-foreground text-sm sm:text-base line-clamp-2"
+                                        title={project.name}
+                                    >
+                                        {project.name}
+                                    </h3>
+
+                                    {project.client && (
+                                        <p 
+                                            className="text-white/80 dark:text-foreground/70 flex items-center gap-1 font-medium drop-shadow-sm text-[11px] sm:text-xs"
+                                            title={project.client}
+                                        >
+                                            <User className="w-3 h-3 shrink-0" />
+                                            <span className="truncate max-w-[140px] sm:max-w-[170px]">{project.client}</span>
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Bottom Row */}
                         <div className="mt-auto pt-2 sm:pt-3 space-y-1.5 sm:space-y-2">
