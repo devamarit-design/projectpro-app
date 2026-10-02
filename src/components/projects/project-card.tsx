@@ -173,28 +173,36 @@ export function ProjectCard({ project, columns = 1, priority = false }: ProjectC
                         columns === 1 ? "p-4 sm:p-5" : "p-3 sm:p-4"
                     )}>
                         {/* Top Row */}
-                        <div className="flex justify-between items-start gap-1.5">
-                            <div className="flex flex-col gap-0.5 sm:gap-1 flex-1 min-w-0 pr-1">
-                                <h3 className={cn(
-                                    "font-bold leading-tight drop-shadow-md tracking-tight text-white dark:text-foreground truncate",
-                                    columns === 1 ? "text-lg sm:text-xl" : "text-sm sm:text-lg"
-                                )}>
+                        <div className="flex justify-between items-start gap-2">
+                            <div className="flex flex-col gap-1 flex-1 min-w-0 pr-1">
+                                <h3 
+                                    className={cn(
+                                        "font-bold leading-snug drop-shadow-md tracking-tight text-white dark:text-foreground line-clamp-2 break-words",
+                                        columns === 1 ? "text-lg sm:text-xl" : "text-sm sm:text-base"
+                                    )}
+                                    title={project.name}
+                                >
                                     {project.name}
                                 </h3>
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                    <p className={cn(
-                                        "text-white/80 dark:text-foreground/70 flex items-center gap-1 font-medium drop-shadow-sm truncate",
-                                        columns === 1 ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs"
-                                    )}>
-                                        <User className={cn(columns === 1 ? "w-3.5 h-3.5" : "w-3 h-3")} />
-                                        <span className="truncate">{project.client}</span>
-                                    </p>
+                                    {project.client && (
+                                        <p 
+                                            className={cn(
+                                                "text-white/80 dark:text-foreground/70 flex items-center gap-1 font-medium drop-shadow-sm",
+                                                columns === 1 ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs"
+                                            )}
+                                            title={project.client}
+                                        >
+                                            <User className={cn(columns === 1 ? "w-3.5 h-3.5" : "w-3 h-3 shrink-0")} />
+                                            <span className="truncate max-w-[120px] sm:max-w-[150px]">{project.client}</span>
+                                        </p>
+                                    )}
                                     <span className={cn(
-                                        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border backdrop-blur-sm shadow-xs",
+                                        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border backdrop-blur-sm shadow-xs shrink-0",
                                         theme.badgeBg
                                     )}>
                                         <ThemeIcon className={cn("w-2.5 h-2.5 shrink-0", theme.iconColor)} />
-                                        <span className="truncate max-w-[100px]">{theme.categoryLabel}</span>
+                                        <span className="truncate max-w-[110px]">{theme.categoryLabel}</span>
                                     </span>
                                 </div>
                             </div>

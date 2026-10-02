@@ -496,7 +496,7 @@ export default function ProjectsPage() {
                                             return (
                                                 <div key={project.id} className={cn(
                                                     "h-full",
-                                                    columns === 1 ? "h-72 sm:h-80" : "h-64 sm:h-72"
+                                                    columns === 1 ? "min-h-[18rem] sm:min-h-[20rem]" : "min-h-[16.5rem] sm:min-h-[18.5rem]"
                                                 )}>
                                                     <ProjectCard
                                                         project={{
