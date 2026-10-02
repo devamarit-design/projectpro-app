@@ -427,7 +427,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
             {/* 1. Main Weather & Site Forecast Hero Card */}
             <div
                 className={cn(
-                    "relative rounded-3xl border border-border/80 dark:border-white/10 shadow-lg dark:shadow-2xl transition-all duration-300 group min-h-[280px] sm:min-h-[300px] flex flex-col justify-between p-4 sm:p-6 md:p-8 bg-card/60 dark:bg-transparent overflow-hidden",
+                    "relative rounded-3xl border border-border/50 dark:border-white/10 shadow-none dark:shadow-2xl transition-all duration-300 group min-h-[280px] sm:min-h-[300px] flex flex-col justify-between p-4 sm:p-6 md:p-8 bg-card/95 dark:bg-transparent overflow-hidden",
                     isAdmin ? "lg:col-span-7 xl:col-span-8" : "lg:col-span-12"
                 )}
             >
@@ -765,7 +765,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                     {/* Financial Card */}
                     <Link
                         href="/financial"
-                        className="relative flex-1 group overflow-hidden rounded-3xl border border-amber-500/30 hover:border-amber-500/60 dark:border-amber-500/20 dark:hover:border-amber-500/50 p-6 min-h-[160px] shadow-lg hover:shadow-xl dark:shadow-xl dark:hover:shadow-2xl transition-all duration-300 flex flex-col justify-between bg-gradient-to-br from-amber-50/70 via-white to-orange-50/50 dark:bg-none"
+                        className="relative flex-1 group overflow-hidden rounded-3xl border border-amber-500/30 hover:border-amber-500/60 dark:border-amber-500/20 dark:hover:border-amber-500/50 p-6 min-h-[160px] shadow-none hover:shadow-sm dark:shadow-xl dark:hover:shadow-2xl transition-all duration-300 flex flex-col justify-between bg-gradient-to-br from-amber-50/70 via-white to-orange-50/50 dark:bg-none"
                     >
                         {/* Background Image */}
                         <img
@@ -809,7 +809,7 @@ export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
                     {/* Team & Assets Card */}
                     <Link
                         href="/team"
-                        className="relative flex-1 group overflow-hidden rounded-3xl border border-blue-500/30 hover:border-blue-500/60 dark:border-blue-500/20 dark:hover:border-blue-500/50 p-6 min-h-[160px] shadow-lg hover:shadow-xl dark:shadow-xl dark:hover:shadow-2xl transition-all duration-300 flex flex-col justify-between bg-gradient-to-br from-blue-50/70 via-white to-cyan-50/50 dark:bg-none"
+                        className="relative flex-1 group overflow-hidden rounded-3xl border border-blue-500/30 hover:border-blue-500/60 dark:border-blue-500/20 dark:hover:border-blue-500/50 p-6 min-h-[160px] shadow-none hover:shadow-sm dark:shadow-xl dark:hover:shadow-2xl transition-all duration-300 flex flex-col justify-between bg-gradient-to-br from-blue-50/70 via-white to-cyan-50/50 dark:bg-none"
                     >
                         {/* Background Image */}
                         <img

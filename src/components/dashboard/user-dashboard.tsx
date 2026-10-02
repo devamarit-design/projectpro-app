@@ -25,20 +25,26 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
     const { t } = useTranslation()
 
     return (
-        <div className="pb-20 space-y-6">
+        <div className="pb-20">
             {!hideHeader && (
                 <>
                     {/* 1. Banner Carousel */}
                     <DashboardBanner />
 
-                    {/* 1.5. Notice Ticker */}
-                    <NoticeTicker />
+                    {/* 2. Hero Section overlapping banner bottom for seamless fade */}
+                    <div className="-mt-16 relative z-20">
+                        <DashboardHeader />
+                    </div>
 
-                    {/* 2. Hero Section (Real Weather & Financial/Team Bento Grid) */}
-                    <DashboardHeader />
+                    {/* 1.5. Notice Ticker */}
+                    <div className="mt-5">
+                        <NoticeTicker />
+                    </div>
 
                     {/* 3. Quick Actions Grid (Icons) */}
-                    <QuickActionsGrid />
+                    <div className="mt-5">
+                        <QuickActionsGrid />
+                    </div>
 
                     {/* 4. Team Wall Widget */}
                     <div className="w-full mt-4 mb-6">
@@ -66,7 +72,7 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
                                 {t.dashboard.view_all || "View All"}
                             </Link>
                         </div>
-                        <div className="bg-card/70 dark:bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-border dark:border-white/10 shadow-sm">
+                        <div className="bg-card/70 dark:bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-border dark:border-white/10 shadow-none dark:shadow-sm">
                             <WallFeed variant="widget" />
                         </div>
                     </div>
