@@ -846,37 +846,7 @@ export function JobSheetPreviewModal({
                                                                         <span className="font-bold text-zinc-900 break-words">{item.quantity}</span>
                                                                     </div>
                                                                 )}
-                                                                {/* รูปถ่ายแนบเฉพาะของงานนี้ (ถ้ามี) */}
-                                                                {item.photos && item.photos.length > 0 && (
-                                                                    <div className="mt-2.5 pt-2 border-t border-zinc-200/80">
-                                                                        <span className="text-[10px] text-zinc-500 font-semibold block mb-1.5 flex items-center gap-1">
-                                                                            <ImageIcon className="w-3 h-3 text-sky-600" />
-                                                                            รูปแนบงานนี้ ({item.photos.length}):
-                                                                        </span>
-                                                                        <div className="flex flex-wrap gap-1.5">
-                                                                            {item.photos.map((pSrc, pIdx) => {
-                                                                                const proxied = pSrc.startsWith("http") && !pSrc.includes("/api/proxy-image")
-                                                                                    ? `/api/proxy-image?url=${encodeURIComponent(pSrc)}`
-                                                                                    : pSrc;
-                                                                                return (
-                                                                                    <div 
-                                                                                        key={pIdx} 
-                                                                                        className="w-14 h-14 rounded border border-zinc-300 overflow-hidden bg-zinc-100 shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
-                                                                                        onClick={() => window.open(pSrc, "_blank")}
-                                                                                        title="คลิกเพื่อดูรูปขนาดเต็ม"
-                                                                                    >
-                                                                                        <img 
-                                                                                            src={proxied} 
-                                                                                            alt={`Item ${idx + 1} photo ${pIdx + 1}`} 
-                                                                                            className="w-full h-full object-cover" 
-                                                                                            crossOrigin="anonymous"
-                                                                                        />
-                                                                                    </div>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
+
                                                             </td>
 
                                                             {/* 4. สถานะ (Compact Icon + Color Badge เพื่อเพิ่มพื้นที่ให้หมายเหตุ) */}
@@ -939,6 +909,63 @@ export function JobSheetPreviewModal({
                                     </table>
                                 </div>
                             </div>
+
+                            {/* รูปแนบแยกตามงาน (Photo Attachments by Work Item) */}
+                            {(() => {
+                                const itemsWithPhotos = (jobsheet.workItems || []).filter(item => item.photos && item.photos.length > 0);
+                                if (itemsWithPhotos.length === 0) return null;
+                                return (
+                                    <div className="mb-6">
+                                        <h4 className="font-bold text-zinc-900 uppercase tracking-wider text-xs mb-3 flex items-center gap-1.5">
+                                            <ImageIcon className="w-4 h-4 text-sky-600" />
+                                            รูปแนบประกอบงาน (Work Item Photos)
+                                        </h4>
+                                        <div className="space-y-4">
+                                            {itemsWithPhotos.map((item, itemIdx) => {
+                                                const originalIdx = (jobsheet.workItems || []).indexOf(item);
+                                                const taskTitle = item.task?.trim() || item.projectName?.trim() || `งาน ${originalIdx + 1}`;
+                                                return (
+                                                    <div key={item.id || itemIdx} className="border border-zinc-200 rounded-none p-3" style={{ borderRadius: 0 }}>
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-zinc-900 text-white text-[11px] font-bold shrink-0">
+                                                                {originalIdx + 1}
+                                                            </span>
+                                                            <span className="text-xs font-bold text-zinc-900 break-words leading-snug">{taskTitle}</span>
+                                                            <span className="text-[10px] text-zinc-400 font-medium">({item.photos!.length} รูป)</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-4 gap-2">
+                                                            {item.photos!.map((pSrc, pIdx) => {
+                                                                const proxied = pSrc.startsWith("http") && !pSrc.includes("/api/proxy-image")
+                                                                    ? `/api/proxy-image?url=${encodeURIComponent(pSrc)}`
+                                                                    : pSrc;
+                                                                return (
+                                                                    <div
+                                                                        key={pIdx}
+                                                                        className="aspect-video border border-zinc-200 overflow-hidden bg-zinc-100 cursor-pointer hover:opacity-85 transition-opacity"
+                                                                        style={{ borderRadius: 0 }}
+                                                                        onClick={() => window.open(pSrc, "_blank")}
+                                                                        title="คลิกเพื่อดูรูปขนาดเต็ม"
+                                                                    >
+                                                                        <img
+                                                                            src={proxied}
+                                                                            alt={`งาน ${originalIdx + 1} รูป ${pIdx + 1}`}
+                                                                            className="w-full h-full object-cover"
+                                                                            crossOrigin="anonymous"
+                                                                            onError={(e) => {
+                                                                                (e.currentTarget as HTMLElement).style.display = "none";
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                             {/* Obstacles & Safety Notes */}
                             {(jobsheet.obstacles || jobsheet.safetyNotes) && (
