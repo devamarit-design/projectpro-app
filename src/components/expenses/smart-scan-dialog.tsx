@@ -1,7 +1,6 @@
 import { useProjects, ExpenseItem } from "@/context/project-context"
 import { useState, useEffect } from "react"
 import { Camera, Upload, Loader2, CheckCircle, Save } from "lucide-react"
-import { analyzeReceipt } from "@/lib/ai-service"
 import { uploadWithThumbnail } from "@/lib/upload"
 import { useOrganization } from "@/context/organization-context"
 import { toast } from "sonner"
@@ -87,10 +86,23 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
             const token = await auth.currentUser?.getIdToken(true)
             const orgId = currentOrg?.id || "default"
             if (!token) throw new Error("กรุณาเข้าสู่ระบบใหม่อีกครั้ง (Authentication required)")
-            const result = await analyzeReceipt(imageToAnalyze, token, orgId)
 
-            if (!result.success) {
-                throw new Error(result.error)
+            const response = await fetch("/api/scan-receipt", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    image: imageToAnalyze,
+                    orgId: orgId
+                })
+            })
+
+            const result = await response.json()
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || "Failed to analyze receipt")
             }
 
             const data = result.data
