@@ -31,7 +31,8 @@ import {
     Megaphone,
     Newspaper,
     GanttChartSquare,
-    ClipboardList
+    ClipboardList,
+    Package
 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -95,6 +96,7 @@ export function MobileNav() {
                 {
                     title: "การสื่อสารและเอกสาร",
                     items: [
+                        { href: "/catalog", label: "Catalog (วัสดุ)", icon: Package, color: "text-amber-500 bg-amber-500/10" },
                         { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList, color: "text-amber-400 bg-amber-500/10" },
                         { href: "/wall", label: "Team Wall", icon: Newspaper, color: "text-pink-500 bg-pink-500/10" },
                     ]
@@ -122,6 +124,7 @@ export function MobileNav() {
             {
                 title: "ข้อมูล", // Data
                 items: [
+                    { href: "/catalog", label: "Catalog (วัสดุ & สินค้า)", icon: Package, color: "text-amber-500 bg-amber-500/10" },
                     { href: "/customers", label: t.common.customers, icon: Users, color: "text-orange-500 bg-orange-500/10" },
                     { href: "/partners", label: t.common.partners, icon: Handshake, color: "text-cyan-500 bg-cyan-500/10" },
                 ]
@@ -155,12 +158,14 @@ export function MobileNav() {
     const addItems = React.useMemo(() => {
         if (isGuest) {
             return [
+                { href: "/catalog", label: "เพิ่มวัสดุ/สินค้า", icon: Package, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
                 { href: "/jobsheets", label: "เขียน JobSheet", icon: ClipboardList, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
                 { href: "/wall?action=new", label: "Post Wall", icon: Newspaper, color: "text-pink-500 from-pink-500/20 to-pink-500/5" },
             ]
         }
 
         return [
+            { href: "/catalog", label: "เพิ่มวัสดุ/สินค้า", icon: Package, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },
             ...(hasPermission(currentTeam?.role, "INCOME_CREATE") ? [{ href: "/income?action=new", label: t.finance.income, icon: FileText, color: "text-green-500 from-green-500/20 to-green-500/5" }] : []),
             { href: "/expenses?action=new", label: t.finance.expense, icon: CreditCard, color: "text-red-500 from-red-500/20 to-red-500/5" },
             { href: "/jobsheets", label: "เขียน JobSheet", icon: ClipboardList, color: "text-amber-500 from-amber-500/20 to-amber-500/5" },

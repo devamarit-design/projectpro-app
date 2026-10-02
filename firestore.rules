@@ -24,7 +24,10 @@ service cloud.firestore {
          get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerId == request.auth.uid) ||
         // 2. Check User Profile (OrgIds list - Source of Truth)
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('orgIds', []))
+         orgId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('orgIds', [])) ||
+        // 3. Check Organization Document memberIds array (For Guests and newly added team members)
+        (exists(/databases/$(database)/documents/organizations/$(orgId)) && 
+         request.auth.uid in get(/databases/$(database)/documents/organizations/$(orgId)).data.get('memberIds', []))
       );
     }
     
@@ -97,6 +100,11 @@ service cloud.firestore {
       }
 
       match /jobsheets/{jobsheetId} {
+        allow read: if isAuthenticated() && isOrgMember(orgId);
+        allow create, update, delete: if isAuthenticated() && isOrgMember(orgId);
+      }
+
+      match /catalog_items/{itemId} {
         allow read: if isAuthenticated() && isOrgMember(orgId);
         allow create, update, delete: if isAuthenticated() && isOrgMember(orgId);
       }
@@ -195,6 +203,13 @@ service cloud.firestore {
     }
 
     match /jobsheets/{docId} {
+      allow read: if resourceBelongsToUserOrg();
+      allow create: if requestBelongsToUserOrg();
+      allow update: if resourceBelongsToUserOrg();
+      allow delete: if resourceBelongsToUserOrg();
+    }
+
+    match /catalog_items/{docId} {
       allow read: if resourceBelongsToUserOrg();
       allow create: if requestBelongsToUserOrg();
       allow update: if resourceBelongsToUserOrg();

@@ -27,7 +27,8 @@ import {
     GanttChartSquare,
     MessageSquare,
     ClipboardList,
-    Globe
+    Globe,
+    Package
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -50,6 +51,7 @@ export function Sidebar({ className }: { className?: string }) {
             title: "MENU",
             items: [
                 { href: "/", label: t.common.dashboard, icon: LayoutDashboard },
+                { href: "/catalog", label: "Catalog (วัสดุ & สินค้า)", icon: Package },
                 { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList },
                 { href: "/wall", label: "Team Wall", icon: Newspaper },
             ]
@@ -69,6 +71,7 @@ export function Sidebar({ className }: { className?: string }) {
             items: [
                 { href: "/", label: t.common.dashboard, icon: LayoutDashboard },
                 { href: "/projects", label: t.common.projects, icon: FolderKanban },
+                { href: "/catalog", label: "Catalog (วัสดุ & สินค้า)", icon: Package },
                 { href: "/income", label: t.common.income, icon: FileText, permission: "INCOME_CREATE" },
                 { href: "/expenses", label: t.common.expenses, icon: CreditCard },
                 { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList },
@@ -91,6 +94,7 @@ export function Sidebar({ className }: { className?: string }) {
         {
             title: "ข้อมูล", // Data
             items: [
+                { href: "/catalog", label: "Catalog (วัสดุ & สินค้า)", icon: Package },
                 { href: "/customers", label: t.common.customers, icon: Users },
                 { href: "/partners", label: t.common.partners, icon: Handshake },
             ]

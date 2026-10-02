@@ -111,7 +111,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  console.log("[System] Current Version: 1.2.1 - RootLayout Mounted")
+  console.log("[System] Current Version: 1.2.3 - RootLayout Mounted")
   return (
     <html lang="th" suppressHydrationWarning>
       <body className={`${promptFont.variable} ${kanit.variable} ${sarabun.variable} ${inter.variable} ${ibmPlexSansThai.variable} font-sans antialiased overflow-x-hidden`} suppressHydrationWarning>
