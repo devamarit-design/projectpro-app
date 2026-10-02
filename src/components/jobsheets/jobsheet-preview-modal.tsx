@@ -519,77 +519,71 @@ export function JobSheetPreviewModal({
 
                         {/* Desktop Action Buttons */}
                         <div className="flex items-center gap-2">
-                            <Button
+                            <button
                                 type="button"
-                                variant="outline"
-                                size="sm"
                                 onClick={() => setShowSignatures(!showSignatures)}
-                                className={`h-8 text-xs border transition-colors px-3 ${
+                                className={`h-8 text-xs font-medium rounded-md px-3 inline-flex items-center justify-center transition-colors border ${
                                     showSignatures
-                                        ? "bg-amber-500/20 border-amber-500/50 text-amber-300"
-                                        : "border-white/10 text-white/60 hover:bg-white/5"
+                                        ? "bg-amber-500/20 border-amber-500/50 text-amber-300 hover:bg-amber-500/30"
+                                        : "bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white"
                                 }`}
                                 title="สลับการแสดงผลช่องลงนามท้ายเอกสาร"
                             >
-                                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                                <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
                                 {showSignatures ? "มีลงนาม" : "ไม่มีลงนาม"}
-                            </Button>
+                            </button>
 
                             {onEdit && canEdit && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
+                                <button
+                                    type="button"
                                     onClick={() => {
                                         onOpenChange(false);
                                         onEdit(jobsheet);
                                     }}
-                                    className="h-8 text-xs border-white/10 hover:bg-white/5 text-white/80 px-3"
+                                    className="h-8 text-xs font-medium rounded-md px-3 inline-flex items-center justify-center bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-200 hover:text-white transition-colors"
                                 >
                                     แก้ไข
-                                </Button>
+                                </button>
                             )}
 
-                            <Button
-                                variant="outline"
-                                size="sm"
+                            <button
+                                type="button"
                                 onClick={handlePrint}
-                                className="h-8 text-xs border-white/10 hover:bg-white/5 text-white/80 px-3"
+                                className="h-8 text-xs font-medium rounded-md px-3 inline-flex items-center justify-center bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-200 hover:text-white transition-colors"
                             >
-                                <Printer className="w-3.5 h-3.5 mr-1" />
+                                <Printer className="w-3.5 h-3.5 mr-1.5" />
                                 พิมพ์
-                            </Button>
+                            </button>
 
-                            <Button
-                                variant="outline"
-                                size="sm"
+                            <button
+                                type="button"
                                 onClick={handleDownloadPng}
                                 disabled={isExportingPng}
-                                className="h-8 text-xs border-white/10 hover:bg-white/5 text-white/80 px-3"
+                                className="h-8 text-xs font-medium rounded-md px-3 inline-flex items-center justify-center bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-200 hover:text-white transition-colors disabled:opacity-50"
                             >
-                                {isExportingPng ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5 mr-1 text-emerald-400" />}
+                                {isExportingPng ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />}
                                 PNG
-                            </Button>
+                            </button>
 
-                            <Button
-                                size="sm"
+                            <button
+                                type="button"
                                 onClick={handleDownloadPdf}
                                 disabled={isExportingPdf}
-                                className="h-8 text-xs bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-md shadow-amber-500/20 px-3.5"
+                                className="h-8 text-xs font-semibold rounded-md px-3.5 inline-flex items-center justify-center bg-amber-500 hover:bg-amber-600 text-zinc-950 shadow-md shadow-amber-500/20 transition-colors disabled:opacity-50"
                             >
-                                {isExportingPdf ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
+                                {isExportingPdf ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1.5" />}
                                 PDF
-                            </Button>
+                            </button>
 
                             {/* Prominent Close Button */}
-                            <Button
-                                variant="ghost"
-                                size="icon"
+                            <button
+                                type="button"
                                 onClick={() => onOpenChange(false)}
-                                className="h-8 w-8 ml-1 rounded-full text-white/60 hover:text-white hover:bg-white/10"
+                                className="h-8 w-8 ml-1 rounded-full inline-flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                                 title="ปิดหน้าต่าง"
                             >
                                 <X className="w-4 h-4" />
-                            </Button>
+                            </button>
                         </div>
                     </div>
 
@@ -598,83 +592,77 @@ export function JobSheetPreviewModal({
                         {/* Mobile Top Row: Close Button + Report Number + Edit */}
                         <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 min-w-0">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
+                                <button
+                                    type="button"
                                     onClick={() => onOpenChange(false)}
-                                    className="h-7 text-xs bg-white/10 hover:bg-white/20 border-white/10 text-white font-medium px-2 gap-1 shrink-0"
+                                    className="h-7 text-xs font-medium rounded-md px-2 inline-flex items-center justify-center bg-zinc-800 border border-zinc-700 text-zinc-200 hover:text-white gap-1 shrink-0"
                                 >
                                     <X className="w-3.5 h-3.5" />
                                     <span>ปิด</span>
-                                </Button>
+                                </button>
                                 <DialogTitle className="text-xs font-bold text-white flex items-center gap-1.5 truncate">
                                     <span className="text-amber-400 font-mono">{jobsheet.reportNumber}</span>
-                                    <span className="text-[10px] text-white/50 truncate font-normal">• {jobsheet.date}</span>
+                                    <span className="text-[10px] text-zinc-400 truncate font-normal">• {jobsheet.date}</span>
                                 </DialogTitle>
                             </div>
 
                             {onEdit && canEdit && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
+                                <button
+                                    type="button"
                                     onClick={() => {
                                         onOpenChange(false);
                                         onEdit(jobsheet);
                                     }}
-                                    className="h-7 text-xs border-white/10 hover:bg-white/5 text-white/80 px-2 shrink-0"
+                                    className="h-7 text-xs font-medium rounded-md px-2.5 inline-flex items-center justify-center bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-200 hover:text-white shrink-0"
                                 >
                                     แก้ไข
-                                </Button>
+                                </button>
                             )}
                         </div>
 
                         {/* Mobile Bottom Row: Action Buttons */}
-                        <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-white/10 overflow-x-auto no-scrollbar">
-                            <Button
+                        <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-zinc-800 overflow-x-auto no-scrollbar">
+                            <button
                                 type="button"
-                                variant="outline"
-                                size="sm"
                                 onClick={() => setShowSignatures(!showSignatures)}
-                                className={`h-7 text-[11px] border shrink-0 px-2 ${
+                                className={`h-7 text-[11px] font-medium rounded px-2 inline-flex items-center justify-center border shrink-0 transition-colors ${
                                     showSignatures
                                         ? "bg-amber-500/20 border-amber-500/50 text-amber-300"
-                                        : "border-white/10 text-white/60 hover:bg-white/5"
+                                        : "bg-zinc-800 border-zinc-700 text-zinc-300"
                                 }`}
                             >
                                 <CheckCircle2 className="w-3 h-3 mr-1" />
                                 {showSignatures ? "มีลงนาม" : "ไม่มี"}
-                            </Button>
+                            </button>
 
-                            <Button
-                                variant="outline"
-                                size="sm"
+                            <button
+                                type="button"
                                 onClick={handlePrint}
-                                className="h-7 text-[11px] border-white/10 hover:bg-white/5 text-white/80 shrink-0 px-2"
+                                className="h-7 text-[11px] font-medium rounded px-2 inline-flex items-center justify-center bg-zinc-800 border border-zinc-700 text-zinc-200 hover:text-white shrink-0"
                             >
                                 <Printer className="w-3 h-3 mr-1" />
                                 พิมพ์
-                            </Button>
+                            </button>
 
-                            <Button
-                                variant="outline"
-                                size="sm"
+                            <button
+                                type="button"
                                 onClick={handleDownloadPng}
                                 disabled={isExportingPng}
-                                className="h-7 text-[11px] border-white/10 hover:bg-white/5 text-white/80 shrink-0 px-2.5"
+                                className="h-7 text-[11px] font-medium rounded px-2.5 inline-flex items-center justify-center bg-zinc-800 border border-zinc-700 text-zinc-200 hover:text-white shrink-0 disabled:opacity-50"
                             >
                                 {isExportingPng ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <ImageIcon className="w-3 h-3 mr-1 text-emerald-400" />}
                                 PNG
-                            </Button>
+                            </button>
 
-                            <Button
-                                size="sm"
+                            <button
+                                type="button"
                                 onClick={handleDownloadPdf}
                                 disabled={isExportingPdf}
-                                className="h-7 text-[11px] bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-md shadow-amber-500/20 shrink-0 px-3"
+                                className="h-7 text-[11px] font-semibold rounded px-3 inline-flex items-center justify-center bg-amber-500 hover:bg-amber-600 text-zinc-950 shadow-md shadow-amber-500/20 shrink-0 disabled:opacity-50"
                             >
                                 {isExportingPdf ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
                                 PDF
-                            </Button>
+                            </button>
                         </div>
                     </div>
                 </div>
