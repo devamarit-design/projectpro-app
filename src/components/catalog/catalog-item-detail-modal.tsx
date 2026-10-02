@@ -185,11 +185,11 @@ export function CatalogItemDetailModal({
                             </div>
                         </div>
 
-                        {/* Photo Album Section */}
+                        {/* Photo Album Section: Main Photo on Left, Vertical Thumbnails on Right */}
                         {photos.length > 0 ? (
-                            <div className="space-y-3">
-                                {/* Featured / Selected Photo */}
-                                <div className="relative aspect-video sm:aspect-[21/9] w-full rounded-2xl overflow-hidden bg-black/5 dark:bg-muted/40 border border-border group">
+                            <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+                                {/* Featured / Main Photo on Left */}
+                                <div className="relative flex-1 aspect-[4/3] sm:aspect-auto sm:min-h-[340px] rounded-2xl overflow-hidden bg-black/5 dark:bg-muted/40 border border-border group flex items-center justify-center">
                                     {currentPhoto && (
                                         <Image
                                             src={currentPhoto}
@@ -202,11 +202,11 @@ export function CatalogItemDetailModal({
                                     )}
 
                                     {/* Action Buttons overlay */}
-                                    <div className="absolute top-3 right-3 flex items-center gap-2">
+                                    <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
                                         <button
                                             type="button"
                                             onClick={() => setIsLightboxOpen(true)}
-                                            className="p-2 rounded-xl bg-black/60 text-white hover:bg-black/80 transition-colors shadow-md backdrop-blur-sm"
+                                            className="p-2 rounded-xl bg-black/60 text-white hover:bg-black/80 transition-colors shadow-md backdrop-blur-sm cursor-pointer"
                                             title="ดูภาพขนาดเต็ม"
                                         >
                                             <Maximize2 className="w-4 h-4" />
@@ -219,47 +219,60 @@ export function CatalogItemDetailModal({
                                             <button
                                                 type="button"
                                                 onClick={prevPhoto}
-                                                className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors opacity-80 hover:opacity-100 shadow-md"
+                                                className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors opacity-80 hover:opacity-100 shadow-md cursor-pointer z-10"
+                                                title="ภาพก่อนหน้า"
                                             >
                                                 <ChevronLeft className="w-5 h-5" />
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={nextPhoto}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors opacity-80 hover:opacity-100 shadow-md"
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors opacity-80 hover:opacity-100 shadow-md cursor-pointer z-10"
+                                                title="ภาพถัดไป"
                                             >
                                                 <ChevronRight className="w-5 h-5" />
                                             </button>
-                                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/70 text-white text-xs font-medium backdrop-blur-sm">
+                                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/70 text-white text-xs font-medium backdrop-blur-sm z-10">
                                                 {selectedPhotoIndex + 1} / {photos.length} รูป
                                             </div>
                                         </>
                                     )}
                                 </div>
 
-                                {/* Thumbnail Strip */}
+                                {/* Vertical Thumbnails on Right (Max 4 visible) */}
                                 {photos.length > 1 && (
-                                    <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                                        {photos.map((photoUrl, idx) => (
-                                            <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() => setSelectedPhotoIndex(idx)}
-                                                className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all ${
-                                                    selectedPhotoIndex === idx
-                                                        ? "border-primary ring-2 ring-primary/20 scale-105"
-                                                        : "border-border opacity-70 hover:opacity-100"
-                                                }`}
-                                            >
-                                                <Image
-                                                    src={photoUrl}
-                                                    alt={`Thumbnail ${idx + 1}`}
-                                                    fill
-                                                    sizes="64px"
-                                                    className="object-cover"
-                                                />
-                                            </button>
-                                        ))}
+                                    <div className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-y-auto sm:w-20 md:w-24 shrink-0 justify-start pb-1 sm:pb-0">
+                                        {photos.slice(0, 4).map((photoUrl, idx) => {
+                                            const isSelected = selectedPhotoIndex === idx
+                                            const isLastSlot = idx === 3
+                                            const remainingCount = photos.length - 4
+
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => setSelectedPhotoIndex(idx)}
+                                                    className={`relative w-16 h-16 sm:w-full sm:h-20 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all cursor-pointer ${
+                                                        isSelected
+                                                            ? "border-primary ring-2 ring-primary/20 scale-[1.02] shadow-md"
+                                                            : "border-border opacity-70 hover:opacity-100"
+                                                    }`}
+                                                >
+                                                    <Image
+                                                        src={photoUrl}
+                                                        alt={`Thumbnail ${idx + 1}`}
+                                                        fill
+                                                        sizes="96px"
+                                                        className="object-cover"
+                                                    />
+                                                    {isLastSlot && remainingCount > 0 && (
+                                                        <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-white text-xs font-bold backdrop-blur-[1px]">
+                                                            +{remainingCount}
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            )
+                                        })}
                                     </div>
                                 )}
                             </div>

@@ -1,8 +1,8 @@
 import * as React from "react"
 import { createPortal } from "react-dom"
-import { db } from "@/lib/firebase"
+import { db, auth } from "@/lib/firebase"
 import { collection, addDoc } from "firebase/firestore"
-import { X, Receipt, ScanLine, Plus, Trash2, Layers, User, Building, Camera, Upload, CheckCircle2, ChevronDown, ChevronUp, Check, ArrowRight, ArrowLeft, Sparkles, Image as ImageIcon } from "lucide-react"
+import { X, Receipt, ScanLine, Plus, Trash2, Layers, User, Building, Camera, Upload, CheckCircle2, ChevronDown, ChevronUp, Check, ArrowRight, ArrowLeft, Sparkles, Image as ImageIcon, Loader2 } from "lucide-react"
 import { useProjects, ExpenseCategory, ExpenseItem } from "@/context/project-context"
 import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
 import { toast } from "sonner"
@@ -429,6 +429,70 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
         setReceiptFiles(prev => prev.filter((_, i) => i !== index))
     }
 
+    const [isScanningAttached, setIsScanningAttached] = React.useState(false)
+
+    const scanSpecificReceipt = async (imageSrc: string) => {
+        if (!imageSrc) return
+        setIsScanningAttached(true)
+        const toastId = toast.loading("AI กำลังวิเคราะห์ใบเสร็จนี้... / Scanning receipt...")
+
+        try {
+            const token = await auth.currentUser?.getIdToken(true)
+            const orgId = currentOrg?.id || "default"
+            if (!token) throw new Error("Authentication required")
+
+            const response = await fetch("/api/scan-receipt", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    image: imageSrc,
+                    orgId: orgId
+                })
+            })
+
+            const result = await response.json()
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || "Failed to scan receipt")
+            }
+
+            const data = result.data
+            if (data.merchant) setPayee(data.merchant)
+            if (data.date) setDate(data.date)
+            if (!title) setTitle(`Bill from ${data.merchant || "Merchant"}`)
+
+            if (data.items && data.items.length > 0) {
+                const scannedItems: ExpenseItem[] = data.items.map((item: any) => {
+                    const qty = Number(item.quantity) || 1
+                    const totalAmt = Number(item.amount) || 0
+                    const unitP = Number(item.unitPrice) || (totalAmt / qty)
+                    return {
+                        id: Math.random().toString(),
+                        description: item.description || "Unknown Item",
+                        amount: totalAmt,
+                        quantity: qty,
+                        unitPrice: unitP,
+                        category: (item.category as any) || "Material",
+                        projectId: billType === 'combine' ? (globalProjectId || defaultProjectId) : undefined,
+                        taskId: billType === 'combine' ? globalTaskId : undefined,
+                        subProjectId: billType === 'combine' ? globalSubProjectId : undefined
+                    }
+                })
+                setItems(scannedItems)
+            }
+
+            toast.success("AI ดึงข้อมูลจากบิลนี้เรียบร้อยแล้ว!", { id: toastId })
+            setOpenSections({ 1: true, 2: true, 3: true })
+        } catch (err: any) {
+            console.error("AI Scan receipt failed:", err)
+            toast.error(err?.message || "สแกนบิลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง", { id: toastId })
+        } finally {
+            setIsScanningAttached(false)
+        }
+    }
+
     const removeAllImages = () => {
         setReceiptImage(null)
         setReceiptFiles([])
@@ -674,6 +738,38 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                             {/* Counter badge */}
                             <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-white text-[11px] font-semibold border border-white/10 shadow">
                                 บิลที่ {selectedPreviewIndex + 1} จาก {Math.max(receiptPreviews.length, 1)}
+                            </div>
+
+                            {/* Scan This Specific Bill with AI Button */}
+                            <div className="absolute bottom-2 inset-x-2 flex items-center justify-between pointer-events-none">
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        scanSpecificReceipt(currentActiveUrl)
+                                    }}
+                                    disabled={isScanningAttached}
+                                    className="pointer-events-auto px-3 py-1.5 rounded-full bg-purple-600/90 hover:bg-purple-600 text-white text-xs font-bold shadow-lg backdrop-blur-md flex items-center gap-1.5 transition-all active:scale-95 border border-purple-400/30 cursor-pointer disabled:opacity-50"
+                                    title="ให้ AI ช่วยสแกนและดึงข้อมูลจากบิลนี้ลงในฟอร์ม"
+                                >
+                                    {isScanningAttached ? (
+                                        <>
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            <span>กำลังสแกนบิลนี้...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                                            <span>สแกนบิลนี้ด้วย AI</span>
+                                        </>
+                                    )}
+                                </button>
+
+                                {receiptPreviews.length > 1 && (
+                                    <span className="text-[10px] text-white/80 bg-black/60 px-2 py-1 rounded-full backdrop-blur-sm">
+                                        คลิก Thumbnail ด้านล่างเพื่อสลับบิล
+                                    </span>
+                                )}
                             </div>
 
                             {/* Delete single image button */}
