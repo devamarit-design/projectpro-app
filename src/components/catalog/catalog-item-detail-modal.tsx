@@ -20,7 +20,8 @@ import {
     ChevronRight,
     Maximize2,
     Clock,
-    User
+    User,
+    ShoppingBag
 } from "lucide-react"
 import { CatalogItem } from "@/types/catalog"
 import { deleteCatalogItem } from "@/lib/services/catalog-service"
@@ -283,12 +284,17 @@ export function CatalogItemDetailModal({
                                     <Store className="w-4 h-4 text-primary" />
                                     แหล่งซื้อ / ข้อมูลร้านค้า
                                 </h3>
-                                {matchingVendor && (
+                                {matchingVendor ? (
                                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
                                         <Check className="w-3 h-3" />
                                         ร้านค้าในระบบ (Store Partner)
                                     </span>
-                                )}
+                                ) : item.storeName ? (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                                        <ShoppingBag className="w-3 h-3" />
+                                        ร้านค้านอกสโตร์ (ซื้อทั่วไป/หน้างาน)
+                                    </span>
+                                ) : null}
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

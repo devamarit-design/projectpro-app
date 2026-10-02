@@ -449,6 +449,10 @@ export default function CatalogPage() {
                         const taggedProjects = item.projectNames && item.projectNames.length > 0
                             ? item.projectNames
                             : (item.projectName ? [item.projectName] : [])
+                        const isStorePartner = Boolean(
+                            item.storeId ||
+                            (item.storeName && (vendors || []).some(v => v.name?.trim().toLowerCase() === item.storeName?.trim().toLowerCase()))
+                        )
 
                         return (
                             <div
@@ -536,10 +540,19 @@ export default function CatalogPage() {
                                         {/* Store Name & Phone */}
                                         <div className="pt-1 border-t border-border/50 space-y-1 text-xs text-muted-foreground">
                                             {item.storeName && (
-                                                <div className="flex items-center gap-1.5 truncate">
-                                                    <Store className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                                                    <span className="truncate font-medium text-foreground">
-                                                        {item.storeName}
+                                                <div className="flex items-center justify-between gap-1.5 truncate">
+                                                    <div className="flex items-center gap-1.5 truncate">
+                                                        <Store className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                                        <span className="truncate font-medium text-foreground">
+                                                            {item.storeName}
+                                                        </span>
+                                                    </div>
+                                                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0 ${
+                                                        isStorePartner
+                                                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                                            : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                                    }`}>
+                                                        {isStorePartner ? "ในสโตร์" : "นอกสโตร์"}
                                                     </span>
                                                 </div>
                                             )}
@@ -623,6 +636,10 @@ export default function CatalogPage() {
                                     const taggedProjects = item.projectNames && item.projectNames.length > 0
                                         ? item.projectNames
                                         : (item.projectName ? [item.projectName] : [])
+                                    const isStorePartner = Boolean(
+                                        item.storeId ||
+                                        (item.storeName && (vendors || []).some(v => v.name?.trim().toLowerCase() === item.storeName?.trim().toLowerCase()))
+                                    )
 
                                     return (
                                         <tr key={item.id} className="hover:bg-muted/30 transition-colors">
@@ -680,8 +697,19 @@ export default function CatalogPage() {
 
                                             {/* Store */}
                                             <td className="py-3 px-4">
-                                                <div className="font-medium text-foreground line-clamp-1">
-                                                    {item.storeName || "-"}
+                                                <div className="flex items-center gap-1.5 line-clamp-1">
+                                                    <span className="font-medium text-foreground">
+                                                        {item.storeName || "-"}
+                                                    </span>
+                                                    {item.storeName && (
+                                                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0 ${
+                                                            isStorePartner
+                                                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                                                : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                                        }`}>
+                                                            {isStorePartner ? "ในสโตร์" : "นอกสโตร์"}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {item.storePhone && (
                                                     <a

@@ -24,7 +24,9 @@ import {
     ChevronLeft,
     CheckCircle2,
     Layers,
-    Search
+    Search,
+    ShoppingBag,
+    Sparkles
 } from "lucide-react"
 import { CatalogItem, CatalogCategory, CATALOG_CATEGORIES, COMMON_UNITS } from "@/types/catalog"
 import { createCatalogItem, updateCatalogItem } from "@/lib/services/catalog-service"
@@ -55,7 +57,7 @@ export function AddCatalogItemDialog({
     initialData,
     onSuccess
 }: AddCatalogItemDialogProps) {
-    const { projects, currentUser, currentTeam, vendors } = useProjects()
+    const { projects, currentUser, currentTeam, vendors, addVendor } = useProjects()
     const { currentOrg } = useOrganization()
 
     const orgId = currentOrg?.id || currentTeam?.id || "default_org"
@@ -69,6 +71,8 @@ export function AddCatalogItemDialog({
     const [category, setCategory] = React.useState<string>(CATALOG_CATEGORIES[0].id)
     const [unitPrice, setUnitPrice] = React.useState<string>("")
     const [unit, setUnit] = React.useState<string>("ชิ้น")
+    const [storeSource, setStoreSource] = React.useState<"internal" | "external">("internal")
+    const [saveToStore, setSaveToStore] = React.useState(false)
     const [storeId, setStoreId] = React.useState("")
     const [storeName, setStoreName] = React.useState("")
     const [storePhone, setStorePhone] = React.useState("")
@@ -91,6 +95,7 @@ export function AddCatalogItemDialog({
     React.useEffect(() => {
         if (isOpen) {
             setCurrentStep(1)
+            setSaveToStore(false)
             if (initialData) {
                 setName(initialData.name || "")
                 setCode(initialData.code || "")
@@ -102,6 +107,17 @@ export function AddCatalogItemDialog({
                 setStorePhone(initialData.storePhone || "")
                 setStoreLocation(initialData.storeLocation || "")
                 setStoreMapUrl(initialData.storeMapUrl || "")
+
+                // Detect if store is internal or external
+                if (initialData.storeId) {
+                    setStoreSource("internal")
+                } else if (initialData.storeName) {
+                    const match = (vendors || []).some(v => v.name?.trim().toLowerCase() === initialData.storeName?.trim().toLowerCase())
+                    setStoreSource(match ? "internal" : "external")
+                } else {
+                    setStoreSource((vendors || []).length > 0 ? "internal" : "external")
+                }
+
                 const initialPIds = initialData.projectIds && initialData.projectIds.length > 0
                     ? initialData.projectIds
                     : (initialData.projectId ? [initialData.projectId] : [])
@@ -126,9 +142,10 @@ export function AddCatalogItemDialog({
                 setDescription("")
                 setExistingPhotos([])
                 setNewFiles([])
+                setStoreSource((vendors || []).length > 0 ? "internal" : "external")
             }
         }
-    }, [isOpen, initialData])
+    }, [isOpen, initialData, vendors])
 
     // Cleanup local object URLs
     React.useEffect(() => {
@@ -281,13 +298,27 @@ export function AddCatalogItemDialog({
 
             const parsedPrice = parseFloat(unitPrice) || 0
 
+            // If user entered an external store and opted to save to company store/partners
+            if (storeSource === "external" && saveToStore && storeName.trim()) {
+                try {
+                    await addVendor({
+                        name: storeName.trim(),
+                        category: category || "วัสดุ/อุปกรณ์",
+                        phone: storePhone.trim() || undefined,
+                        location: storeLocation.trim() || undefined
+                    })
+                } catch (vendorErr) {
+                    console.warn("Could not auto-save external vendor to store:", vendorErr)
+                }
+            }
+
             const itemPayload = {
                 name: name.trim(),
                 code: code.trim(),
                 category: category.trim() || "อื่นๆ",
                 unitPrice: parsedPrice,
                 unit: unit.trim() || "ชิ้น",
-                storeId: storeId || "",
+                storeId: storeSource === "internal" ? (storeId || "") : "",
                 storeName: storeName.trim(),
                 storePhone: storePhone.trim(),
                 storeLocation: storeLocation.trim(),
@@ -518,91 +549,186 @@ export function AddCatalogItemDialog({
                     {/* STEP 2: ร้านค้าและแหล่งซื้อ */}
                     {currentStep === 2 && (
                         <div className="space-y-5 animate-in fade-in-50 duration-200">
-                            <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-border/60">
                                 <div className="flex items-center gap-2">
                                     <Store className="w-4 h-4 text-primary" />
                                     <h3 className="text-sm font-bold text-foreground">
                                         ขั้นตอนที่ 2: ข้อมูลร้านค้า / แหล่งซื้อ
                                     </h3>
                                 </div>
-                                {storeId && (
+                                {storeSource === "internal" && (storeId || storeName) ? (
                                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
                                         <Check className="w-3 h-3" />
                                         ร้านค้าในระบบ (Store Partner)
                                     </span>
-                                )}
+                                ) : storeSource === "external" && storeName.trim() ? (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                                        <ShoppingBag className="w-3 h-3" />
+                                        ร้านค้านอกสโตร์ (ซื้อทั่วไป/หน้างาน)
+                                    </span>
+                                ) : null}
                             </div>
 
-                            {/* Quick Store Selection from our Store / Partner database */}
-                            {activeVendors.length > 0 && (
-                                <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/70 space-y-2.5">
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                                            <Building className="w-3.5 h-3.5 text-primary" />
-                                            เลือกร้านค้าจาก Store ในระบบ ({activeVendors.length} ร้าน):
-                                        </span>
-                                        <select
-                                            value={storeId}
-                                            onChange={(e) => handleSelectVendor(e.target.value)}
-                                            className="text-xs px-2.5 py-1.5 rounded-xl border border-input bg-background font-medium focus:ring-1 focus:ring-primary cursor-pointer"
-                                        >
-                                            <option value="">-- เลือกร้านค้าจากระบบ --</option>
-                                            {activeVendors.map(v => (
-                                                <option key={v.id} value={v.id}>
-                                                    {v.name} {v.category ? `(${v.category})` : ""}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                            {/* Source Selection Tabs: ร้านค้าในสโตร์ vs ร้านค้านอกสโตร์ */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                                    <span>เลือกประเภทแหล่งซื้อร้านค้า:</span>
+                                    <span className="text-[11px] font-normal text-muted-foreground">
+                                        {storeSource === "internal" ? "เลือกร้านค้าจากพาร์ทเนอร์ในระบบ" : "กรอกชื่อร้านค้าภายนอกได้อิสระ"}
+                                    </span>
+                                </label>
+                                <div className="grid grid-cols-2 p-1.5 bg-muted/60 rounded-2xl border border-border/70 gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setStoreSource("internal")}
+                                        className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                                            storeSource === "internal"
+                                                ? "bg-background text-primary shadow-sm border border-border"
+                                                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+                                        }`}
+                                    >
+                                        <Building className="w-4 h-4" />
+                                        <span>ร้านค้าในสโตร์ ({activeVendors.length})</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStoreSource("external")
+                                            setStoreId("")
+                                        }}
+                                        className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+                                            storeSource === "external"
+                                                ? "bg-background text-amber-600 dark:text-amber-400 shadow-sm border border-border"
+                                                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+                                        }`}
+                                    >
+                                        <ShoppingBag className="w-4 h-4 text-amber-500" />
+                                        <span>ร้านค้านอกสโตร์ (ทั่วไป/หน้างาน)</span>
+                                    </button>
+                                </div>
+                            </div>
 
-                                    {/* Quick chips for stores */}
-                                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-                                        {activeVendors.map(v => {
-                                            const isSelected = storeId === v.id || storeName.trim().toLowerCase() === v.name.trim().toLowerCase()
-                                            return (
-                                                <button
-                                                    key={v.id}
-                                                    type="button"
-                                                    onClick={() => handleSelectVendor(v.id)}
-                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                                                        isSelected
-                                                            ? "bg-primary text-primary-foreground shadow-sm scale-[1.02]"
-                                                            : "bg-background border border-border hover:border-primary/50 text-foreground hover:bg-muted"
-                                                    }`}
+                            {/* INTERNAL STORE MODE: Quick Select from system vendors */}
+                            {storeSource === "internal" && (
+                                <div className="space-y-3 animate-in fade-in-50 duration-150">
+                                    {activeVendors.length > 0 ? (
+                                        <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/70 space-y-2.5">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                                    <Building className="w-3.5 h-3.5 text-primary" />
+                                                    เลือกร้านค้าพาร์ทเนอร์ในระบบ ({activeVendors.length} ร้าน):
+                                                </span>
+                                                <select
+                                                    value={storeId}
+                                                    onChange={(e) => handleSelectVendor(e.target.value)}
+                                                    className="text-xs px-2.5 py-1.5 rounded-xl border border-input bg-background font-medium focus:ring-1 focus:ring-primary cursor-pointer"
                                                 >
-                                                    <span>🏪 {v.name}</span>
-                                                    {v.category && (
-                                                        <span className={`text-[10px] opacity-75 ${isSelected ? "text-primary-foreground" : "text-muted-foreground"}`}>
-                                                            ({v.category})
-                                                        </span>
-                                                    )}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
+                                                    <option value="">-- เลือกร้านค้าจากระบบ --</option>
+                                                    {activeVendors.map(v => (
+                                                        <option key={v.id} value={v.id}>
+                                                            {v.name} {v.category ? `(${v.category})` : ""}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            {/* Quick chips for stores */}
+                                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                                                {activeVendors.map(v => {
+                                                    const isSelected = storeId === v.id || storeName.trim().toLowerCase() === v.name.trim().toLowerCase()
+                                                    return (
+                                                        <button
+                                                            key={v.id}
+                                                            type="button"
+                                                            onClick={() => handleSelectVendor(v.id)}
+                                                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                                                                isSelected
+                                                                    ? "bg-primary text-primary-foreground shadow-sm scale-[1.02]"
+                                                                    : "bg-background border border-border hover:border-primary/50 text-foreground hover:bg-muted"
+                                                            }`}
+                                                        >
+                                                            <span>🏪 {v.name}</span>
+                                                            {v.category && (
+                                                                <span className={`text-[10px] opacity-75 ${isSelected ? "text-primary-foreground" : "text-muted-foreground"}`}>
+                                                                    ({v.category})
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <span>ยังไม่มีร้านค้าพาร์ทเนอร์ในระบบ สามารถสลับไปใช้ &quot;ร้านค้านอกสโตร์&quot; เพื่อระบุชื่อร้านค้าได้ทันที</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setStoreSource("external")
+                                                    setStoreId("")
+                                                }}
+                                                className="font-bold underline text-amber-700 dark:text-amber-300 whitespace-nowrap"
+                                            >
+                                                สลับไปร้านนอกสโตร์
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
+                            {/* EXTERNAL STORE MODE: Guidance banner */}
+                            {storeSource === "external" && (
+                                <div className="p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-1 animate-in fade-in-50 duration-150">
+                                    <div className="flex items-center gap-2">
+                                        <ShoppingBag className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                        <span className="text-xs font-bold text-foreground">
+                                            เพิ่มร้านค้านอกสโตร์ (ซื้อทั่วไป / ร้านค้าหน้างาน)
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        กรอกชื่อร้านค้า ร้านวัสดุแถวไซต์งาน ห้างค้าวัสดุ หรือร้านค้าออนไลน์ได้ตามต้องการ โดยไม่จำเป็นต้องมีในระบบ Store
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Store Name & Phone Fields */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-medium text-foreground">
-                                        ชื่อร้านค้า / ตัวแทนจำหน่าย
+                                    <label className="text-xs font-medium text-foreground flex items-center justify-between">
+                                        <span>
+                                            {storeSource === "external" ? "ชื่อร้านค้านอกสโตร์ / แหล่งซื้อ" : "ชื่อร้านค้า / ตัวแทนจำหน่าย"}
+                                        </span>
+                                        {storeSource === "external" ? (
+                                            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                                                ร้านนอกสโตร์
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                                                ร้านในสโตร์
+                                            </span>
+                                        )}
                                     </label>
                                     <input
                                         type="text"
-                                        list="registered-stores-list"
+                                        list={storeSource === "internal" ? "registered-stores-list" : undefined}
                                         value={storeName}
                                         onChange={(e) => handleStoreNameChange(e.target.value)}
-                                        placeholder="เลือกจากรายการด้านบน หรือพิมพ์ชื่อร้านค้า"
+                                        placeholder={
+                                            storeSource === "external"
+                                                ? "เช่น ไทวัสดุ สาขาบางนา, ร้านปูนป้าพรหน้างาน, โฮมโปร"
+                                                : "เลือกจากรายการด้านบน หรือพิมพ์ชื่อร้านค้า"
+                                        }
                                         className="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                                     />
-                                    <datalist id="registered-stores-list">
-                                        {activeVendors.map(v => (
-                                            <option key={v.id} value={v.name}>
-                                                {v.category ? `${v.category} ${v.phone ? `(${v.phone})` : ""}` : (v.phone || "")}
-                                            </option>
-                                        ))}
-                                    </datalist>
+                                    {storeSource === "internal" && (
+                                        <datalist id="registered-stores-list">
+                                            {activeVendors.map(v => (
+                                                <option key={v.id} value={v.name}>
+                                                    {v.category ? `${v.category} ${v.phone ? `(${v.phone})` : ""}` : (v.phone || "")}
+                                                </option>
+                                            ))}
+                                        </datalist>
+                                    )}
                                 </div>
 
                                 <div className="space-y-1.5">
@@ -622,6 +748,7 @@ export function AddCatalogItemDialog({
                                 </div>
                             </div>
 
+                            {/* Location & Maps Fields */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-medium text-foreground">
@@ -633,7 +760,7 @@ export function AddCatalogItemDialog({
                                             type="text"
                                             value={storeLocation}
                                             onChange={(e) => setStoreLocation(e.target.value)}
-                                            placeholder="เช่น ถนนราชพฤกษ์, ใกล้แยกพระราม 2"
+                                            placeholder="เช่น ถนนราชพฤกษ์, ซอยหน้าไซต์งาน, แยกพระราม 2"
                                             className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                                         />
                                     </div>
@@ -655,6 +782,27 @@ export function AddCatalogItemDialog({
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Option to automatically save external store to company Store/Partners */}
+                            {storeSource === "external" && (
+                                <label className="flex items-start gap-3 p-3.5 rounded-xl bg-muted/40 border border-border/80 cursor-pointer hover:bg-muted/60 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={saveToStore}
+                                        onChange={(e) => setSaveToStore(e.target.checked)}
+                                        className="mt-0.5 rounded border-input text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                                    />
+                                    <div className="space-y-0.5">
+                                        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                            <Sparkles className="w-3.5 h-3.5 text-primary" />
+                                            บันทึกร้านค้านี้เข้า Store ของบริษัทด้วย
+                                        </span>
+                                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                            ระบบจะบันทึกร้านค้านี้เป็น Vendor พาร์ทเนอร์ในระบบ Store อัตโนมัติ เพื่อให้โปรเจคอื่นๆ และทีมงานเลือกใช้ซ้ำได้ทันที
+                                        </p>
+                                    </div>
+                                </label>
+                            )}
                         </div>
                     )}
 
@@ -879,7 +1027,18 @@ export function AddCatalogItemDialog({
                                     </div>
                                     <div>
                                         <span className="text-muted-foreground">ร้านค้า:</span>
-                                        <p className="font-semibold text-foreground truncate">{storeName || "-"}</p>
+                                        <div className="flex items-center gap-1 mt-0.5 truncate">
+                                            <p className="font-semibold text-foreground truncate">{storeName || "-"}</p>
+                                            {storeName && (
+                                                <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold flex-shrink-0 ${
+                                                    storeSource === "internal"
+                                                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                                        : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                                }`}>
+                                                    {storeSource === "internal" ? "ในสโตร์" : "นอกสโตร์"}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div>
                                         <span className="text-muted-foreground">โครงการที่แท็ก:</span>
