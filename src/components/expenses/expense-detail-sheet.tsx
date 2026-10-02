@@ -1,11 +1,11 @@
 import * as React from "react"
 import { createPortal } from "react-dom"
-import { X, Calendar, User, Trash2, Save, Building, Tag, DollarSign, Receipt, Info, Check, CheckCircle2, ShoppingBag, Camera, Upload, Layout, Archive, Clock, Plus } from "lucide-react"
+import { X, Calendar, User, Trash2, Save, Building, Tag, DollarSign, Receipt, Info, Check, CheckCircle2, ShoppingBag, Camera, Upload, Layout, Archive, Clock, Plus, ChevronLeft, ChevronRight } from "lucide-react"
 import { useProjects, Expense, ExpenseCategory, ExpenseItem } from "@/context/project-context"
 import { useOrganization } from "@/context/organization-context"
 import { hasPermission } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
-import { uploadWithThumbnail } from "@/lib/upload"
+import { uploadWithThumbnail, compressReceiptImage } from "@/lib/upload"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import Image from "next/image"
 
@@ -44,16 +44,22 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
 
     const [isEditing, setIsEditing] = React.useState(false)
     const [editForm, setEditForm] = React.useState<Partial<Expense>>({})
-    const [editImageFile, setEditImageFile] = React.useState<File | null>(null)
+    const [newImageFiles, setNewImageFiles] = React.useState<File[]>([])
+    const [newImagePreviews, setNewImagePreviews] = React.useState<string[]>([])
+    const [activeImageIndex, setActiveImageIndex] = React.useState<number>(0)
     const [isUploading, setIsUploading] = React.useState(false)
     const [uploadStatus, setUploadStatus] = React.useState<string>("")
     const [showArchiveConfirm, setShowArchiveConfirm] = React.useState(false)
     const [isImageOpen, setIsImageOpen] = React.useState(false)
+    const editFileInputRef = React.useRef<HTMLInputElement>(null)
 
     // Reset edit form when opening/changing expense
     React.useEffect(() => {
         if (expense) {
             setEditForm(JSON.parse(JSON.stringify(expense))) // Deep copy for items
+            setNewImageFiles([])
+            setNewImagePreviews([])
+            setActiveImageIndex(0)
             setUploadStatus("")
         }
     }, [expense])
@@ -78,35 +84,58 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
     }
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (file) {
-            let fileToProcess = file
+        const files = e.target.files ? Array.from(e.target.files) : []
+        if (files.length === 0) return
 
-            // Compress immediately if > 1MB
-            if (file.size > 1024 * 1024) {
-                try {
-                    const { default: imageCompression } = await import('browser-image-compression')
-                    const options = {
-                        maxSizeMB: 0.6,
-                        maxWidthOrHeight: 1280,
-                        useWebWorker: true,
-                        initialQuality: 0.7
-                    }
-                    const compressedFile = await imageCompression(file, options)
-                    fileToProcess = new File([compressedFile], file.name, { type: file.type })
-                } catch (err) {
-                    console.warn("Immediate compression failed:", err)
-                }
+        setUploadStatus("กำลังย่อขนาดรูปภาพ... / Compressing...")
+        try {
+            const processedFiles: File[] = []
+            const previews: string[] = []
+
+            for (const file of files) {
+                // Auto-compress aggressively
+                const compressed = await compressReceiptImage(file)
+                processedFiles.push(compressed)
+
+                const previewUrl = await new Promise<string>((resolve) => {
+                    const reader = new FileReader()
+                    reader.onloadend = () => resolve(reader.result as string)
+                    reader.readAsDataURL(compressed)
+                })
+                previews.push(previewUrl)
             }
 
-            setEditImageFile(fileToProcess)
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                // Update preview
-                setEditForm(prev => ({ ...prev, receiptImage: reader.result as string }))
+            setNewImageFiles(prev => [...prev, ...processedFiles])
+            setNewImagePreviews(prev => [...prev, ...previews])
+        } catch (err) {
+            console.error("Image upload compression failed:", err)
+        } finally {
+            setUploadStatus("")
+            if (editFileInputRef.current) {
+                editFileInputRef.current.value = ""
             }
-            reader.readAsDataURL(fileToProcess)
         }
+    }
+
+    const removeExistingReceiptImage = (index: number) => {
+        setEditForm(prev => {
+            const existingList = (prev.receiptImages && prev.receiptImages.length > 0)
+                ? [...prev.receiptImages]
+                : (prev.receiptImage ? [prev.receiptImage] : [])
+
+            const updatedList = existingList.filter((_, i) => i !== index)
+            return {
+                ...prev,
+                receiptImages: updatedList,
+                receiptImage: updatedList[0] || undefined
+            }
+        })
+        setActiveImageIndex(prev => Math.max(0, prev - 1))
+    }
+
+    const removeNewImageFile = (index: number) => {
+        setNewImageFiles(prev => prev.filter((_, i) => i !== index))
+        setNewImagePreviews(prev => prev.filter((_, i) => i !== index))
     }
 
     const handleSave = async () => {
@@ -115,28 +144,36 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
         try {
             let updates = { ...editForm }
 
-            if (editImageFile) {
-                let fileToUpload = editImageFile
+            // Existing remote URLs
+            let finalReceiptUrls = (updates.receiptImages && updates.receiptImages.length > 0)
+                ? [...updates.receiptImages]
+                : (updates.receiptImage && !updates.receiptImage.startsWith('data:') ? [updates.receiptImage] : [])
 
-                setUploadStatus("Uploading image...")
+            if (newImageFiles.length > 0) {
+                setUploadStatus(`Uploading ${newImageFiles.length} images...`)
 
                 if (!currentOrg?.id) {
                     throw new Error("Organization not found. Please refresh and try again.")
                 }
 
                 const path = `organizations/${currentOrg.id}/expenses/${new Date().getFullYear()}`
-                const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(fileToUpload, path)
-                updates.receiptImage = originalUrl
-                updates.thumbnailUrl = thumbnailUrl
+                for (const file of newImageFiles) {
+                    const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(file, path)
+                    finalReceiptUrls.push(originalUrl)
+                    if (!updates.thumbnailUrl) {
+                        updates.thumbnailUrl = thumbnailUrl
+                    }
+                }
                 updates.imageEdited = true
             }
+
+            updates.receiptImages = finalReceiptUrls
+            updates.receiptImage = finalReceiptUrls[0] || undefined
 
             setUploadStatus("Saving data...")
 
             // SECURITY CHECK: Ensure we don't send huge Base64 strings to Firestore
             if (updates.receiptImage && updates.receiptImage.startsWith('data:image')) {
-                console.warn("Found Base64 image in updates, removing to prevent Firestore limit crash")
-                // Only keep if it's small (unlikely for receipts)
                 if (updates.receiptImage.length > 500000) { // > 500KB
                     delete updates.receiptImage
                 }
@@ -152,7 +189,8 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
 
             await updateExpense(expenseId, updates)
             setIsEditing(false)
-            setEditImageFile(null)
+            setNewImageFiles([])
+            setNewImagePreviews([])
         } catch (error) {
             console.error("Failed to update expense", error)
             alert("Failed to update expense. Please check your connection or try a smaller image.")
@@ -177,9 +215,22 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
     const displaySubtotal = `฿${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     const displayVat = `฿${vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-    // Only show image if one actually exists
-    const fullImage = isEditing ? editForm.receiptImage : expense.receiptImage
-    const displayImage = isEditing ? editForm.receiptImage : (expense.thumbnailUrl || expense.receiptImage)
+    // Multi-Image Lists
+    // In edit mode: existing images in editForm + new image previews
+    const existingEditImages = (editForm.receiptImages && editForm.receiptImages.length > 0)
+        ? editForm.receiptImages
+        : (editForm.receiptImage ? [editForm.receiptImage] : [])
+    
+    // In view mode: expense.receiptImages or single receiptImage
+    const viewImages = (expense.receiptImages && expense.receiptImages.length > 0)
+        ? expense.receiptImages
+        : (expense.receiptImage ? [expense.receiptImage] : [])
+
+    const allDisplayImages = isEditing
+        ? [...existingEditImages, ...newImagePreviews]
+        : viewImages
+
+    const currentActiveImage = allDisplayImages[activeImageIndex] || allDisplayImages[0] || null
 
     const isArchived = expense.isArchived
 
@@ -663,94 +714,232 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
 
 
 
-                        {/* Receipt Image */}
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                                <Receipt className="w-3 h-3" /> Receipt Image
-                                {(editImageFile || expense.imageEdited) && <span className="text-primary font-bold animate-pulse">(Edited)</span>}
-                            </label>
-                            <div className="relative group rounded-xl overflow-hidden border border-white/10 bg-black/40 aspect-[3/4] sm:aspect-video flex items-center justify-center">
-                                {displayImage ? (
+                        {/* Receipt Images Section */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                    <Receipt className="w-3.5 h-3.5 text-primary" /> 
+                                    รูปใบเสร็จ / บิล ({allDisplayImages.length})
+                                    {expense.imageEdited && <span className="text-primary font-bold text-[10px] bg-primary/10 px-1.5 py-0.5 rounded">แก้ไขแล้ว</span>}
+                                </label>
+                                {allDisplayImages.length > 1 && (
+                                    <span className="text-[11px] font-mono text-muted-foreground">
+                                        บิลที่ {Math.min(activeImageIndex + 1, allDisplayImages.length)} จาก {allDisplayImages.length}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Main Spotlight Preview */}
+                            <div className="relative group rounded-xl overflow-hidden border border-white/10 bg-black/40 aspect-[4/3] sm:aspect-video flex items-center justify-center">
+                                {currentActiveImage ? (
                                     <>
                                         <Image
-                                            src={displayImage}
-                                            alt="Receipt"
+                                            src={currentActiveImage}
+                                            alt={`Receipt ${activeImageIndex + 1}`}
                                             fill
                                             sizes="(max-width: 768px) 100vw, 50vw"
                                             className="object-contain"
                                         />
+                                        
+                                        {/* Prev / Next Buttons if multiple images */}
+                                        {allDisplayImages.length > 1 && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setActiveImageIndex(prev => (prev > 0 ? prev - 1 : allDisplayImages.length - 1))
+                                                    }}
+                                                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all z-10"
+                                                    title="บิลก่อนหน้า"
+                                                >
+                                                    <ChevronLeft className="w-5 h-5" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setActiveImageIndex(prev => (prev < allDisplayImages.length - 1 ? prev + 1 : 0))
+                                                    }}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all z-10"
+                                                    title="บิลถัดไป"
+                                                >
+                                                    <ChevronRight className="w-5 h-5" />
+                                                </button>
+                                            </>
+                                        )}
+
+                                        {/* Hover Overlay Actions */}
                                         <div className={cn(
                                             "absolute inset-0 bg-black/60 transition-opacity flex items-center justify-center gap-3",
                                             isEditing ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                                         )}>
                                             <button
+                                                type="button"
                                                 onClick={() => setIsImageOpen(true)}
-                                                className="px-4 py-2 bg-white hover:bg-white/90 text-black rounded-full font-bold text-sm transition-all active:scale-95 shadow-lg"
+                                                className="px-4 py-2 bg-white hover:bg-white/90 text-black rounded-full font-bold text-xs transition-all active:scale-95 shadow-lg"
                                             >
-                                                View Full Screen
+                                                ดูรูปเต็ม (Full Screen)
                                             </button>
 
                                             {isEditing && (
-                                                <div className="relative">
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={handleImageUpload}
-                                                        className="hidden"
-                                                        id="edit-receipt-upload"
-                                                    />
-                                                    <label
-                                                        htmlFor="edit-receipt-upload"
-                                                        className="px-4 py-2 bg-primary text-primary-foreground rounded-full font-bold text-sm cursor-pointer hover:bg-primary/90 transition-colors flex items-center gap-2"
-                                                    >
-                                                        <Camera className="w-4 h-4" /> Change
-                                                    </label>
-                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (activeImageIndex < existingEditImages.length) {
+                                                            removeExistingReceiptImage(activeImageIndex)
+                                                        } else {
+                                                            removeNewImageFile(activeImageIndex - existingEditImages.length)
+                                                        }
+                                                    }}
+                                                    className="px-3 py-2 bg-rose-500/90 hover:bg-rose-500 text-white rounded-full font-bold text-xs transition-all flex items-center gap-1.5 shadow-lg"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" /> ลบบิลนี้
+                                                </button>
                                             )}
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="flex flex-col items-center text-muted-foreground gap-2">
+                                    <div className="flex flex-col items-center text-muted-foreground gap-2 p-6 text-center">
                                         <Receipt className="w-12 h-12 opacity-20" />
-                                        <span className="text-xs">No receipt image attached</span>
+                                        <span className="text-xs">ยังไม่มีรูปภาพบิลหรือใบเสร็จ</span>
                                         {isEditing && (
                                             <div className="mt-2">
                                                 <input
+                                                    ref={editFileInputRef}
                                                     type="file"
                                                     accept="image/*"
+                                                    multiple
                                                     onChange={handleImageUpload}
                                                     className="hidden"
                                                     id="add-receipt-upload"
                                                 />
                                                 <label
                                                     htmlFor="add-receipt-upload"
-                                                    className="px-4 py-2 bg-white/10 text-foreground rounded-full font-bold text-xs cursor-pointer hover:bg-white/20 transition-colors flex items-center gap-2"
+                                                    className="px-4 py-2 bg-primary/20 text-primary border border-primary/30 rounded-full font-bold text-xs cursor-pointer hover:bg-primary/30 transition-colors flex items-center gap-2"
                                                 >
-                                                    <Upload className="w-3 h-3" /> Upload Image
+                                                    <Upload className="w-3.5 h-3.5" /> อัพโหลดบิล (เลือกได้หลายรูป)
                                                 </label>
                                             </div>
                                         )}
                                     </div>
                                 )}
                             </div>
+
+                            {/* Multi-Bill Thumbnail Bar */}
+                            {allDisplayImages.length > 0 && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin">
+                                        {allDisplayImages.map((src, idx) => {
+                                            const isSelected = (idx === activeImageIndex)
+                                            const isNewlyAdded = isEditing && idx >= existingEditImages.length
+                                            return (
+                                                <div
+                                                    key={idx}
+                                                    onClick={() => setActiveImageIndex(idx)}
+                                                    className={cn(
+                                                        "relative w-16 h-16 rounded-lg overflow-hidden shrink-0 border-2 cursor-pointer transition-all bg-black/30",
+                                                        isSelected
+                                                            ? "border-primary shadow-md shadow-primary/20 scale-105"
+                                                            : "border-border/50 opacity-70 hover:opacity-100"
+                                                    )}
+                                                >
+                                                    <Image
+                                                        src={src}
+                                                        alt={`Thumbnail ${idx + 1}`}
+                                                        fill
+                                                        sizes="64px"
+                                                        className="object-cover"
+                                                    />
+                                                    <div className="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] font-bold text-center text-white py-0.5">
+                                                        #{idx + 1}
+                                                    </div>
+                                                    {isNewlyAdded && (
+                                                        <div className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-background" title="เพิ่มใหม่" />
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+
+                                        {/* In Edit mode: Add More Receipts Button */}
+                                        {isEditing && (
+                                            <label
+                                                htmlFor="add-more-receipt-upload"
+                                                className="w-16 h-16 rounded-lg border-2 border-dashed border-primary/30 hover:border-primary/60 bg-primary/5 hover:bg-primary/10 flex flex-col items-center justify-center gap-1 cursor-pointer shrink-0 transition-colors text-primary"
+                                                title="เพิ่มบิลอีกภาพ"
+                                            >
+                                                <Plus className="w-5 h-5" />
+                                                <span className="text-[9px] font-bold">+เพิ่มบิล</span>
+                                                <input
+                                                    ref={editFileInputRef}
+                                                    id="add-more-receipt-upload"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    multiple
+                                                    onChange={handleImageUpload}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                        <span>แนบทั้งหมด {allDisplayImages.length} บิล</span>
+                                        <span className="text-[10px] text-emerald-400/90 font-medium">ย่อขนาดอัตโนมัติคมชัด ประหยัดพื้นที่</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Lightbox / Full Screen Image */}
-                        {isImageOpen && fullImage && (
+                        {/* Lightbox / Full Screen Image with Next / Prev */}
+                        {isImageOpen && currentActiveImage && (
                             <div
-                                className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+                                className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
                                 onClick={() => setIsImageOpen(false)}
                             >
-                                <button
-                                    className="absolute top-4 right-4 p-3 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors z-10"
-                                    onClick={() => setIsImageOpen(false)}
+                                <div className="absolute top-4 inset-x-4 flex items-center justify-between z-10">
+                                    <div className="text-white/80 font-mono text-xs bg-black/50 px-3 py-1.5 rounded-full border border-white/10">
+                                        บิล {activeImageIndex + 1} / {allDisplayImages.length}
+                                    </div>
+                                    <button
+                                        className="p-2.5 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors"
+                                        onClick={() => setIsImageOpen(false)}
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                {allDisplayImages.length > 1 && (
+                                    <>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                setActiveImageIndex(prev => (prev > 0 ? prev - 1 : allDisplayImages.length - 1))
+                                            }}
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors z-10"
+                                            title="บิลก่อนหน้า"
+                                        >
+                                            <ChevronLeft className="w-6 h-6" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                setActiveImageIndex(prev => (prev < allDisplayImages.length - 1 ? prev + 1 : 0))
+                                            }}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors z-10"
+                                            title="บิลถัดไป"
+                                        >
+                                            <ChevronRight className="w-6 h-6" />
+                                        </button>
+                                    </>
+                                )}
+
+                                <div 
+                                    className="relative w-full h-full max-w-4xl max-h-[85vh] p-4 flex items-center justify-center"
+                                    onClick={(e) => e.stopPropagation()}
                                 >
-                                    <X className="w-6 h-6" />
-                                </button>
-                                <div className="relative w-full h-full p-8 flex items-center justify-center">
                                     <Image
-                                        src={fullImage}
-                                        alt="Full Receipt"
+                                        src={currentActiveImage}
+                                        alt={`Full Receipt ${activeImageIndex + 1}`}
                                         fill
                                         sizes="100vw"
                                         className="object-contain rounded-lg shadow-2xl"

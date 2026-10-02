@@ -7,7 +7,7 @@ import { useProjects, ExpenseCategory, ExpenseItem } from "@/context/project-con
 import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { uploadWithThumbnail } from "@/lib/upload"
+import { uploadWithThumbnail, compressReceiptImage } from "@/lib/upload"
 import SearchableCombobox from "@/components/ui/searchable-combobox"
 import { useOrganization } from "@/context/organization-context"
 import { sendExpenseNotification } from "@/lib/functions-client"
@@ -65,8 +65,13 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     const [status, setStatus] = React.useState<"Paid" | "Pending" | "Unpaid" | "Advanced" | "Credit">("Paid")
     const [receiptImage, setReceiptImage] = React.useState<string | null>(null)
     const [receiptFile, setReceiptFile] = React.useState<File | null>(null)
+    const [receiptFiles, setReceiptFiles] = React.useState<File[]>([])
+    const [receiptPreviews, setReceiptPreviews] = React.useState<string[]>([])
+    const [selectedPreviewIndex, setSelectedPreviewIndex] = React.useState<number>(0)
+    const [isCompressing, setIsCompressing] = React.useState(false)
     const [isUploading, setIsUploading] = React.useState(false)
     const [receiptExpanded, setReceiptExpanded] = React.useState(false)
+    const fileInputRef = React.useRef<HTMLInputElement>(null)
 
     // 3-Step Accordion Section State (1: หัวบิล, 2: รายการบิล, 3: รูปสลิป)
     const [openSections, setOpenSections] = React.useState<{ [key: number]: boolean }>({
@@ -137,9 +142,13 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
                 if (initialData.receiptImage) {
                     setReceiptImage(initialData.receiptImage)
+                    setReceiptPreviews([initialData.receiptImage])
+                    setSelectedPreviewIndex(0)
                     setReceiptExpanded(true)
                 } else {
                     setReceiptImage(null)
+                    setReceiptPreviews([])
+                    setSelectedPreviewIndex(0)
                     setReceiptExpanded(false)
                 }
                 setOpenSections({ 1: true, 2: true, 3: Boolean(initialData.receiptImage) })
@@ -149,6 +158,9 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                 setDate(defaultDate || new Date().toISOString().split('T')[0])
                 setPayee("")
                 setReceiptImage(null)
+                setReceiptFiles([])
+                setReceiptPreviews([])
+                setSelectedPreviewIndex(0)
                 setReceiptExpanded(false)
                 setOpenSections({ 1: true, 2: true, 3: false })
             }
@@ -158,6 +170,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
             setVendor("")
             setVatIncluded(true)
             setReceiptFile(null)
+            setReceiptFiles([])
 
             setQuickAdd(null)
             setErrors({})
@@ -353,41 +366,74 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     }
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (file) {
-            let fileToProcess = file
+        const files = e.target.files ? Array.from(e.target.files) : []
+        if (files.length === 0) return
 
-            // Compress immediately if > 1MB
-            if (file.size > 1024 * 1024) {
-                toast.loading("Compressing image...", { id: "compression" })
-                try {
-                    const { default: imageCompression } = await import('browser-image-compression')
-                    const options = {
-                        maxSizeMB: 0.6,
-                        maxWidthOrHeight: 1280,
-                        useWebWorker: true,
-                        initialQuality: 0.7
-                    }
-                    const compressedFile = await imageCompression(file, options)
-                    fileToProcess = new File([compressedFile], file.name, { type: file.type })
-                    toast.success("Image compressed", { id: "compression" })
-                } catch (err) {
-                    console.warn("Immediate compression failed:", err)
-                    toast.error("Compression failed", { id: "compression" })
+        setIsCompressing(true)
+        const toastId = toast.loading(`กำลังย่อขนาดรูปภาพ (${files.length} รูป)... / Compressing...`)
+
+        try {
+            const processedFiles: File[] = []
+            const newPreviews: string[] = []
+
+            for (const file of files) {
+                // Auto-compress every file aggressively to prevent storing huge photos
+                const compressed = await compressReceiptImage(file)
+                processedFiles.push(compressed)
+
+                // Generate preview
+                const previewUrl = await new Promise<string>((resolve) => {
+                    const reader = new FileReader()
+                    reader.onloadend = () => resolve(reader.result as string)
+                    reader.readAsDataURL(compressed)
+                })
+                newPreviews.push(previewUrl)
+            }
+
+            setReceiptFiles(prev => [...prev, ...processedFiles])
+            setReceiptPreviews(prev => {
+                const combined = [...prev, ...newPreviews]
+                // Primary receiptImage is the first preview
+                if (combined.length > 0) {
+                    setReceiptImage(combined[0])
                 }
+                return combined
+            })
+            // Set current selected to the latest newly added image
+            setSelectedPreviewIndex(receiptPreviews.length)
+            setReceiptExpanded(true)
+            toast.success(`เพิ่มรูปสลิป/บิลเรียบร้อย (${files.length} รูป ย่อขนาดแล้ว)`, { id: toastId })
+        } catch (err) {
+            console.error("Multi-image upload & compression failed:", err)
+            toast.error("ย่อขนาดรูปภาพไม่สำเร็จ", { id: toastId })
+        } finally {
+            setIsCompressing(false)
+            if (fileInputRef.current) {
+                fileInputRef.current.value = ""
             }
-
-            setReceiptFile(fileToProcess)
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                setReceiptImage(reader.result as string)
-            }
-            reader.readAsDataURL(fileToProcess)
         }
     }
 
-    const removeImage = () => {
+    const removeImageAtIndex = (index: number) => {
+        setReceiptPreviews(prev => {
+            const updated = prev.filter((_, i) => i !== index)
+            if (updated.length === 0) {
+                setReceiptImage(null)
+                setSelectedPreviewIndex(0)
+            } else {
+                setReceiptImage(updated[0])
+                setSelectedPreviewIndex(prevIdx => Math.min(prevIdx, updated.length - 1))
+            }
+            return updated
+        })
+        setReceiptFiles(prev => prev.filter((_, i) => i !== index))
+    }
+
+    const removeAllImages = () => {
         setReceiptImage(null)
+        setReceiptFiles([])
+        setReceiptPreviews([])
+        setSelectedPreviewIndex(0)
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -437,37 +483,50 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
 
         const runSave = async () => {
             try {
-                let finalReceiptUrl = receiptImage
-                let finalThumbnailUrl = undefined
-                let fileToUpload = receiptFile
+                let finalReceiptUrls: string[] = []
+                let finalThumbnailUrl: string | undefined = undefined
 
-                // handle smart scan base64 image
-                if (!fileToUpload && receiptImage && receiptImage.startsWith('data:image')) {
-                    try {
-                        const res = await fetch(receiptImage)
-                        const blob = await res.blob()
-                        fileToUpload = new File([blob], `scan_${Date.now()}.jpg`, { type: "image/jpeg" })
-                    } catch (err) {
-                        console.error("Failed to convert base64 to file", err)
-                    }
+                if (!currentOrg?.id) {
+                    throw new Error("Organization not found.")
                 }
+                const uploadPath = `organizations/${currentOrg.id}/expenses/${new Date().getFullYear()}`
 
-                if (fileToUpload) {
-                    if (!currentOrg?.id) {
-                        throw new Error("Organization not found.")
+                // 1. Upload all local files in receiptFiles
+                if (receiptFiles.length > 0) {
+                    for (const file of receiptFiles) {
+                        try {
+                            const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(file, uploadPath)
+                            finalReceiptUrls.push(originalUrl)
+                            if (!finalThumbnailUrl) finalThumbnailUrl = thumbnailUrl
+                        } catch (err) {
+                            console.error("Failed to upload receipt file:", err)
+                        }
                     }
-                    const path = `organizations/${currentOrg.id}/expenses/${new Date().getFullYear()}`
-                    const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(fileToUpload, path)
-                    finalReceiptUrl = originalUrl
+                } else if (receiptFile) {
+                    const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(receiptFile, uploadPath)
+                    finalReceiptUrls.push(originalUrl)
                     finalThumbnailUrl = thumbnailUrl
                 }
 
-                // SECURITY CHECK: Ensure we don't send huge Base64 strings to Firestore
-                if (finalReceiptUrl && finalReceiptUrl.startsWith('data:image')) {
-                    if (finalReceiptUrl.length > 500000) { // > 500KB
-                        finalReceiptUrl = null
+                // 2. Handle smart scan base64 image if any and not already uploaded
+                if (finalReceiptUrls.length === 0 && receiptImage && receiptImage.startsWith('data:image')) {
+                    try {
+                        const res = await fetch(receiptImage)
+                        const blob = await res.blob()
+                        const convertedFile = new File([blob], `scan_${Date.now()}.jpg`, { type: "image/jpeg" })
+                        const { originalUrl, thumbnailUrl } = await uploadWithThumbnail(convertedFile, uploadPath)
+                        finalReceiptUrls.push(originalUrl)
+                        finalThumbnailUrl = thumbnailUrl
+                    } catch (err) {
+                        console.error("Failed to convert base64 to file", err)
                     }
+                } else if (finalReceiptUrls.length === 0 && receiptImage && !receiptImage.startsWith('data:image')) {
+                    // Pre-existing remote URL
+                    finalReceiptUrls.push(receiptImage)
                 }
+
+                // Primary receipt URL for backwards compatibility
+                const primaryReceiptUrl = finalReceiptUrls[0] || undefined
 
                 if (billType === 'combine') {
                     // COMBINE MODE
@@ -504,7 +563,8 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     if (globalSubProjectId) expenseData.subProjectId = globalSubProjectId
                     if (status === 'Advanced' && paidBy) expenseData.paidBy = paidBy
                     if (status === 'Credit' && vendor) expenseData.vendor = vendor
-                    if (finalReceiptUrl) expenseData.receiptImage = finalReceiptUrl
+                    if (primaryReceiptUrl) expenseData.receiptImage = primaryReceiptUrl
+                    if (finalReceiptUrls.length > 0) expenseData.receiptImages = finalReceiptUrls
                     if (finalThumbnailUrl) expenseData.thumbnailUrl = finalThumbnailUrl
 
                     await addExpense(expenseData)
@@ -546,7 +606,8 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                         if (subProjectId && subProjectId !== "none") expenseData.subProjectId = subProjectId
                         if (status === 'Advanced' && paidBy) expenseData.paidBy = paidBy
                         if (status === 'Credit' && vendor) expenseData.vendor = vendor
-                        if (finalReceiptUrl) expenseData.receiptImage = finalReceiptUrl
+                        if (primaryReceiptUrl) expenseData.receiptImage = primaryReceiptUrl
+                        if (finalReceiptUrls.length > 0) expenseData.receiptImages = finalReceiptUrls
                         if (finalThumbnailUrl) expenseData.thumbnailUrl = finalThumbnailUrl
 
                         await addExpense(expenseData)
@@ -593,69 +654,134 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
     }
 
     const renderReceiptContent = () => {
-        if (receiptImage) {
-            return (
-                <div className="space-y-2 pt-1">
-                    <div className="relative rounded-xl overflow-hidden border border-border group aspect-video sm:aspect-[4/3] lg:aspect-auto lg:h-64 bg-muted/40 w-full">
-                        <Image
-                            src={receiptImage}
-                            alt="Receipt Preview"
-                            fill
-                            sizes="(max-width: 768px) 100vw, 600px"
-                            className="object-contain"
-                            unoptimized={receiptImage.startsWith('data:') || receiptImage.startsWith('blob:')}
-                        />
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                removeImage()
-                                setReceiptFile(null)
-                            }}
-                            className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-red-500 text-white rounded-full transition-colors shadow-lg cursor-pointer"
-                            title="ลบรูป"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="text-emerald-500 font-medium flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> แนบรูปภาพแล้ว
-                        </span>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                removeImage()
-                                setReceiptFile(null)
-                            }}
-                            className="text-red-500 hover:underline cursor-pointer"
-                        >
-                            เปลี่ยนรูปใหม่
-                        </button>
-                    </div>
-                </div>
-            )
-        }
+        const hasPreviews = receiptPreviews.length > 0 || Boolean(receiptImage)
+        const currentActiveUrl = receiptPreviews[selectedPreviewIndex] || receiptPreviews[0] || receiptImage
 
         return (
             <div className="space-y-3 pt-1">
-                <label className="flex flex-col items-center justify-center w-full h-36 lg:h-44 border-2 border-dashed border-border rounded-xl hover:bg-muted/40 hover:border-primary/50 transition-all cursor-pointer group">
-                    <div className="flex flex-col items-center justify-center p-4 text-center">
-                        <div className="p-3 rounded-full bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-2">
-                            <Upload className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+                {hasPreviews && currentActiveUrl ? (
+                    <div className="space-y-2.5">
+                        {/* Main Spotlight Preview */}
+                        <div className="relative rounded-xl overflow-hidden border border-border group aspect-video sm:aspect-[4/3] lg:aspect-auto lg:h-56 bg-muted/50 w-full flex items-center justify-center">
+                            <Image
+                                src={currentActiveUrl}
+                                alt={`Receipt ${selectedPreviewIndex + 1}`}
+                                fill
+                                sizes="(max-width: 768px) 100vw, 600px"
+                                className="object-contain"
+                                unoptimized={currentActiveUrl.startsWith('data:') || currentActiveUrl.startsWith('blob:')}
+                            />
+                            {/* Counter badge */}
+                            <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-white text-[11px] font-semibold border border-white/10 shadow">
+                                บิลที่ {selectedPreviewIndex + 1} จาก {Math.max(receiptPreviews.length, 1)}
+                            </div>
+
+                            {/* Delete single image button */}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (receiptPreviews.length > 0) {
+                                        removeImageAtIndex(selectedPreviewIndex)
+                                    } else {
+                                        removeAllImages()
+                                    }
+                                }}
+                                className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-red-500 text-white rounded-full transition-colors shadow-lg cursor-pointer"
+                                title="ลบรูปนี้"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
                         </div>
-                        <p className="text-xs text-muted-foreground group-hover:text-foreground font-medium">
-                            {t.expenses.dialog.upload_hint || "แตะเพื่อเลือกรูปใบเสร็จ หรือถ่ายรูปสลิป"}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground/60 mt-1">รองรับ JPG, PNG (ไม่บังคับ)</p>
+
+                        {/* Thumbnail Grid & Add More Bar */}
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                    แนบแล้ว {Math.max(receiptPreviews.length, 1)} บิล
+                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                        ย่อขนาดแล้ว
+                                    </span>
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={removeAllImages}
+                                    className="text-red-500 hover:underline text-[11px] cursor-pointer"
+                                >
+                                    ลบทั้งหมด
+                                </button>
+                            </div>
+
+                            {/* Thumbnails Row */}
+                            <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin">
+                                {receiptPreviews.map((preview, idx) => (
+                                    <div
+                                        key={idx}
+                                        onClick={() => setSelectedPreviewIndex(idx)}
+                                        className={cn(
+                                            "relative w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 shrink-0 cursor-pointer transition-all bg-muted/40",
+                                            selectedPreviewIndex === idx
+                                                ? "border-primary ring-2 ring-primary/30 scale-105 shadow-md"
+                                                : "border-border/70 hover:border-foreground/40 opacity-75 hover:opacity-100"
+                                        )}
+                                        title={`ดูบิลที่ ${idx + 1}`}
+                                    >
+                                        <Image
+                                            src={preview}
+                                            alt={`Receipt thumb ${idx + 1}`}
+                                            fill
+                                            sizes="64px"
+                                            className="object-cover"
+                                            unoptimized={preview.startsWith('data:') || preview.startsWith('blob:')}
+                                        />
+                                        <span className="absolute bottom-0.5 right-0.5 bg-black/75 text-white text-[9px] font-bold px-1 rounded">
+                                            #{idx + 1}
+                                        </span>
+                                    </div>
+                                ))}
+
+                                {/* Add More Button in thumbnail row */}
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isCompressing}
+                                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 flex flex-col items-center justify-center shrink-0 text-muted-foreground hover:text-primary transition-all cursor-pointer active:scale-95"
+                                    title="เพิ่มรูปบิลอีก"
+                                >
+                                    <Plus className="w-4 h-4 mb-0.5" />
+                                    <span className="text-[9px] font-semibold">+ เพิ่มบิล</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageUpload}
-                    />
-                </label>
+                ) : (
+                    /* Empty Upload Dropzone */
+                    <label className="flex flex-col items-center justify-center w-full h-36 lg:h-44 border-2 border-dashed border-border rounded-xl hover:bg-muted/40 hover:border-primary/50 transition-all cursor-pointer group">
+                        <div className="flex flex-col items-center justify-center p-4 text-center">
+                            <div className="p-3 rounded-full bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-2">
+                                <Upload className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+                            </div>
+                            <p className="text-xs text-muted-foreground group-hover:text-foreground font-semibold">
+                                {t.expenses.dialog.upload_hint || "แตะเพื่อเลือกรูปใบเสร็จ หรือถ่ายรูปสลิป"}
+                            </p>
+                            <p className="text-[11px] text-primary/80 mt-1 font-medium">
+                                สามารถเลือกได้หลายใบพร้อมกัน • ระบบจะย่อขนาดไฟล์ให้อัตโนมัติ
+                            </p>
+                            <p className="text-[10px] text-muted-foreground/60 mt-0.5">รองรับ JPG, PNG, WEBP</p>
+                        </div>
+                    </label>
+                )}
+
+                {/* Hidden File Input supporting multiple files */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleImageUpload}
+                />
             </div>
         )
     }
@@ -1431,13 +1557,17 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                                 </div>
                                                 {!openSections[3] && (
                                                     <p className="text-xs text-muted-foreground truncate mt-0.5 max-w-[200px] sm:max-w-md">
-                                                        {receiptImage ? "✓ มีรูปสลิปแล้ว" : "ยังไม่ได้แนบรูปสลิป (ไม่บังคับ)"}
+                                                        {receiptPreviews.length > 0 ? `✓ แนบแล้ว ${receiptPreviews.length} บิล (ย่อขนาดแล้ว)` : receiptImage ? "✓ มีรูปสลิปแล้ว" : "ยังไม่ได้แนบรูปสลิป (ไม่บังคับ)"}
                                                     </p>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
-                                            {receiptImage && <span className="text-[11px] text-emerald-400 font-medium">แนบแล้ว</span>}
+                                            {receiptPreviews.length > 0 ? (
+                                                <span className="text-[11px] text-emerald-400 font-medium">แนบแล้ว ({receiptPreviews.length})</span>
+                                            ) : receiptImage ? (
+                                                <span className="text-[11px] text-emerald-400 font-medium">แนบแล้ว</span>
+                                            ) : null}
                                             {openSections[3] ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                                         </div>
                                     </button>
@@ -1500,11 +1630,15 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                                             </div>
                                             <span className="text-sm font-bold text-foreground truncate">รูปใบเสร็จ / สลิป (Receipt)</span>
                                         </div>
-                                        {receiptImage && (
+                                        {receiptPreviews.length > 0 ? (
+                                            <span className="text-[11px] text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+                                                แนบแล้ว {receiptPreviews.length} บิล
+                                            </span>
+                                        ) : receiptImage ? (
                                             <span className="text-[11px] text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
                                                 แนบแล้ว
                                             </span>
-                                        )}
+                                        ) : null}
                                     </div>
 
                                     {renderReceiptContent()}

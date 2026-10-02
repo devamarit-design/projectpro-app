@@ -130,6 +130,7 @@ export interface Expense {
     items?: ExpenseItem[] // For split bills
     vatIncluded?: boolean
     receiptImage?: string
+    receiptImages?: string[]
     thumbnailUrl?: string
     imageEdited?: boolean
     subProjectId?: string

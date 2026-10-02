@@ -180,18 +180,32 @@ export const ExpensesPDF: React.FC<ExpensesPDFProps> = ({ expenses, title = "Exp
                 {showImages && (
                     <View break>
                         <Text style={{ ...styles.header, fontSize: 18, marginTop: 20 }}>Receipt Images</Text>
-                        {expenses.filter(e => e.receiptImage || e.thumbnailUrl).map((expense, index) => (
-                            <View key={expense.id} style={styles.imageContainer} break={index > 0 && index % 2 === 0}>
-                                <Text style={{ ...styles.subheader, textAlign: 'left', alignSelf: 'flex-start', marginLeft: '10%' }}>
-                                    {index + 1}. {expense.title} ({expense.date}) - {expense.totalValue.toLocaleString()}
-                                </Text>
-                                {/* Use proxy or direct URL depending on CORS setup. Direct URL usually fine if Firebase allow cors */}
-                                <Image
-                                    style={styles.receiptImage}
-                                    src={expense.receiptImage || expense.thumbnailUrl || ""}
-                                />
-                            </View>
-                        ))}
+                        {expenses
+                            .filter(e => (e.receiptImages && e.receiptImages.length > 0) || e.receiptImage || e.thumbnailUrl)
+                            .flatMap((expense, expenseIdx) => {
+                                const images = (expense.receiptImages && expense.receiptImages.length > 0)
+                                    ? expense.receiptImages
+                                    : [expense.receiptImage || expense.thumbnailUrl || ""]
+                                
+                                return images.filter(Boolean).map((imgUrl, imgIdx) => ({
+                                    expense,
+                                    imgUrl,
+                                    label: images.length > 1
+                                        ? `${expenseIdx + 1}.${imgIdx + 1} ${expense.title} (บิล ${imgIdx + 1}/${images.length}) - ${expense.date}`
+                                        : `${expenseIdx + 1}. ${expense.title} (${expense.date}) - ${expense.totalValue.toLocaleString()}`
+                                }))
+                            })
+                            .map((item, index) => (
+                                <View key={`${item.expense.id}-${index}`} style={styles.imageContainer} break={index > 0 && index % 2 === 0}>
+                                    <Text style={{ ...styles.subheader, textAlign: 'left', alignSelf: 'flex-start', marginLeft: '10%' }}>
+                                        {item.label}
+                                    </Text>
+                                    <Image
+                                        style={styles.receiptImage}
+                                        src={item.imgUrl}
+                                    />
+                                </View>
+                            ))}
                     </View>
                 )}
             </Page>
