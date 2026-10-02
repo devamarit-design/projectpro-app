@@ -102,7 +102,7 @@ export default function OnboardingPage() {
     }
 
     return (
-        <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div className="dark min-h-screen bg-zinc-950 text-zinc-100 flex flex-col items-center justify-center p-4 relative overflow-hidden selection:bg-primary selection:text-white">
             {/* Background Effects */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
                 <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[100px]" />
@@ -116,7 +116,7 @@ export default function OnboardingPage() {
                             <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
                                 {t.onboarding.welcome} {currentUser.name}!
                             </h1>
-                            <p className="text-muted-foreground text-lg">
+                            <p className="text-zinc-400 text-lg">
                                 {t.onboarding.get_started}
                             </p>
                         </div>
@@ -125,15 +125,15 @@ export default function OnboardingPage() {
                             {teams.length > 0 && (
                                 <button
                                     onClick={() => router.push("/")}
-                                    className="group relative overflow-hidden bg-primary/10 border border-primary/50 p-6 rounded-2xl hover:bg-primary/20 transition-all text-left"
+                                    className="group relative overflow-hidden bg-primary/10 border border-primary/40 p-6 rounded-2xl hover:bg-primary/20 transition-all text-left shadow-lg backdrop-blur-xl"
                                 >
                                     <div className="relative flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground">
                                             <ArrowRight className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-bold">{t.onboarding.continue_to} {teams[0].name}</h3>
-                                            <p className="text-muted-foreground text-sm">{t.onboarding.enter_workspace}</p>
+                                            <h3 className="text-lg font-bold text-white">{t.onboarding.continue_to} {teams[0].name}</h3>
+                                            <p className="text-zinc-400 text-sm">{t.onboarding.enter_workspace}</p>
                                         </div>
                                     </div>
                                 </button>
@@ -141,7 +141,7 @@ export default function OnboardingPage() {
 
                             <button
                                 onClick={() => setStep("create")}
-                                className="group relative overflow-hidden bg-card border border-white/10 p-6 rounded-2xl hover:border-primary/50 transition-all text-left"
+                                className="group relative overflow-hidden bg-zinc-900/90 border border-zinc-800 p-6 rounded-2xl hover:border-primary/60 transition-all text-left shadow-xl backdrop-blur-xl"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <div className="relative flex items-center gap-4">
@@ -149,27 +149,27 @@ export default function OnboardingPage() {
                                         <Plus className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold">{t.onboarding.create_team}</h3>
-                                        <p className="text-muted-foreground text-sm">{t.onboarding.create_desc}</p>
+                                        <h3 className="text-lg font-bold text-white">{t.onboarding.create_team}</h3>
+                                        <p className="text-zinc-400 text-sm">{t.onboarding.create_desc}</p>
                                     </div>
-                                    <ArrowRight className="w-5 h-5 ml-auto text-muted-foreground group-hover:text-primary transition-colors" />
+                                    <ArrowRight className="w-5 h-5 ml-auto text-zinc-500 group-hover:text-primary transition-colors" />
                                 </div>
                             </button>
 
                             <button
                                 onClick={() => setStep("join")}
-                                className="group relative overflow-hidden bg-card border border-white/10 p-6 rounded-2xl hover:border-blue-500/50 transition-all text-left"
+                                className="group relative overflow-hidden bg-zinc-900/90 border border-zinc-800 p-6 rounded-2xl hover:border-blue-500/60 transition-all text-left shadow-xl backdrop-blur-xl"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <div className="relative flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-500">
+                                    <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
                                         <Users className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold">{t.onboarding.join_team}</h3>
-                                        <p className="text-muted-foreground text-sm">{t.onboarding.join_desc}</p>
+                                        <h3 className="text-lg font-bold text-white">{t.onboarding.join_team}</h3>
+                                        <p className="text-zinc-400 text-sm">{t.onboarding.join_desc}</p>
                                     </div>
-                                    <ArrowRight className="w-5 h-5 ml-auto text-muted-foreground group-hover:text-blue-500 transition-colors" />
+                                    <ArrowRight className="w-5 h-5 ml-auto text-zinc-500 group-hover:text-blue-400 transition-colors" />
                                 </div>
                             </button>
                         </div>
@@ -177,21 +177,21 @@ export default function OnboardingPage() {
                 )}
 
                 {step === "create" && (
-                    <div className="bg-card border border-white/10 rounded-3xl p-8 space-y-6 animate-in slide-in-from-right duration-300">
+                    <div className="bg-zinc-900/95 border border-zinc-800 rounded-3xl p-8 space-y-6 animate-in slide-in-from-right duration-300 shadow-2xl backdrop-blur-xl text-white">
                         <div className="space-y-2">
                             <button
                                 onClick={() => setStep("welcome")}
-                                className="text-sm text-muted-foreground hover:text-white transition-colors"
+                                className="text-sm text-zinc-400 hover:text-white transition-colors"
                             >
                                 ← {t.onboarding.back}
                             </button>
-                            <h2 className="text-2xl font-bold">{t.onboarding.name_team}</h2>
-                            <p className="text-muted-foreground">{t.onboarding.company_question}</p>
+                            <h2 className="text-2xl font-bold text-white">{t.onboarding.name_team}</h2>
+                            <p className="text-zinc-400">{t.onboarding.company_question}</p>
                         </div>
 
                         <form onSubmit={handleCreateTeam} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t.onboarding.team_name}</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 ml-1">{t.onboarding.team_name}</label>
                                 <div className="relative">
                                     <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                                     <input
@@ -200,7 +200,7 @@ export default function OnboardingPage() {
                                         value={teamName}
                                         onChange={(e) => setTeamName(e.target.value)}
                                         placeholder="Acme Construction Co."
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl pl-12 pr-4 py-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-lg font-medium"
+                                        className="w-full bg-zinc-950/80 border border-zinc-800 text-white placeholder:text-zinc-500 rounded-xl pl-12 pr-4 py-4 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-lg font-medium"
                                         required
                                     />
                                 </div>
@@ -225,50 +225,50 @@ export default function OnboardingPage() {
                 )}
 
                 {step === "join" && (
-                    <div className="bg-card border border-white/10 rounded-3xl p-8 space-y-6 animate-in slide-in-from-right duration-300">
+                    <div className="bg-zinc-900/95 border border-zinc-800 rounded-3xl p-8 space-y-6 animate-in slide-in-from-right duration-300 shadow-2xl backdrop-blur-xl text-white">
                         <div className="space-y-2">
                             <button
                                 onClick={() => setStep("welcome")}
-                                className="text-sm text-muted-foreground hover:text-white transition-colors"
+                                className="text-sm text-zinc-400 hover:text-white transition-colors"
                             >
                                 ← {t.onboarding.back}
                             </button>
-                            <h2 className="text-2xl font-bold">{t.onboarding.join_title}</h2>
-                            <p className="text-muted-foreground">{t.onboarding.ask_admin}</p>
+                            <h2 className="text-2xl font-bold text-white">{t.onboarding.join_title}</h2>
+                            <p className="text-zinc-400">{t.onboarding.ask_admin}</p>
                         </div>
 
-                        <div className="p-6 bg-muted/20 rounded-xl border border-dashed border-white/20 text-center space-y-4">
-                            <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto">
-                                <Users className="w-8 h-8 text-muted-foreground" />
+                        <div className="p-6 bg-zinc-950/60 rounded-xl border border-dashed border-zinc-800 text-center space-y-4">
+                            <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto border border-zinc-800">
+                                <Users className="w-8 h-8 text-zinc-400" />
                             </div>
                             <div>
-                                <h3 className="font-medium">{t.onboarding.have_link}</h3>
-                                <p className="text-sm text-muted-foreground mt-1">
+                                <h3 className="font-semibold text-white">{t.onboarding.have_link}</h3>
+                                <p className="text-sm text-zinc-400 mt-1">
                                     {t.onboarding.link_hint}
                                 </p>
                             </div>
                         </div>
 
-                        <form onSubmit={handleJoinByCode} className="space-y-4 pt-4 border-t border-white/10">
+                        <form onSubmit={handleJoinByCode} className="space-y-4 pt-4 border-t border-zinc-800">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t.onboarding.enter_code}</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 ml-1">{t.onboarding.enter_code}</label>
                                 <div className="space-y-4">
                                     <input
                                         type="text"
                                         value={inviteCode}
                                         onChange={(e) => setInviteCode(e.target.value)}
                                         placeholder={t.onboarding.enter_invite}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono text-center tracking-widest uppercase"
+                                        className="w-full bg-zinc-950 border border-zinc-800 text-white placeholder:text-zinc-500 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all font-mono text-center text-lg tracking-widest uppercase selection:bg-primary selection:text-white"
                                     />
                                     {error && (
-                                        <p className="text-sm text-red-500 text-center bg-red-500/10 py-2 rounded-lg border border-red-500/20">{error}</p>
+                                        <p className="text-sm text-red-400 text-center bg-red-500/10 py-2 rounded-lg border border-red-500/20">{error}</p>
                                     )}
                                     <button
                                         type="submit"
                                         disabled={isLoading || !inviteCode.trim()}
-                                        className="w-full bg-white text-black py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        className="w-full bg-white text-zinc-950 py-3.5 rounded-xl font-bold uppercase tracking-wider hover:bg-zinc-200 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-white/5"
                                     >
-                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.onboarding.join}
+                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin text-zinc-950" /> : t.onboarding.join}
                                     </button>
                                 </div>
                             </div>

@@ -111,7 +111,7 @@ function JoinContent() {
     if (isSuccess) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-                <Card className="w-full max-w-md border-none shadow-xl text-center p-8 space-y-4">
+                <Card className="w-full max-w-md border border-border bg-card text-card-foreground shadow-xl text-center p-8 space-y-4">
                     <div className="mx-auto w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500">
                         <CheckCircle2 className="w-10 h-10" />
                     </div>
@@ -125,7 +125,7 @@ function JoinContent() {
     if (isPreviewing && orgPreview) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-                <Card className="w-full max-w-md border-none shadow-xl overflow-hidden">
+                <Card className="w-full max-w-md border border-border bg-card text-card-foreground shadow-xl overflow-hidden">
                     <div className="h-24 bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
                         <div className="bg-background p-4 rounded-2xl shadow-lg -mb-12">
                             <Building2 className="w-10 h-10 text-primary" />
@@ -197,7 +197,7 @@ function JoinContent() {
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-            <Card className="w-full max-w-md border-none shadow-xl">
+            <Card className="w-full max-w-md border border-border bg-card text-card-foreground shadow-xl">
                 <CardHeader className="text-center space-y-2">
                     <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit mb-2">
                         <Building2 className="w-8 h-8 text-primary" />
@@ -217,7 +217,7 @@ function JoinContent() {
                                     placeholder={t.dialogs.join_org.placeholder}
                                     value={inviteCode}
                                     onChange={(e) => setInviteCode(e.target.value)}
-                                    className="h-12 text-lg text-center tracking-wider"
+                                    className="h-12 text-lg text-center tracking-wider font-mono uppercase bg-background text-foreground"
                                     required
                                     autoFocus
                                 />
