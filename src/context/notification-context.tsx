@@ -1,5 +1,6 @@
 "use client"
 
+import { CONTRACTS_ENABLED } from "@/lib/feature-flags"
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { useProjects, ProjectTask, Expense } from "./project-context"
 import { useSettings } from "./settings-context"
@@ -418,7 +419,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         })
 
         // 3. Contract Installment Alerts
-        contracts?.forEach(contract => {
+        if (CONTRACTS_ENABLED) contracts?.forEach(contract => {
             contract.installments.forEach(installment => {
                 if (installment.status === 'Pending') {
                     const dueDate = parseISO(installment.dueDate)

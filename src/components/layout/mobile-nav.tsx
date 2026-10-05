@@ -1,5 +1,6 @@
 "use client"
 
+import { CONTRACTS_ENABLED } from "@/lib/feature-flags"
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -123,7 +124,7 @@ export function MobileNav() {
             {
                 title: "เอกสาร", // Documents
                 items: [
-                    { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 bg-amber-500/10" },
+                    ...(CONTRACTS_ENABLED ? [{ href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 bg-amber-500/10" }] : []),
                     { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList, color: "text-amber-400 bg-amber-500/10" },
                 ]
             },

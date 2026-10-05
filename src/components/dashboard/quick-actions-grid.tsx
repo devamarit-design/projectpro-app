@@ -1,5 +1,6 @@
 "use client"
 
+import { CONTRACTS_ENABLED } from "@/lib/feature-flags"
 import React, { useState, useEffect, useRef, useMemo } from "react"
 import Link from "next/link"
 import { useTranslation } from "@/lib/i18n-context"
@@ -310,7 +311,7 @@ export function QuickActionsGrid() {
 
     // Allowed shortcuts for current role
     const allowedShortcuts = useMemo(() => {
-        return ALL_SHORTCUTS.filter(a => isActionAllowed(a, userRole))
+        return ALL_SHORTCUTS.filter(a => isActionAllowed(a, userRole) && (CONTRACTS_ENABLED || a.id !== "contracts"))
     }, [ALL_SHORTCUTS, userRole])
 
     // State for active shortcuts and editing mode

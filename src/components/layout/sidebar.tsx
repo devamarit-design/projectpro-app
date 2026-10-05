@@ -1,5 +1,6 @@
 "use client"
 
+import { CONTRACTS_ENABLED } from "@/lib/feature-flags"
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -88,7 +89,7 @@ export function Sidebar({ className }: { className?: string }) {
         {
             title: "เอกสาร", // Documents
             items: [
-                { href: "/contracts", label: t.common.contracts, icon: FileText },
+                ...(CONTRACTS_ENABLED ? [{ href: "/contracts", label: t.common.contracts, icon: FileText }] : []),
                 { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList },
             ]
         },

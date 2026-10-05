@@ -1,5 +1,6 @@
 "use client"
 
+import { CONTRACTS_ENABLED } from "@/lib/feature-flags"
 import * as React from "react"
 import { Sidebar } from "./sidebar"
 import { Header } from "./header"
@@ -47,6 +48,13 @@ export function AppShell({
             }
         }
     }, [isGuest, pathname, router])
+
+    // Contract system disabled — redirect direct visits
+    React.useEffect(() => {
+        if (!CONTRACTS_ENABLED && pathname && (pathname === "/contracts" || pathname.startsWith("/contracts/"))) {
+            router.replace("/expenses")
+        }
+    }, [pathname, router])
 
     // Enable scroll position restoration for iOS back navigation
     useScrollRestoration("main-scroll-container")

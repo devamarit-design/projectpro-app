@@ -1,5 +1,6 @@
 "use client"
 
+import { CONTRACTS_ENABLED } from "@/lib/feature-flags"
 import * as React from "react"
 import { Plus, Search, Filter, Camera, ScanLine, Tag, Wallet, TrendingDown, LayoutGrid, Hammer, Users, FileText, CreditCard, Archive, RefreshCcw, ArrowDownAZ, FileDown, ChevronDown, ChevronRight } from "lucide-react"
 import { SmartScanDialog } from "@/components/expenses/smart-scan-dialog"
@@ -420,6 +421,7 @@ function ExpensesContent() {
                             )}
                         </div>
 
+                        {CONTRACTS_ENABLED && (
                         <button
                             onClick={() => setIsContractOpen(true)}
                             className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-background/80 dark:bg-black/50 backdrop-blur-md border border-white/15 dark:border-white/10 text-foreground rounded-xl font-medium shadow-sm hover:bg-background dark:hover:bg-black/70 transition-all text-xs sm:text-sm whitespace-nowrap cursor-pointer"
@@ -427,6 +429,7 @@ function ExpensesContent() {
                             <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                             {t.expenses.create_contract}
                         </button>
+                        )}
 
                         {/* Add Expense Button - Opens Selection */}
                         <button
