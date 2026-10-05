@@ -853,7 +853,12 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                     </div>
                 ) : (
                     /* Empty Upload Dropzone */
-                    <label className="flex flex-col items-center justify-center w-full h-36 lg:h-44 border-2 border-dashed border-border rounded-xl hover:bg-muted/40 hover:border-primary/50 transition-all cursor-pointer group">
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isCompressing}
+                        className="flex flex-col items-center justify-center w-full h-36 lg:h-44 border-2 border-dashed border-border rounded-xl hover:bg-muted/40 hover:border-primary/50 transition-all cursor-pointer group active:scale-[0.99]"
+                    >
                         <div className="flex flex-col items-center justify-center p-4 text-center">
                             <div className="p-3 rounded-full bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-colors mb-2">
                                 <Upload className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
@@ -866,7 +871,7 @@ export default function AddExpenseDialog({ isOpen, onClose, defaultProjectId, st
                             </p>
                             <p className="text-[10px] text-muted-foreground/60 mt-0.5">รองรับ JPG, PNG, WEBP</p>
                         </div>
-                    </label>
+                    </button>
                 )}
 
                 {/* Hidden File Input supporting multiple files */}
