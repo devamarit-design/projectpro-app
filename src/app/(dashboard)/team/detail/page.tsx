@@ -61,9 +61,12 @@ function UserDetailContent() {
 
     // 3. Real-time Activity Fetch
     const [userActivity, setUserActivity] = useState<ActivityItem[]>([])
+    const activityUserId = user?.id
+    const userHasOrgs = !!user?.orgIds && user.orgIds.length > 0
+    const activityOrgId = currentTeam?.id
 
     useEffect(() => {
-        if (!user || !user.orgIds || user.orgIds.length === 0) return
+        if (!activityUserId || !userHasOrgs) return
 
         // Query activities where:
         // 1. It belongs to the current org (context) - optimizing for current view
@@ -78,14 +81,14 @@ function UserDetailContent() {
         // Better: where('relatedUserIds', 'array-contains', user.id)
 
         try {
-            const currentOrgId = currentTeam?.id
+            const currentOrgId = activityOrgId
             if (!currentOrgId) return
 
             // Construct Query
             const q = query(
                 collection(db, "activities"),
                 where("orgId", "==", currentOrgId),
-                where("relatedUserIds", "array-contains", user.id),
+                where("relatedUserIds", "array-contains", activityUserId),
                 // orderBy("timestamp", "desc"), // Requires Index
                 // limit(50)
             )
@@ -119,7 +122,9 @@ function UserDetailContent() {
             console.error("Setup activity listener failed", e)
         }
 
-    }, [user, currentUser])
+        // Depend only on stable primitives — `user` is a new object on every context update,
+        // which previously caused the listener to resubscribe (and re-download) constantly.
+    }, [activityUserId, userHasOrgs, activityOrgId])
 
     // 4. Calculate Stats
     const stats = useMemo(() => {
@@ -153,6 +158,14 @@ function UserDetailContent() {
             totalExpenses: formattedExp
         }
     }, [user, tasks, expenses, projects])
+
+    if (!user && users.length === 0) {
+        return (
+            <div className="p-8 flex justify-center">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+        )
+    }
 
     if (!user) {
         return <div className="p-8 text-center text-muted-foreground">User not found</div>
