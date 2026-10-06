@@ -240,16 +240,63 @@ export default function PartnerDetailSheet({ partnerId, type, onClose }: Partner
                             </div>
                         </div>
 
-                        {/* Tabs */}
+                        {/* Tabs / Header */}
                         <div>
-                            <div className="flex border-b border-white/10 mb-4">
-                                <button
-                                    onClick={() => setActiveTab("history")}
-                                    className="flex-1 pb-3 text-sm font-bold uppercase tracking-wider border-b-2 border-primary text-foreground transition-colors text-left"
-                                >
-                                    Payment History
-                                </button>
-                            </div>
+                            {type === "Worker" ? (
+                                <div className="flex p-1 bg-muted/40 border border-white/5 rounded-xl mb-4 gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveTab("history")}
+                                        className={cn(
+                                            "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold tracking-wide transition-all outline-none focus:outline-none",
+                                            activeTab === "history"
+                                                ? "bg-card text-foreground shadow-sm border border-white/10"
+                                                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                        )}
+                                    >
+                                        <Wallet className="w-3.5 h-3.5 text-primary" />
+                                        <span>Payment History</span>
+                                        <span className={cn(
+                                            "px-1.5 py-0.5 rounded-full text-[10px] font-mono",
+                                            activeTab === "history" ? "bg-primary/15 text-primary font-bold" : "bg-muted text-muted-foreground"
+                                        )}>
+                                            {relevantExpenses.length}
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveTab("tasks")}
+                                        className={cn(
+                                            "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold tracking-wide transition-all outline-none focus:outline-none",
+                                            activeTab === "tasks"
+                                                ? "bg-card text-foreground shadow-sm border border-white/10"
+                                                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                        )}
+                                    >
+                                        <CheckSquare className="w-3.5 h-3.5 text-primary" />
+                                        <span>Assigned Tasks</span>
+                                        <span className={cn(
+                                            "px-1.5 py-0.5 rounded-full text-[10px] font-mono",
+                                            activeTab === "tasks" ? "bg-primary/15 text-primary font-bold" : "bg-muted text-muted-foreground"
+                                        )}>
+                                            {relevantTasks.length}
+                                        </span>
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-1.5 h-3.5 bg-primary rounded-full" />
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                                            <Wallet className="w-3.5 h-3.5 text-primary" />
+                                            Payment History
+                                        </h3>
+                                    </div>
+                                    <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                                        {relevantExpenses.length} records
+                                    </span>
+                                </div>
+                            )}
 
                             {/* History Tab */}
                             {activeTab === "history" && (
