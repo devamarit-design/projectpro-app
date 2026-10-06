@@ -1815,6 +1815,16 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
 
     // Contracts migrated to FinanceContext
 
+    // ORG-SPECIFIC ROLE: `users.role` is a legacy global field (often "Member"/"Staff").
+    // The real permission role lives per-organization (organizations[].role / org.members / ownerId),
+    // which is already resolved in `currentTeam.role`. Expose currentUser with that role so every
+    // `currentUser?.role` check across the app matches the role shown on the Team page.
+    const effectiveCurrentUser = React.useMemo<User | null>(() => {
+        if (!currentUser) return null
+        if (!currentTeam?.role || currentUser.role === currentTeam.role) return currentUser
+        return { ...currentUser, role: currentTeam.role }
+    }, [currentUser, currentTeam?.role])
+
     const value = React.useMemo(() => ({
         projects: filteredProjects.filter(p => !p.isArchived),
         addProject,
@@ -1840,7 +1850,7 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
 
         companyProfile,
         updateCompanyProfile,
-        currentUser,
+        currentUser: effectiveCurrentUser,
         setCurrentUser,
         isAuthLoading,
         isOrgLoading,
@@ -1878,7 +1888,7 @@ function CoreProjectProvider({ children }: { children: React.ReactNode }) {
         deleteSubProject,
         companyProfile,
         updateCompanyProfile,
-        currentUser,
+        effectiveCurrentUser,
         setCurrentUser,
         isAuthLoading,
         isOrgLoading,
