@@ -1,16 +1,22 @@
 "use client"
 
-import { MapPin, Calendar, MoreHorizontal, ArrowLeft, Edit, Trash2, Check, ChevronDown, Archive, Download, ExternalLink } from "lucide-react"
+import { MapPin, Calendar, MoreHorizontal, ArrowLeft, Edit, Trash2, Check, ChevronDown, Archive, Download, ExternalLink, Camera } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useProjects, ProjectStatus, Project } from "@/context/project-context"
+import { useOrganization } from "@/context/organization-context"
 import { hasPermission } from "@/lib/permissions"
 import { useRouter } from "next/navigation"
 import { useTranslation } from "@/lib/i18n-context"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { exportProjectToExcel } from "@/lib/export-project"
 import { getGoogleMapsUrl, formatLocationDisplay } from "@/lib/utils"
+import { isCustomUploadedPhoto, getProjectTheme } from "@/lib/project-themes"
+import { ProjectCoverGraphic } from "@/components/projects/project-cover-graphic"
+import { CoverPresetModal } from "@/components/projects/cover-preset-picker"
+import { uploadImage } from "@/lib/upload"
+import { toast } from "sonner"
 
 interface ProjectHeaderProps {
     project: Project
@@ -19,11 +25,35 @@ interface ProjectHeaderProps {
 
 export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
     const { deleteProject, updateProject, archiveProject, currentUser, tasks, expenses, incomes, customers, users, currentTeam } = useProjects()
+    const { currentOrg } = useOrganization()
     const router = useRouter()
     const [showMenu, setShowMenu] = useState(false)
     const [showStatusPicker, setShowStatusPicker] = useState(false)
     const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
+    const [showCoverModal, setShowCoverModal] = useState(false)
     const { t, locale } = useTranslation() // Hook
+
+    const hasCustomPhoto = useMemo(() => isCustomUploadedPhoto(project.image), [project.image])
+    const theme = useMemo(() => getProjectTheme({
+        id: project.id,
+        name: project.name,
+        imageUrl: project.image
+    }), [project.id, project.name, project.image])
+
+    const handleSelectCover = async (newUrl: string) => {
+        try {
+            await updateProject(project.id, { image: newUrl })
+            toast.success("เปลี่ยนรูปแบบโครงการสำเร็จ")
+        } catch (e) {
+            console.error("Failed to update project cover", e)
+            toast.error("ไม่สามารถบันทึกได้")
+        }
+    }
+
+    const handleUploadCustomFile = async (file: File) => {
+        if (!currentOrg?.id) throw new Error("No organization selected")
+        return await uploadImage(file, `organizations/${currentOrg.id}/projects/covers`)
+    }
 
     const handleDelete = () => {
         if (confirm(t.projects.detail.header.confirm_delete)) {
@@ -92,7 +122,7 @@ export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
             />
             <div className="relative group">
                 {/* Cover Image */}
-                <div className="min-h-[500px] md:h-[580px] w-full relative rounded-2xl overflow-hidden shadow-2xl">
+                <div className="min-h-[460px] md:h-[500px] w-full relative rounded-2xl overflow-hidden shadow-2xl">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/10 z-10" />
 
                     {/* Top Actions */}
@@ -101,7 +131,16 @@ export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
                             <ArrowLeft className="w-6 h-6" />
                         </Link>
 
-                        <div className="relative pointer-events-auto">
+                        <div className="relative pointer-events-auto flex items-center gap-2">
+                            <button
+                                onClick={() => setShowCoverModal(true)}
+                                className="px-3.5 py-3 bg-black/50 hover:bg-black/75 hover:border-white/30 text-white rounded-full backdrop-blur-xl transition-all shadow-2xl active:scale-95 border border-white/10 flex items-center gap-1.5 text-xs font-semibold"
+                                title="เปลี่ยนรูปแบบหรือภาพปกโครงการ"
+                            >
+                                <Camera className="w-4.5 h-4.5 text-primary" />
+                                <span className="hidden sm:inline">เปลี่ยนปก</span>
+                            </button>
+
                             <button
                                 onClick={() => setShowMenu(!showMenu)}
                                 className="p-3.5 bg-black/50 hover:bg-black/75 hover:border-white/30 text-white rounded-full backdrop-blur-xl transition-all shadow-2xl active:scale-95 border border-white/10"
@@ -152,11 +191,21 @@ export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
                         </div>
                     </div>
 
-                    <img
-                        src={project.image}
-                        alt={project.name}
-                        className="w-full h-full object-cover transform scale-105 group-hover:scale-110 transition-transform duration-1000"
-                    />
+                    {hasCustomPhoto || (project.image && project.image.startsWith('http')) ? (
+                        <img
+                            src={project.image}
+                            alt={project.name}
+                            className="w-full h-full object-cover transform scale-105 group-hover:scale-110 transition-transform duration-1000"
+                        />
+                    ) : (
+                        <div className="w-full h-full">
+                            <ProjectCoverGraphic
+                                theme={theme}
+                                name={project.name}
+                                compact={false}
+                            />
+                        </div>
+                    )}
 
                     {/* Project Info Overlay */}
                     <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 z-20 text-white pt-48 bg-gradient-to-t from-black via-black/40 to-transparent">
@@ -269,6 +318,16 @@ export function ProjectHeader({ project, totalExpenses }: ProjectHeaderProps) {
                     </div>
                 </div>
             </div>
+
+            <CoverPresetModal
+                isOpen={showCoverModal}
+                onClose={() => setShowCoverModal(false)}
+                currentImageUrl={project.image}
+                projectName={project.name}
+                projectId={project.id}
+                onSelectCover={handleSelectCover}
+                onUploadCustomFile={handleUploadCustomFile}
+            />
         </>
     )
 }

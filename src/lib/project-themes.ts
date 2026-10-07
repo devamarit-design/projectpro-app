@@ -28,6 +28,22 @@ export interface ProjectThemeConfig {
     keywords: string[]
 }
 
+export interface ProjectThemeCategory {
+    id: string
+    label: string
+}
+
+export const PROJECT_THEME_CATEGORIES: ProjectThemeCategory[] = [
+    { id: 'all', label: 'ทั้งหมด' },
+    { id: 'house', label: 'บ้าน & วิลล่า' },
+    { id: 'office', label: 'ออฟฟิศ & อาคาร' },
+    { id: 'retail', label: 'ร้านค้า & คาเฟ่' },
+    { id: 'renovation', label: 'รีโนเวท & ภายใน' },
+    { id: 'structure', label: 'ไซต์งาน & โครงสร้าง' },
+    { id: 'industrial', label: 'โรงงาน & โกดัง' },
+    { id: 'minimal', label: 'มินิมอล & โมเดิร์น' },
+]
+
 export const PROJECT_THEMES: ProjectThemeConfig[] = [
     {
         id: 'emerald-villa',
