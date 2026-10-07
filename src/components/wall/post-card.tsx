@@ -71,6 +71,7 @@ export function PostCard({ post }: PostCardProps) {
     const { toggleReaction, deletePost, updatePost } = useSocial()
     const { currentUser, users } = useProjects()
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+    const [videoAspect, setVideoAspect] = useState<'portrait' | 'landscape' | 'square' | 'auto'>('auto')
 
     // Emojis configuration
     const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"]
@@ -274,8 +275,30 @@ export function PostCard({ post }: PostCardProps) {
                             {post.mediaUrls && post.mediaUrls.length > 0 && (
                                 <div className="rounded-xl overflow-hidden bg-muted/30 border border-border/50">
                                     {post.mediaType === 'video' ? (
-                                        <div className="aspect-video relative bg-black">
-                                            <video src={post.mediaUrls[0]} controls className="w-full h-full object-contain" />
+                                        <div className={cn(
+                                            "relative w-full rounded-xl overflow-hidden bg-black flex items-center justify-center transition-all duration-300",
+                                            videoAspect === 'portrait' && "aspect-[4/5] sm:aspect-[3/4] min-h-[340px] sm:min-h-[420px] max-h-[580px]",
+                                            videoAspect === 'landscape' && "aspect-[16/10] sm:aspect-video min-h-[260px] sm:min-h-[300px] max-h-[480px]",
+                                            videoAspect === 'square' && "aspect-square min-h-[320px] max-h-[520px]",
+                                            videoAspect === 'auto' && "aspect-[4/5] min-h-[340px] max-h-[560px]"
+                                        )}>
+                                            <video
+                                                src={post.mediaUrls[0]}
+                                                controls
+                                                playsInline
+                                                preload="metadata"
+                                                onLoadedMetadata={(e) => {
+                                                    const { videoWidth, videoHeight } = e.currentTarget
+                                                    if (videoHeight > videoWidth * 1.1) {
+                                                        setVideoAspect('portrait')
+                                                    } else if (videoWidth > videoHeight * 1.1) {
+                                                        setVideoAspect('landscape')
+                                                    } else {
+                                                        setVideoAspect('square')
+                                                    }
+                                                }}
+                                                className="w-full h-full max-h-[580px] object-contain"
+                                            />
                                         </div>
                                     ) : (
                                         <div className={cn(
