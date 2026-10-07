@@ -38,14 +38,153 @@ import {
     Sparkles,
     LayoutGrid,
     CalendarRange,
-    Image as ImageIcon
+    Image as ImageIcon,
+    ChevronDown,
+    ChevronUp,
+    ChevronsUpDown
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { WeeklyJobSheetSummaryModal, WeekGroupData } from "@/components/jobsheets/weekly-jobsheet-summary-modal";
 
 const THAI_MONTH_SHORT = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 const THAI_MONTH_LONG = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+
+interface ThaiDayColorInfo {
+    dayName: string;
+    shortName: string;
+    colorName: string;
+    emoji: string;
+    bgSubtle: string;
+    border: string;
+    text: string;
+    badgeBg: string;
+    indicator: string;
+    ring: string;
+}
+
+const THAI_DAY_COLORS: Record<number, ThaiDayColorInfo> = {
+    0: { // Sunday (วันอาทิตย์ - สีแดง)
+        dayName: "วันอาทิตย์",
+        shortName: "อา.",
+        colorName: "สีแดง",
+        emoji: "🔴",
+        bgSubtle: "bg-red-500/5 hover:bg-red-500/10 dark:bg-red-950/25 dark:hover:bg-red-950/40",
+        border: "border-red-500/25 dark:border-red-500/35",
+        text: "text-red-700 dark:text-red-400",
+        badgeBg: "bg-red-500 text-white font-bold",
+        indicator: "bg-red-500",
+        ring: "ring-red-500/30"
+    },
+    1: { // Monday (วันจันทร์ - สีเหลือง)
+        dayName: "วันจันทร์",
+        shortName: "จ.",
+        colorName: "สีเหลือง",
+        emoji: "🟡",
+        bgSubtle: "bg-amber-500/5 hover:bg-amber-500/10 dark:bg-amber-950/25 dark:hover:bg-amber-950/40",
+        border: "border-amber-500/25 dark:border-amber-500/35",
+        text: "text-amber-700 dark:text-amber-400",
+        badgeBg: "bg-amber-400 text-black font-bold",
+        indicator: "bg-amber-400",
+        ring: "ring-amber-400/30"
+    },
+    2: { // Tuesday (วันอังคาร - สีชมพู)
+        dayName: "วันอังคาร",
+        shortName: "อ.",
+        colorName: "สีชมพู",
+        emoji: "🌸",
+        bgSubtle: "bg-pink-500/5 hover:bg-pink-500/10 dark:bg-pink-950/25 dark:hover:bg-pink-950/40",
+        border: "border-pink-500/25 dark:border-pink-500/35",
+        text: "text-pink-700 dark:text-pink-400",
+        badgeBg: "bg-pink-500 text-white font-bold",
+        indicator: "bg-pink-500",
+        ring: "ring-pink-500/30"
+    },
+    3: { // Wednesday (วันพุธ - สีเขียว)
+        dayName: "วันพุธ",
+        shortName: "พ.",
+        colorName: "สีเขียว",
+        emoji: "🟢",
+        bgSubtle: "bg-emerald-500/5 hover:bg-emerald-500/10 dark:bg-emerald-950/25 dark:hover:bg-emerald-950/40",
+        border: "border-emerald-500/25 dark:border-emerald-500/35",
+        text: "text-emerald-700 dark:text-emerald-400",
+        badgeBg: "bg-emerald-500 text-white font-bold",
+        indicator: "bg-emerald-500",
+        ring: "ring-emerald-500/30"
+    },
+    4: { // Thursday (วันพฤหัสบดี - สีส้ม)
+        dayName: "วันพฤหัสบดี",
+        shortName: "พฤ.",
+        colorName: "สีส้ม",
+        emoji: "🟠",
+        bgSubtle: "bg-orange-500/5 hover:bg-orange-500/10 dark:bg-orange-950/25 dark:hover:bg-orange-950/40",
+        border: "border-orange-500/25 dark:border-orange-500/35",
+        text: "text-orange-700 dark:text-orange-400",
+        badgeBg: "bg-orange-500 text-white font-bold",
+        indicator: "bg-orange-500",
+        ring: "ring-orange-500/30"
+    },
+    5: { // Friday (วันศุกร์ - สีฟ้า)
+        dayName: "วันศุกร์",
+        shortName: "ศ.",
+        colorName: "สีฟ้า",
+        emoji: "🔵",
+        bgSubtle: "bg-sky-500/5 hover:bg-sky-500/10 dark:bg-sky-950/25 dark:hover:bg-sky-950/40",
+        border: "border-sky-500/25 dark:border-sky-500/35",
+        text: "text-sky-700 dark:text-sky-400",
+        badgeBg: "bg-sky-500 text-white font-bold",
+        indicator: "bg-sky-500",
+        ring: "ring-sky-500/30"
+    },
+    6: { // Saturday (วันเสาร์ - สีม่วง)
+        dayName: "วันเสาร์",
+        shortName: "ส.",
+        colorName: "สีม่วง",
+        emoji: "🟣",
+        bgSubtle: "bg-purple-500/5 hover:bg-purple-500/10 dark:bg-purple-950/25 dark:hover:bg-purple-950/40",
+        border: "border-purple-500/25 dark:border-purple-500/35",
+        text: "text-purple-700 dark:text-purple-400",
+        badgeBg: "bg-purple-500 text-white font-bold",
+        indicator: "bg-purple-500",
+        ring: "ring-purple-500/30"
+    }
+};
+
+function getThaiDayInfo(dateStr: string) {
+    const [y, m, d] = (dateStr || "").split("-").map(Number);
+    const date = new Date(y, (m || 1) - 1, d || 1);
+    const dayOfWeek = isNaN(date.getTime()) ? 1 : date.getDay();
+    const info = THAI_DAY_COLORS[dayOfWeek] || THAI_DAY_COLORS[1];
+    const todayStr = new Date().toISOString().split("T")[0];
+    const isToday = dateStr === todayStr;
+    const fullDateLabel = `${info.dayName}ที่ ${d} ${THAI_MONTH_SHORT[(m || 1) - 1]} ${y}`;
+
+    return {
+        ...info,
+        fullDateLabel,
+        isToday,
+        dayNumber: d,
+        monthName: THAI_MONTH_SHORT[(m || 1) - 1],
+        nameTh: info.dayName,
+        bg: info.bgSubtle
+    };
+}
+
+interface DayGroupData {
+    dayKey: string;
+    date: string;
+    dayInfo: ReturnType<typeof getThaiDayInfo>;
+    fullDateTh: string;
+    sheets: JobSheet[];
+    totalTasksDone: number;
+    totalTasks: number;
+    reporters: string[];
+}
+
+type WeekGroupWithDays = WeekGroupData & {
+    dayGroups: DayGroupData[];
+};
 
 function getISOWeekNumber(d: Date): number {
     const target = new Date(d.valueOf());
@@ -162,6 +301,28 @@ export default function JobSheetsPage() {
     // Weekly Summary Modal state
     const [selectedWeekForSummary, setSelectedWeekForSummary] = useState<WeekGroupData | null>(null);
     const [isWeeklySummaryOpen, setIsWeeklySummaryOpen] = useState(false);
+
+    // Collapsible states for Day and Week groups
+    const [collapsedDayKeys, setCollapsedDayKeys] = useState<Set<string>>(new Set());
+    const [collapsedWeekKeys, setCollapsedWeekKeys] = useState<Set<string>>(new Set());
+
+    const toggleDayCollapse = (dayKey: string) => {
+        setCollapsedDayKeys((prev) => {
+            const next = new Set(prev);
+            if (next.has(dayKey)) next.delete(dayKey);
+            else next.add(dayKey);
+            return next;
+        });
+    };
+
+    const toggleWeekCollapse = (weekKey: string) => {
+        setCollapsedWeekKeys((prev) => {
+            const next = new Set(prev);
+            if (next.has(weekKey)) next.delete(weekKey);
+            else next.add(weekKey);
+            return next;
+        });
+    };
 
     // Helper: Strict check if a JobSheet belongs to the current user
     const checkIsMine = (sheet: JobSheet): boolean => {
@@ -302,7 +463,8 @@ export default function JobSheetsPage() {
         }
 
         // 2. Sort sheets in each week descending by date
-        const weekList: WeekGroupData[] = Array.from(weekMap.values()).map((w) => {
+        // 2. Sort sheets in each week descending by date, and build Day Groups
+        const weekList: WeekGroupWithDays[] = Array.from(weekMap.values()).map((w) => {
             const sortedSheets = [...w.sheets].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
             const totalTasksDone = sortedSheets.reduce(
                 (acc, s) => acc + (s.workItems?.filter((item) => item.status === "completed").length || 0),
@@ -321,6 +483,42 @@ export default function JobSheetsPage() {
             );
             const isCurrentWeek = todayStr >= w.startDateStr && todayStr <= w.endDateStr;
 
+            // Group sheets by date into DayGroups
+            const dayMap = new Map<string, JobSheet[]>();
+            for (const s of sortedSheets) {
+                const d = s.date || "unknown";
+                if (!dayMap.has(d)) dayMap.set(d, []);
+                dayMap.get(d)!.push(s);
+            }
+
+            const dayGroups: DayGroupData[] = Array.from(dayMap.entries())
+                .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+                .map(([date, dSheets]) => {
+                    const dayInfo = getThaiDayInfo(date);
+                    const dTasksDone = dSheets.reduce(
+                        (acc, s) => acc + (s.workItems?.filter((item) => item.status === "completed").length || 0),
+                        0
+                    );
+                    const dTasks = dSheets.reduce(
+                        (acc, s) => acc + (s.workItems?.length || 0),
+                        0
+                    );
+                    const reporters = Array.from(
+                        new Set(dSheets.map((s) => s.reportedBy || s.createdByName).filter(Boolean))
+                    );
+
+                    return {
+                        dayKey: `${w.weekKey}_${date}`,
+                        date,
+                        dayInfo,
+                        fullDateTh: dayInfo.fullDateLabel,
+                        sheets: dSheets,
+                        totalTasksDone: dTasksDone,
+                        totalTasks: dTasks,
+                        reporters
+                    };
+                });
+
             return {
                 weekKey: w.weekKey,
                 weekLabel: w.weekLabel,
@@ -328,6 +526,7 @@ export default function JobSheetsPage() {
                 startDateStr: w.startDateStr,
                 endDateStr: w.endDateStr,
                 sheets: sortedSheets,
+                dayGroups,
                 totalTasksDone,
                 totalTasks,
                 totalManpower,
@@ -344,7 +543,7 @@ export default function JobSheetsPage() {
             monthKey: string;
             monthLabel: string;
             totalSheets: number;
-            weeks: WeekGroupData[];
+            weeks: WeekGroupWithDays[];
         }>();
 
         for (const week of weekList) {
@@ -368,6 +567,24 @@ export default function JobSheetsPage() {
 
         return Array.from(mGroupsMap.values());
     }, [filteredSheets]);
+
+    // Helpers to expand / collapse all days
+    const handleExpandAllDays = () => {
+        setCollapsedDayKeys(new Set());
+        setCollapsedWeekKeys(new Set());
+    };
+
+    const handleCollapseAllDays = () => {
+        const allDayKeys = new Set<string>();
+        for (const mg of monthGroups) {
+            for (const wk of mg.weeks) {
+                for (const dg of wk.dayGroups) {
+                    allDayKeys.add(dg.dayKey);
+                }
+            }
+        }
+        setCollapsedDayKeys(allDayKeys);
+    };
 
     // Stats (Privacy-aware)
     const mySheets = useMemo(() => jobsheets.filter(checkIsMine), [jobsheets, currentUserId, currentUser?.id, currentUser?.name, currentUser?.email]);
@@ -643,10 +860,10 @@ export default function JobSheetsPage() {
                                             ? "bg-amber-500 text-black shadow-xs font-bold"
                                             : "text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white"
                                     }`}
-                                    title="จัดเรียงแบ่งตามสัปดาห์และเดือน พร้อมออกเอกสารสรุป"
+                                    title="จัดเรียงแบ่งตามสัปดาห์และเดือน พร้อมแยกวันตามสีประจำวัน"
                                 >
                                     <CalendarRange className="w-3.5 h-3.5" />
-                                    <span>แบ่งตามสัปดาห์ / เดือน</span>
+                                    <span>แยกตามวัน / สัปดาห์</span>
                                 </button>
                                 <button
                                     type="button"
@@ -662,6 +879,30 @@ export default function JobSheetsPage() {
                                     <span className="hidden sm:inline">การ์ดทั้งหมด</span>
                                 </button>
                             </div>
+
+                            {/* Quick Expand All / Collapse All Days Button (Only in Grouped View) */}
+                            {viewMode === "grouped" && (
+                                <div className="flex items-center gap-1 bg-muted/70 dark:bg-zinc-950/70 p-1 rounded-xl border border-border dark:border-white/10 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={handleExpandAllDays}
+                                        className="px-2.5 py-1 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white transition-all flex items-center gap-1 cursor-pointer"
+                                        title="ขยายการแสดงผลทุกวัน"
+                                    >
+                                        <ChevronsUpDown className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">ขยายทุกวัน</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleCollapseAllDays}
+                                        className="px-2.5 py-1 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white transition-all flex items-center gap-1 cursor-pointer"
+                                        title="ย่อเก็บการแสดงผลทุกวัน"
+                                    >
+                                        <ChevronUp className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">ย่อทุกวัน</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Right: Search and Dropdowns */}
@@ -806,8 +1047,28 @@ export default function JobSheetsPage() {
                                                         </div>
                                                     </div>
 
-                                                    {/* Button: Export Weekly Summary */}
+                                                    {/* Week Action Controls */}
                                                     <div className="flex items-center gap-2 self-start md:self-auto pl-2 shrink-0">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => toggleWeekCollapse(week.weekKey)}
+                                                            className="h-10 text-xs font-bold border-border/80 dark:border-white/10 hover:bg-muted dark:hover:bg-white/10 text-foreground/80 dark:text-white/80 rounded-xl px-3 cursor-pointer"
+                                                        >
+                                                            {collapsedWeekKeys.has(week.weekKey) ? (
+                                                                <>
+                                                                    <ChevronDown className="w-4 h-4 mr-1.5 text-amber-500" />
+                                                                    <span>ขยายสัปดาห์ ({week.sheets.length})</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <ChevronUp className="w-4 h-4 mr-1.5 text-amber-500" />
+                                                                    <span>ย่อสัปดาห์</span>
+                                                                </>
+                                                            )}
+                                                        </Button>
+
                                                         <Button
                                                             type="button"
                                                             onClick={() => handleOpenWeeklySummary(week)}
@@ -819,88 +1080,183 @@ export default function JobSheetsPage() {
                                                     </div>
                                                 </div>
 
-                                                {/* Cards in this Week */}
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                    {week.sheets.map((sheet) => {
-                                                        const completedCount = sheet.workItems?.filter((w) => w.status === "completed").length || 0;
-                                                        const isMySheet = checkIsMine(sheet);
-                                                        const canEditOrDelete = isMySheet || isAdminOrOwner;
-                                                        const totalItemPhotos = sheet.workItems?.reduce((acc, w) => acc + (w.photos?.length || 0), 0) || 0;
-                                                        const totalPhotos = (sheet.photos?.length || 0) + totalItemPhotos;
+                                                {/* Days Accordion List in this Week */}
+                                                {!collapsedWeekKeys.has(week.weekKey) && (
+                                                    <div className="space-y-4 pt-1">
+                                                        {week.dayGroups.map((dayGroup) => {
+                                                            const isDayCollapsed = collapsedDayKeys.has(dayGroup.dayKey);
+                                                            const dayInfo = dayGroup.dayInfo;
 
-                                                        return (
-                                                            <div
-                                                                key={sheet.id}
-                                                                className="bg-card dark:bg-zinc-900/60 border border-border dark:border-white/10 hover:border-amber-500/40 rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all duration-300 group shadow-xs hover:shadow-md dark:hover:shadow-amber-500/5 relative overflow-hidden"
-                                                            >
-                                                                <div className="space-y-3">
-                                                                    {/* Top Tag Row */}
-                                                                    <div className="flex items-center justify-between gap-2">
-                                                                        <span className="font-mono text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                                                                            {sheet.reportNumber}
-                                                                        </span>
-                                                                        <span className="text-[11px] text-muted-foreground dark:text-white/50 flex items-center gap-1 font-mono">
-                                                                            <Calendar className="w-3 h-3 text-muted-foreground/70 dark:text-white/40" />
-                                                                            {sheet.date}
-                                                                        </span>
-                                                                    </div>
-
-                                                                    {/* Title & Project */}
-                                                                    <div>
-                                                                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                                                                            {sheet.isMultiProject && (
-                                                                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25 dark:border-amber-500/30">
-                                                                                    🗂️ หลายโครงการ & งานทั่วไป
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <h3 className="font-bold text-card-foreground dark:text-white text-base group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors line-clamp-1">
-                                                                            {sheet.title}
-                                                                        </h3>
-                                                                        <p className="text-xs text-muted-foreground dark:text-white/60 flex items-center gap-1.5 mt-0.5 truncate">
-                                                                            <Building2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                                                                            <span className="truncate">{sheet.projectName}</span>
-                                                                            {sheet.subProjectName && (
-                                                                                <span className="text-muted-foreground/70 dark:text-white/40 truncate">({sheet.subProjectName})</span>
-                                                                            )}
-                                                                        </p>
-                                                                    </div>
-
-                                                                    {/* Weather & Status Badges */}
-                                                                    <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/70 dark:bg-white/5 text-foreground/80 dark:text-white/70 border border-border/70 dark:border-white/5">
-                                                                            <CloudSun className="w-3 h-3 text-amber-500 dark:text-amber-400" />
-                                                                            {sheet.weather?.condition ? sheet.weather.condition.split("(")[0].trim() : "แจ่มใส"}
-                                                                            {sheet.weather?.temperature ? ` ${sheet.weather.temperature}°C` : ""}
-                                                                        </span>
-                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                                                                            <CheckCircle2 className="w-3 h-3" />
-                                                                            เสร็จ {completedCount}/{sheet.workItems?.length || 0}
-                                                                        </span>
-                                                                        {totalPhotos > 0 && (
-                                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium">
-                                                                                <ImageIcon className="w-3 h-3" />
-                                                                                {totalPhotos} รูป
-                                                                            </span>
+                                                            return (
+                                                                <div
+                                                                    key={dayGroup.dayKey}
+                                                                    className={cn(
+                                                                        "rounded-2xl border transition-all duration-200 overflow-hidden",
+                                                                        dayInfo.border,
+                                                                        isDayCollapsed
+                                                                            ? "bg-card/40 dark:bg-zinc-900/40 hover:bg-card/70 dark:hover:bg-zinc-900/70"
+                                                                            : "bg-card/70 dark:bg-zinc-900/60 shadow-xs"
+                                                                    )}
+                                                                >
+                                                                    {/* Day Header Accordion Trigger */}
+                                                                    <div
+                                                                        onClick={() => toggleDayCollapse(dayGroup.dayKey)}
+                                                                        className={cn(
+                                                                            "p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none transition-colors",
+                                                                            dayInfo.bg,
+                                                                            !isDayCollapsed && cn("border-b", dayInfo.border)
                                                                         )}
+                                                                    >
+                                                                        {/* Left: Day Badge + Date + Summary Chips */}
+                                                                        <div className="flex items-center gap-3 flex-wrap">
+                                                                            {/* Thai Day Badge with Emoji */}
+                                                                            <div className={cn(
+                                                                                "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border shadow-xs tracking-wide",
+                                                                                dayInfo.badgeBg
+                                                                            )}>
+                                                                                <span className="text-base leading-none select-none">{dayInfo.emoji}</span>
+                                                                                <span>{dayInfo.nameTh}</span>
+                                                                                <span className="text-[10px] opacity-75 font-normal">({dayInfo.colorName})</span>
+                                                                            </div>
+
+                                                                            {/* Full Thai Date */}
+                                                                            <span className="text-xs sm:text-sm font-bold text-foreground/90 dark:text-white/90">
+                                                                                {dayGroup.fullDateTh}
+                                                                            </span>
+
+                                                                            {/* Mini Stats for this Day */}
+                                                                            <div className="flex items-center gap-2 flex-wrap text-xs">
+                                                                                <span className="inline-flex items-center gap-1.5 bg-background/80 dark:bg-black/40 px-2.5 py-1 rounded-lg border border-border/70 dark:border-white/5 font-medium text-foreground/80 dark:text-white/80">
+                                                                                    <FileText className={cn("w-3.5 h-3.5", dayInfo.text)} />
+                                                                                    <strong>{dayGroup.sheets.length}</strong> ฉบับ
+                                                                                </span>
+                                                                                <span className="inline-flex items-center gap-1.5 bg-background/80 dark:bg-black/40 px-2.5 py-1 rounded-lg border border-border/70 dark:border-white/5 font-medium text-foreground/80 dark:text-white/80">
+                                                                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                                                                    <strong>{dayGroup.totalTasksDone}/{dayGroup.totalTasks}</strong> งานสำเร็จ
+                                                                                </span>
+                                                                                {dayGroup.reporters.length > 0 && (
+                                                                                    <span className="hidden md:inline-flex items-center gap-1 text-[11px] text-muted-foreground dark:text-white/50">
+                                                                                        <Users className="w-3 h-3" />
+                                                                                        {dayGroup.reporters.join(", ")}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Right: Expand / Collapse Toggle Hint & Icon */}
+                                                                        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                                                                            <span className="text-[11px] font-medium text-muted-foreground dark:text-white/50">
+                                                                                {isDayCollapsed ? "คลิกเพื่อดูรายงาน" : "ย่อเก็บ"}
+                                                                            </span>
+                                                                            <div className={cn(
+                                                                                "w-7 h-7 rounded-lg flex items-center justify-center transition-transform duration-200 border",
+                                                                                dayInfo.border,
+                                                                                "bg-background/80 dark:bg-black/40"
+                                                                            )}>
+                                                                                <ChevronDown className={cn(
+                                                                                    "w-4 h-4 transition-transform duration-200",
+                                                                                    dayInfo.text,
+                                                                                    !isDayCollapsed && "rotate-180"
+                                                                                )} />
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
 
-                                                                    {/* Work items snippet */}
-                                                                    {sheet.workItems && sheet.workItems.length > 0 && (
-                                                                        <div className="bg-muted/40 dark:bg-zinc-950/60 border border-border/50 dark:border-white/5 rounded-xl p-2.5 text-xs text-foreground/80 dark:text-white/70 space-y-1">
-                                                                            <span className="text-[10px] text-muted-foreground dark:text-white/40 uppercase tracking-wider block font-semibold">
-                                                                                รายการงานเด่น:
-                                                                            </span>
-                                                                            {sheet.workItems.slice(0, 2).map((item, idx) => (
-                                                                                <div key={idx} className="flex items-center justify-between text-[11px] truncate">
-                                                                                    <span className="truncate">
-                                                                                        {item.projectName ? (
-                                                                                            <strong className="text-amber-600 dark:text-amber-400/90 font-medium mr-1">
-                                                                                                [{item.projectName}]
-                                                                                            </strong>
-                                                                                        ) : null}
-                                                                                        {item.task}
-                                                                                    </span>
+                                                                    {/* Day Cards (Collapsible Body) */}
+                                                                    {!isDayCollapsed && (
+                                                                        <div className="p-3 sm:p-4 pt-3.5">
+                                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                                                {dayGroup.sheets.map((sheet) => {
+                                                                                    const completedCount = sheet.workItems?.filter((w) => w.status === "completed").length || 0;
+                                                                                    const isMySheet = checkIsMine(sheet);
+                                                                                    const canEditOrDelete = isMySheet || isAdminOrOwner;
+                                                                                    const totalItemPhotos = sheet.workItems?.reduce((acc, w) => acc + (w.photos?.length || 0), 0) || 0;
+                                                                                    const totalPhotos = (sheet.photos?.length || 0) + totalItemPhotos;
+
+                                                                                    return (
+                                                                                        <div
+                                                                                            key={sheet.id}
+                                                                                            className="bg-card dark:bg-zinc-900/70 border border-border dark:border-white/10 hover:border-amber-500/40 rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all duration-300 group shadow-xs hover:shadow-md dark:hover:shadow-amber-500/5 relative overflow-hidden"
+                                                                                        >
+                                                                                            {/* Top Accent Strip in Thai Day Color */}
+                                                                                            <div className={cn("absolute top-0 left-0 right-0 h-1", dayInfo.indicator)} />
+
+                                                                                            <div className="space-y-3 pt-0.5">
+                                                                                                {/* Top Tag Row */}
+                                                                                                <div className="flex items-center justify-between gap-2">
+                                                                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                                                                        <span className="font-mono text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                                                                                                            {sheet.reportNumber}
+                                                                                                        </span>
+                                                                                                        <span className={cn(
+                                                                                                            "text-[10px] font-bold px-1.5 py-0.5 rounded-md border",
+                                                                                                            dayInfo.badgeBg
+                                                                                                        )}>
+                                                                                                            {dayInfo.emoji} {dayInfo.nameTh}
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                    <span className="text-[11px] text-muted-foreground dark:text-white/50 flex items-center gap-1 font-mono">
+                                                                                                        <Calendar className="w-3 h-3 text-muted-foreground/70 dark:text-white/40" />
+                                                                                                        {sheet.date}
+                                                                                                    </span>
+                                                                                                </div>
+
+                                                                                                {/* Title & Project */}
+                                                                                                <div>
+                                                                                                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                                                                                        {sheet.isMultiProject && (
+                                                                                                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25 dark:border-amber-500/30">
+                                                                                                                🗂️ หลายโครงการ & งานทั่วไป
+                                                                                                            </span>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                    <h3 className="font-bold text-card-foreground dark:text-white text-base group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors line-clamp-1">
+                                                                                                        {sheet.title}
+                                                                                                    </h3>
+                                                                                                    <p className="text-xs text-muted-foreground dark:text-white/60 flex items-center gap-1.5 mt-0.5 truncate">
+                                                                                                        <Building2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                                                                                                        <span className="truncate">{sheet.projectName}</span>
+                                                                                                        {sheet.subProjectName && (
+                                                                                                            <span className="text-muted-foreground/70 dark:text-white/40 truncate">({sheet.subProjectName})</span>
+                                                                                                        )}
+                                                                                                    </p>
+                                                                                                </div>
+
+                                                                                                {/* Weather & Status Badges */}
+                                                                                                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                                                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/70 dark:bg-white/5 text-foreground/80 dark:text-white/70 border border-border/70 dark:border-white/5">
+                                                                                                        <CloudSun className="w-3 h-3 text-amber-500 dark:text-amber-400" />
+                                                                                                        {sheet.weather?.condition ? sheet.weather.condition.split("(")[0].trim() : "แจ่มใส"}
+                                                                                                        {sheet.weather?.temperature ? ` ${sheet.weather.temperature}°C` : ""}
+                                                                                                    </span>
+                                                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                                                                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                                                        เสร็จ {completedCount}/{sheet.workItems?.length || 0}
+                                                                                                    </span>
+                                                                                                    {totalPhotos > 0 && (
+                                                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium">
+                                                                                                            <ImageIcon className="w-3.5 h-3.5" />
+                                                                                                            {totalPhotos} รูป
+                                                                                                        </span>
+                                                                                                    )}
+                                                                                                </div>
+
+                                                                                                {/* Work items snippet */}
+                                                                                                {sheet.workItems && sheet.workItems.length > 0 && (
+                                                                                                    <div className="bg-muted/40 dark:bg-zinc-950/60 border border-border/50 dark:border-white/5 rounded-xl p-2.5 text-xs text-foreground/80 dark:text-white/70 space-y-1">
+                                                                                                        <span className="text-[10px] text-muted-foreground dark:text-white/40 uppercase tracking-wider block font-semibold">
+                                                                                                            รายการงานเด่น:
+                                                                                                        </span>
+                                                                                                        {sheet.workItems.slice(0, 2).map((item, idx) => (
+                                                                                                            <div key={idx} className="flex items-center justify-between text-[11px] truncate">
+                                                                                                                <span className="truncate">
+                                                                                                                    {item.projectName ? (
+                                                                                                                        <strong className="text-amber-600 dark:text-amber-400/90 font-medium mr-1">
+                                                                                                                            [{item.projectName}]
+                                                                                                                        </strong>
+                                                                                                                    ) : null}
+                                                                                                                    {item.task}
+                                                                                                                </span>
                                                                                     <span className="text-muted-foreground dark:text-white/40 shrink-0 text-[10px] ml-2 font-mono">
                                                                                         {item.quantity}
                                                                                     </span>
@@ -926,45 +1282,52 @@ export default function JobSheetsPage() {
                                                                 </div>
 
                                                                 {/* Actions Toolbar */}
-                                                                <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-border dark:border-white/10">
-                                                                    <div className="flex items-center gap-1">
-                                                                        {canEditOrDelete && (
-                                                                            <>
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => startEdit(sheet)}
-                                                                                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
-                                                                                    title="แก้ไขรายงาน"
-                                                                                >
-                                                                                    <Edit3 className="w-4 h-4" />
-                                                                                </button>
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => setDeletingSheetId(sheet.id)}
-                                                                                    className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:text-white/50 dark:hover:text-rose-400 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
-                                                                                    title="ลบรายงาน"
-                                                                                >
-                                                                                    <Trash2 className="w-4 h-4" />
-                                                                                </button>
-                                                                            </>
-                                                                        )}
-                                                                    </div>
+                                                                                            <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-border dark:border-white/10">
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                    {canEditOrDelete && (
+                                                                                                        <>
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={() => startEdit(sheet)}
+                                                                                                                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+                                                                                                                title="แก้ไขรายงาน"
+                                                                                                            >
+                                                                                                                <Edit3 className="w-4 h-4" />
+                                                                                                            </button>
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={() => setDeletingSheetId(sheet.id)}
+                                                                                                                className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:text-white/50 dark:hover:text-rose-400 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                                                                                                title="ลบรายงาน"
+                                                                                                            >
+                                                                                                                <Trash2 className="w-4 h-4" />
+                                                                                                            </button>
+                                                                                                        </>
+                                                                                                    )}
+                                                                                                </div>
 
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <Button
-                                                                            size="sm"
-                                                                            onClick={() => openPreview(sheet)}
-                                                                            className="h-8 text-xs bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg shadow-xs cursor-pointer"
-                                                                        >
-                                                                            <Eye className="w-3.5 h-3.5 mr-1" />
-                                                                            เปิด Sheet / โหลด
-                                                                        </Button>
-                                                                    </div>
+                                                                                                <div className="flex items-center gap-1.5">
+                                                                                                    <Button
+                                                                                                        size="sm"
+                                                                                                        onClick={() => openPreview(sheet)}
+                                                                                                        className="h-8 text-xs bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg shadow-xs cursor-pointer"
+                                                                                                    >
+                                                                                                        <Eye className="w-3.5 h-3.5 mr-1" />
+                                                                                                        เปิด Sheet / โหลด
+                                                                                                    </Button>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

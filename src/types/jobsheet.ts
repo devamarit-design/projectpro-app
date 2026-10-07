@@ -1,9 +1,27 @@
 export type JobSheetStatus = 'completed' | 'in_progress' | 'pending' | 'delayed';
 
+export type JobSheetTitleHighlightStyle =
+    | 'standard'
+    | 'highlight_amber'
+    | 'highlight_blue'
+    | 'highlight_emerald'
+    | 'highlight_rose'
+    | 'pill'
+    | 'underlined';
+
+export interface JobSheetTitleStyle {
+    isBold?: boolean; // ตัวหนา (default: true)
+    style?: JobSheetTitleHighlightStyle; // รูปแบบการเน้น
+    tag?: string; // ป้ายกำกับ เช่น "ด่วน", "ตรวจรับ", "งานโครงสร้าง"
+    tagColor?: 'amber' | 'rose' | 'blue' | 'emerald' | 'purple' | 'zinc';
+    size?: 'normal' | 'large'; // ขนาดตัวอักษร
+}
+
 export interface JobSheetWorkItem {
     id: string;
     task: string; // หัวข้องานหลัก (Main Topic)
     details?: string; // รายละเอียดงานเพิ่มเติม / ข้อย่อย (Details & Subtasks)
+    titleStyle?: JobSheetTitleStyle; // สไตล์การจัดรูปแบบหัวข้องาน
     projectId?: string;
     projectName?: string; // Specific project name or "งานทั่วไป / ไม่ระบุโครงการ"
     timeSlot?: string; // e.g. "ช่วงเช้า (09:00 - 12:00)", "ช่วงบ่าย", "13:30 - 16:00"

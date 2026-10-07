@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { JobSheet, JobSheetWorkItem, JobSheetManpower, JobSheetWeather } from "@/types/jobsheet";
+import { JobSheet, JobSheetWorkItem, JobSheetManpower, JobSheetWeather, JobSheetTitleStyle } from "@/types/jobsheet";
 import { useProjects } from "@/context/project-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,10 +37,14 @@ import {
     AlertTriangle,
     Layers,
     Image as ImageIcon,
-    Loader2
+    Loader2,
+    Maximize2,
+    ListOrdered
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { TaskTitleStyler } from "@/components/jobsheets/task-title-styler";
+import { TaskDetailsFocusModal } from "@/components/jobsheets/task-details-focus-modal";
 
 interface JobSheetFormProps {
     initialData?: JobSheet | null;
@@ -142,6 +146,7 @@ export function JobSheetForm({
             return initialData.workItems.map((item) => {
                 const currentItem: JobSheetWorkItem = {
                     ...item,
+                    titleStyle: item.titleStyle,
                     photos: Array.isArray(item.photos) ? item.photos : []
                 };
                 if (!currentItem.details && currentItem.task && currentItem.task.includes("\n")) {
@@ -160,6 +165,7 @@ export function JobSheetForm({
                 id: "1",
                 task: "",
                 details: "",
+                titleStyle: { isBold: true, style: "standard" },
                 projectId: "",
                 projectName: "",
                 timeSlot: "",
@@ -171,6 +177,15 @@ export function JobSheetForm({
             }
         ];
     });
+
+    // Focus Modal for spacious reading & editing (especially on Mobile)
+    const [focusModalItem, setFocusModalItem] = useState<{
+        id: string;
+        index: number;
+        task: string;
+        details: string;
+        titleStyle?: JobSheetTitleStyle;
+    } | null>(null);
 
     const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
     const [isUploadingGeneral, setIsUploadingGeneral] = useState(false);
@@ -239,6 +254,7 @@ export function JobSheetForm({
             setWorkItems(
                 initialData.workItems.map((item) => ({
                     ...item,
+                    titleStyle: item.titleStyle,
                     photos: Array.isArray(item.photos) ? item.photos : []
                 }))
             );
@@ -513,6 +529,7 @@ export function JobSheetForm({
                 id: w.id || String(idx + 1),
                 task: (w.task || "").trim() || (w.details ? w.details.split("\n")[0] : `รายการงานที่ ${idx + 1}`),
                 details: w.details || "",
+                titleStyle: w.titleStyle || undefined,
                 projectId: w.projectId || "",
                 projectName: w.projectName || "",
                 timeSlot: w.timeSlot || "",
@@ -994,34 +1011,63 @@ export function JobSheetForm({
 
                                 {/* TASK TITLE & DETAILS (Separated: Topic + Details) */}
                                 <div className="space-y-3">
-                                    {/* 1. หัวข้องาน */}
+                                    {/* 1. หัวข้องาน (มี Toolbar ปรับรูปแบบหัวข้อ: ตัวหนา, ไฮไลท์, ป้ายกำกับ, ขนาด) */}
                                     <div>
-                                        <div className="flex items-center justify-between mb-1.5">
-                                            <label className="text-xs text-amber-700 dark:text-amber-300/90 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400" />
-                                                หัวข้องาน *
-                                            </label>
-                                            <span className="text-[10px] text-muted-foreground dark:text-white/40">
-                                                (ชื่องานหลัก สั้น กระชับ)
-                                            </span>
+                                        <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1.5">
+                                            <div className="flex items-center gap-1.5">
+                                                <label className="text-xs text-amber-700 dark:text-amber-300/90 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400" />
+                                                    หัวข้องาน *
+                                                </label>
+                                                <span className="text-[10px] text-muted-foreground dark:text-white/40 hidden sm:inline">
+                                                    (ชื่องานหลัก สั้น กระชับ)
+                                                </span>
+                                            </div>
+
+                                            {/* Title Formatter Toolbar: Bold / Highlight / Tag / Size */}
+                                            <TaskTitleStyler
+                                                titleStyle={item.titleStyle}
+                                                onChange={(newStyle) => updateWorkItem(item.id, "titleStyle", newStyle)}
+                                            />
                                         </div>
-                                        <Input
-                                            type="text"
-                                            placeholder="เช่น แก้เอกสารและเพิ่มงวดงาน, เทคอนกรีตเสา-คาน, ตรวจงานสถาปัตย์"
-                                            value={item.task}
-                                            onChange={(e) => updateWorkItem(item.id, "task", e.target.value)}
-                                            className="w-full bg-background dark:bg-zinc-950 border-border dark:border-white/15 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 text-foreground dark:text-white text-base sm:text-sm font-semibold placeholder:text-muted-foreground/40 h-10 rounded-xl"
-                                            required
-                                        />
+
+                                        <div className="relative">
+                                            <Input
+                                                type="text"
+                                                placeholder="เช่น แก้เอกสารและเพิ่มงวดงาน, เทคอนกรีตเสา-คาน, ตรวจงานสถาปัตย์"
+                                                value={item.task}
+                                                onChange={(e) => updateWorkItem(item.id, "task", e.target.value)}
+                                                className={cn(
+                                                    "w-full bg-background dark:bg-zinc-950 border border-border dark:border-white/15 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 text-foreground dark:text-white rounded-xl transition-all placeholder:text-muted-foreground/40",
+                                                    item.titleStyle?.size === "large" ? "text-base sm:text-base h-11" : "text-base sm:text-sm h-10",
+                                                    item.titleStyle?.isBold !== false ? "font-bold" : "font-normal",
+                                                    item.titleStyle?.style === "highlight_amber" && "border-amber-500/60 bg-amber-500/5 dark:bg-amber-500/10",
+                                                    item.titleStyle?.style === "highlight_blue" && "border-blue-500/60 bg-blue-500/5 dark:bg-blue-500/10",
+                                                    item.titleStyle?.style === "highlight_emerald" && "border-emerald-500/60 bg-emerald-500/5 dark:bg-emerald-500/10",
+                                                    item.titleStyle?.style === "highlight_rose" && "border-rose-500/60 bg-rose-500/5 dark:bg-rose-500/10",
+                                                    item.titleStyle?.style === "underlined" && "underline decoration-amber-500 decoration-2 underline-offset-4"
+                                                )}
+                                                required
+                                            />
+                                        </div>
                                     </div>
 
-                                    {/* 2. รายละเอียดงาน / ข้อย่อย */}
+                                    {/* 2. รายละเอียดงาน / ข้อย่อย (พร้อมปุ่มขยายหน้าจอ Focus Mode สำหรับ Mobile & Desktop) */}
                                     <div>
-                                        <div className="flex items-center justify-between mb-1.5">
-                                            <label className="text-xs text-foreground/80 dark:text-white/70 font-semibold flex items-center gap-1.5">
-                                                รายละเอียดงาน / ข้อย่อย (ถ้ามี)
-                                            </label>
-                                            <div className="flex items-center gap-2">
+                                        <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1.5">
+                                            <div className="flex items-center gap-1.5">
+                                                <label className="text-xs text-foreground/80 dark:text-white/70 font-semibold flex items-center gap-1.5">
+                                                    รายละเอียดงาน / ข้อย่อย (ถ้ามี)
+                                                </label>
+                                                {item.details && (
+                                                    <span className="text-[10px] text-muted-foreground dark:text-white/40 font-normal">
+                                                        ({item.details.split("\n").filter(Boolean).length} บรรทัด)
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Quick Actions & Focus Mode Button */}
+                                            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -1029,22 +1075,83 @@ export function JobSheetForm({
                                                         const next = current ? (current.endsWith("\n") ? `${current}- ` : `${current}\n- `) : "- ";
                                                         updateWorkItem(item.id, "details", next);
                                                     }}
-                                                    className="text-[11px] text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/20 transition-colors cursor-pointer"
+                                                    className="text-[11px] text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-lg border border-amber-500/20 transition-colors cursor-pointer active:scale-95"
+                                                    title="เพิ่มข้อย่อย (-)"
                                                 >
-                                                    + เพิ่มข้อย่อย (-)
+                                                    + ข้อย่อย (-)
                                                 </button>
-                                                <span className="text-[10px] text-muted-foreground dark:text-white/40 hidden sm:inline">
-                                                    (Enter ขึ้นบรรทัดใหม่)
-                                                </span>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const current = item.details || "";
+                                                        const lines = current.split("\n");
+                                                        let nextNum = 1;
+                                                        const matches = lines
+                                                            .map((l) => l.trim().match(/^(\d+)[\.\)]/))
+                                                            .filter(Boolean) as RegExpMatchArray[];
+                                                        if (matches.length > 0) {
+                                                            nextNum = parseInt(matches[matches.length - 1][1], 10) + 1;
+                                                        }
+                                                        const next = current ? (current.endsWith("\n") ? `${current}${nextNum}. ` : `${current}\n${nextNum}. `) : `${nextNum}. `;
+                                                        updateWorkItem(item.id, "details", next);
+                                                    }}
+                                                    className="text-[11px] text-foreground/80 dark:text-white/80 hover:text-foreground dark:hover:text-white bg-muted/80 hover:bg-muted px-2 py-0.5 rounded-lg border border-border dark:border-white/10 transition-colors cursor-pointer active:scale-95"
+                                                    title="เพิ่มลำดับเลข (1. 2. 3.)"
+                                                >
+                                                    + ลำดับเลข
+                                                </button>
+
+                                                {/* EXPAND BUTTON (Focus Modal) */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFocusModalItem({
+                                                            id: item.id,
+                                                            index,
+                                                            task: item.task,
+                                                            details: item.details || "",
+                                                            titleStyle: item.titleStyle
+                                                        });
+                                                    }}
+                                                    className="text-[11px] font-bold text-black bg-amber-400 hover:bg-amber-500 px-2.5 py-0.5 rounded-lg shadow-2xs transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+                                                    title="ขยายหน้าจอเขียนเพื่อความสะดวกในการอ่านและพิมพ์ (โหมดโฟกัส)"
+                                                >
+                                                    <Maximize2 className="w-3 h-3 stroke-[2.5]" />
+                                                    <span>ขยายจอเขียน</span>
+                                                </button>
                                             </div>
                                         </div>
-                                        <textarea
-                                            rows={3}
-                                            placeholder={`เช่น:\n- แบ่งเป็น 3 งวดงานตามที่ลูกค้าขอ\n- ปรับปรุงตารางเวลาและสรุปยอดงวดงาน`}
-                                            value={item.details || ""}
-                                            onChange={(e) => updateWorkItem(item.id, "details", e.target.value)}
-                                            className="w-full bg-background dark:bg-zinc-950 border border-border dark:border-white/15 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 rounded-xl p-3 text-foreground dark:text-white text-base sm:text-sm font-normal placeholder:text-muted-foreground/40 focus:outline-none transition-all resize-y min-h-[85px] leading-relaxed shadow-2xs dark:shadow-inner"
-                                        />
+
+                                        <div className="relative group/ta">
+                                            <textarea
+                                                rows={Math.min(12, Math.max(3, (item.details?.split("\n").length || 1) + 1))}
+                                                placeholder={`เช่น:\n- ดูงานประตูเลื่อนที่น้าเอกทำ (ชั้นสองขึ้นชั้นสาม)\n- ปัญหาบางส่วนคือแนวเหล็กไม่ตั้งฉาก\n- ช่างเสริม Slope มาด้านหลังตามพื้นเดิม\n(สามารถกดปุ่ม "ขยายจอเขียน" เพื่อเปิดหน้าต่างพิมพ์ขนาดใหญ่)`}
+                                                value={item.details || ""}
+                                                onChange={(e) => updateWorkItem(item.id, "details", e.target.value)}
+                                                className="w-full bg-background dark:bg-zinc-950 border border-border dark:border-white/15 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 rounded-xl p-3 text-foreground dark:text-white text-base sm:text-sm font-normal placeholder:text-muted-foreground/40 focus:outline-none transition-all resize-y min-h-[90px] leading-relaxed shadow-2xs dark:shadow-inner"
+                                            />
+
+                                            {/* Quick bottom-right Expand Pill for Mobile touch */}
+                                            <div className="absolute right-2.5 bottom-2.5 opacity-80 group-hover/ta:opacity-100 transition-opacity">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFocusModalItem({
+                                                            id: item.id,
+                                                            index,
+                                                            task: item.task,
+                                                            details: item.details || "",
+                                                            titleStyle: item.titleStyle
+                                                        });
+                                                    }}
+                                                    className="text-[10px] font-semibold bg-background/95 dark:bg-zinc-900/95 text-foreground/80 dark:text-white/80 hover:text-amber-600 dark:hover:text-amber-400 border border-border dark:border-white/20 px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1 backdrop-blur-xs cursor-pointer active:scale-95"
+                                                >
+                                                    <Maximize2 className="w-2.5 h-2.5" />
+                                                    <span>ขยายเต็มจอ</span>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1328,6 +1435,22 @@ export function JobSheetForm({
                     {isSaving ? "กำลังบันทึก..." : "บันทึก JobSheet"}
                 </Button>
             </div>
+
+            {/* FULLSCREEN / SPACIOUS FOCUS MODAL FOR WORK ITEM DETAILS */}
+            {focusModalItem && (
+                <TaskDetailsFocusModal
+                    isOpen={true}
+                    onClose={() => setFocusModalItem(null)}
+                    taskTitle={focusModalItem.task}
+                    taskIndex={focusModalItem.index}
+                    details={focusModalItem.details}
+                    titleStyle={focusModalItem.titleStyle}
+                    onSave={(newDetails) => {
+                        updateWorkItem(focusModalItem.id, "details", newDetails);
+                        setFocusModalItem(null);
+                    }}
+                />
+            )}
         </form>
     );
 }

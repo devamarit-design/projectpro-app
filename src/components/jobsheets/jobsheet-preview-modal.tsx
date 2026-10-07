@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useRef, useState, useEffect, useMemo } from "react";
-import { JobSheet } from "@/types/jobsheet";
+import { JobSheet, JobSheetWorkItem, JobSheetTitleStyle } from "@/types/jobsheet";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { 
     Download, 
     Printer, 
@@ -145,8 +146,8 @@ export function JobSheetPreviewModal({
         }
     };
 
-    // Helper to render task details with clear typography & bullet support
-    const renderTaskDetails = (taskTitle: string, taskDetails?: string) => {
+    // Helper to render task details with clear typography, title styles & bullet support
+    const renderTaskDetails = (taskTitle: string, taskDetails?: string, titleStyle?: JobSheetWorkItem["titleStyle"]) => {
         if (!taskTitle && !taskDetails) return <span className="text-zinc-400 italic">ไม่ได้ระบุรายละเอียด</span>;
 
         let title = taskTitle?.trim() || "";
@@ -163,22 +164,144 @@ export function JobSheetPreviewModal({
             ? details.split("\n").map((l) => l.trim()).filter((l) => l.length > 0)
             : [];
 
+        // Title styling properties
+        const isBold = titleStyle?.isBold !== false;
+        const isLarge = titleStyle?.size === "large";
+        const style = titleStyle?.style || "standard";
+        const tag = titleStyle?.tag;
+        const tagColor = titleStyle?.tagColor || "amber";
+
+        // Tag color classes
+        const tagClasses: Record<string, string> = {
+            rose: "bg-rose-100 text-rose-900 border-rose-300",
+            blue: "bg-blue-100 text-blue-900 border-blue-300",
+            amber: "bg-amber-100 text-amber-900 border-amber-300",
+            emerald: "bg-emerald-100 text-emerald-900 border-emerald-300",
+            purple: "bg-purple-100 text-purple-900 border-purple-300",
+            zinc: "bg-zinc-100 text-zinc-800 border-zinc-300"
+        };
+        const selectedTagClass = tagClasses[tagColor] || "bg-amber-100 text-amber-900 border-amber-300";
+
+        // Highlight style classes
+        const getHighlightClass = () => {
+            switch (style) {
+                case "highlight_amber":
+                    return "bg-amber-100/90 text-amber-950 px-2 py-0.5 rounded border border-amber-300/80 inline-block";
+                case "highlight_blue":
+                    return "bg-blue-100/90 text-blue-950 px-2 py-0.5 rounded border border-blue-300/80 inline-block";
+                case "highlight_emerald":
+                    return "bg-emerald-100/90 text-emerald-950 px-2 py-0.5 rounded border border-emerald-300/80 inline-block";
+                case "highlight_rose":
+                    return "bg-rose-100/90 text-rose-950 px-2 py-0.5 rounded border border-rose-300/80 inline-block";
+                case "pill":
+                    return "bg-zinc-100 text-zinc-900 px-2.5 py-0.5 rounded-full border border-zinc-400 inline-block";
+                case "underlined":
+                    return "underline decoration-amber-500 decoration-2 underline-offset-4 text-zinc-950 inline-block";
+                default:
+                    return "text-zinc-950";
+            }
+        };
+
+        // Inline bold parser
+        const renderFormattedInlineText = (text: string) => {
+            if (!text.includes("**")) return text;
+            const parts = text.split(/(\*\*.*?\*\*)/g);
+            return parts.map((part, pIdx) => {
+                if (part.startsWith("**") && part.endsWith("**") && part.length >= 4) {
+                    return (
+                        <strong key={pIdx} className="font-bold text-zinc-950">
+                            {part.slice(2, -2)}
+                        </strong>
+                    );
+                }
+                return part;
+            });
+        };
+
         return (
             <div className="space-y-1.5 break-words [overflow-wrap:anywhere]">
-                {/* 1. หัวข้องานหลัก (Bold & Clear) */}
-                <div className="font-bold text-zinc-950 text-sm leading-snug break-words [overflow-wrap:anywhere]">
-                    {title || "รายละเอียดงาน"}
+                {/* 1. หัวข้องานหลัก (Bold & Clear + Style & Badges) */}
+                <div className="leading-snug break-words [overflow-wrap:anywhere]">
+                    {tag && (
+                        <span className={cn(
+                            "inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border mr-1.5 align-middle tracking-tight shadow-2xs",
+                            selectedTagClass
+                        )}>
+                            {tag}
+                        </span>
+                    )}
+                    <span className={cn(
+                        isBold ? "font-bold" : "font-medium",
+                        isLarge ? "text-base" : "text-sm",
+                        getHighlightClass(),
+                        "break-words [overflow-wrap:anywhere]"
+                    )}>
+                        {title || "รายละเอียดงาน"}
+                    </span>
                 </div>
 
                 {/* 2. รายละเอียดงาน / ข้อย่อย (Indented & Formatted) */}
                 {subLines.length > 0 && (
                     <div className="space-y-1 pl-2.5 border-l-2 border-amber-400/80 mt-1">
                         {subLines.map((line, idx) => {
-                            const cleanLine = line.replace(/^[-•*]\s*/, "");
+                            const numMatch = /^(\d+)[\.\)]\s*(.*)$/.exec(line);
+                            const isAlert = line.startsWith("⚠️");
+                            const isSuccess = line.startsWith("✅");
+                            const isCheckbox = line.startsWith("☐") || line.startsWith("[ ]");
+                            const cleanLine = line.replace(/^[-•*]\s*/, "").replace(/^[⚠️✅☐]\s*/, "");
+
+                            if (numMatch) {
+                                return (
+                                    <div key={idx} className="flex items-start gap-1.5 text-zinc-800 text-xs leading-relaxed break-words [overflow-wrap:anywhere]">
+                                        <span className="text-amber-600 font-bold font-mono shrink-0 mt-0.5">
+                                            {numMatch[1]}.
+                                        </span>
+                                        <span className="font-medium break-words [overflow-wrap:anywhere]">
+                                            {renderFormattedInlineText(numMatch[2])}
+                                        </span>
+                                    </div>
+                                );
+                            }
+
+                            if (isAlert) {
+                                return (
+                                    <div key={idx} className="flex items-start gap-1.5 text-rose-800 text-xs leading-relaxed break-words [overflow-wrap:anywhere]">
+                                        <span className="text-rose-500 font-bold shrink-0 mt-0.5">⚠️</span>
+                                        <span className="font-semibold break-words [overflow-wrap:anywhere]">
+                                            {renderFormattedInlineText(cleanLine)}
+                                        </span>
+                                    </div>
+                                );
+                            }
+
+                            if (isSuccess) {
+                                return (
+                                    <div key={idx} className="flex items-start gap-1.5 text-emerald-800 text-xs leading-relaxed break-words [overflow-wrap:anywhere]">
+                                        <span className="text-emerald-500 font-bold shrink-0 mt-0.5">✅</span>
+                                        <span className="font-semibold break-words [overflow-wrap:anywhere]">
+                                            {renderFormattedInlineText(cleanLine)}
+                                        </span>
+                                    </div>
+                                );
+                            }
+
+                            if (isCheckbox) {
+                                return (
+                                    <div key={idx} className="flex items-start gap-1.5 text-zinc-800 text-xs leading-relaxed break-words [overflow-wrap:anywhere]">
+                                        <span className="w-3.5 h-3.5 rounded border border-zinc-400 bg-white shrink-0 mt-0.5" />
+                                        <span className="font-medium break-words [overflow-wrap:anywhere]">
+                                            {renderFormattedInlineText(cleanLine)}
+                                        </span>
+                                    </div>
+                                );
+                            }
+
                             return (
                                 <div key={idx} className="flex items-start gap-1.5 text-zinc-800 text-xs leading-relaxed break-words [overflow-wrap:anywhere]">
                                     <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
-                                    <span className="font-medium break-words [overflow-wrap:anywhere]">{cleanLine}</span>
+                                    <span className="font-medium break-words [overflow-wrap:anywhere]">
+                                        {renderFormattedInlineText(cleanLine)}
+                                    </span>
                                 </div>
                             );
                         })}
@@ -839,7 +962,7 @@ export function JobSheetPreviewModal({
 
                                                             {/* 3. รายละเอียดงานที่ปฏิบัติ */}
                                                             <td className="py-3 px-3.5 align-top border-r border-zinc-200 break-words [overflow-wrap:anywhere]">
-                                                                {renderTaskDetails(item.task, item.details)}
+                                                                {renderTaskDetails(item.task, item.details, item.titleStyle)}
                                                                 {item.quantity && (
                                                                     <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-xs text-zinc-700 font-medium break-words leading-tight whitespace-normal">
                                                                         <span className="text-zinc-500 font-medium text-[11px] shrink-0">ปริมาณ / ขนาด:</span>

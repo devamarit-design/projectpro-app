@@ -549,8 +549,15 @@ ${materialsList.length > 0 ? `📦 วัสดุเข้าหน้างา
                                                                     item.status === "completed" ? "text-emerald-600" : "text-amber-500"
                                                                 }`} />
                                                                 <div className="min-w-0">
-                                                                    <p className="font-semibold text-zinc-900 leading-tight">
-                                                                        {item.task}
+                                                                    <p className="leading-tight">
+                                                                        {item.titleStyle?.tag && (
+                                                                            <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 mr-1.5 align-middle">
+                                                                                {item.titleStyle.tag}
+                                                                            </span>
+                                                                        )}
+                                                                        <span className={item.titleStyle?.isBold === false ? "font-normal text-zinc-800" : "font-bold text-zinc-950"}>
+                                                                            {item.task}
+                                                                        </span>
                                                                     </p>
                                                                     {item.details && (
                                                                         <p className="text-[10px] text-zinc-600 whitespace-pre-line mt-0.5">
