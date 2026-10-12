@@ -1,8 +1,19 @@
 import imageCompression from 'browser-image-compression';
 
-export const compressImage = async (file: File): Promise<File> => {
+export interface CompressImageOptions {
+    maxSizeMB?: number
+    maxWidthOrHeight?: number
+    initialQuality?: number
+}
+
+export const compressImage = async (file: File, overrides: CompressImageOptions = {}): Promise<File> => {
     // Only compress images
     if (!file.type.startsWith('image/') && !file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
+        return file;
+    }
+
+    // Don't rasterize vector / animated images
+    if (file.type === 'image/svg+xml' || file.type === 'image/gif') {
         return file;
     }
 
@@ -32,10 +43,12 @@ export const compressImage = async (file: File): Promise<File> => {
             maxWidthOrHeight: 1280, // Optimized for mobile/web viewing
             useWebWorker: true,
             fileType: 'image/jpeg', // Force convert to JPEG
-            initialQuality: 0.7 // Start at 70% quality
+            initialQuality: 0.7, // Start at 70% quality
+            ...overrides,
         };
-        const compressedFile = await imageCompression(fileToCompress, options);
-        return compressedFile;
+        const compressedBlob = await imageCompression(fileToCompress, options);
+        const jpgName = fileToCompress.name.replace(/\.[^.]+$/, '') + '.jpg';
+        return new File([compressedBlob], jpgName, { type: 'image/jpeg' });
     } catch (error) {
         console.error("Image compression/conversion failed:", error);
         return file; // Return original if compression fails

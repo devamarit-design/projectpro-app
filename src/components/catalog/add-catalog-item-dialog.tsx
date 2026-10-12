@@ -31,6 +31,7 @@ import {
 import { CatalogItem, CatalogCategory, CATALOG_CATEGORIES, COMMON_UNITS } from "@/types/catalog"
 import { createCatalogItem, updateCatalogItem } from "@/lib/services/catalog-service"
 import { uploadImage } from "@/lib/upload"
+import { compressImage } from "@/lib/image-utils"
 import { useProjects } from "@/context/project-context"
 import { useOrganization } from "@/context/organization-context"
 import Image from "next/image"
@@ -281,7 +282,13 @@ export function AddCatalogItemDialog({
                     setUploadProgressText(`กำลังอัปโหลดรูปภาพ (${i + 1}/${newFiles.length})...`)
                     const item = newFiles[i]
                     try {
-                        const url = await uploadImage(item.file, `organizations/${orgId}/catalog`)
+                        // Shrink large photos (e.g. 5-10MB phone shots) before storing so the catalog loads fast
+                        const compressed = await compressImage(item.file, {
+                            maxSizeMB: 0.5,
+                            maxWidthOrHeight: 1600,
+                            initialQuality: 0.8,
+                        })
+                        const url = await uploadImage(compressed, `organizations/${orgId}/catalog`)
                         uploadedUrls.push(url)
                     } catch (err) {
                         console.error("Failed to upload photo:", err)
