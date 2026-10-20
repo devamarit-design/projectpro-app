@@ -30,7 +30,8 @@ import {
     ClipboardList,
     Globe,
     Package,
-    ExternalLink
+    ExternalLink,
+    Receipt
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -89,7 +90,10 @@ export function Sidebar({ className }: { className?: string }) {
         {
             title: "เอกสาร", // Documents
             items: [
-                ...(CONTRACTS_ENABLED ? [{ href: "/contracts", label: t.common.contracts, icon: FileText }] : []),
+                ...(CONTRACTS_ENABLED ? [
+                    { href: "/contracts", label: t.common.contracts, icon: FileText },
+                    { href: "/vouchers", label: "ใบเบิกงวด", icon: Receipt }
+                ] : []),
                 { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList },
             ]
         },

@@ -4,4 +4,4 @@
  */
 
 /** Sub-contract (Contract) system: /contracts page, Create Contract button, installment alerts. */
-export const CONTRACTS_ENABLED = false
+export const CONTRACTS_ENABLED = true

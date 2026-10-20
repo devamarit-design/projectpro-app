@@ -33,7 +33,8 @@ import {
     Newspaper,
     GanttChartSquare,
     ClipboardList,
-    Package
+    Package,
+    Receipt
 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -124,7 +125,10 @@ export function MobileNav() {
             {
                 title: "เอกสาร", // Documents
                 items: [
-                    ...(CONTRACTS_ENABLED ? [{ href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 bg-amber-500/10" }] : []),
+                    ...(CONTRACTS_ENABLED ? [
+                        { href: "/contracts", label: t.common.contracts, icon: FileText, color: "text-amber-500 bg-amber-500/10" },
+                        { href: "/vouchers", label: "ใบเบิกงวด", icon: Receipt, color: "text-emerald-500 bg-emerald-500/10" }
+                    ] : []),
                     { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList, color: "text-amber-400 bg-amber-500/10" },
                 ]
             },

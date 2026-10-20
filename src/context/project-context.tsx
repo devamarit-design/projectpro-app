@@ -142,6 +142,11 @@ export interface Expense {
     updatedAt?: string // Timestamp
     createdBy?: string // User ID of creator
     createdByName?: string // Display name of creator
+    // Contract linkage (created by เบิกงวด)
+    contractId?: string
+    contractInstallmentId?: string
+    contractDrawId?: string
+    contractDrawLabel?: string
 }
 
 export interface Project {
@@ -308,15 +313,41 @@ export interface IncomeDocument {
     updatedAt?: string
 }
 
+/** A single draw (การเบิก) against an installment — e.g. งวดที่ 5.1. Each draw creates one Expense. */
+export interface ContractDraw {
+    id: string
+    label: string // "5" (full) or "5.1", "5.2" (partial)
+    voucherNumber?: string // e.g. "PV691013-20"
+    amount: number
+    date: string // วันที่ออกเอกสาร (yyyy-mm-dd)
+    paymentDate?: string // วันที่นัดจ่ายเงิน
+    department?: string // แผนก / สาขา
+    responsibleRole?: string // หน้าที่รับผิดชอบ
+    items?: Array<{ id?: string; description: string; amount: number; notes?: string }>
+    signatures?: {
+        requester?: { name: string; label?: string }
+        inspector?: { name: string; label?: string }
+        accountant?: { name: string; label?: string }
+        payer?: { name: string; label?: string }
+    }
+    note?: string
+    expenseId?: string
+    expenseStatus?: "Paid" | "Pending"
+    createdAt: string
+    createdBy?: string
+}
+
 export interface ContractInstallment {
     id: string
-    description: string
+    description: string // Installment title (e.g. "เตรียมงานและฐานราก")
     amount: number
     dueDate: string
-    status: "Pending" | "Paid" | "Overdue"
+    status: "Pending" | "Partial" | "Paid" | "Overdue"
     paidAt?: string
-    expenseId?: string // Link to created expense
-    paymentDetails?: string
+    expenseId?: string // Legacy: link to created expense (pre-draw system)
+    paymentDetails?: string // Deliverables / condition for payment (งานส่งมอบ)
+    details?: string // Detailed scope for this installment
+    draws?: ContractDraw[]
     createdAt?: string
     updatedAt?: string
 }
@@ -333,6 +364,17 @@ export interface Contract {
     totalAmount: number
     status: "Active" | "Completed" | "Terminated"
     installments: ContractInstallment[]
+    contractType?: string // e.g. "ค่าแรง", "ค่าแรง + วัสดุ"
+    signDate?: string
+    inclusions?: string // สิ่งที่รวมในสัญญา
+    exclusions?: string // สิ่งที่ไม่รวมในสัญญา
+    warranty?: string // การรับประกันผลงาน
+    paymentTerms?: string // เงื่อนไขการจ่ายเงิน
+    generalConditions?: string // เอกสารแนบท้าย 2
+    notes?: string
+    isArchived?: boolean // Archive flag (doesn't show in active list)
+    archivedAt?: string // Timestamp of archiving
+    isStandaloneVoucher?: boolean // Standalone 1-milestone voucher (created directly without contract)
     isDeleted?: boolean // Soft delete flag
     deletedAt?: string // Timestamp of deletion
     createdAt: string
@@ -459,6 +501,11 @@ export interface ProjectContextType extends CoreProjectContextType {
     restoreContract: (id: string) => Promise<void>
     payInstallment: (contractId: string, installmentId: string) => Promise<void>
     unpayInstallment: (contractId: string, installmentId: string) => Promise<void>
+    drawInstallment: (contractId: string, installmentId: string, input: any) => Promise<{ expenseId?: string; label: string; drawId?: string } | undefined>
+    cancelDraw: (contractId: string, installmentId: string, drawId: string) => Promise<void>
+    markDrawAsPaid: (contractId: string, installmentId: string, drawId: string, paymentDate?: string) => Promise<void>
+    updateDraw: (contractId: string, installmentId: string, drawId: string, updates: Partial<ContractDraw>) => Promise<void>
+    createStandaloneVoucher: (input: any) => Promise<{ contractId: string; drawId: string; expenseId?: string; voucherNumber: string } | undefined>
 
     // Archive System (Aggregated)
     archiveTask: (id: string) => Promise<void>
@@ -467,6 +514,8 @@ export interface ProjectContextType extends CoreProjectContextType {
     unarchiveExpense: (id: string) => Promise<void>
     archiveIncome: (id: string) => Promise<void>
     unarchiveIncome: (id: string) => Promise<void>
+    archiveContract: (id: string) => Promise<void>
+    unarchiveContract: (id: string) => Promise<void>
 
     // Archived data (Aggregated)
     archivedTasks: ProjectTask[]
@@ -2016,10 +2065,17 @@ export function useProjects() {
         deleteContract: financeCtx.deleteContract,
         payInstallment: financeCtx.payInstallment,
         unpayInstallment: financeCtx.unpayInstallment,
+        drawInstallment: financeCtx.drawInstallment,
+        cancelDraw: financeCtx.cancelDraw,
+        markDrawAsPaid: financeCtx.markDrawAsPaid,
+        updateDraw: financeCtx.updateDraw,
+        createStandaloneVoucher: financeCtx.createStandaloneVoucher,
         archiveExpense: financeCtx.archiveExpense,
         unarchiveExpense: financeCtx.unarchiveExpense,
         archiveIncome: financeCtx.archiveIncome,
         unarchiveIncome: financeCtx.unarchiveIncome,
+        archiveContract: financeCtx.archiveContract,
+        unarchiveContract: financeCtx.unarchiveContract,
         loadArchivedExpenses: financeCtx.loadArchivedExpenses,
         loadArchivedIncomes: financeCtx.loadArchivedIncomes,
 

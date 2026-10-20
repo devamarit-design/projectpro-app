@@ -51,7 +51,7 @@ export function AppShell({
 
     // Contract system disabled — redirect direct visits
     React.useEffect(() => {
-        if (!CONTRACTS_ENABLED && pathname && (pathname === "/contracts" || pathname.startsWith("/contracts/"))) {
+        if (!CONTRACTS_ENABLED && pathname && (pathname === "/contracts" || pathname.startsWith("/contracts/") || pathname === "/vouchers" || pathname.startsWith("/vouchers/"))) {
             router.replace("/expenses")
         }
     }, [pathname, router])
