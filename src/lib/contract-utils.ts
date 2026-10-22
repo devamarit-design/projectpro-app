@@ -577,7 +577,7 @@ export function generateVoucherHTML(data: VoucherPrintInput): string {
 
     <div class="sigs-grid">
         <div class="sig-block">
-            <div>ลงชื่อ <span class="sig-dots"></span> ${esc(data.signatures.requester?.label || "ผู้เบิกจ่าย")}</div>
+            <div>ลงชื่อ <span class="sig-dots"></span> ${esc(data.signatures.requester?.label || "ผู้ขอเบิกจ่าย (ผู้จัดทำเอกสาร)")}</div>
             <div class="sig-name">(${esc(data.signatures.requester?.name || "..................................................")})</div>
         </div>
         <div class="sig-block">

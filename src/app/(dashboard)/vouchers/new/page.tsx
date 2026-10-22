@@ -85,7 +85,7 @@ interface LineItem {
 
 export default function NewVoucherPage() {
     const router = useRouter()
-    const { projects, workers, contracts, addWorker } = useProjects()
+    const { projects, workers, contracts, addWorker, currentUser } = useProjects()
     const { createStandaloneVoucher, drawInstallment } = useFinance()
     const { orgProfile } = useSettings()
     const { currentOrg } = useOrganization()
@@ -183,13 +183,91 @@ export default function NewVoucherPage() {
     const [inspectionNote, setInspectionNote] = useState("ผ่านการตรวจสอบคุณภาพงานตามมาตรฐานหน้างานเรียบร้อยแล้ว")
     const [internalNote, setInternalNote] = useState("")
 
-    // Signatures (4 Parties)
+    // Signatures (4 Parties) - Default requester to office staff / document preparer
     const [signatures, setSignatures] = useState({
-        requester: { name: "", label: "ผู้เบิกจ่าย (ช่าง / ผู้รับจ้าง)" },
+        requester: { name: "", label: "ผู้ขอเบิกจ่าย (ผู้จัดทำเอกสาร)" },
         inspector: { name: "", label: "ผู้ตรวจสอบงาน (วิศวกร / โฟร์แมน)" },
         accountant: { name: "", label: "ฝ่ายบัญชีและการเงิน" },
         payer: { name: "", label: "ผู้มีอำนาจอนุมัติจ่าย (กรรมการ)" }
     })
+
+    // Extract historical & remembered signature names from contracts, user profile, and localStorage
+    const historicalSignatures = useMemo(() => {
+        const requesters = new Set<string>()
+        const inspectors = new Set<string>()
+        const accountants = new Set<string>()
+        const payers = new Set<string>()
+
+        // System defaults
+        if (currentUser?.name) requesters.add(currentUser.name)
+        if (orgProfile?.signatureName) {
+            inspectors.add(orgProfile.signatureName)
+            payers.add(orgProfile.signatureName)
+        }
+        if (orgProfile?.name) {
+            inspectors.add(orgProfile.name)
+            payers.add(orgProfile.name)
+        }
+
+        // Local storage history
+        if (typeof window !== "undefined") {
+            try {
+                const stored = JSON.parse(localStorage.getItem("hipsloth_voucher_signatures_history") || "{}")
+                ;(stored.requesters || []).forEach((n: string) => n && requesters.add(n))
+                ;(stored.inspectors || []).forEach((n: string) => n && inspectors.add(n))
+                ;(stored.accountants || []).forEach((n: string) => n && accountants.add(n))
+                ;(stored.payers || []).forEach((n: string) => n && payers.add(n))
+            } catch (e) {}
+        }
+
+        // Existing contracts draws history
+        (contracts || []).forEach(c => {
+            (c.installments || []).forEach(inst => {
+                (inst.draws || []).forEach(d => {
+                    const s = d.signatures
+                    if (s?.requester?.name) requesters.add(s.requester.name)
+                    if (s?.inspector?.name) inspectors.add(s.inspector.name)
+                    if (s?.accountant?.name) accountants.add(s.accountant.name)
+                    if (s?.payer?.name) payers.add(s.payer.name)
+                })
+            })
+        })
+
+        return {
+            requesters: Array.from(requesters).filter(Boolean),
+            inspectors: Array.from(inspectors).filter(Boolean),
+            accountants: Array.from(accountants).filter(Boolean),
+            payers: Array.from(payers).filter(Boolean)
+        }
+    }, [contracts, currentUser, orgProfile])
+
+    // Save signatures to localStorage
+    const persistSignatures = useCallback((newSigs: typeof signatures) => {
+        if (typeof window === "undefined") return
+        try {
+            localStorage.setItem("hipsloth_voucher_last_signatures", JSON.stringify({
+                requester: newSigs.requester.name,
+                inspector: newSigs.inspector.name,
+                accountant: newSigs.accountant.name,
+                payer: newSigs.payer.name
+            }))
+
+            const prevHistory = JSON.parse(localStorage.getItem("hipsloth_voucher_signatures_history") || "{}")
+            const updatePool = (existing: string[] = [], val: string) => {
+                if (!val || !val.trim()) return existing
+                const set = new Set([val.trim(), ...existing])
+                return Array.from(set).slice(0, 10)
+            }
+
+            const updatedHistory = {
+                requesters: updatePool(prevHistory.requesters, newSigs.requester.name),
+                inspectors: updatePool(prevHistory.inspectors, newSigs.inspector.name),
+                accountants: updatePool(prevHistory.accountants, newSigs.accountant.name),
+                payers: updatePool(prevHistory.payers, newSigs.payer.name)
+            }
+            localStorage.setItem("hipsloth_voucher_signatures_history", JSON.stringify(updatedHistory))
+        } catch (e) {}
+    }, [])
 
     // ─────────────────────────────────────────────────────────────────────────
     // Initializer
@@ -203,32 +281,43 @@ export default function NewVoucherPage() {
             setWorkerId(workers[0].id)
         }
 
-        // Default signatures from organization / user profile
-        setSignatures({
-            requester: { name: workers[0]?.name || "", label: "ผู้เบิกจ่าย (ช่าง / ผู้รับจ้าง)" },
-            inspector: { name: orgProfile?.signatureName || orgProfile?.name || "", label: "ผู้ตรวจสอบงาน (วิศวกร / โฟร์แมน)" },
-            accountant: { name: "", label: "ฝ่ายบัญชีและการเงิน" },
-            payer: { name: orgProfile?.name || "", label: "ผู้มีอำนาจอนุมัติจ่าย (กรรมการ)" }
-        })
-    }, [contracts, projects, workers, orgProfile])
+        // Restore signatures from localStorage or user/org profile (Default to Office Staff / Current User)
+        let savedSigs: any = null
+        try {
+            if (typeof window !== "undefined") {
+                savedSigs = JSON.parse(localStorage.getItem("hipsloth_voucher_last_signatures") || "null")
+            }
+        } catch (e) {}
 
-    // Update payee signature and info when worker selection changes
+        setSignatures({
+            requester: {
+                name: savedSigs?.requester || currentUser?.name || "",
+                label: "ผู้ขอเบิกจ่าย (ผู้จัดทำเอกสาร)"
+            },
+            inspector: {
+                name: savedSigs?.inspector || orgProfile?.signatureName || orgProfile?.name || "",
+                label: "ผู้ตรวจสอบงาน (วิศวกร / โฟร์แมน)"
+            },
+            accountant: {
+                name: savedSigs?.accountant || "",
+                label: "ฝ่ายบัญชีและการเงิน"
+            },
+            payer: {
+                name: savedSigs?.payer || orgProfile?.name || orgProfile?.signatureName || "",
+                label: "ผู้มีอำนาจอนุมัติจ่าย (กรรมการ)"
+            }
+        })
+    }, [contracts, projects, workers, orgProfile, currentUser])
+
+    // Update payee bank account name when worker selection changes (Never overwrite requester signature with worker)
     useEffect(() => {
         if (isNewWorker) {
-            setSignatures(prev => ({
-                ...prev,
-                requester: { ...prev.requester, name: newWorkerName }
-            }))
             if (newWorkerName && !accountName) {
                 setAccountName(newWorkerName)
             }
         } else {
             const w = workers.find(item => item.id === workerId)
             if (w) {
-                setSignatures(prev => ({
-                    ...prev,
-                    requester: { ...prev.requester, name: w.name }
-                }))
                 if (w.role) setNewWorkerRole(w.role)
                 if (!accountName) setAccountName(w.name)
             }
@@ -464,6 +553,7 @@ export default function NewVoucherPage() {
         }
 
         setIsSubmitting(true)
+        persistSignatures(signatures)
         try {
             // Build rich note with bank info, deductions and inspection remarks
             const noteParts: string[] = []
@@ -559,7 +649,7 @@ export default function NewVoucherPage() {
                 TOP STICKY APP BAR (Header & Actions)
                ───────────────────────────────────────────────────────────────── */}
             <div className="sticky top-0 z-40 bg-card/90 backdrop-blur-md border-b border-border shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
                     {/* Left: Back & Title */}
                     <div className="flex items-center gap-3 min-w-0">
                         <Link
@@ -649,7 +739,7 @@ export default function NewVoucherPage() {
             {/* ─────────────────────────────────────────────────────────────────
                 MAIN WORKSPACE (Split Form + Live A4 Preview)
                ───────────────────────────────────────────────────────────────── */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-6">
                 <div className="flex flex-col lg:flex-row gap-6 items-start">
                     {/* ── LEFT / MAIN: FORM EDITOR ── */}
                     <div
@@ -1164,12 +1254,12 @@ export default function NewVoucherPage() {
                                 <label className="text-xs font-semibold text-foreground block">
                                     ชื่องวดงาน / งานที่ว่าจ้าง <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="text"
+                                <textarea
+                                    rows={2}
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
                                     placeholder="เช่น ค่าแรงติดตั้งระบบไฟฟ้าชั้น 1, ค่างวดงานทาสีภายนอก 80%"
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm font-bold text-foreground focus:ring-1 focus:ring-primary"
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm font-bold text-foreground focus:ring-1 focus:ring-primary leading-relaxed resize-y"
                                     required
                                 />
                             </div>
@@ -1199,70 +1289,77 @@ export default function NewVoucherPage() {
                                     <table className="w-full text-left text-xs">
                                         <thead className="bg-muted/70 border-b border-border text-[11px] font-bold text-muted-foreground">
                                             <tr>
-                                                <th className="py-2 px-2.5 w-10 text-center">#</th>
-                                                <th className="py-2 px-3 min-w-[200px]">รายละเอียดรายการ</th>
-                                                <th className="py-2 px-2 w-20 text-right">จำนวน</th>
-                                                <th className="py-2 px-2 w-20 text-center">หน่วย</th>
-                                                <th className="py-2 px-2 w-28 text-right">ราคา/หน่วย</th>
-                                                <th className="py-2 px-3 w-32 text-right">จำนวนเงิน (บาท)</th>
-                                                <th className="py-2 px-2 w-10 text-center"></th>
+                                                <th className="py-2.5 px-2 w-9 text-center">#</th>
+                                                <th className="py-2.5 px-3 min-w-[280px]">รายละเอียดรายการ & ขอบเขตงาน</th>
+                                                <th className="py-2.5 px-2 w-16 text-right">จำนวน</th>
+                                                <th className="py-2.5 px-2 w-16 text-center">หน่วย</th>
+                                                <th className="py-2.5 px-2 w-24 text-right">ราคา/หน่วย</th>
+                                                <th className="py-2.5 px-3 w-28 text-right">จำนวนเงิน (บาท)</th>
+                                                <th className="py-2.5 px-1.5 w-8 text-center"></th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-border/60">
                                             {items.map((it, idx) => (
                                                 <tr key={it.id || `item-row-${idx}`} className="hover:bg-muted/30 transition">
-                                                    <td className="py-2 px-2.5 text-center font-mono text-muted-foreground text-[11px]">
+                                                    <td className="py-2.5 px-2 text-center font-mono text-muted-foreground text-[11px] align-top pt-3.5">
                                                         {idx + 1}
                                                     </td>
-                                                    <td className="py-2 px-3">
-                                                        <input
-                                                            type="text"
+                                                    <td className="py-2 px-3 space-y-1.5 align-top">
+                                                        <textarea
+                                                            rows={2}
                                                             value={it.description}
                                                             onChange={e => handleItemChange(idx, "description", e.target.value)}
-                                                            placeholder={`รายการที่ ${idx + 1}`}
-                                                            className="w-full px-2 py-1 rounded-lg border border-border bg-background text-xs"
+                                                            placeholder={`รายละเอียดรายการที่ ${idx + 1} (เช่น งานระบบไฟฟ้า / งานจัดเตรียมหน้างาน)`}
+                                                            className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs leading-relaxed resize-y focus:ring-1 focus:ring-primary"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            value={it.notes || ""}
+                                                            onChange={e => handleItemChange(idx, "notes", e.target.value)}
+                                                            placeholder="หมายเหตุ / งานย่อย (เช่น เบิกย่อย 50% หรือ งวด 2.1)"
+                                                            className="w-full px-2 py-1 rounded-md border border-border/70 bg-muted/20 text-[11px] text-muted-foreground placeholder:text-muted-foreground/60 focus:bg-background focus:text-foreground"
                                                         />
                                                     </td>
-                                                    <td className="py-2 px-2 text-right">
+                                                    <td className="py-2 px-2 text-right align-top pt-2.5">
                                                         <input
                                                             type="number"
                                                             min={0}
                                                             step="any"
                                                             value={it.quantity || ""}
                                                             onChange={e => handleItemChange(idx, "quantity", Number(e.target.value) || 0)}
-                                                            className="w-full px-2 py-1 rounded-lg border border-border bg-background text-xs text-right font-mono"
+                                                            className="w-full px-2 py-1.5 rounded-lg border border-border bg-background text-xs text-right font-mono"
                                                         />
                                                     </td>
-                                                    <td className="py-2 px-2 text-center">
+                                                    <td className="py-2 px-2 text-center align-top pt-2.5">
                                                         <input
                                                             type="text"
                                                             value={it.unit}
                                                             onChange={e => handleItemChange(idx, "unit", e.target.value)}
                                                             placeholder="งวด"
-                                                            className="w-full px-2 py-1 rounded-lg border border-border bg-background text-xs text-center"
+                                                            className="w-full px-2 py-1.5 rounded-lg border border-border bg-background text-xs text-center"
                                                         />
                                                     </td>
-                                                    <td className="py-2 px-2 text-right">
+                                                    <td className="py-2 px-2 text-right align-top pt-2.5">
                                                         <input
                                                             type="number"
                                                             min={0}
                                                             step="any"
                                                             value={it.unitPrice || ""}
                                                             onChange={e => handleItemChange(idx, "unitPrice", Number(e.target.value) || 0)}
-                                                            className="w-full px-2 py-1 rounded-lg border border-border bg-background text-xs text-right font-mono"
+                                                            className="w-full px-2 py-1.5 rounded-lg border border-border bg-background text-xs text-right font-mono"
                                                         />
                                                     </td>
-                                                    <td className="py-2 px-3 text-right">
+                                                    <td className="py-2 px-3 text-right align-top pt-2.5">
                                                         <input
                                                             type="number"
                                                             min={0}
                                                             step="any"
                                                             value={it.amount || ""}
                                                             onChange={e => handleItemChange(idx, "amount", Number(e.target.value) || 0)}
-                                                            className="w-full px-2 py-1 rounded-lg border border-border bg-background text-xs text-right font-mono font-bold text-foreground"
+                                                            className="w-full px-2 py-1.5 rounded-lg border border-border bg-background text-xs text-right font-mono font-bold text-foreground"
                                                         />
                                                     </td>
-                                                    <td className="py-2 px-2 text-center">
+                                                    <td className="py-2 px-1.5 text-center align-top pt-3">
                                                         <button
                                                             type="button"
                                                             onClick={() => handleRemoveItem(idx)}
@@ -1546,7 +1643,7 @@ export default function NewVoucherPage() {
                             SECTION 6: ผู้ลงนาม 4 ฝ่าย
                            ────────────────────────────────────────────── */}
                         <div className="p-5 sm:p-6 rounded-2xl border border-border bg-card shadow-sm space-y-4">
-                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
                                 <div className="flex items-center gap-2.5">
                                     <div className="w-8 h-8 rounded-lg bg-pink-500/15 text-pink-600 dark:text-pink-400 flex items-center justify-center font-bold">
                                         6
@@ -1556,87 +1653,256 @@ export default function NewVoucherPage() {
                                             ผู้มีอำนาจลงนามในเอกสาร (4 ฝ่าย)
                                         </h2>
                                         <p className="text-[11px] text-muted-foreground">
-                                            ระบุชื่อผู้เบิกจ่าย ผู้ตรวจสอบ บัญชี และผู้อนุมัติจ่ายเงิน
+                                            ระบุชื่อผู้ขอเบิกจ่าย (ฝ่ายออฟฟิศ/คนจัดทำ), ผู้ตรวจสอบงาน, แผนกบัญชี และผู้อนุมัติจ่าย
                                         </p>
                                     </div>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setSignatures({
-                                            requester: { name: currentWorker?.name || "", label: "ผู้เบิกจ่าย (ช่าง / ผู้รับจ้าง)" },
-                                            inspector: { name: orgProfile?.signatureName || orgProfile?.name || "", label: "ผู้ตรวจสอบงาน (วิศวกร / โฟร์แมน)" },
-                                            accountant: { name: "", label: "ฝ่ายบัญชีและการเงิน" },
-                                            payer: { name: orgProfile?.name || "", label: "ผู้มีอำนาจอนุมัติจ่าย (กรรมการ)" }
-                                        })
-                                        toast.info("ดึงชื่อผู้ลงนามจากข้อมูลระบบเรียบร้อย")
-                                    }}
-                                    className="text-xs text-primary hover:underline font-semibold"
-                                >
-                                    เติมชื่อตามระบบ
-                                </button>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            persistSignatures(signatures)
+                                            toast.success("บันทึกชื่อผู้ลงนามชุดนี้เป็นค่าเริ่มต้นเรียบร้อย")
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-primary/30 bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition"
+                                        title="จดจำชื่อผู้ลงนามชุดนี้ไว้สำหรับออกใบเบิกงวดครั้งถัดไป"
+                                    >
+                                        <Save className="w-3.5 h-3.5" />
+                                        จำค่านี้ไว้
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            let savedSigs: any = null
+                                            try {
+                                                if (typeof window !== "undefined") {
+                                                    savedSigs = JSON.parse(localStorage.getItem("hipsloth_voucher_last_signatures") || "null")
+                                                }
+                                            } catch (e) {}
+                                            if (savedSigs) {
+                                                setSignatures(prev => ({
+                                                    requester: { ...prev.requester, name: savedSigs.requester || prev.requester.name },
+                                                    inspector: { ...prev.inspector, name: savedSigs.inspector || prev.inspector.name },
+                                                    accountant: { ...prev.accountant, name: savedSigs.accountant || prev.accountant.name },
+                                                    payer: { ...prev.payer, name: savedSigs.payer || prev.payer.name },
+                                                }))
+                                                toast.success("ดึงค่าเดิมที่เคยบันทึกไว้เรียบร้อย")
+                                            } else {
+                                                toast.info("ยังไม่มีข้อมูลชื่อผู้ลงนามที่บันทึกไว้")
+                                            }
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-muted/60 text-muted-foreground hover:text-foreground text-xs font-semibold hover:bg-muted transition"
+                                        title="โหลดชื่อผู้ลงนามที่บันทึกไว้ล่าสุด"
+                                    >
+                                        <RefreshCw className="w-3.5 h-3.5" />
+                                        ดึงค่าที่จำไว้
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSignatures({
+                                                requester: { name: currentUser?.name || "", label: "ผู้ขอเบิกจ่าย (ผู้จัดทำเอกสาร)" },
+                                                inspector: { name: orgProfile?.signatureName || orgProfile?.name || "", label: "ผู้ตรวจสอบงาน (วิศวกร / โฟร์แมน)" },
+                                                accountant: { name: "", label: "ฝ่ายบัญชีและการเงิน" },
+                                                payer: { name: orgProfile?.name || orgProfile?.signatureName || "", label: "ผู้มีอำนาจอนุมัติจ่าย (กรรมการ)" }
+                                            })
+                                            toast.info("รีเซ็ตชื่อผู้ลงนามตามระบบเรียบร้อย")
+                                        }}
+                                        className="text-xs text-muted-foreground hover:text-foreground hover:underline font-medium px-1"
+                                    >
+                                        รีเซ็ต
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                                <div className="space-y-1">
-                                    <label className="text-[11px] font-semibold text-muted-foreground block">
-                                        1. ผู้เบิกจ่าย (ช่าง):
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 text-xs">
+                                {/* 1. ผู้ขอเบิกจ่าย (คนทำเอกสาร/ออฟฟิศ) */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-bold text-foreground block">
+                                        1. ผู้ขอเบิกจ่าย (คนทำเอกสาร/ออฟฟิศ):
                                     </label>
                                     <input
                                         type="text"
+                                        list="voucher-requester-suggestions"
                                         value={signatures.requester.name}
                                         onChange={e => setSignatures({
                                             ...signatures,
                                             requester: { ...signatures.requester, name: e.target.value }
                                         })}
-                                        className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs font-semibold"
+                                        placeholder="ชื่อคนทำเอกสาร / ธุรการ / แอดมิน"
+                                        className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs font-semibold focus:ring-1 focus:ring-primary outline-none"
                                     />
+                                    <datalist id="voucher-requester-suggestions">
+                                        {historicalSignatures.requesters.map((name, i) => (
+                                            <option key={`req-${i}`} value={name} />
+                                        ))}
+                                    </datalist>
+                                    {historicalSignatures.requesters.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 items-center pt-0.5">
+                                            <span className="text-[10px] text-muted-foreground/70">เลือกด่วน:</span>
+                                            {historicalSignatures.requesters.slice(0, 3).map(name => (
+                                                <button
+                                                    key={name}
+                                                    type="button"
+                                                    onClick={() => setSignatures(prev => ({
+                                                        ...prev,
+                                                        requester: { ...prev.requester, name }
+                                                    }))}
+                                                    className={cn(
+                                                        "text-[10px] px-2 py-0.5 rounded-md border transition truncate max-w-[120px]",
+                                                        signatures.requester.name === name
+                                                            ? "bg-primary/15 border-primary/40 text-primary font-bold shadow-xs"
+                                                            : "bg-muted/50 border-border/80 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    )}
+                                                    title={name}
+                                                >
+                                                    {name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className="text-[11px] font-semibold text-muted-foreground block">
+                                {/* 2. ผู้ตรวจสอบงาน */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-bold text-foreground block">
                                         2. ผู้ตรวจสอบงาน:
                                     </label>
                                     <input
                                         type="text"
+                                        list="voucher-inspector-suggestions"
                                         value={signatures.inspector.name}
                                         onChange={e => setSignatures({
                                             ...signatures,
                                             inspector: { ...signatures.inspector, name: e.target.value }
                                         })}
-                                        className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs font-semibold"
+                                        placeholder="วิศวกร / โฟร์แมนตรวจงาน"
+                                        className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs font-semibold focus:ring-1 focus:ring-primary outline-none"
                                     />
+                                    <datalist id="voucher-inspector-suggestions">
+                                        {historicalSignatures.inspectors.map((name, i) => (
+                                            <option key={`insp-${i}`} value={name} />
+                                        ))}
+                                    </datalist>
+                                    {historicalSignatures.inspectors.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 items-center pt-0.5">
+                                            <span className="text-[10px] text-muted-foreground/70">เลือกด่วน:</span>
+                                            {historicalSignatures.inspectors.slice(0, 3).map(name => (
+                                                <button
+                                                    key={name}
+                                                    type="button"
+                                                    onClick={() => setSignatures(prev => ({
+                                                        ...prev,
+                                                        inspector: { ...prev.inspector, name }
+                                                    }))}
+                                                    className={cn(
+                                                        "text-[10px] px-2 py-0.5 rounded-md border transition truncate max-w-[120px]",
+                                                        signatures.inspector.name === name
+                                                            ? "bg-primary/15 border-primary/40 text-primary font-bold shadow-xs"
+                                                            : "bg-muted/50 border-border/80 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    )}
+                                                    title={name}
+                                                >
+                                                    {name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className="text-[11px] font-semibold text-muted-foreground block">
+                                {/* 3. ฝ่ายบัญชีและการเงิน */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-bold text-foreground block">
                                         3. ฝ่ายบัญชีและการเงิน:
                                     </label>
                                     <input
                                         type="text"
+                                        list="voucher-accountant-suggestions"
                                         value={signatures.accountant.name}
                                         onChange={e => setSignatures({
                                             ...signatures,
                                             accountant: { ...signatures.accountant, name: e.target.value }
                                         })}
-                                        className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs font-semibold"
+                                        placeholder="ชื่อเจ้าหน้าที่บัญชี"
+                                        className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs font-semibold focus:ring-1 focus:ring-primary outline-none"
                                     />
+                                    <datalist id="voucher-accountant-suggestions">
+                                        {historicalSignatures.accountants.map((name, i) => (
+                                            <option key={`acc-${i}`} value={name} />
+                                        ))}
+                                    </datalist>
+                                    {historicalSignatures.accountants.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 items-center pt-0.5">
+                                            <span className="text-[10px] text-muted-foreground/70">เลือกด่วน:</span>
+                                            {historicalSignatures.accountants.slice(0, 3).map(name => (
+                                                <button
+                                                    key={name}
+                                                    type="button"
+                                                    onClick={() => setSignatures(prev => ({
+                                                        ...prev,
+                                                        accountant: { ...prev.accountant, name }
+                                                    }))}
+                                                    className={cn(
+                                                        "text-[10px] px-2 py-0.5 rounded-md border transition truncate max-w-[120px]",
+                                                        signatures.accountant.name === name
+                                                            ? "bg-primary/15 border-primary/40 text-primary font-bold shadow-xs"
+                                                            : "bg-muted/50 border-border/80 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    )}
+                                                    title={name}
+                                                >
+                                                    {name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className="text-[11px] font-semibold text-muted-foreground block">
+                                {/* 4. ผู้อนุมัติจ่ายเงิน */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-bold text-foreground block">
                                         4. ผู้อนุมัติจ่ายเงิน:
                                     </label>
                                     <input
                                         type="text"
+                                        list="voucher-payer-suggestions"
                                         value={signatures.payer.name}
                                         onChange={e => setSignatures({
                                             ...signatures,
                                             payer: { ...signatures.payer, name: e.target.value }
                                         })}
-                                        className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs font-semibold"
+                                        placeholder="กรรมการ / หุ้นส่วนผู้จัดการ"
+                                        className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs font-semibold focus:ring-1 focus:ring-primary outline-none"
                                     />
+                                    <datalist id="voucher-payer-suggestions">
+                                        {historicalSignatures.payers.map((name, i) => (
+                                            <option key={`pyr-${i}`} value={name} />
+                                        ))}
+                                    </datalist>
+                                    {historicalSignatures.payers.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 items-center pt-0.5">
+                                            <span className="text-[10px] text-muted-foreground/70">เลือกด่วน:</span>
+                                            {historicalSignatures.payers.slice(0, 3).map(name => (
+                                                <button
+                                                    key={name}
+                                                    type="button"
+                                                    onClick={() => setSignatures(prev => ({
+                                                        ...prev,
+                                                        payer: { ...prev.payer, name }
+                                                    }))}
+                                                    className={cn(
+                                                        "text-[10px] px-2 py-0.5 rounded-md border transition truncate max-w-[120px]",
+                                                        signatures.payer.name === name
+                                                            ? "bg-primary/15 border-primary/40 text-primary font-bold shadow-xs"
+                                                            : "bg-muted/50 border-border/80 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    )}
+                                                    title={name}
+                                                >
+                                                    {name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1844,11 +2110,11 @@ export default function NewVoucherPage() {
                                         <table className="w-full border-collapse border border-black text-xs mb-2.5 table-fixed">
                                             <thead>
                                                 <tr className="bg-gray-100">
-                                                    <th className="border border-black py-1.5 px-1.5 w-[8%] text-center font-bold">ลำดับ</th>
-                                                    <th className="border border-black py-1.5 px-3 w-[48%] text-left font-bold">รายการ / ขอบเขตงาน</th>
-                                                    <th className="border border-black py-1.5 px-2 w-[14%] text-center font-bold">จำนวน</th>
-                                                    <th className="border border-black py-1.5 px-2 w-[14%] text-right font-bold">ราคา/หน่วย</th>
-                                                    <th className="border border-black py-1.5 px-3 w-[16%] text-right font-bold">จำนวนเงิน (บาท)</th>
+                                                    <th className="border border-black py-1.5 px-1.5 w-[6%] text-center font-bold">ลำดับ</th>
+                                                    <th className="border border-black py-1.5 px-3 w-[56%] text-left font-bold">รายการ / ขอบเขตงาน</th>
+                                                    <th className="border border-black py-1.5 px-1.5 w-[11%] text-center font-bold">จำนวน</th>
+                                                    <th className="border border-black py-1.5 px-2 w-[13%] text-right font-bold">ราคา/หน่วย</th>
+                                                    <th className="border border-black py-1.5 px-2.5 w-[14%] text-right font-bold">จำนวนเงิน (บาท)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

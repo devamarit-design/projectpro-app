@@ -42,7 +42,7 @@ export function PaymentVoucherDialog({
     installmentIndex,
     draw
 }: PaymentVoucherDialogProps) {
-    const { projects, workers, contracts } = useProjects()
+    const { projects, workers, contracts, currentUser } = useProjects()
     const { drawInstallment, markDrawAsPaid, updateDraw } = useFinance()
     const { orgProfile } = useSettings()
     const { currentOrg } = useOrganization()
@@ -125,21 +125,28 @@ export function PaymentVoucherDialog({
                 }])
             }
 
+            let savedSigs: any = null
+            try {
+                if (typeof window !== "undefined") {
+                    savedSigs = JSON.parse(localStorage.getItem("hipsloth_voucher_last_signatures") || "null")
+                }
+            } catch (e) {}
+
             setSignatures({
                 requester: {
-                    name: draw.signatures?.requester?.name || initialWorkerName,
-                    label: draw.signatures?.requester?.label || "ผู้เบิกจ่าย"
+                    name: draw.signatures?.requester?.name || savedSigs?.requester || currentUser?.name || "",
+                    label: draw.signatures?.requester?.label || "ผู้ขอเบิกจ่าย (ผู้จัดทำเอกสาร)"
                 },
                 inspector: {
-                    name: draw.signatures?.inspector?.name || orgProfile?.signatureName || orgProfile?.name || "",
+                    name: draw.signatures?.inspector?.name || savedSigs?.inspector || orgProfile?.signatureName || orgProfile?.name || "",
                     label: draw.signatures?.inspector?.label || "ผู้ตรวจสอบ"
                 },
                 accountant: {
-                    name: draw.signatures?.accountant?.name || "",
+                    name: draw.signatures?.accountant?.name || savedSigs?.accountant || "",
                     label: draw.signatures?.accountant?.label || "ฝ่ายบัญชี"
                 },
                 payer: {
-                    name: draw.signatures?.payer?.name || orgProfile?.name || "",
+                    name: draw.signatures?.payer?.name || savedSigs?.payer || orgProfile?.name || "",
                     label: draw.signatures?.payer?.label || "ผู้จ่ายเงิน"
                 }
             })
@@ -171,14 +178,33 @@ export function PaymentVoucherDialog({
                 notes: `งวด ${nextLabel}`
             }])
 
+            let savedSigs: any = null
+            try {
+                if (typeof window !== "undefined") {
+                    savedSigs = JSON.parse(localStorage.getItem("hipsloth_voucher_last_signatures") || "null")
+                }
+            } catch (e) {}
+
             setSignatures({
-                requester: { name: initialWorkerName, label: "ผู้เบิกจ่าย" },
-                inspector: { name: orgProfile?.signatureName || orgProfile?.name || "", label: "ผู้ตรวจสอบ" },
-                accountant: { name: "", label: "ฝ่ายบัญชี" },
-                payer: { name: orgProfile?.name || "", label: "ผู้จ่ายเงิน" }
+                requester: {
+                    name: savedSigs?.requester || currentUser?.name || "",
+                    label: "ผู้ขอเบิกจ่าย (ผู้จัดทำเอกสาร)"
+                },
+                inspector: {
+                    name: savedSigs?.inspector || orgProfile?.signatureName || orgProfile?.name || "",
+                    label: "ผู้ตรวจสอบ"
+                },
+                accountant: {
+                    name: savedSigs?.accountant || "",
+                    label: "ฝ่ายบัญชี"
+                },
+                payer: {
+                    name: savedSigs?.payer || orgProfile?.name || "",
+                    label: "ผู้จ่ายเงิน"
+                }
             })
         }
-    }, [isOpen, contract.id, installment.id, draw?.id, orgProfile, contracts])
+    }, [isOpen, contract.id, installment.id, draw?.id, orgProfile, contracts, currentUser])
 
     // Calculations
     const totalVoucherAmount = useMemo(() => {
@@ -356,6 +382,14 @@ export function PaymentVoucherDialog({
 
         setIsSaving(true)
         try {
+            if (typeof window !== "undefined") {
+                localStorage.setItem("hipsloth_voucher_last_signatures", JSON.stringify({
+                    requester: signatures.requester.name,
+                    inspector: signatures.inspector.name,
+                    accountant: signatures.accountant.name,
+                    payer: signatures.payer.name
+                }))
+            }
             if (draw) {
                 // Update existing draw
                 await updateDraw(contract.id, installment.id, draw.id, {
@@ -1104,10 +1138,10 @@ export function PaymentVoucherDialog({
                                         <table className="w-full border-collapse border border-black text-xs my-2.5 table-fixed">
                                             <thead>
                                                 <tr className="bg-gray-50">
-                                                    <th className="border border-black p-1.5 w-[8%] text-center font-bold">ลำดับ</th>
-                                                    <th className="border border-black p-1.5 w-[52%] text-center font-bold">รายละเอียดรายการเบิกจ่าย</th>
-                                                    <th className="border border-black p-1.5 w-[22%] text-center font-bold">จำนวนเงิน<br />(บาท)</th>
-                                                    <th className="border border-black p-1.5 w-[18%] text-center font-bold">หมายเหตุ</th>
+                                                    <th className="border border-black p-1.5 w-[6%] text-center font-bold">ลำดับ</th>
+                                                    <th className="border border-black p-1.5 w-[58%] text-center font-bold">รายละเอียดรายการเบิกจ่าย</th>
+                                                    <th className="border border-black p-1.5 w-[20%] text-center font-bold">จำนวนเงิน<br />(บาท)</th>
+                                                    <th className="border border-black p-1.5 w-[16%] text-center font-bold">หมายเหตุ</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
