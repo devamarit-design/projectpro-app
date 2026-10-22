@@ -36,6 +36,7 @@ export interface DrawInstallmentInput {
     voucherNumber?: string
     department?: string
     responsibleRole?: string
+    label?: string
     signatures?: {
         requester?: { name: string; label?: string }
         inspector?: { name: string; label?: string }
@@ -539,7 +540,7 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         if (amount <= 0) throw new Error("จำนวนเงินต้องมากกว่า 0")
         if (amount > remaining + 0.009) throw new Error(`เกินยอดคงเหลือของงวด (คงเหลือ ฿${remaining.toLocaleString()})`)
 
-        const label = nextDrawLabel(inst, index, amount)
+        const label = input.label?.trim() || nextDrawLabel(inst, index, amount)
         const drawId = Math.random().toString(36).slice(2, 10)
         const worker = workers.find(w => w.id === contract.workerId)
         const docNo = contract.documentNumber || "สัญญา"

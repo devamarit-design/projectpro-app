@@ -107,7 +107,7 @@ export function getDraws(inst: ContractInstallment, index: number): ContractDraw
     if (inst.draws && inst.draws.length > 0) return inst.draws
     if (inst.status === "Paid") {
         return [{
-            id: `legacy-${inst.id}`,
+            id: `legacy-${inst.id || index + 1}`,
             label: String(index + 1),
             amount: inst.amount,
             date: (inst.paidAt || "").slice(0, 10),
@@ -273,29 +273,29 @@ export interface VoucherPrintInput {
 export function generateVoucherHTML(data: VoucherPrintInput): string {
     const org = data.org || {}
     const items = data.items || []
-    const minRows = 6
+    const minRows = 4
     const emptyRowCount = Math.max(0, minRows - items.length)
 
     const itemRows = items.map((it, idx) => `
         <tr>
-            <td style="text-align: center; border: 1px solid #111; padding: 7px 6px;">${idx + 1}</td>
-            <td style="border: 1px solid #111; padding: 7px 10px;">${esc(it.description)}</td>
-            <td style="text-align: right; border: 1px solid #111; padding: 7px 10px; font-weight: 600;">${fmtNum(it.amount)}</td>
-            <td style="text-align: center; border: 1px solid #111; padding: 7px 8px; color: #444;">${esc(it.notes || "")}</td>
+            <td style="text-align: center; border: 1px solid #111; padding: 6px 4px;">${idx + 1}</td>
+            <td style="border: 1px solid #111; padding: 6px 10px; word-break: break-word;">${esc(it.description)}</td>
+            <td style="text-align: right; border: 1px solid #111; padding: 6px 10px; font-weight: 600; white-space: nowrap;">${fmtNum(it.amount)}</td>
+            <td style="text-align: center; border: 1px solid #111; padding: 6px 8px; color: #444;">${esc(it.notes || "")}</td>
         </tr>
     `).join("")
 
     const emptyRows = Array(emptyRowCount).fill(0).map((_, i) => `
         <tr>
-            <td style="text-align: center; border: 1px solid #111; padding: 7px 6px; color: #bbb;">${items.length + i + 1}</td>
-            <td style="border: 1px solid #111; padding: 7px 10px;">&nbsp;</td>
-            <td style="border: 1px solid #111; padding: 7px 10px;">&nbsp;</td>
-            <td style="border: 1px solid #111; padding: 7px 8px;">&nbsp;</td>
+            <td style="text-align: center; border: 1px solid #111; padding: 6px 4px; color: #bbb;">${items.length + i + 1}</td>
+            <td style="border: 1px solid #111; padding: 6px 10px; height: 26px;">&nbsp;</td>
+            <td style="border: 1px solid #111; padding: 6px 10px;">&nbsp;</td>
+            <td style="border: 1px solid #111; padding: 6px 8px;">&nbsp;</td>
         </tr>
     `).join("")
 
     const logoHtml = org.logo
-        ? `<img src="${esc(org.logo)}" style="max-height: 64px; max-width: 140px; object-fit: contain; margin-bottom: 4px;" alt="Logo" />`
+        ? `<img src="${esc(org.logo)}" style="max-height: 56px; max-width: 140px; object-fit: contain; margin-bottom: 4px;" alt="Logo" />`
         : `<div style="width: 44px; height: 44px; border-radius: 50%; background: #ea580c; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 20px;">🏠</div>`
 
     return `<!DOCTYPE html>
@@ -306,7 +306,7 @@ export function generateVoucherHTML(data: VoucherPrintInput): string {
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-    @page { size: A4; margin: 12mm 15mm; }
+    @page { size: A4 portrait; margin: 12mm 15mm; }
     * { box-sizing: border-box; }
     body {
         margin: 0;
@@ -323,10 +323,14 @@ export function generateVoucherHTML(data: VoucherPrintInput): string {
         width: 210mm;
         min-height: 297mm;
         margin: 16px auto;
-        padding: 16mm 16mm 20mm;
+        padding: 14mm 16mm 14mm;
         background: #fff;
         box-shadow: 0 4px 24px rgba(0,0,0,0.12);
         position: relative;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
     .title-header {
         text-align: center;
@@ -398,13 +402,14 @@ export function generateVoucherHTML(data: VoucherPrintInput): string {
         width: 100%;
         border-collapse: collapse;
         border: 1px solid #111;
-        margin-bottom: 14px;
-        font-size: 12.5px;
+        margin-bottom: 12px;
+        font-size: 12px;
+        table-layout: fixed;
     }
     .items-table th {
         border: 1px solid #111;
         background: #fafafa;
-        padding: 8px 6px;
+        padding: 6px 4px;
         font-weight: 700;
         text-align: center;
     }
@@ -414,12 +419,12 @@ export function generateVoucherHTML(data: VoucherPrintInput): string {
     .summary-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 13px;
-        margin-top: 6px;
-        margin-bottom: 24px;
+        font-size: 12px;
+        margin-top: 4px;
+        margin-bottom: 16px;
     }
     .summary-table td {
-        padding: 4px 0;
+        padding: 3px 0;
     }
     .summary-dots {
         border-bottom: 1px dotted #555;
@@ -431,32 +436,40 @@ export function generateVoucherHTML(data: VoucherPrintInput): string {
     }
     .sigs-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 28px 40px;
-        margin-top: 20px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-top: auto;
+        padding-top: 14px;
+        border-top: 1px solid #111;
         page-break-inside: avoid;
     }
     .sig-block {
         text-align: center;
-        font-size: 12.5px;
+        font-size: 11px;
     }
     .sig-dots {
         border-bottom: 1px dotted #222;
         display: inline-block;
-        width: 180px;
-        margin: 0 4px;
+        width: 100%;
+        max-width: 120px;
+        margin: 0 auto;
         height: 18px;
     }
     .sig-name {
-        margin-top: 5px;
-        color: #222;
+        margin-top: 4px;
+        font-weight: 700;
+        color: #111;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     @media print {
         body { background: #fff; }
         .sheet {
             box-shadow: none;
             margin: 0;
-            padding: 12mm 15mm;
+            padding: 0;
+            width: 100%;
             min-height: auto;
             page-break-after: avoid;
         }

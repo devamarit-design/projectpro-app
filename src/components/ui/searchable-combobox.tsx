@@ -252,11 +252,11 @@ export default function SearchableCombobox({
                                 {emptyMessage}
                             </div>
                         ) : (
-                            filteredOptions.map((option) => {
+                            filteredOptions.map((option, optIdx) => {
                                 const isActionItem = option.value === "NEW" || option.label.startsWith("➕") || option.label.startsWith("+")
                                 return (
                                     <button
-                                        key={option.value}
+                                        key={`${option.value || "opt"}-${optIdx}`}
                                         type="button"
                                         onClick={() => !option.disabled && handleSelect(option.value)}
                                         disabled={option.disabled}

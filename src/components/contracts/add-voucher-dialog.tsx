@@ -5,7 +5,7 @@ import { createPortal } from "react-dom"
 import {
     X, Receipt, Plus, Trash2, Calendar, FolderKanban,
     User2, Sparkles, AlertCircle, CheckCircle2, Clock,
-    DollarSign, FileText, ChevronDown, Check
+    DollarSign, FileText, ChevronDown, Check, ArrowUpRight
 } from "lucide-react"
 import { toast } from "sonner"
 import { useProjects, Contract, ContractDraw } from "@/context/project-context"
@@ -295,14 +295,25 @@ export function AddVoucherDialog({
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={isSubmitting}
-                        className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <a
+                            href="/vouchers/new"
+                            onClick={onClose}
+                            className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-primary hover:bg-primary/10 transition"
+                        >
+                            <span>เปิดหน้าเต็ม / ปรับแต่งขั้นสูง</span>
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                        </a>
+
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={isSubmitting}
+                            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Form Content */}
@@ -522,7 +533,7 @@ export function AddVoucherDialog({
                         {useItemBreakdown && (
                             <div className="mt-3 space-y-2 rounded-xl border border-border/80 bg-muted/20 p-3">
                                 {items.map((it, idx) => (
-                                    <div key={it.id || idx} className="flex items-center gap-2">
+                                    <div key={`add-voucher-item-${it.id || idx}-${idx}`} className="flex items-center gap-2">
                                         <input
                                             type="text"
                                             value={it.description}

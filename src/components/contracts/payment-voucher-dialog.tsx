@@ -195,6 +195,58 @@ export function PaymentVoucherDialog({
             next[index] = { ...next[index], [field]: value }
             return next
         })
+
+        // Auto-detect partial draw on amount edit if creating new draw
+        if (field === "amount" && index === 0 && !draw) {
+            const numVal = parseFloat(value) || 0
+            const baseNum = installmentIndex + 1
+            const currentDrawId = draw ? (draw as any).id : null
+            const priorCount = (installment.draws || []).filter(d => !currentDrawId || d.id !== currentDrawId).length
+
+            if (numVal > 0 && numVal < remainingForInstallment) {
+                const subNum = priorCount + 1
+                const newLabel = `${baseNum}.${subNum}`
+                const pct = Math.round((numVal / remainingForInstallment) * 100)
+                const remainingAfter = Math.max(0, remainingForInstallment - numVal)
+
+                if (installmentLabel === String(baseNum)) {
+                    setInstallmentLabel(newLabel)
+                }
+
+                setItems(prev => {
+                    const copy = [...prev]
+                    if (copy[0]) {
+                        const curDesc = copy[0].description
+                        let updatedDesc = curDesc
+                        if (curDesc.startsWith(`เบิกงวดที่ ${baseNum}:`)) {
+                            updatedDesc = `เบิกย่อยงวดที่ ${newLabel} (${pct}%): ${installment.description}`
+                        }
+                        const curNote = copy[0].notes || ""
+                        let updatedNote = curNote
+                        if (!curNote || curNote === `งวด ${baseNum}` || curNote.startsWith("เบิกย่อย")) {
+                            updatedNote = `เบิกย่อย ${pct}% (งวดที่ ${newLabel}) ยอด ฿${fmtNum(numVal)} จากงวดเต็ม ฿${fmtNum(installment.amount)} ค้างเบิกอีก ฿${fmtNum(remainingAfter)}`
+                        }
+                        copy[0] = { ...copy[0], description: updatedDesc, notes: updatedNote }
+                    }
+                    return copy
+                })
+            } else if (numVal >= remainingForInstallment && priorCount === 0) {
+                if (installmentLabel === `${baseNum}.1`) {
+                    setInstallmentLabel(String(baseNum))
+                    setItems(prev => {
+                        const copy = [...prev]
+                        if (copy[0]) {
+                            copy[0] = {
+                                ...copy[0],
+                                description: `เบิกงวดที่ ${baseNum}: ${installment.description}`,
+                                notes: `งวด ${baseNum}`
+                            }
+                        }
+                        return copy
+                    })
+                }
+            }
+        }
     }
 
     const handleAddItem = () => {
@@ -215,10 +267,41 @@ export function PaymentVoucherDialog({
     }
 
     const handleApplyPercentage = (pct: number) => {
+        const baseNum = installmentIndex + 1
+        const currentDrawId = draw ? (draw as any).id : null
+        const priorCount = (installment.draws || []).filter(d => !currentDrawId || d.id !== currentDrawId).length
         const calculated = Math.round(remainingForInstallment * (pct / 100))
-        if (items.length === 1) {
-            setItems([{ ...items[0], amount: calculated }])
+        const remainingAfter = Math.max(0, remainingForInstallment - calculated)
+
+        let newLabel = String(baseNum)
+        let newDesc = ""
+        let newNote = ""
+
+        if (pct < 100 || priorCount > 0) {
+            const subNum = priorCount + 1
+            newLabel = `${baseNum}.${subNum}`
+            newDesc = `เบิกย่อยงวดที่ ${newLabel} (${pct}%): ${installment.description || "งวดงาน"}`
+            newNote = `เบิกย่อย ${pct}% (งวดที่ ${newLabel}) ยอด ฿${fmtNum(calculated)} จากงวดเต็ม ฿${fmtNum(installment.amount)} ค้างเบิกอีก ฿${fmtNum(remainingAfter)}`
+        } else {
+            newLabel = String(baseNum)
+            newDesc = `เบิกงวดที่ ${newLabel}: ${installment.description || "งวดงาน"}`
+            newNote = `งวด ${newLabel} (เต็มจำนวน 100%)`
         }
+
+        setInstallmentLabel(newLabel)
+
+        setItems(prev => {
+            const copy = [...prev]
+            if (copy.length === 0) {
+                return [{ id: "item-0", description: newDesc, amount: calculated, notes: newNote }]
+            }
+            copy[0] = { ...copy[0], description: newDesc, amount: calculated, notes: newNote }
+            return copy
+        })
+
+        toast.info(`แตกใบเบิกเป็นงวดย่อย ${newLabel} (${pct}%)`, {
+            description: `ปรับรายละเอียดและเพิ่มหมายเหตุการเบิกย่อยให้อัตโนมัติ`
+        })
     }
 
     // Prepare printable data
@@ -299,6 +382,7 @@ export function PaymentVoucherDialog({
                     date: requestDate,
                     paymentDate: paymentDate || undefined,
                     voucherNumber: docNumber,
+                    label: installmentLabel,
                     department: categoryOrPipe,
                     responsibleRole,
                     items: items.map(it => ({
@@ -659,24 +743,58 @@ export function PaymentVoucherDialog({
                             </div>
 
                             {/* Quick Percentages for partial draw */}
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[11px] text-muted-foreground mr-1">เบิกย่อย:</span>
-                                {[25, 50, 75, 100].map(pct => (
-                                    <button
-                                        key={pct}
-                                        type="button"
-                                        onClick={() => handleApplyPercentage(pct)}
-                                        className="px-2.5 py-1 rounded-md text-xs font-medium bg-muted/70 hover:bg-muted border border-border transition"
-                                    >
-                                        {pct}% · {fmtBaht(Math.round(remainingForInstallment * (pct / 100)))}
-                                    </button>
-                                ))}
+                            <div className="p-3 rounded-xl bg-violet-500/5 border border-violet-500/20 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                        <Split className="w-3.5 h-3.5 text-violet-500" />
+                                        <span>แตกงวดย่อย / เบิกตามเปอร์เซ็นต์ (Partial Draw)</span>
+                                    </span>
+                                    <span className="text-[11px] text-muted-foreground">
+                                        ยอดเต็มงวดนี้: <b className="text-foreground">{fmtBaht(remainingForInstallment)}</b>
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {[25, 50, 75, 100].map((pct, pIdx) => {
+                                        const val = Math.round(remainingForInstallment * (pct / 100))
+                                        const baseNum = installmentIndex + 1
+                                        const currentDrawId = draw ? (draw as any).id : null
+                                        const priorCount = (installment.draws || []).filter(d => !currentDrawId || d.id !== currentDrawId).length
+                                        const targetSubLabel = pct < 100 || priorCount > 0 ? `${baseNum}.${priorCount + 1}` : String(baseNum)
+
+                                        return (
+                                            <button
+                                                key={`pct-${pct}-${pIdx}`}
+                                                type="button"
+                                                onClick={() => handleApplyPercentage(pct)}
+                                                className={cn(
+                                                    "p-2 rounded-lg text-left border transition text-xs flex flex-col justify-between hover:border-violet-500/40",
+                                                    items[0]?.amount === val
+                                                        ? "bg-violet-500/15 border-violet-500 text-violet-700 dark:text-violet-300 font-bold shadow-sm"
+                                                        : "bg-card border-border hover:bg-muted/50"
+                                                )}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-bold text-[11px]">
+                                                        {pct === 100 ? "เต็มงวด (100%)" : `เบิกย่อย ${pct}%`}
+                                                    </span>
+                                                    <span className="px-1.5 py-0.2 rounded text-[10px] bg-violet-500/10 text-violet-600 font-mono">
+                                                        งวด {targetSubLabel}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs font-bold mt-1 tabular-nums">
+                                                    {fmtBaht(val)}
+                                                </span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
                             </div>
 
                             {/* Item Inputs */}
                             <div className="space-y-3">
                                 {items.map((item, idx) => (
-                                    <div key={item.id || idx} className="p-3 rounded-xl bg-muted/30 border border-border space-y-2">
+                                    <div key={`pv-item-${item.id || idx}-${idx}`} className="p-3 rounded-xl bg-muted/30 border border-border space-y-2">
                                         <div className="flex items-center justify-between gap-2">
                                             <span className="text-xs font-bold text-muted-foreground">รายการที่ {idx + 1}</span>
                                             {items.length > 1 && (
@@ -712,9 +830,32 @@ export function PaymentVoucherDialog({
                                                 <input
                                                     value={item.notes || ""}
                                                     onChange={e => handleItemChange(idx, "notes", e.target.value)}
-                                                    placeholder="เช่น งวด 1 หรือ มัดจำ"
+                                                    placeholder="เช่น เบิกย่อย 50% หรือ มัดจำ"
                                                     className="w-full px-3 py-1.5 rounded-lg bg-card border border-border text-sm"
                                                 />
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleItemChange(idx, "notes", `เบิกย่อยตามผลงานหน้างาน 50%`)}
+                                                        className="px-2 py-0.5 rounded text-[10px] bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition"
+                                                    >
+                                                        + เบิกตามหน้างาน
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleItemChange(idx, "notes", `เบิกค่าแรงล่วงหน้า (หักค้างจ่ายงวดถัดไป)`)}
+                                                        className="px-2 py-0.5 rounded text-[10px] bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition"
+                                                    >
+                                                        + ค่าแรงล่วงหน้า
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleItemChange(idx, "notes", `เบิกค่าซื้อวัสดุด่วนหน้างาน`)}
+                                                        className="px-2 py-0.5 rounded text-[10px] bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition"
+                                                    >
+                                                        + ค่าวัสดุด่วน
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -859,225 +1000,250 @@ export function PaymentVoucherDialog({
                         </div>
 
                         {/* A4 Paper Canvas */}
-                        <div className="pb-16 pt-4 flex justify-center w-full">
+                        <div className="pb-16 pt-4 flex justify-center w-full overflow-x-auto">
                             <div
-                                className="bg-white text-black shadow-2xl origin-top rounded-none relative select-text"
                                 style={{
-                                    width: "210mm",
-                                    minHeight: "297mm",
-                                    transform: `scale(${zoom})`,
-                                    transformOrigin: "top center",
-                                    padding: "16mm 16mm 20mm",
-                                    fontFamily: "'Sarabun', sans-serif"
+                                    width: `${210 * zoom}mm`,
+                                    height: `${297 * zoom}mm`,
+                                    position: "relative",
+                                    flexShrink: 0,
+                                    boxShadow: "0 15px 35px -5px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08)"
                                 }}
                             >
-                                {/* Title Centered */}
-                                <h1 className="text-center font-bold text-lg mb-3 tracking-wide">
-                                    ใบสำคัญจ่าย (PAYMENT VOUCHER)
-                                </h1>
+                                <div
+                                    className="bg-white text-black origin-top-left rounded-none relative select-text text-left border border-slate-300 flex flex-col justify-between"
+                                    style={{
+                                        width: "210mm",
+                                        height: "297mm",
+                                        maxHeight: "297mm",
+                                        transform: `scale(${zoom})`,
+                                        transformOrigin: "top left",
+                                        padding: "14mm 16mm 14mm",
+                                        boxSizing: "border-box",
+                                        overflow: "hidden",
+                                        fontFamily: "'Sarabun', sans-serif"
+                                    }}
+                                >
+                                    <div className="flex-1 flex flex-col justify-start">
+                                        {/* Title Centered */}
+                                        <h1 className="text-center font-bold text-lg mb-3 tracking-wide">
+                                            ใบสำคัญจ่าย (PAYMENT VOUCHER)
+                                        </h1>
 
-                                {/* Header Row */}
-                                <div className="flex justify-between items-start gap-4 mb-3">
-                                    <div className="flex-1 text-xs">
-                                        <div className="font-bold text-sm text-black mb-0.5">
-                                            {orgProfile?.name || "บริษัท แบบบ้านสวย จำกัด"}
-                                        </div>
-                                        <div className="text-gray-700 leading-snug">
-                                            {orgProfile?.address || "95/47 หมู่ที่ 1 ตำบลตลาดขวัญ อำเภอเมือง จังหวัดนนทบุรี 11000"}
-                                        </div>
-                                        {orgProfile?.phone && (
-                                            <div className="text-gray-700">โทร {orgProfile.phone}</div>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col items-end">
-                                        {orgProfile?.logo ? (
-                                            <img
-                                                src={orgProfile.logo}
-                                                alt="Logo"
-                                                className="max-h-14 max-w-[130px] object-contain mb-1"
-                                            />
-                                        ) : (
-                                            <div className="w-12 h-12 rounded-full bg-amber-600 flex items-center justify-center text-white font-bold text-xl mb-1 shadow">
-                                                🏠
+                                        {/* Header Row */}
+                                        <div className="flex justify-between items-start gap-4 mb-3">
+                                            <div className="flex-1 text-xs">
+                                                <div className="font-bold text-sm text-black mb-0.5">
+                                                    {orgProfile?.name || "บริษัท แบบบ้านสวย จำกัด"}
+                                                </div>
+                                                <div className="text-gray-700 leading-snug">
+                                                    {orgProfile?.address || "95/47 หมู่ที่ 1 ตำบลตลาดขวัญ อำเภอเมือง จังหวัดนนทบุรี 11000"}
+                                                </div>
+                                                {orgProfile?.phone && (
+                                                    <div className="text-gray-700">โทร {orgProfile.phone}</div>
+                                                )}
                                             </div>
-                                        )}
-                                        <table className="text-xs border-collapse">
+                                            <div className="flex flex-col items-end">
+                                                {orgProfile?.logo ? (
+                                                    <img
+                                                        src={orgProfile.logo}
+                                                        alt="Logo"
+                                                        className="max-h-14 max-w-[130px] object-contain mb-1"
+                                                    />
+                                                ) : (
+                                                    <div className="w-12 h-12 rounded-full bg-amber-600 flex items-center justify-center text-white font-bold text-xl mb-1 shadow">
+                                                        🏠
+                                                    </div>
+                                                )}
+                                                <table className="text-xs border-collapse">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td className="text-right text-gray-700 font-medium pr-2 py-0.5">เลขที่เอกสาร:</td>
+                                                            <td className="font-bold text-left">{docNumber}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-right text-gray-700 font-medium pr-2 py-0.5">วันที่เบิกจ่าย:</td>
+                                                            <td className="font-bold text-left">{thDateLong(requestDate)}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-right text-gray-700 font-medium pr-2 py-0.5">วันที่จ่ายเงิน:</td>
+                                                            <td className="font-bold text-left">{paymentDate ? thDateLong(paymentDate) : "___/___/___"}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        {/* Payee / Project Info Lines with Dotted Underline */}
+                                        <div className="my-3 space-y-1.5 text-xs">
+                                            <div className="flex items-baseline">
+                                                <span className="font-bold shrink-0 mr-2">ชื่อผู้รับเงิน / พนักงาน :</span>
+                                                <span className="flex-1 border-b border-dotted border-gray-600 pb-0.5">
+                                                    {workerName || "-"}{workerPhone ? ` (โทร. ${workerPhone})` : ""}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-baseline">
+                                                <span className="font-bold shrink-0 mr-2">โครงการ :</span>
+                                                <span className="flex-1 border-b border-dotted border-gray-600 pb-0.5">
+                                                    {projectName || "-"}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-baseline">
+                                                <span className="font-bold shrink-0 mr-2">ไปป์/ประเภท :</span>
+                                                <span className="flex-1 border-b border-dotted border-gray-600 pb-0.5 mr-6">
+                                                    {categoryOrPipe || "-"}
+                                                </span>
+                                                <span className="font-bold shrink-0 mr-2">หน้าที่รับผิดชอบ :</span>
+                                                <span className="w-48 border-b border-dotted border-gray-600 pb-0.5">
+                                                    {responsibleRole || "ผู้รับเหมาช่วง"}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Items Table matching BBSPM Voucher layout */}
+                                        <table className="w-full border-collapse border border-black text-xs my-2.5 table-fixed">
+                                            <thead>
+                                                <tr className="bg-gray-50">
+                                                    <th className="border border-black p-1.5 w-[8%] text-center font-bold">ลำดับ</th>
+                                                    <th className="border border-black p-1.5 w-[52%] text-center font-bold">รายละเอียดรายการเบิกจ่าย</th>
+                                                    <th className="border border-black p-1.5 w-[22%] text-center font-bold">จำนวนเงิน<br />(บาท)</th>
+                                                    <th className="border border-black p-1.5 w-[18%] text-center font-bold">หมายเหตุ</th>
+                                                </tr>
+                                            </thead>
                                             <tbody>
+                                                {items.map((item, idx) => (
+                                                    <tr key={`pv-preview-item-${item.id || idx}-${idx}`}>
+                                                        <td className="border border-black p-1.5 text-center align-top">{idx + 1}</td>
+                                                        <td className="border border-black p-1.5 font-normal align-top break-words">{item.description}</td>
+                                                        <td className="border border-black p-1.5 text-right font-bold tabular-nums align-top whitespace-nowrap">
+                                                            {fmtNum(item.amount)}
+                                                        </td>
+                                                        <td className="border border-black p-1.5 text-center text-gray-700 align-top">{item.notes || ""}</td>
+                                                    </tr>
+                                                ))}
+
+                                                {/* Spacer empty rows for formal A4 voucher look */}
+                                                {Array(Math.max(0, 4 - items.length)).fill(0).map((_, i) => (
+                                                    <tr key={`pv-spacer-${i}`}>
+                                                        <td className="border border-black p-1.5 text-center text-gray-300">{items.length + i + 1}</td>
+                                                        <td className="border border-black p-1.5 h-6">&nbsp;</td>
+                                                        <td className="border border-black p-1.5">&nbsp;</td>
+                                                        <td className="border border-black p-1.5">&nbsp;</td>
+                                                    </tr>
+                                                ))}
+
+                                                {/* Subtotal row */}
                                                 <tr>
-                                                    <td className="text-right text-gray-700 font-medium pr-2 py-0.5">เลขที่เอกสาร:</td>
-                                                    <td className="font-bold text-left">{docNumber}</td>
+                                                    <td colSpan={2} className="border border-black p-1.5 text-center font-bold">
+                                                        รวมเงินเบิกทั้งสิ้น
+                                                    </td>
+                                                    <td className="border border-black p-1.5 text-right font-black tabular-nums">
+                                                        {fmtNum(totalVoucherAmount)}
+                                                    </td>
+                                                    <td className="border border-black p-1.5 text-center text-xs">
+                                                        บาท
+                                                    </td>
                                                 </tr>
+
+                                                {/* Thai Baht text row */}
                                                 <tr>
-                                                    <td className="text-right text-gray-700 font-medium pr-2 py-0.5">วันที่เบิกจ่าย:</td>
-                                                    <td className="font-bold text-left">{thDateLong(requestDate)}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="text-right text-gray-700 font-medium pr-2 py-0.5">วันที่จ่ายเงิน:</td>
-                                                    <td className="font-bold text-left">{paymentDate ? thDateLong(paymentDate) : "___/___/___"}</td>
+                                                    <td colSpan={2} className="border border-black p-1.5 text-center text-gray-700">
+                                                        ยอดเงินตัวหนังสือ
+                                                    </td>
+                                                    <td colSpan={2} className="border border-black p-1.5 text-center font-bold">
+                                                        ({bahtText(totalVoucherAmount)})
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>
+
+                                        {/* Summary Tracking Lines */}
+                                        <div className="my-2.5 text-xs space-y-1">
+                                            <div className="flex items-center">
+                                                <span className="w-36 text-gray-800">ยอดรวมค่าจ้างทั้งหมด :</span>
+                                                <span className="border-b border-dotted border-gray-600 px-3 min-w-[100px] text-right font-bold">
+                                                    {fmtNum(totalContractAmount)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <span className="w-36 text-gray-800">เบิกจ่ายค่าจ้างงวดที่ :</span>
+                                                <span className="border-b border-dotted border-gray-600 px-3 font-bold min-w-[40px] text-center">
+                                                    {installmentLabel}
+                                                </span>
+                                                <span className="ml-4 mr-2 text-gray-800">เป็นจำนวน :</span>
+                                                <span className="border-b border-dotted border-gray-600 px-3 min-w-[100px] text-right font-bold">
+                                                    {fmtNum(totalVoucherAmount)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <span className="w-36 text-gray-800">คงเหลือค่าจ้างเบิกจ่ายในครั้งต่อไป :</span>
+                                                <span className="border-b border-dotted border-gray-600 px-3 min-w-[100px] text-right font-bold">
+                                                    {fmtNum(remainingAfterThisDraw)}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    {/* 4 Signature Boxes (4 columns in 1 row) */}
+                                    <div className="shrink-0 pt-3 border-t border-black text-xs text-center">
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {/* Signer 1: Requester */}
+                                            <div className="space-y-1 px-1">
+                                                <div className="h-8 flex items-end justify-center mb-1">
+                                                    <div className="w-full max-w-[125px] border-b border-dotted border-black" />
+                                                </div>
+                                                <div className="font-bold text-[11px] truncate">
+                                                    ({signatures.requester.name || "...................................."})
+                                                </div>
+                                                <div className="text-[10px] text-gray-700 leading-tight">{signatures.requester.label}</div>
+                                                <div className="text-[9.5px] text-gray-500 mt-0.5">วันที่: ..... / ..... / .........</div>
+                                            </div>
+
+                                            {/* Signer 2: Inspector */}
+                                            <div className="space-y-1 px-1">
+                                                <div className="h-8 flex items-end justify-center mb-1">
+                                                    <div className="w-full max-w-[125px] border-b border-dotted border-black" />
+                                                </div>
+                                                <div className="font-bold text-[11px] truncate">
+                                                    ({signatures.inspector.name || "...................................."})
+                                                </div>
+                                                <div className="text-[10px] text-gray-700 leading-tight">{signatures.inspector.label}</div>
+                                                <div className="text-[9.5px] text-gray-500 mt-0.5">วันที่: ..... / ..... / .........</div>
+                                            </div>
+
+                                            {/* Signer 3: Accountant */}
+                                            <div className="space-y-1 px-1">
+                                                <div className="h-8 flex items-end justify-center mb-1">
+                                                    <div className="w-full max-w-[125px] border-b border-dotted border-black" />
+                                                </div>
+                                                <div className="font-bold text-[11px] truncate">
+                                                    ({signatures.accountant.name || "...................................."})
+                                                </div>
+                                                <div className="text-[10px] text-gray-700 leading-tight">{signatures.accountant.label}</div>
+                                                <div className="text-[9.5px] text-gray-500 mt-0.5">วันที่: ..... / ..... / .........</div>
+                                            </div>
+
+                                            {/* Signer 4: Payer */}
+                                            <div className="space-y-1 px-1">
+                                                <div className="h-8 flex items-end justify-center mb-1">
+                                                    <div className="w-full max-w-[125px] border-b border-dotted border-black" />
+                                                </div>
+                                                <div className="font-bold text-[11px] truncate">
+                                                    ({signatures.payer.name || "...................................."})
+                                                </div>
+                                                <div className="text-[10px] text-gray-700 leading-tight">{signatures.payer.label}</div>
+                                                <div className="text-[9.5px] text-gray-500 mt-0.5">วันที่: ..... / ..... / .........</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Status watermark badge */}
+                                    {expenseStatus === "Paid" && (
+                                        <div className="absolute top-6 right-6 border-2 border-emerald-600/40 text-emerald-700/60 font-black text-xs px-3 py-1 rounded rotate-[-8deg] uppercase tracking-wider select-none pointer-events-none">
+                                            ✓ จ่ายเงินแล้ว (PAID)
+                                        </div>
+                                    )}
                                 </div>
-
-                                {/* Payee / Project Info Lines with Dotted Underline */}
-                                <div className="my-3 space-y-1.5 text-xs">
-                                    <div className="flex items-baseline">
-                                        <span className="font-bold shrink-0 mr-2">ชื่อผู้รับเงิน / พนักงาน :</span>
-                                        <span className="flex-1 border-b border-dotted border-gray-600 pb-0.5">
-                                            {workerName || "-"}{workerPhone ? ` (โทร. ${workerPhone})` : ""}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-baseline">
-                                        <span className="font-bold shrink-0 mr-2">โครงการ :</span>
-                                        <span className="flex-1 border-b border-dotted border-gray-600 pb-0.5">
-                                            {projectName || "-"}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-baseline">
-                                        <span className="font-bold shrink-0 mr-2">ไปป์/ประเภท :</span>
-                                        <span className="flex-1 border-b border-dotted border-gray-600 pb-0.5 mr-6">
-                                            {categoryOrPipe || "-"}
-                                        </span>
-                                        <span className="font-bold shrink-0 mr-2">หน้าที่รับผิดชอบ :</span>
-                                        <span className="w-48 border-b border-dotted border-gray-600 pb-0.5">
-                                            {responsibleRole || "ผู้รับเหมาช่วง"}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Items Table matching BBSPM Voucher layout */}
-                                <table className="w-full border-collapse border border-black text-xs my-3">
-                                    <thead>
-                                        <tr className="bg-gray-50">
-                                            <th className="border border-black p-2 w-12 text-center font-bold">ลำดับ</th>
-                                            <th className="border border-black p-2 text-center font-bold">รายละเอียดรายการเบิกจ่าย</th>
-                                            <th className="border border-black p-2 w-28 text-center font-bold">จำนวนเงิน<br />(บาท)</th>
-                                            <th className="border border-black p-2 w-24 text-center font-bold">หมายเหตุ</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {items.map((item, idx) => (
-                                            <tr key={item.id || idx}>
-                                                <td className="border border-black p-2 text-center">{idx + 1}</td>
-                                                <td className="border border-black p-2 font-normal">{item.description}</td>
-                                                <td className="border border-black p-2 text-right font-bold tabular-nums">
-                                                    {fmtNum(item.amount)}
-                                                </td>
-                                                <td className="border border-black p-2 text-center text-gray-700">{item.notes || ""}</td>
-                                            </tr>
-                                        ))}
-
-                                        {/* Spacer empty rows for formal A4 voucher look */}
-                                        {Array(Math.max(0, 6 - items.length)).fill(0).map((_, i) => (
-                                            <tr key={`spacer-${i}`}>
-                                                <td className="border border-black p-2 text-center text-gray-300">{items.length + i + 1}</td>
-                                                <td className="border border-black p-2 h-7">&nbsp;</td>
-                                                <td className="border border-black p-2">&nbsp;</td>
-                                                <td className="border border-black p-2">&nbsp;</td>
-                                            </tr>
-                                        ))}
-
-                                        {/* Subtotal row */}
-                                        <tr>
-                                            <td colSpan={2} className="border border-black p-2 text-center font-bold">
-                                                รวมเงินเบิกทั้งสิ้น
-                                            </td>
-                                            <td className="border border-black p-2 text-right font-black tabular-nums">
-                                                {fmtNum(totalVoucherAmount)}
-                                            </td>
-                                            <td className="border border-black p-2 text-center text-xs">
-                                                บาท
-                                            </td>
-                                        </tr>
-
-                                        {/* Thai Baht text row */}
-                                        <tr>
-                                            <td colSpan={2} className="border border-black p-1.5 text-center text-gray-700">
-                                                ยอดเงินตัวหนังสือ
-                                            </td>
-                                            <td colSpan={2} className="border border-black p-1.5 text-center font-bold">
-                                                ({bahtText(totalVoucherAmount)})
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-
-                                {/* Summary Tracking Lines */}
-                                <div className="my-4 text-xs space-y-1.5">
-                                    <div className="flex items-center">
-                                        <span className="w-36 text-gray-800">ยอดรวมค่าจ้างทั้งหมด :</span>
-                                        <span className="border-b border-dotted border-gray-600 px-3 min-w-[100px] text-right font-bold">
-                                            {fmtNum(totalContractAmount)}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="w-36 text-gray-800">เบิกจ่ายค่าจ้างงวดที่ :</span>
-                                        <span className="border-b border-dotted border-gray-600 px-3 font-bold min-w-[40px] text-center">
-                                            {installmentLabel}
-                                        </span>
-                                        <span className="ml-4 mr-2 text-gray-800">เป็นจำนวน :</span>
-                                        <span className="border-b border-dotted border-gray-600 px-3 min-w-[100px] text-right font-bold">
-                                            {fmtNum(totalVoucherAmount)}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="w-36 text-gray-800">คงเหลือค่าจ้างเบิกจ่ายในครั้งต่อไป :</span>
-                                        <span className="border-b border-dotted border-gray-600 px-3 min-w-[100px] text-right font-bold">
-                                            {fmtNum(remainingAfterThisDraw)}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* 4 Signature Boxes (2x2 Grid) */}
-                                <div className="mt-8 pt-4 grid grid-cols-2 gap-y-8 gap-x-8 text-xs text-center">
-                                    {/* Signer 1: Requester */}
-                                    <div>
-                                        <div>
-                                            ลงชื่อ <span className="inline-block border-b border-dotted border-black w-44 mx-1"></span> {signatures.requester.label}
-                                        </div>
-                                        <div className="mt-1 text-gray-700">
-                                            ({signatures.requester.name || ".................................................."})
-                                        </div>
-                                    </div>
-
-                                    {/* Signer 2: Inspector */}
-                                    <div>
-                                        <div>
-                                            ลงชื่อ <span className="inline-block border-b border-dotted border-black w-44 mx-1"></span> {signatures.inspector.label}
-                                        </div>
-                                        <div className="mt-1 text-gray-700">
-                                            ({signatures.inspector.name || ".................................................."})
-                                        </div>
-                                    </div>
-
-                                    {/* Signer 3: Accountant */}
-                                    <div>
-                                        <div>
-                                            ลงชื่อ <span className="inline-block border-b border-dotted border-black w-44 mx-1"></span> {signatures.accountant.label}
-                                        </div>
-                                        <div className="mt-1 text-gray-700">
-                                            ({signatures.accountant.name || ".................................................."})
-                                        </div>
-                                    </div>
-
-                                    {/* Signer 4: Payer */}
-                                    <div>
-                                        <div>
-                                            ลงชื่อ <span className="inline-block border-b border-dotted border-black w-44 mx-1"></span> {signatures.payer.label}
-                                        </div>
-                                        <div className="mt-1 text-gray-700">
-                                            ({signatures.payer.name || ".................................................."})
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Status watermark badge */}
-                                {expenseStatus === "Paid" && (
-                                    <div className="absolute top-6 right-6 border-2 border-emerald-600/40 text-emerald-700/60 font-black text-xs px-3 py-1 rounded rotate-[-8deg] uppercase tracking-wider select-none pointer-events-none">
-                                        ✓ จ่ายเงินแล้ว (PAID)
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>
