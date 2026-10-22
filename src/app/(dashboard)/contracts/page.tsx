@@ -1,13 +1,16 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, Suspense } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { useProjects, Contract, ContractInstallment, ContractDraw } from "@/context/project-context"
 import { useFinance } from "@/context/finance-context"
 import { AddContractDialog } from "@/components/contracts/add-contract-dialog"
 import { ContractPreviewDialog } from "@/components/contracts/contract-preview-dialog"
 import { PaymentVoucherDialog } from "@/components/contracts/payment-voucher-dialog"
 import { DrawInstallmentDialog } from "@/components/contracts/draw-installment-dialog"
+import { ContractCard } from "@/components/contracts/contract-card"
+import { ContractDetailView } from "@/components/contracts/contract-detail-view"
 import {
     FileText,
     Printer,
@@ -20,39 +23,35 @@ import {
     Receipt,
     Search,
     Clock,
-    Split,
-    AlertCircle,
-    XCircle,
     RotateCcw,
     FolderKanban,
     User2,
     Check,
     Calendar,
-    ArrowUpRight,
     Archive,
     ArchiveRestore,
-    AlertTriangle
+    AlertTriangle,
+    LayoutGrid,
+    LayoutList,
+    Wallet,
+    Layers,
+    AlertCircle
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import {
     fmtBaht,
-    fmtNum,
     thDateShort,
-    thDateLong,
     getContractStats,
-    getInstallmentDrawn,
-    getInstallmentState,
-    getDraws,
-    splitLegacyScope,
     DEFAULT_CONTRACT_TITLE
 } from "@/lib/contract-utils"
 
-export default function ContractsPage() {
-    const { contracts, projects, workers, deleteContract, updateContract, archiveContract, unarchiveContract, currentTeam } = useProjects()
+function ContractsContent() {
+    const { contracts, projects, workers, deleteContract, updateContract, archiveContract, unarchiveContract } = useProjects()
     const { cancelDraw, markDrawAsPaid } = useFinance()
     const { t } = useTranslation()
+    const searchParams = useSearchParams()
 
     // Dialog states
     const [isAddOpen, setIsAddOpen] = useState(false)
@@ -80,6 +79,44 @@ export default function ContractsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [filterStatus, setFilterStatus] = useState<"all" | "active" | "completed" | "archived">("all")
     const [filterProjectId, setFilterProjectId] = useState<string>("all")
+    const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+
+    // Sync selected contract with URL ?id= parameter
+    useEffect(() => {
+        const id = searchParams.get("id")
+        if (id) {
+            setSelectedContractId(id)
+        } else {
+            setSelectedContractId(null)
+        }
+    }, [searchParams])
+
+    const handleSelectContract = (id: string) => {
+        setSelectedContractId(id)
+        const params = new URLSearchParams(window.location.search)
+        params.set("id", id)
+        window.history.pushState(null, "", `?${params.toString()}`)
+        window.scrollTo({ top: 0, behavior: "smooth" })
+    }
+
+    const handleBackToOverview = () => {
+        setSelectedContractId(null)
+        const params = new URLSearchParams(window.location.search)
+        params.delete("id")
+        const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname
+        window.history.pushState(null, "", newUrl)
+    }
+
+    // Keyboard ESC to go back to overview if viewing sub-page
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape" && selectedContractId) {
+                handleBackToOverview()
+            }
+        }
+        window.addEventListener("keydown", handleKeyDown)
+        return () => window.removeEventListener("keydown", handleKeyDown)
+    }, [selectedContractId])
 
     // Filter counts (Exclude standalone 1-milestone vouchers which belong in /vouchers)
     const nonArchivedContracts = useMemo(() => contracts.filter(c => !c.isDeleted && !c.isArchived && !c.isStandaloneVoucher), [contracts])
@@ -117,14 +154,43 @@ export default function ContractsPage() {
         })
     }, [contracts, searchQuery, filterStatus, filterProjectId, projects, workers])
 
-    // Currently featured/expanded contract at the top
-    const activeContract = useMemo(() => {
-        if (selectedContractId) {
-            const found = contracts.find(c => c.id === selectedContractId && !c.isDeleted)
-            if (found) return found
+    // Active selected contract for detail sub-page view
+    const selectedContract = useMemo(() => {
+        if (!selectedContractId) return null
+        return contracts.find(c => c.id === selectedContractId && !c.isDeleted) || null
+    }, [selectedContractId, contracts])
+
+    // Aggregated KPI stats across all non-archived contracts
+    const overviewStats = useMemo(() => {
+        let totalValue = 0
+        let totalDrawn = 0
+        let activeValue = 0
+        let activeCount = 0
+
+        nonArchivedContracts.forEach(c => {
+            const stats = getContractStats(c)
+            totalValue += stats.total
+            totalDrawn += stats.drawn
+            if (c.status !== "Completed") {
+                activeCount++
+                activeValue += stats.total
+            }
+        })
+
+        const totalRemaining = Math.max(0, totalValue - totalDrawn)
+        const overallProgress = totalValue > 0 ? Math.round((totalDrawn / totalValue) * 100) : 0
+
+        return {
+            totalContracts: nonArchivedContracts.length,
+            activeCount,
+            completedCount: nonArchivedContracts.length - activeCount,
+            archivedCount: archivedContracts.length,
+            totalValue,
+            totalDrawn,
+            totalRemaining,
+            overallProgress
         }
-        return filteredContracts.length > 0 ? filteredContracts[0] : null
-    }, [selectedContractId, contracts, filteredContracts])
+    }, [nonArchivedContracts, archivedContracts])
 
     const handleEdit = (contract: Contract) => {
         setEditingContract(contract)
@@ -161,17 +227,13 @@ export default function ContractsPage() {
         }
     }
 
-    const handleToggleContractStatus = async (contract: Contract) => {
-        handleInitiateCloseContract(contract)
-    }
-
     // Archive / Unarchive Contract
     const handleArchiveContract = async (contract: Contract) => {
         const docNo = contract.documentNumber || `CT-${contract.id.slice(0, 8)}`
         if (!confirm(`ต้องการย้ายสัญญา ${docNo} ไปที่คลังเก็บถาวร (Archive) ใช่หรือไม่?\nสัญญาจะไม่แสดงในรายการ 'ทั้งหมด'`)) return
         try {
             await archiveContract(contract.id)
-            if (selectedContractId === contract.id) setSelectedContractId(null)
+            if (selectedContractId === contract.id) handleBackToOverview()
             toast.success(`ย้ายสัญญา ${docNo} ไปที่คลังเก็บถาวรแล้ว`, {
                 description: "คุณสามารถดูหรือกู้คืนได้ที่แท็บ 'คลังเก็บ (Archive)'"
             })
@@ -269,7 +331,7 @@ export default function ContractsPage() {
                         <div className="flex gap-3 pt-2">
                             <button
                                 onClick={() => setShowDeleteConfirm(null)}
-                                className="flex-1 py-2.5 rounded-xl font-medium hover:bg-muted transition-colors text-sm"
+                                className="flex-1 py-2.5 rounded-xl font-medium hover:bg-muted transition-colors text-sm cursor-pointer"
                             >
                                 ยกเลิก
                             </button>
@@ -277,12 +339,12 @@ export default function ContractsPage() {
                                 onClick={() => {
                                     if (showDeleteConfirm) {
                                         deleteContract(showDeleteConfirm)
-                                        if (selectedContractId === showDeleteConfirm) setSelectedContractId(null)
+                                        if (selectedContractId === showDeleteConfirm) handleBackToOverview()
                                         setShowDeleteConfirm(null)
                                         toast.success("ย้ายสัญญาไปที่ถังขยะแล้ว")
                                     }
                                 }}
-                                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-500/20 text-sm"
+                                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-500/20 text-sm cursor-pointer"
                             >
                                 ลบสัญญา
                             </button>
@@ -339,7 +401,7 @@ export default function ContractsPage() {
                             <button
                                 type="button"
                                 onClick={() => setCloseConfirmTarget(null)}
-                                className="flex-1 py-2.5 rounded-xl font-medium border border-border hover:bg-muted text-foreground transition text-xs sm:text-sm text-center"
+                                className="flex-1 py-2.5 rounded-xl font-medium border border-border hover:bg-muted text-foreground transition text-xs sm:text-sm text-center cursor-pointer"
                             >
                                 ยังไม่จบ (กลับไปทำต่อ)
                             </button>
@@ -354,7 +416,7 @@ export default function ContractsPage() {
                                         description: `ตัดยอดคงเหลือ ${fmtBaht(rem)} เรียบร้อย`
                                     })
                                 }}
-                                className="flex-1 py-2.5 rounded-xl font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/20 transition text-xs sm:text-sm text-center"
+                                className="flex-1 py-2.5 rounded-xl font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/20 transition text-xs sm:text-sm text-center cursor-pointer"
                             >
                                 ยืนยันจบสัญญา (ตัดยอด)
                             </button>
@@ -363,559 +425,384 @@ export default function ContractsPage() {
                 </div>
             )}
 
-            {/* Top Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                        {t.contracts?.title || "สัญญาจ้างเหมางาน"}
-                        <span className="text-xs sm:text-sm font-normal text-muted-foreground px-2 py-0.5 rounded-md bg-muted">
-                            {nonArchivedContracts.length} สัญญา
-                        </span>
-                    </h1>
-                    <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-                        บริหารสัญญาจ้างเหมาช่าง แบ่งงวดงาน และออกเบิกจ่ายส่งเข้าเป็นรายจ่ายอัตโนมัติ
-                    </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                        href="/vouchers"
-                        className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-border bg-card hover:bg-muted font-semibold text-foreground text-xs sm:text-sm transition-all"
-                        title="ดูและจัดการใบเบิกงวดทั้งหมด รวมถึงช่างที่มีงวดเดียวไม่ต้องทำสัญญา"
-                    >
-                        <Receipt className="w-4 h-4 text-emerald-500" />
-                        <span>ใบเบิกงวด</span>
-                    </Link>
-                    <button
-                        onClick={() => {
-                            setEditingContract(undefined)
-                            setIsAddOpen(true)
-                        }}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all text-sm"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>สร้างสัญญาใหม่</span>
-                    </button>
-                </div>
-            </div>
-
             {/* ───────────────────────────────────────────────────────────────────────────── */}
-            {/* FEATURED / EXPANDED CONTRACT CARD (BBSPM Style) */}
+            {/* VIEW MODE: EITHER SUB-PAGE DETAIL VIEW OR OVERVIEW CARDS VIEW                */}
             {/* ───────────────────────────────────────────────────────────────────────────── */}
-            {activeContract ? (
-                (() => {
-                    const c = activeContract
-                    const project = projects.find(p => p.id === c.projectId)
-                    const worker = workers.find(w => w.id === c.workerId)
-                    const stats = getContractStats(c)
-                    const isCompleted = c.status === "Completed"
-                    const docNo = c.documentNumber || `CT-${c.id.slice(0, 8)}`
-
-                    return (
-                        <div className="bg-card border border-border/80 rounded-2xl shadow-xl overflow-hidden transition-all">
-                            {/* Card Header Bar */}
-                            <div className="p-4 sm:p-5 border-b border-border/60 bg-muted/20 flex flex-wrap items-center justify-between gap-3">
-                                {/* Left Badges */}
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="px-3 py-1 rounded-md text-xs font-bold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
-                                        {docNo}
-                                    </span>
-                                    {worker && (
-                                        <span className="px-3 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 flex items-center gap-1">
-                                            <span className="text-muted-foreground">ช่าง:</span> {worker.name}
-                                        </span>
-                                    )}
-                                    <span
-                                        className={cn(
-                                            "px-3 py-1 rounded-md text-xs font-semibold border",
-                                            isCompleted
-                                                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-                                                : "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30"
-                                        )}
-                                    >
-                                        {isCompleted ? "จบสัญญาแล้ว" : "กำลังดำเนินการ"}
-                                    </span>
-                                </div>
-
-                                {/* Right Action Buttons */}
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => handleInitiateCloseContract(c)}
-                                        className={cn(
-                                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition active:scale-95",
-                                            isCompleted
-                                                ? "bg-muted hover:bg-muted/80 text-foreground border-border"
-                                                : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
-                                        )}
-                                        title={isCompleted ? "เปิดสัญญาอีกครั้ง (กำลังดำเนินการ)" : "จบสัญญา (ตรวจสอบยอดคงเหลือ)"}
-                                    >
-                                        <Check className="w-3.5 h-3.5" />
-                                        <span>{isCompleted ? "เปิดสัญญาใหม่" : "จบสัญญา"}</span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setPreviewContract(c)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground border border-border transition active:scale-95"
-                                        title="ดูตัวอย่าง / พิมพ์เอกสารสัญญา"
-                                    >
-                                        <Printer className="w-3.5 h-3.5" />
-                                        <span>ดูตัวอย่าง / พิมพ์</span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => handleEdit(c)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground border border-border transition active:scale-95"
-                                        title="แก้ไขสัญญาและงวดงาน"
-                                    >
-                                        <Edit3 className="w-3.5 h-3.5" />
-                                        <span>แก้ไขงวดงาน</span>
-                                    </button>
-
-                                    {c.isArchived ? (
-                                        <button
-                                            onClick={() => handleUnarchiveContract(c)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-violet-600 hover:bg-violet-500 text-white shadow shadow-violet-600/20 transition active:scale-95"
-                                            title="กู้คืนสัญญาให้กลับไปแสดงใน 'ทั้งหมด'"
-                                        >
-                                            <ArchiveRestore className="w-3.5 h-3.5" />
-                                            <span>กู้คืน</span>
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => handleArchiveContract(c)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition active:scale-95"
-                                            title="ย้ายสัญญาไปที่คลังเก็บถาวร (Archive)"
-                                        >
-                                            <Archive className="w-3.5 h-3.5" />
-                                            <span className="hidden sm:inline">เก็บถาวร</span>
-                                        </button>
-                                    )}
-
-                                    {selectedContractId && (
-                                        <button
-                                            onClick={() => setSelectedContractId(null)}
-                                            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted transition"
-                                            title="ย่อรายละเอียด"
-                                        >
-                                            ย่อ
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Contract Title & Project Info */}
-                            <div className="p-4 sm:p-6 space-y-6">
-                                <div>
-                                    <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-                                        {c.title || DEFAULT_CONTRACT_TITLE}
-                                    </h2>
-                                    <p className="text-xs sm:text-sm text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
-                                        <span>โครงการ: <b className="text-foreground">{project?.name || "ไม่ระบุโครงการ"}</b></span>
-                                        <span>•</span>
-                                        <span>ประเภท: <b className="text-foreground">{c.contractType || "ช่าง/ค่าแรง + ค่าวัสดุ"}</b></span>
-                                    </p>
-                                </div>
-
-                                {/* 4 Stat Summary Boxes */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    <div className="rounded-xl border border-border/80 bg-muted/30 p-3.5">
-                                        <p className="text-[11px] text-muted-foreground font-medium">มูลค่าว่าจ้างตามสัญญา</p>
-                                        <p className="text-lg sm:text-xl font-bold text-foreground mt-0.5 tabular-nums">
-                                            {fmtBaht(stats.total)}
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-xl border border-border/80 bg-muted/30 p-3.5">
-                                        <p className="text-[11px] text-muted-foreground font-medium">แบ่งงวดงาน</p>
-                                        <p className="text-lg sm:text-xl font-bold text-foreground mt-0.5">
-                                            {stats.installmentCount} งวด
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-xl border border-border/80 bg-muted/30 p-3.5">
-                                        <p className="text-[11px] text-muted-foreground font-medium">งวดที่จ่ายแล้ว</p>
-                                        <p className="text-lg sm:text-xl font-bold text-foreground mt-0.5">
-                                            {stats.paidInstallments}/{stats.installmentCount} งวด
-                                            {stats.partialInstallments > 0 && (
-                                                <span className="text-xs text-blue-500 font-normal ml-1">
-                                                    (เบิกย่อย {stats.partialInstallments})
-                                                </span>
-                                            )}
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3.5">
-                                        <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
-                                            ยอดจ่ายตามงวดแล้ว
-                                        </p>
-                                        <p className="text-lg sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 tabular-nums">
-                                            {fmtBaht(stats.drawn)}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Milestone Installments List */}
-                                <div className="space-y-3 pt-2">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                                            แผนการส่งมอบงานและการเบิกจ่าย
-                                        </h3>
-                                        <span className="text-xs text-muted-foreground">
-                                            คลิก "เบิกงวด" เพื่อเลือกเบิกเต็มงวด หรือเบิกย่อย (เช่น 5.1, 5.2)
-                                        </span>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        {c.installments.map((inst, idx) => {
-                                            const state = getInstallmentState(inst, idx)
-                                            const drawn = getInstallmentDrawn(inst, idx)
-                                            const remaining = Math.max(0, inst.amount - drawn)
-                                            const draws = getDraws(inst, idx)
-                                            const isPaid = state === "Paid"
-                                            const isPartial = state === "Partial"
-
-                                            return (
-                                                <div
-                                                    key={inst.id || idx}
-                                                    className={cn(
-                                                        "rounded-xl border p-4 transition-all space-y-3",
-                                                        isPaid
-                                                            ? "border-emerald-500/30 bg-emerald-500/5"
-                                                            : isPartial
-                                                            ? "border-blue-500/30 bg-blue-500/5"
-                                                            : "border-border/80 bg-card hover:border-border"
-                                                    )}
-                                                >
-                                                    {/* Installment Header */}
-                                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                                                        <div className="space-y-1 min-w-0">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <span className="font-bold text-sm sm:text-base text-foreground">
-                                                                    งวดที่ {idx + 1} ({inst.description || "งวดงาน"} (ยอดเงิน {fmtNum(inst.amount)} บาท))
-                                                                </span>
-                                                                <span
-                                                                    className={cn(
-                                                                        "px-2 py-0.5 rounded text-[10px] font-bold border",
-                                                                        isPaid
-                                                                            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-                                                                            : isPartial
-                                                                            ? "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30"
-                                                                            : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
-                                                                    )}
-                                                                >
-                                                                    {isPaid
-                                                                        ? "จ่ายครบแล้ว"
-                                                                        : isPartial
-                                                                        ? `เบิกแล้วบางส่วน (${fmtBaht(drawn)})`
-                                                                        : "รอดำเนินการ"}
-                                                                </span>
-                                                            </div>
-
-                                                            {/* Condition / Scope */}
-                                                            {inst.details && (
-                                                                <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                                                                    {inst.details}
-                                                                </p>
-                                                            )}
-                                                            {inst.paymentDetails && (
-                                                                <p className="text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed">
-                                                                    <b className="text-foreground">เงื่อนไขการจ่าย:</b> {inst.paymentDetails}
-                                                                </p>
-                                                            )}
-
-                                                            {/* Due Date & Deliverable snippet */}
-                                                            <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-muted-foreground">
-                                                                <span>กำหนดจ่าย: <b className="text-foreground">{thDateShort(inst.dueDate)}</b></span>
-                                                                <span>•</span>
-                                                                <span className="font-semibold text-foreground">{fmtBaht(inst.amount)}</span>
-                                                                {remaining > 0 && remaining < inst.amount && (
-                                                                    <span className="text-amber-600 dark:text-amber-400 font-medium">
-                                                                        (คงเหลือเบิกได้ {fmtBaht(remaining)})
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Right Actions */}
-                                                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                                                            {/* Payment Voucher Action: Main Workflow Button */}
-                                                            {remaining > 0 ? (
-                                                                <button
-                                                                    onClick={() => setVoucherData({ contract: c, installment: inst, index: idx })}
-                                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow shadow-amber-500/20 active:scale-95 transition"
-                                                                    title="ออกใบเบิกงวด / ใบสำคัญจ่าย (Payment Voucher)"
-                                                                >
-                                                                    <Receipt className="w-3.5 h-3.5" />
-                                                                    <span>ออกใบเบิกงวด</span>
-                                                                </button>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        const latestDraw = draws[draws.length - 1]
-                                                                        setVoucherData({ contract: c, installment: inst, index: idx, draw: latestDraw })
-                                                                    }}
-                                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 transition"
-                                                                    title="ดูใบสำคัญจ่าย (Payment Voucher)"
-                                                                >
-                                                                    <Receipt className="w-3.5 h-3.5" />
-                                                                    <span>ดูใบเบิกงวด</span>
-                                                                </button>
-                                                            )}
-
-                                                            {/* Quick Draw / Pay Button (Optional quick modal) */}
-                                                            {remaining > 0 && (
-                                                                <button
-                                                                    onClick={() => setDrawTarget({ contract: c, index: idx })}
-                                                                    className="p-1.5 rounded-lg bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition"
-                                                                    title="เบิกด่วน (Quick Draw)"
-                                                                >
-                                                                    <CheckCircle2 className="w-4 h-4" />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Sub-draws (การเบิกย่อย เช่น งวดที่ 5.1, 5.2) */}
-                                                    {draws.length > 0 && (
-                                                        <div className="pt-2 border-t border-border/50">
-                                                            <p className="text-[11px] font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-                                                                <Split className="w-3 h-3 text-violet-500" />
-                                                                ประวัติการเบิกในงวดนี้ ({draws.length} ครั้ง):
-                                                            </p>
-                                                            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                                                {draws.map(d => {
-                                                                    const isPaid = d.expenseStatus === "Paid"
-                                                                    return (
-                                                                        <div
-                                                                            key={d.id}
-                                                                            className="flex items-center justify-between p-2 rounded-lg bg-background/80 border border-border/60 hover:border-border text-xs group transition"
-                                                                        >
-                                                                            <div
-                                                                                className="min-w-0 flex-1 cursor-pointer"
-                                                                                onClick={() => setVoucherData({ contract: c, installment: inst, index: idx, draw: d })}
-                                                                                title="คลิกเพื่อดู/พิมพ์ใบสำคัญจ่าย"
-                                                                            >
-                                                                                <div className="flex items-center gap-1.5 font-bold">
-                                                                                    <span className="px-1.5 py-0.2 rounded bg-violet-500/10 text-violet-600 text-[10px]">
-                                                                                        งวด {d.label}
-                                                                                    </span>
-                                                                                    {d.voucherNumber && (
-                                                                                        <span className="font-mono text-[10px] text-muted-foreground">
-                                                                                            {d.voucherNumber}
-                                                                                        </span>
-                                                                                    )}
-                                                                                    <span>{fmtBaht(d.amount)}</span>
-                                                                                </div>
-                                                                                <div className="flex items-center gap-1.5 pt-0.5 text-[10px]">
-                                                                                    <span
-                                                                                        className={cn(
-                                                                                            "px-1.5 py-0.2 rounded font-semibold",
-                                                                                            isPaid
-                                                                                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                                                                                : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                                                                                        )}
-                                                                                    >
-                                                                                        {isPaid ? "✓ จ่ายแล้ว" : "⏳ รอจ่าย"}
-                                                                                    </span>
-                                                                                    <span className="text-muted-foreground truncate">
-                                                                                        {thDateShort(d.date)} {d.note ? `• ${d.note}` : ""}
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <div className="flex items-center gap-1 ml-2">
-                                                                                {!isPaid && (
-                                                                                    <button
-                                                                                        onClick={() => handleMarkPaidQuick(c.id, inst.id, d.id, d.label)}
-                                                                                        className="px-2 py-1 rounded bg-amber-500/10 hover:bg-amber-500 text-amber-700 dark:text-amber-300 hover:text-slate-950 font-bold text-[10px] transition"
-                                                                                        title="เปลี่ยนสถานะเป็นจ่ายแล้วทันที"
-                                                                                    >
-                                                                                        จ่ายแล้ว
-                                                                                    </button>
-                                                                                )}
-                                                                                <button
-                                                                                    onClick={() => setVoucherData({ contract: c, installment: inst, index: idx, draw: d })}
-                                                                                    className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-muted transition"
-                                                                                    title="เปิดใบสำคัญจ่าย (Payment Voucher)"
-                                                                                >
-                                                                                    <Receipt className="w-3.5 h-3.5" />
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => handleCancelDraw(c.id, inst.id, d.id, d.label)}
-                                                                                    className="p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition"
-                                                                                    title="ยกเลิกการเบิกครั้งนี้ (ลบรายจ่าย)"
-                                                                                >
-                                                                                    <XCircle className="w-3.5 h-3.5" />
-                                                                                </button>
-                                                                            </div>
-                                                                        </div>
-                                                                    )
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Contract Card Footer */}
-                                <div className="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-4">
-                                        <span>เริ่มสัญญา: <b className="text-foreground">{thDateShort(c.startDate)}</b></span>
-                                        <span>•</span>
-                                        <span>สิ้นสุด: <b className="text-foreground">{thDateShort(c.endDate)}</b></span>
-                                    </div>
-                                    <button
-                                        onClick={() => setShowDeleteConfirm(c.id)}
-                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-500/10 rounded-lg transition"
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                        <span>ลบสัญญา</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )
-                })()
+            {selectedContract ? (
+                /* Sub-page Detail View (หน้าย่อยรายละเอียดสัญญา) */
+                <ContractDetailView
+                    contract={selectedContract}
+                    project={projects.find(p => p.id === selectedContract.projectId)}
+                    worker={workers.find(w => w.id === selectedContract.workerId)}
+                    allContracts={filteredContracts}
+                    onBack={handleBackToOverview}
+                    onSelectContract={handleSelectContract}
+                    onEdit={handleEdit}
+                    onPreview={setPreviewContract}
+                    onToggleStatus={handleInitiateCloseContract}
+                    onArchive={handleArchiveContract}
+                    onUnarchive={handleUnarchiveContract}
+                    onDelete={setShowDeleteConfirm}
+                    onOpenVoucher={setVoucherData}
+                    onOpenDrawTarget={setDrawTarget}
+                    onCancelDraw={handleCancelDraw}
+                    onMarkPaidQuick={handleMarkPaidQuick}
+                />
             ) : (
-                <div className="p-12 text-center border-2 border-dashed border-border rounded-2xl bg-card/40 space-y-3">
-                    <FileText className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
-                    <h3 className="font-bold text-lg">ยังไม่มีสัญญาจ้าง</h3>
-                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                        เริ่มสร้างสัญญาจ้างเหมางานแรกสำหรับโครงการของคุณ กำหนดงวดงาน และเริ่มเบิกจ่ายเข้าสู่ระบบรายจ่ายได้ทันที
-                    </p>
-                    <button
-                        onClick={() => setIsAddOpen(true)}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow text-sm"
-                    >
-                        <Plus className="w-4 h-4" /> สร้างสัญญาใหม่
-                    </button>
-                </div>
-            )}
-
-            {/* ───────────────────────────────────────────────────────────────────────────── */}
-            {/* CONTRACTS LIST (BBSPM Rows) */}
-            {/* ───────────────────────────────────────────────────────────────────────────── */}
-            <div className="space-y-4 pt-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                        <h2 className="text-lg font-bold text-foreground">รายการสัญญาทั้งหมด</h2>
-                        <p className="text-xs text-muted-foreground">คลิก "ดูรายละเอียด" เพื่อเปิดและจัดการงวดงาน</p>
-                    </div>
-
-                    {/* Filter controls */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        {/* Search input */}
-                        <div className="relative min-w-[180px]">
-                            <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                            <input
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                placeholder="ค้นหาสัญญา, ช่าง, โครงการ..."
-                                className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border bg-card text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                            />
+                /* Overview View: Cards Grid of Contracts (เปิดมาเห็นเป็น Card แต่ละอัน) */
+                <div className="space-y-6">
+                    {/* Top Page Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                                {t.contracts?.title || "สัญญาจ้างเหมางาน"}
+                                <span className="text-xs sm:text-sm font-normal text-muted-foreground px-2 py-0.5 rounded-md bg-muted">
+                                    {nonArchivedContracts.length} สัญญา
+                                </span>
+                            </h1>
+                            <p className="text-muted-foreground text-xs sm:text-sm mt-1">
+                                บริหารสัญญาจ้างเหมาช่าง แบ่งงวดงาน และออกเบิกจ่ายส่งเข้าเป็นรายจ่ายอัตโนมัติ
+                            </p>
                         </div>
-
-                        {/* Status filter */}
-                        <div className="flex p-0.5 rounded-lg bg-muted border border-border text-xs">
-                            <button
-                                onClick={() => setFilterStatus("all")}
-                                className={cn(
-                                    "px-2.5 py-1 rounded-md font-medium transition flex items-center gap-1.5",
-                                    filterStatus === "all" ? "bg-background text-foreground shadow-sm font-semibold" : "text-muted-foreground"
-                                )}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Link
+                                href="/vouchers"
+                                className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-border bg-card hover:bg-muted font-semibold text-foreground text-xs sm:text-sm transition-all shadow-2xs"
+                                title="ดูและจัดการใบเบิกงวดทั้งหมด รวมถึงช่างที่มีงวดเดียวไม่ต้องทำสัญญา"
                             >
-                                <span>ทั้งหมด</span>
-                                <span className="text-[10px] opacity-75 font-mono">({nonArchivedContracts.length})</span>
-                            </button>
+                                <Receipt className="w-4 h-4 text-emerald-500" />
+                                <span>ใบเบิกงวด</span>
+                            </Link>
                             <button
-                                onClick={() => setFilterStatus("active")}
-                                className={cn(
-                                    "px-2.5 py-1 rounded-md font-medium transition flex items-center gap-1.5",
-                                    filterStatus === "active" ? "bg-background text-foreground shadow-sm font-semibold" : "text-muted-foreground"
-                                )}
+                                onClick={() => {
+                                    setEditingContract(undefined)
+                                    setIsAddOpen(true)
+                                }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all text-sm cursor-pointer"
                             >
-                                <span>ดำเนินการ</span>
-                                <span className="text-[10px] opacity-75 font-mono">({activeContracts.length})</span>
-                            </button>
-                            <button
-                                onClick={() => setFilterStatus("completed")}
-                                className={cn(
-                                    "px-2.5 py-1 rounded-md font-medium transition flex items-center gap-1.5",
-                                    filterStatus === "completed" ? "bg-background text-foreground shadow-sm font-semibold" : "text-muted-foreground"
-                                )}
-                            >
-                                <span>จบสัญญา</span>
-                                <span className="text-[10px] opacity-75 font-mono">({completedContracts.length})</span>
-                            </button>
-                            <button
-                                onClick={() => setFilterStatus("archived")}
-                                className={cn(
-                                    "px-2.5 py-1 rounded-md font-medium transition flex items-center gap-1.5",
-                                    filterStatus === "archived" ? "bg-background text-amber-700 dark:text-amber-300 shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
-                                )}
-                                title="คลังเก็บสัญญาถาวร (ซ่อนจากทั้งหมด)"
-                            >
-                                <Archive className="w-3 h-3" />
-                                <span>คลังเก็บ</span>
-                                <span className="text-[10px] opacity-75 font-mono">({archivedContracts.length})</span>
+                                <Plus className="w-4 h-4" />
+                                <span>สร้างสัญญาใหม่</span>
                             </button>
                         </div>
                     </div>
-                </div>
 
-                {/* Archive info banner when viewing archived tab */}
-                {filterStatus === "archived" && (
-                    <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                            <Archive className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                            <span>
-                                <b>คลังเก็บสัญญาถาวร (Archive):</b> สัญญาในหน้านี้จะไม่แสดงในรายการ <b>"ทั้งหมด"</b> คุณสามารถกด <b>กู้คืน</b> เพื่อนำกลับมา หรือจัดการได้ตามปกติ
-                            </span>
+                    {/* Executive KPI Summary Cards */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        {/* Total Contracts */}
+                        <div className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs relative overflow-hidden">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-muted-foreground">สัญญาทั้งหมด</span>
+                                <div className="w-8 h-8 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                                    <FileText className="w-4 h-4" />
+                                </div>
+                            </div>
+                            <div className="mt-2 flex items-baseline gap-2">
+                                <span className="text-2xl sm:text-3xl font-extrabold text-foreground tabular-nums">
+                                    {overviewStats.totalContracts}
+                                </span>
+                                <span className="text-xs text-muted-foreground">สัญญา</span>
+                            </div>
+                            <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                                <span className="inline-block w-2 h-2 rounded-full bg-blue-500" />
+                                <span>กำลังดำเนินการ {overviewStats.activeCount}</span>
+                                <span className="text-muted-foreground/60">•</span>
+                                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                                <span>จบแล้ว {overviewStats.completedCount}</span>
+                            </div>
                         </div>
-                        <span className="font-semibold text-right shrink-0">{archivedContracts.length} สัญญาในคลังเก็บ</span>
-                    </div>
-                )}
 
-                {/* Rows list */}
-                <div className="space-y-2">
+                        {/* Total Contract Value */}
+                        <div className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs relative overflow-hidden">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-muted-foreground">มูลค่าว่าจ้างรวม</span>
+                                <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                    <Wallet className="w-4 h-4" />
+                                </div>
+                            </div>
+                            <div className="mt-2">
+                                <span className="text-xl sm:text-2xl font-extrabold text-foreground tabular-nums block truncate">
+                                    {fmtBaht(overviewStats.totalValue)}
+                                </span>
+                            </div>
+                            <p className="mt-2 text-[11px] text-muted-foreground truncate">
+                                จากสัญญางานทั้งหมดในระบบ
+                            </p>
+                        </div>
+
+                        {/* Paid Amount & Progress */}
+                        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 sm:p-5 shadow-xs relative overflow-hidden">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                    จ่ายตามงวดแล้ว
+                                </span>
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                </div>
+                            </div>
+                            <div className="mt-2">
+                                <span className="text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums block truncate">
+                                    {fmtBaht(overviewStats.totalDrawn)}
+                                </span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between text-[11px] text-emerald-700/80 dark:text-emerald-300/80">
+                                <span>ความคืบหน้ารวม</span>
+                                <span className="font-bold tabular-nums">{overviewStats.overallProgress}%</span>
+                            </div>
+                        </div>
+
+                        {/* Remaining to be drawn */}
+                        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 sm:p-5 shadow-xs relative overflow-hidden">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+                                    ยอดคงเหลือรอเบิก
+                                </span>
+                                <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                    <Clock className="w-4 h-4" />
+                                </div>
+                            </div>
+                            <div className="mt-2">
+                                <span className="text-xl sm:text-2xl font-extrabold text-amber-600 dark:text-amber-400 tabular-nums block truncate">
+                                    {fmtBaht(overviewStats.totalRemaining)}
+                                </span>
+                            </div>
+                            <p className="mt-2 text-[11px] text-amber-700/80 dark:text-amber-300/80 truncate">
+                                ยอดที่ยังไม่ได้เบิกจ่ายครบตามงวด
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Filter, Search & Layout Controls Bar */}
+                    <div className="p-3 sm:p-4 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-sm space-y-3">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            {/* Search input */}
+                            <div className="relative flex-1 min-w-[200px] max-w-md">
+                                <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                                <input
+                                    value={searchQuery}
+                                    onChange={e => setSearchQuery(e.target.value)}
+                                    placeholder="ค้นหาสัญญา, ช่าง, โครงการ..."
+                                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-border bg-background text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-2xs"
+                                />
+                            </div>
+
+                            {/* Status Filter Tabs & Layout Switcher */}
+                            <div className="flex flex-wrap items-center gap-2">
+                                {/* Status tabs */}
+                                <div className="flex p-0.5 rounded-xl bg-muted/80 border border-border text-xs">
+                                    <button
+                                        onClick={() => setFilterStatus("all")}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 cursor-pointer",
+                                            filterStatus === "all" ? "bg-background text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <span>ทั้งหมด</span>
+                                        <span className="text-[10px] opacity-75 font-mono">({nonArchivedContracts.length})</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setFilterStatus("active")}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 cursor-pointer",
+                                            filterStatus === "active" ? "bg-background text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <span>ดำเนินการ</span>
+                                        <span className="text-[10px] opacity-75 font-mono">({activeContracts.length})</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setFilterStatus("completed")}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 cursor-pointer",
+                                            filterStatus === "completed" ? "bg-background text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <span>จบสัญญา</span>
+                                        <span className="text-[10px] opacity-75 font-mono">({completedContracts.length})</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setFilterStatus("archived")}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 cursor-pointer",
+                                            filterStatus === "archived" ? "bg-background text-amber-700 dark:text-amber-300 shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                        title="คลังเก็บสัญญาถาวร (ซ่อนจากทั้งหมด)"
+                                    >
+                                        <Archive className="w-3.5 h-3.5" />
+                                        <span>คลังเก็บ</span>
+                                        <span className="text-[10px] opacity-75 font-mono">({archivedContracts.length})</span>
+                                    </button>
+                                </div>
+
+                                {/* View Mode Toggle (Grid Cards vs Compact List) */}
+                                <div className="flex p-0.5 rounded-xl bg-muted/80 border border-border">
+                                    <button
+                                        onClick={() => setViewMode("grid")}
+                                        className={cn(
+                                            "p-1.5 rounded-lg transition cursor-pointer",
+                                            viewMode === "grid" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                        title="มุมมองการ์ด (Cards)"
+                                    >
+                                        <LayoutGrid className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode("list")}
+                                        className={cn(
+                                            "p-1.5 rounded-lg transition cursor-pointer",
+                                            viewMode === "list" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                        title="มุมมองตารางรายการ (List)"
+                                    >
+                                        <LayoutList className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Project Filter (if multiple projects exist) */}
+                        {projects.length > 0 && (
+                            <div className="flex items-center gap-2 pt-2 border-t border-border/50 text-xs">
+                                <span className="text-muted-foreground font-medium flex items-center gap-1 shrink-0">
+                                    <FolderKanban className="w-3.5 h-3.5 text-muted-foreground" />
+                                    <span>กรองตามโครงการ:</span>
+                                </span>
+                                <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto py-0.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFilterProjectId("all")}
+                                        className={cn(
+                                            "px-2.5 py-1 rounded-lg text-xs transition cursor-pointer",
+                                            filterProjectId === "all"
+                                                ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                                                : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                        )}
+                                    >
+                                        ทุกโครงการ
+                                    </button>
+                                    {projects.map(p => {
+                                        const count = nonArchivedContracts.filter(c => c.projectId === p.id).length
+                                        if (count === 0 && filterProjectId !== p.id) return null
+                                        return (
+                                            <button
+                                                key={p.id}
+                                                type="button"
+                                                onClick={() => setFilterProjectId(p.id)}
+                                                className={cn(
+                                                    "px-2.5 py-1 rounded-lg text-xs transition flex items-center gap-1 cursor-pointer",
+                                                    filterProjectId === p.id
+                                                        ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                                                        : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                )}
+                                            >
+                                                <span className="truncate max-w-[140px]">{p.name}</span>
+                                                <span className="text-[10px] opacity-75 font-mono">({count})</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Archive tab banner */}
+                    {filterStatus === "archived" && (
+                        <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2.5">
+                                <Archive className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                                <span>
+                                    <b>คลังเก็บสัญญาถาวร (Archive):</b> สัญญาในหน้านี้จะไม่แสดงในรายการ <b>"ทั้งหมด"</b> คุณสามารถกด <b>กู้คืน</b> เพื่อนำกลับมา หรือดูรายละเอียดได้ตามปกติ
+                                </span>
+                            </div>
+                            <span className="font-semibold text-right shrink-0">{archivedContracts.length} สัญญาในคลังเก็บ</span>
+                        </div>
+                    )}
+
+                    {/* Contracts Render Section: Grid or List */}
                     {filteredContracts.length === 0 ? (
-                        <div className="p-8 text-center border border-dashed border-border rounded-xl bg-card/40 space-y-2">
+                        <div className="p-12 text-center border-2 border-dashed border-border rounded-2xl bg-card/40 space-y-3">
                             {filterStatus === "archived" ? (
                                 <>
-                                    <Archive className="w-8 h-8 text-muted-foreground mx-auto opacity-40" />
-                                    <p className="text-sm font-medium text-muted-foreground">ไม่มีสัญญาในคลังเก็บถาวร</p>
-                                    <p className="text-xs text-muted-foreground">คุณสามารถกดปุ่ม "เก็บถาวร" ที่รายการสัญญาเพื่อย้ายมาเก็บที่นี่ได้</p>
+                                    <Archive className="w-12 h-12 text-muted-foreground mx-auto opacity-40" />
+                                    <h3 className="font-bold text-lg">ไม่มีสัญญาในคลังเก็บถาวร</h3>
+                                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                                        คุณสามารถกดปุ่ม "เก็บถาวร" ที่หน้าสัญญาเพื่อย้ายสัญญาที่จบงานแล้วหรือไม่ได้ใช้งานมาเก็บไว้ที่นี่ได้
+                                    </p>
+                                </>
+                            ) : searchQuery || filterProjectId !== "all" || filterStatus !== "all" ? (
+                                <>
+                                    <Search className="w-12 h-12 text-muted-foreground mx-auto opacity-40" />
+                                    <h3 className="font-bold text-lg">ไม่พบสัญญาที่ตรงกับเงื่อนไข</h3>
+                                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                                        ลองปรับเปลี่ยนคำค้นหา หรือรีเซ็ตตัวกรองเพื่อดูรายการสัญญาอื่นๆ
+                                    </p>
+                                    <button
+                                        onClick={() => {
+                                            setSearchQuery("")
+                                            setFilterStatus("all")
+                                            setFilterProjectId("all")
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border border-border bg-card hover:bg-muted transition cursor-pointer"
+                                    >
+                                        <RotateCcw className="w-3.5 h-3.5" />
+                                        <span>ล้างตัวกรองทั้งหมด</span>
+                                    </button>
                                 </>
                             ) : (
                                 <>
-                                    <FileText className="w-8 h-8 text-muted-foreground mx-auto opacity-40" />
-                                    <p className="text-sm font-medium text-muted-foreground">ไม่พบรายการสัญญาที่ตรงกับเงื่อนไข</p>
+                                    <FileText className="w-12 h-12 text-muted-foreground mx-auto opacity-40" />
+                                    <h3 className="font-bold text-lg">ยังไม่มีสัญญาจ้าง</h3>
+                                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                                        เริ่มสร้างสัญญาจ้างเหมางานแรกสำหรับโครงการของคุณ กำหนดงวดงาน และเริ่มเบิกจ่ายเข้าสู่ระบบรายจ่ายได้ทันที
+                                    </p>
+                                    <button
+                                        onClick={() => setIsAddOpen(true)}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow text-sm cursor-pointer"
+                                    >
+                                        <Plus className="w-4 h-4" /> สร้างสัญญาใหม่
+                                    </button>
                                 </>
                             )}
                         </div>
+                    ) : viewMode === "grid" ? (
+                        /* CARDS GRID VIEW */
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5">
+                            {filteredContracts.map(c => {
+                                const project = projects.find(p => p.id === c.projectId)
+                                const worker = workers.find(w => w.id === c.workerId)
+                                return (
+                                    <ContractCard
+                                        key={c.id}
+                                        contract={c}
+                                        project={project}
+                                        worker={worker}
+                                        onClick={() => handleSelectContract(c.id)}
+                                        onPreview={() => setPreviewContract(c)}
+                                        onEdit={() => handleEdit(c)}
+                                        onArchive={() => handleArchiveContract(c)}
+                                        onUnarchive={() => handleUnarchiveContract(c)}
+                                    />
+                                )
+                            })}
+                        </div>
                     ) : (
-                        filteredContracts.map(c => {
-                            const project = projects.find(p => p.id === c.projectId)
-                            const worker = workers.find(w => w.id === c.workerId)
-                            const stats = getContractStats(c)
-                            const isCompleted = c.status === "Completed"
-                            const isSelected = activeContract?.id === c.id
-                            const docNo = c.documentNumber || `CT-${c.id.slice(0, 8)}`
+                        /* COMPACT ROWS LIST VIEW */
+                        <div className="space-y-2">
+                            {filteredContracts.map(c => {
+                                const project = projects.find(p => p.id === c.projectId)
+                                const worker = workers.find(w => w.id === c.workerId)
+                                const stats = getContractStats(c)
+                                const isCompleted = c.status === "Completed"
+                                const docNo = c.documentNumber || `CT-${c.id.slice(0, 8)}`
 
-                            return (
-                                <div
-                                    key={c.id}
-                                    className={cn(
-                                        "rounded-xl border transition-all bg-card hover:border-primary/40",
-                                        isSelected ? "border-primary/60 ring-1 ring-primary/30 shadow-md" : "border-border/80"
-                                    )}
-                                >
-                                    <div className="p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                return (
+                                    <div
+                                        key={c.id}
+                                        onClick={() => handleSelectContract(c.id)}
+                                        className="rounded-xl border border-border/80 bg-card hover:border-primary/50 transition-all p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 cursor-pointer group hover:shadow-md"
+                                    >
                                         {/* Left Info */}
                                         <div className="flex flex-wrap items-center gap-2 min-w-0">
-                                            <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 shrink-0">
+                                            <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 shrink-0 font-mono">
                                                 {docNo}
                                             </span>
                                             {worker && (
@@ -942,7 +829,7 @@ export default function ContractsPage() {
                                                 </span>
                                             )}
 
-                                            <span className="font-bold text-sm text-foreground truncate ml-1">
+                                            <span className="font-bold text-sm text-foreground truncate ml-1 group-hover:text-primary transition-colors">
                                                 {c.title || DEFAULT_CONTRACT_TITLE}
                                             </span>
                                             <span className="text-xs text-muted-foreground truncate">
@@ -972,92 +859,53 @@ export default function ContractsPage() {
                                             </div>
 
                                             <div className="flex items-center gap-1.5 ml-auto">
-                                                {/* Close or Reopen Quick Action */}
-                                                {isCompleted ? (
-                                                    <button
-                                                        onClick={() => handleInitiateCloseContract(c)}
-                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-muted text-muted-foreground transition active:scale-95"
-                                                        title="เปิดสัญญาอีกครั้ง (กำลังดำเนินการ)"
-                                                    >
-                                                        <RotateCcw className="w-3.5 h-3.5" />
-                                                        <span className="hidden lg:inline">เปิดสัญญา</span>
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handleInitiateCloseContract(c)}
-                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 transition active:scale-95"
-                                                        title="จบสัญญา (ตัดยอดคงเหลือหากยังจ่ายไม่ครบ)"
-                                                    >
-                                                        <Check className="w-3.5 h-3.5" />
-                                                        <span className="hidden lg:inline">จบสัญญา</span>
-                                                    </button>
-                                                )}
-
-                                                {/* Archive / Unarchive Action */}
-                                                {c.isArchived ? (
-                                                    <button
-                                                        onClick={() => handleUnarchiveContract(c)}
-                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition active:scale-95"
-                                                        title="กู้คืนสัญญาให้ออกจากคลังเก็บ"
-                                                    >
-                                                        <ArchiveRestore className="w-3.5 h-3.5" />
-                                                        <span className="hidden sm:inline">กู้คืน</span>
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handleArchiveContract(c)}
-                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition active:scale-95"
-                                                        title="ย้ายสัญญาไปที่คลังเก็บถาวร (Archive) - ไม่แสดงใน 'ทั้งหมด'"
-                                                    >
-                                                        <Archive className="w-3.5 h-3.5" />
-                                                        <span className="hidden xl:inline">เก็บถาวร</span>
-                                                    </button>
-                                                )}
-
                                                 <button
-                                                    onClick={() => setPreviewContract(c)}
-                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-muted transition"
+                                                    type="button"
+                                                    onClick={e => {
+                                                        e.stopPropagation()
+                                                        setPreviewContract(c)
+                                                    }}
+                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-muted transition cursor-pointer"
                                                     title="ดูตัวอย่าง / พิมพ์"
                                                 >
                                                     <Printer className="w-3.5 h-3.5" />
-                                                    <span className="hidden sm:inline">ดูตัวอย่าง / พิมพ์</span>
+                                                    <span className="hidden sm:inline">ดูตัวอย่าง</span>
                                                 </button>
 
                                                 <button
-                                                    onClick={() => handleEdit(c)}
-                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-muted transition"
+                                                    type="button"
+                                                    onClick={e => {
+                                                        e.stopPropagation()
+                                                        handleEdit(c)
+                                                    }}
+                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-muted transition cursor-pointer"
                                                     title="แก้ไข"
                                                 >
                                                     <Edit3 className="w-3.5 h-3.5" />
                                                     <span className="hidden sm:inline">แก้ไข</span>
                                                 </button>
 
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedContractId(isSelected ? null : c.id)
-                                                        window.scrollTo({ top: 0, behavior: "smooth" })
-                                                    }}
-                                                    className={cn(
-                                                        "flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition",
-                                                        isSelected
-                                                            ? "bg-primary text-primary-foreground shadow"
-                                                            : "bg-primary/10 text-primary hover:bg-primary/20"
-                                                    )}
-                                                >
-                                                    <span>
-                                                        {isSelected ? "ซ่อนรายละเอียด" : `ดูรายละเอียด (${stats.installmentCount} งวด)`}
-                                                    </span>
-                                                    {isSelected ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                                                </button>
+                                                <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition">
+                                                    <span>ดูรายละเอียด ({stats.installmentCount} งวด)</span>
+                                                    <ChevronDown className="w-3.5 h-3.5 -rotate-90" />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            )
-                        })
+                                )
+                            })}
+                        </div>
                     )}
                 </div>
-            </div>
+            )}
         </div>
+    )
+}
+
+export default function ContractsPage() {
+    return (
+        <Suspense fallback={<div className="p-12 text-center text-muted-foreground">กำลังโหลด...</div>}>
+            <ContractsContent />
+        </Suspense>
     )
 }

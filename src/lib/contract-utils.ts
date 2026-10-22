@@ -182,7 +182,7 @@ export function getContractStats(c: Contract): ContractStats {
         installmentCount: installments.length,
         paidInstallments,
         partialInstallments,
-        progress: total > 0 ? Math.min(100, (drawn / total) * 100) : 0
+        progress: total > 0 ? Math.min(100, Math.round((drawn / total) * 100)) : 0
     }
 }
 
