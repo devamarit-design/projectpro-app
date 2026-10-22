@@ -281,6 +281,17 @@ export default function NewVoucherPage() {
             setWorkerId(workers[0].id)
         }
 
+        // Read query params from calendar click if available
+        try {
+            if (typeof window !== "undefined") {
+                const params = new URLSearchParams(window.location.search)
+                const qDate = params.get("date")
+                const qPaymentDate = params.get("paymentDate")
+                if (qDate) setDate(qDate)
+                if (qPaymentDate) setPaymentDate(qPaymentDate)
+            }
+        } catch (e) {}
+
         // Restore signatures from localStorage or user/org profile (Default to Office Staff / Current User)
         let savedSigs: any = null
         try {

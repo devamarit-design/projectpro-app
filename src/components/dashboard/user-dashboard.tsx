@@ -18,6 +18,7 @@ import { PromoCards } from "@/components/dashboard/promo-cards"
 import { NoticeTicker } from "@/components/dashboard/notice-ticker"
 import { WallFeed } from "@/components/wall/wall-feed"
 import { MarketOverview } from "@/components/dashboard/market-overview"
+import { OrganizationCalendarSection } from "@/components/dashboard/organization-calendar-section"
 
 export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
     const { currentUser, projects, tasks } = useProjects()
@@ -75,6 +76,11 @@ export function UserDashboard({ hideHeader = false }: UserDashboardProps) {
                         <div className="bg-card/70 dark:bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-border dark:border-white/10 shadow-none dark:shadow-sm">
                             <WallFeed variant="widget" />
                         </div>
+                    </div>
+
+                    {/* 5. Organization Calendar Section */}
+                    <div className="w-full mb-6">
+                        <OrganizationCalendarSection />
                     </div>
                 </>
             )}

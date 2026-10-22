@@ -54,6 +54,7 @@ export function Sidebar({ className }: { className?: string }) {
             title: "MENU",
             items: [
                 { href: "/", label: t.common.dashboard, icon: LayoutDashboard },
+                { href: "/calendar", label: "ปฏิทินองค์กร", icon: Calendar },
                 { href: "/catalog", label: "Catalog (วัสดุ & สินค้า)", icon: Package },
                 { href: "/jobsheets", label: "JobSheet (Daily Report)", icon: ClipboardList },
                 { href: "/wall", label: "Team Wall", icon: Newspaper },
@@ -74,6 +75,7 @@ export function Sidebar({ className }: { className?: string }) {
             items: [
                 { href: "/", label: t.common.dashboard, icon: LayoutDashboard },
                 { href: "/projects", label: t.common.projects, icon: FolderKanban },
+                { href: "/calendar", label: "ปฏิทินองค์กร", icon: Calendar },
                 { href: "/catalog", label: "Catalog (วัสดุ & สินค้า)", icon: Package },
                 { href: "/income", label: t.common.income, icon: FileText, permission: "INCOME_CREATE" },
                 { href: "/expenses", label: t.common.expenses, icon: CreditCard },

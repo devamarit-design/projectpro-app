@@ -1,14 +1,15 @@
 "use client"
 
 import React, { useMemo, useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import FullCalendar from "@fullcalendar/react"
 import dayGridPlugin from "@fullcalendar/daygrid"
 import timeGridPlugin from "@fullcalendar/timegrid"
 import interactionPlugin, { DateClickArg } from "@fullcalendar/interaction"
 import listPlugin from "@fullcalendar/list"
-import AddTaskDialog from "@/components/tasks/add-task-dialog"
+import { AddContractDialog } from "@/components/contracts/add-contract-dialog"
 import AddExpenseDialog from "@/components/expenses/add-expense-dialog"
-import { Plus, CheckSquare, Receipt, X } from "lucide-react"
+import { Plus, CheckSquare, Receipt, X, CreditCard, FileText, Layers } from "lucide-react"
 import { useProjects } from "@/context/project-context"
 import { useTranslation } from "@/lib/i18n-context"
 import { Filter, FolderKanban, ChevronDown, LayoutGrid, List } from "lucide-react"
@@ -28,7 +29,7 @@ interface CalendarEvent {
     borderColor?: string
     textColor?: string
     extendedProps: {
-        type: "task" | "installment"
+        type: "voucher" | "installment" | "contract" | "task"
         projectId?: string
         projectName?: string
         priority?: string
@@ -37,13 +38,24 @@ interface CalendarEvent {
         amount?: number
         contractTitle?: string
         workerId?: string
-        description?: string // Added description
+        description?: string
     }
 }
 
 export function CalendarView() {
-    const { tasks, contracts, projects, users, workers } = useProjects()
+    const router = useRouter()
+    const { tasks, contracts, projects, users, workers, currentUser, currentTeam } = useProjects()
     const { t, locale } = useTranslation()
+
+    const isManagerOrAbove = useMemo(() => {
+        const uRole = currentUser?.role
+        const tRole = currentTeam?.role
+        return (
+            uRole === "Manager" || uRole === "Admin" || uRole === "Owner" ||
+            tRole === "Manager" || tRole === "Admin" || tRole === "Owner"
+        )
+    }, [currentUser, currentTeam])
+
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
     const [projectFilter, setProjectFilter] = useState<string>("all")
     const [typeFilter, setTypeFilter] = useState<string>("all")
@@ -51,19 +63,17 @@ export function CalendarView() {
     const calendarRef = useRef<FullCalendar>(null)
     const [isMobile, setIsMobile] = useState(false)
     const [isFiltersOpen, setIsFiltersOpen] = useState(true)
-    const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
-    const [taskToEdit, setTaskToEdit] = useState<any>(null) // State for editing
+    const [isAddContractOpen, setIsAddContractOpen] = useState(false)
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false)
     const [isSelectionOpen, setIsSelectionOpen] = useState(false)
     const [clickedDate, setClickedDate] = useState<string>("")
-    const [showCompleted, setShowCompleted] = useState(false) // New state for toggling completed items
+    const [showCompleted, setShowCompleted] = useState(false)
 
     // Check for mobile on mount and resize
     useEffect(() => {
         const checkMobile = () => {
             const mobile = window.innerWidth < 768
             setIsMobile(mobile)
-            // Mobile check only for UI state, not view switching
             if (mobile) {
                 setIsFiltersOpen(false)
             } else {
@@ -77,116 +87,181 @@ export function CalendarView() {
     }, [])
 
     // Helper to get color based on group mode
-    const getEventColor = (item: any, type: 'task' | 'installment') => {
+    const getEventColor = (item: any, type: 'voucher' | 'installment' | 'contract') => {
         if (groupBy === 'type') {
-            return type === 'task' ? '#3b82f6' : '#f59e0b' // Blue for Task, Amber for Installment
+            if (type === 'voucher') return item.status === 'Paid' ? '#10b981' : '#f59e0b'
+            if (type === 'contract') return '#8b5cf6'
+            return '#3b82f6' // Installment
         }
         if (groupBy === 'assignee') {
-            let assigneeId = type === 'task' ? item.assignedTo : item.workerId
-
-            // Handle array assignees (take first one)
-            if (Array.isArray(assigneeId)) {
-                assigneeId = assigneeId[0]
-            }
-
-            if (!assigneeId) return '#9ca3af' // Gray for unassigned
-            // Generate distinct color from ID string
-            let hash = 0;
+            const assigneeId = item.workerId
+            if (!assigneeId) return '#9ca3af'
+            let hash = 0
             for (let i = 0; i < assigneeId.length; i++) {
-                hash = assigneeId.charCodeAt(i) + ((hash << 5) - hash);
+                hash = assigneeId.charCodeAt(i) + ((hash << 5) - hash)
             }
-            const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
-            return '#' + "00000".substring(0, 6 - c.length) + c;
+            const c = (hash & 0x00FFFFFF).toString(16).toUpperCase()
+            return '#' + "00000".substring(0, 6 - c.length) + c
         }
         // Default to Project
         const projectId = item.projectId
         if (!projectId) return '#6b7280'
-        // Mock project colors or generate hash
         const colors = ['#ec4899', '#8b5cf6', '#10b981', '#f97316', '#06b6d4']
-        let hash = 0;
+        let hash = 0
         for (let i = 0; i < projectId.length; i++) {
-            hash = projectId.charCodeAt(i) + ((hash << 5) - hash);
+            hash = projectId.charCodeAt(i) + ((hash << 5) - hash)
         }
         return colors[Math.abs(hash) % colors.length]
     }
 
-    // Build calendar events from tasks and contract installments
+    // Build calendar events from contracts, installment milestones, and payment vouchers
     const events: CalendarEvent[] = useMemo(() => {
         const calendarEvents: CalendarEvent[] = []
 
-        // Filter function for projects
         const matchesProject = (projectId?: string) => {
             if (projectFilter === "all") return true
             return projectId === projectFilter
         }
 
-        tasks.forEach((task) => {
-            if (!task.dueDate || !matchesProject(task.projectId)) return
-            if (typeFilter !== "all" && typeFilter !== "task") return
-
-            // Hide completed if toggle is off
-            if (!showCompleted && task.status === "Done") return
-
-            const project = projects.find(p => p.id === task.projectId)
-            const color = getEventColor(task, 'task')
-
-            calendarEvents.push({
-                id: `task-${task.id}`,
-                title: task.title,
-                start: task.startDate || task.dueDate,
-                end: task.endDate,
-                allDay: !task.startDate?.includes('T') && !task.dueDate?.includes('T'),
-                backgroundColor: color,
-                borderColor: color,
-                textColor: "#ffffff",
-                extendedProps: {
-                    type: "task",
-                    projectId: task.projectId,
-                    projectName: project?.name,
-                    priority: task.priority,
-                    status: task.status,
-                    assignedTo: task.assignedTo, // Pass raw (string | string[])
-                    description: task.description, // Pass description
-                },
-            })
-        })
-
-        // Add contract installments
         contracts.forEach((contract) => {
+            if (contract.isArchived || contract.isDeleted) return
             if (!matchesProject(contract.projectId)) return
-            if (typeFilter !== "all" && typeFilter !== "installment") return
 
-            // Hide paid/completed if toggle is off
-            // Assuming Installment.status has "Paid"
             const project = projects.find(p => p.id === contract.projectId)
-            contract.installments.forEach((installment) => {
-                if (!installment.dueDate) return
-                if (!showCompleted && installment.status === "Paid") return
-                const item = { ...installment, projectId: contract.projectId, workerId: contract.workerId }
-                const color = getEventColor(item, 'installment')
-                calendarEvents.push({
-                    id: `installment-${contract.id}-${installment.id}`,
-                    title: installment.description,
-                    start: installment.dueDate,
-                    allDay: true,
-                    backgroundColor: color,
-                    borderColor: color,
-                    textColor: "#ffffff",
-                    extendedProps: {
-                        type: "installment",
-                        projectId: contract.projectId,
-                        projectName: project?.name,
-                        status: installment.status,
-                        amount: installment.amount,
-                        contractTitle: contract.title,
-                        workerId: contract.workerId,
-                    },
-                })
+            const worker = workers.find(w => w.id === contract.workerId)
+            const projName = project?.name || "โครงการทั่วไป"
+            const workerName = worker?.name || "ช่าง/ผู้รับเหมา"
+
+            const isStandalone = Boolean(
+                contract.isStandaloneVoucher ||
+                contract.contractType === "ใบเบิกงวด (ไม่มีสัญญา)" ||
+                contract.documentNumber?.startsWith("PV")
+            )
+
+            // 1. Contract Start Date (ONLY for real multi-milestone contracts, NOT standalone single vouchers)
+            if (!isStandalone && contract.startDate && (typeFilter === "all" || typeFilter === "contract")) {
+                const sDate = contract.startDate.split("T")[0]
+                if (sDate) {
+                    calendarEvents.push({
+                        id: `contract-start-${contract.id}`,
+                        title: `📜 เริ่มสัญญา: ${contract.title} (${workerName})`,
+                        start: sDate,
+                        allDay: true,
+                        backgroundColor: "#8b5cf6",
+                        borderColor: "#8b5cf6",
+                        textColor: "#ffffff",
+                        extendedProps: {
+                            type: "contract",
+                            projectId: contract.projectId,
+                            projectName: projName,
+                            status: contract.status || "Active",
+                            amount: contract.totalAmount,
+                            contractTitle: contract.title,
+                            workerId: contract.workerId,
+                            description: `สัญญาจ้างเลขที่ ${contract.documentNumber || ""} • ${contract.title} • ผู้รับเหมา: ${workerName} • มูลค่ารวม: ฿${(contract.totalAmount || 0).toLocaleString()}`
+                        }
+                    })
+                }
+            }
+
+            // 2. Contract End Date (ONLY for real multi-milestone contracts)
+            if (!isStandalone && contract.endDate && contract.endDate !== contract.startDate && (typeFilter === "all" || typeFilter === "contract")) {
+                const eDate = contract.endDate.split("T")[0]
+                if (eDate) {
+                    calendarEvents.push({
+                        id: `contract-end-${contract.id}`,
+                        title: `🏁 สิ้นสุดสัญญา: ${contract.title} (${workerName})`,
+                        start: eDate,
+                        allDay: true,
+                        backgroundColor: "#6366f1",
+                        borderColor: "#6366f1",
+                        textColor: "#ffffff",
+                        extendedProps: {
+                            type: "contract",
+                            projectId: contract.projectId,
+                            projectName: projName,
+                            status: contract.status || "Active",
+                            amount: contract.totalAmount,
+                            contractTitle: contract.title,
+                            workerId: contract.workerId,
+                            description: `กำหนดสิ้นสุดสัญญา ${contract.documentNumber || ""} • ผู้รับเหมา: ${workerName}`
+                        }
+                    })
+                }
+            }
+
+            // 3. Installments and Payment Vouchers (Draws)
+            contract.installments?.forEach((installment, instIdx) => {
+                const instLabel = instIdx + 1
+
+                // 3.1 Payment Vouchers / Draws (Payment date or voucher date)
+                if (isManagerOrAbove && installment.draws && installment.draws.length > 0) {
+                    installment.draws.forEach((draw) => {
+                        if (typeFilter !== "all" && typeFilter !== "voucher") return
+                        const targetDate = (draw.paymentDate || draw.date || "").split("T")[0]
+                        if (!targetDate) return
+                        if (!showCompleted && draw.expenseStatus === "Paid") return
+
+                        const isPaid = draw.expenseStatus === "Paid"
+                        const drawColor = isPaid ? "#10b981" : "#f59e0b"
+                        calendarEvents.push({
+                            id: `draw-${contract.id}-${installment.id}-${draw.id}`,
+                            title: `💰 ใบเบิก ${draw.voucherNumber || draw.label || instLabel}: ${workerName} (฿${(draw.amount || 0).toLocaleString()})`,
+                            start: targetDate,
+                            allDay: true,
+                            backgroundColor: drawColor,
+                            borderColor: drawColor,
+                            textColor: "#ffffff",
+                            extendedProps: {
+                                type: "voucher",
+                                projectId: contract.projectId,
+                                projectName: projName,
+                                status: draw.expenseStatus || "Pending",
+                                amount: draw.amount,
+                                contractTitle: contract.title,
+                                workerId: contract.workerId,
+                                description: `${draw.voucherNumber ? `ใบสำคัญจ่าย ${draw.voucherNumber} • ` : ""}งวด ${draw.label || instLabel}: ${installment.description || ""} (${isPaid ? "จ่ายแล้ว" : "รอการจ่ายเงิน"})${draw.paymentDate ? ` • กำหนดจ่าย: ${draw.paymentDate}` : ""}`,
+                            },
+                        })
+                    })
+                }
+
+                // 3.2 Installment Milestones (Scheduled dueDate - ONLY if not standalone AND remaining un-drawn amount > 0)
+                if (!isStandalone && installment.dueDate) {
+                    if (typeFilter !== "all" && typeFilter !== "installment") return
+                    const totalDrawn = (installment.draws || []).reduce((sum, d) => sum + (d.amount || 0), 0)
+                    const remainingAmount = Math.max(0, (installment.amount || 0) - totalDrawn)
+
+                    if (remainingAmount <= 0) return // Fully drawn, do not duplicate as milestone
+                    if (!showCompleted && installment.status === "Paid") return
+                    const targetDate = installment.dueDate.split("T")[0]
+                    if (!targetDate) return
+
+                    calendarEvents.push({
+                        id: `installment-${contract.id}-${installment.id}`,
+                        title: `📑 งวดที่ ${instLabel}: ${installment.description || "ส่งมอบงาน"} (รอเบิก ฿${remainingAmount.toLocaleString()})`,
+                        start: targetDate,
+                        allDay: true,
+                        backgroundColor: "#3b82f6",
+                        borderColor: "#3b82f6",
+                        textColor: "#ffffff",
+                        extendedProps: {
+                            type: "installment",
+                            projectId: contract.projectId,
+                            projectName: projName,
+                            status: installment.status || "Pending",
+                            amount: remainingAmount,
+                            contractTitle: contract.title,
+                            workerId: contract.workerId,
+                            description: `กำหนดส่งมอบงวดงาน ${instLabel}: ${installment.description || ""} • ผู้รับเหมา: ${workerName} • ยอดคงเหลือรอเบิก: ฿${remainingAmount.toLocaleString()}`,
+                        },
+                    })
+                }
             })
         })
 
         return calendarEvents
-    }, [tasks, contracts, projects, workers, projectFilter, typeFilter, groupBy])
+    }, [contracts, projects, workers, projectFilter, typeFilter, groupBy, isManagerOrAbove, showCompleted])
 
     const handleEventClick = (info: { event: { id: string } }) => {
         const event = events.find(e => e.id === info.event.id)
@@ -198,10 +273,9 @@ export function CalendarView() {
         setIsSelectionOpen(true)
     }
 
-    const openAddTask = () => {
-        setTaskToEdit(null) // Reset edit state
+    const openAddContract = () => {
         setIsSelectionOpen(false)
-        setIsAddTaskOpen(true)
+        setIsAddContractOpen(true)
     }
 
     const openAddExpense = () => {
@@ -210,14 +284,6 @@ export function CalendarView() {
     }
 
     const renderDayCell = (arg: any) => {
-        const date = arg.date
-        const eventsOnDay = events.filter(e => {
-            const eDate = new Date(e.start)
-            return eDate.getDate() === date.getDate() &&
-                eDate.getMonth() === date.getMonth() &&
-                eDate.getFullYear() === date.getFullYear()
-        })
-
         const isMobile = window.innerWidth < 768
         if (isMobile) return arg.dayNumberText
 
@@ -228,44 +294,54 @@ export function CalendarView() {
         )
     }
 
-    const handleEditTask = (task: any) => {
-        setTaskToEdit(task)
-        setSelectedEvent(null) // Close sheet
-        setIsAddTaskOpen(true) // Open dialog
-    }
-
     return (
         <div className="flex flex-col lg:flex-row h-auto min-h-[85vh] lg:h-[calc(100vh-140px)] gap-6 p-1 relative">
-            {/* ... (keep Selection Dialog) */}
+            {/* Selection Dialog */}
             {isSelectionOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setIsSelectionOpen(false)}>
-                    {/* ... layout ... */}
                     <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-sm scale-100 animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold">Add to {format(new Date(clickedDate), "d MMM yyyy", { locale: locale === "th" ? th : undefined })}</h3>
+                            <h3 className="text-lg font-bold">ดำเนินการในวันที่ {format(new Date(clickedDate), "d MMM yyyy", { locale: locale === "th" ? th : undefined })}</h3>
                             <button onClick={() => setIsSelectionOpen(false)} className="text-muted-foreground hover:text-foreground">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-3">
                             <button
-                                onClick={openAddTask}
-                                className="flex flex-col items-center justify-center gap-3 p-4 rounded-xl bg-primary/5 hover:bg-primary/10 border-2 border-transparent hover:border-primary/20 transition-all group"
+                                onClick={openAddContract}
+                                className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-purple-500/5 hover:bg-purple-500/10 border-2 border-transparent hover:border-purple-500/20 transition-all group"
                             >
-                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                                    <CheckSquare className="w-6 h-6" />
+                                <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
+                                    <FileText className="w-5 h-5" />
                                 </div>
-                                <span className="font-semibold text-sm">New Task</span>
+                                <span className="font-semibold text-xs">สร้างสัญญา</span>
                             </button>
                             <button
                                 onClick={openAddExpense}
-                                className="flex flex-col items-center justify-center gap-3 p-4 rounded-xl bg-orange-500/5 hover:bg-orange-500/10 border-2 border-transparent hover:border-orange-500/20 transition-all group"
+                                className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-orange-500/5 hover:bg-orange-500/10 border-2 border-transparent hover:border-orange-500/20 transition-all group"
                             >
-                                <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
-                                    <Receipt className="w-6 h-6" />
+                                <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
+                                    <Receipt className="w-5 h-5" />
                                 </div>
-                                <span className="font-semibold text-sm">New Expense</span>
+                                <span className="font-semibold text-xs">บันทึกรายจ่าย</span>
                             </button>
+                            {isManagerOrAbove && (
+                                <button
+                                    onClick={() => {
+                                        setIsSelectionOpen(false)
+                                        router.push(`/vouchers/new?date=${clickedDate}&paymentDate=${clickedDate}`)
+                                    }}
+                                    className="col-span-2 flex items-center justify-center gap-3 p-3 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 hover:from-emerald-500/20 hover:to-teal-500/20 border border-emerald-500/30 transition-all group"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                                        <CreditCard className="w-4 h-4" />
+                                    </div>
+                                    <div className="text-left">
+                                        <span className="font-bold text-xs text-foreground block">ออกใบเบิกงวด (New Voucher)</span>
+                                        <span className="text-[10.5px] text-muted-foreground">บันทึกค่างวด/กำหนดจ่ายเงินในวันที่เลือก</span>
+                                    </div>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -314,16 +390,17 @@ export function CalendarView() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-medium pl-1">Type</label>
+                                <label className="text-xs font-medium pl-1">ประเภท (Type)</label>
                                 <div className="relative">
                                     <select
                                         value={typeFilter}
                                         onChange={(e) => setTypeFilter(e.target.value)}
                                         className="w-full h-10 pl-3 pr-8 rounded-xl border border-input bg-background/50 hover:bg-background/80 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer"
                                     >
-                                        <option value="all">{t.calendar?.all_events || "All Events"}</option>
-                                        <option value="task">📋 {t.common?.tasks || "Tasks"}</option>
-                                        <option value="installment">💰 {t.calendar?.payments || "Payments"}</option>
+                                        <option value="all">ทั้งหมด (All Events)</option>
+                                        <option value="voucher">💰 ใบเบิกงวด (Payment Vouchers)</option>
+                                        <option value="installment">📑 งวดสัญญา (Milestones)</option>
+                                        <option value="contract">📜 สัญญาจ้าง (Contracts)</option>
                                     </select>
                                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                                 </div>
@@ -380,18 +457,22 @@ export function CalendarView() {
                                 {groupBy === 'type' ? (
                                     <>
                                         <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                                            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
-                                            <span className="text-xs sm:text-sm font-medium">{t.common?.tasks || "Tasks"}</span>
+                                            <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+                                            <span className="text-xs sm:text-sm font-medium">ใบเบิกงวด (Vouchers)</span>
                                         </div>
                                         <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                                            <div className="w-3 h-3 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50" />
-                                            <span className="text-xs sm:text-sm font-medium">{t.calendar?.payments || "Payments"}</span>
+                                            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
+                                            <span className="text-xs sm:text-sm font-medium">งวดสัญญา (Milestones)</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                                            <div className="w-3 h-3 rounded-full bg-purple-500 shadow-sm shadow-purple-500/50" />
+                                            <span className="text-xs sm:text-sm font-medium">สัญญาจ้าง (Contracts)</span>
                                         </div>
                                     </>
                                 ) : groupBy === 'project' ? (
                                     <p className="text-xs text-muted-foreground italic pl-2">Colored by Project ID hash</p>
                                 ) : (
-                                    <p className="text-xs text-muted-foreground italic pl-2">Colored by User ID hash</p>
+                                    <p className="text-xs text-muted-foreground italic pl-2">Colored by Contractor/Worker hash</p>
                                 )}
                             </div>
                         </div>
@@ -539,23 +620,18 @@ export function CalendarView() {
                 </div>
             </div>
 
-            {/* Custom Event Detail Sheet with Edit/Delete */}
+            {/* Custom Event Detail Sheet */}
             <CalendarEventSheet
                 event={selectedEvent}
                 onClose={() => setSelectedEvent(null)}
-                onEdit={handleEditTask}
             />
 
-            {/* Add/Edit Task Dialog */}
-            <AddTaskDialog
-                isOpen={isAddTaskOpen}
-                onClose={() => {
-                    setIsAddTaskOpen(false)
-                    setTaskToEdit(null) // Clear edit mode
-                }}
+            {/* Add Contract Dialog */}
+            <AddContractDialog
+                isOpen={isAddContractOpen}
+                onClose={() => setIsAddContractOpen(false)}
                 defaultProjectId={projectFilter !== "all" ? projectFilter : undefined}
-                defaultDate={clickedDate}
-                taskToEdit={taskToEdit} // Pass editing task
+                defaultStartDate={clickedDate}
             />
 
             {/* Add Expense Dialog */}

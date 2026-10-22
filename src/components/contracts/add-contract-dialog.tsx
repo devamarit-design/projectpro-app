@@ -47,6 +47,7 @@ interface AddContractDialogProps {
     onClose: () => void
     initialData?: Contract
     defaultProjectId?: string
+    defaultStartDate?: string
 }
 
 const newKey = () => Math.random().toString(36).slice(2, 10)
@@ -102,7 +103,13 @@ function Section({
     )
 }
 
-export function AddContractDialog({ isOpen, onClose, initialData, defaultProjectId }: AddContractDialogProps) {
+export function AddContractDialog({
+    isOpen,
+    onClose,
+    initialData,
+    defaultProjectId,
+    defaultStartDate
+}: AddContractDialogProps) {
     const { contracts, projects, workers, addContract, updateContract } = useProjects()
 
     // Form States
@@ -152,8 +159,8 @@ export function AddContractDialog({ isOpen, onClose, initialData, defaultProject
             setWorkerId("")
             setTitle(DEFAULT_CONTRACT_TITLE)
             setContractType(CONTRACT_TYPES[0])
-            setSignDate(todayISO())
-            setStartDate(todayISO())
+            setSignDate(defaultStartDate || todayISO())
+            setStartDate(defaultStartDate || todayISO())
             setEndDate("")
             setScope("")
             setInclusions("")

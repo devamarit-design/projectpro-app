@@ -1,18 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { CalendarView } from "@/components/calendar/calendar-view"
 
 export default function CalendarPage() {
-    const router = useRouter()
-
-    React.useEffect(() => {
-        router.replace('/projects')
-    }, [router])
-
     return (
-        <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="space-y-4">
+            <CalendarView />
         </div>
     )
 }

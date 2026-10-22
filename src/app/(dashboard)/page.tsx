@@ -12,6 +12,7 @@ import { QuickActionsGrid } from "@/components/dashboard/quick-actions-grid"
 import { PromoCards } from "@/components/dashboard/promo-cards"
 import { useState } from "react"
 import { WallFeed } from "@/components/wall/wall-feed"
+import { OrganizationCalendarSection } from "@/components/dashboard/organization-calendar-section"
 import Link from "next/link"
 import { ClipboardList, Plus } from "lucide-react"
 
@@ -78,6 +79,11 @@ function AdminDashboard() {
         <div className="bg-muted/30 dark:bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-border/50 dark:border-white/10 shadow-sm">
           <WallFeed variant="widget" />
         </div>
+      </div>
+
+      {/* Organization Calendar Section (ปฏิทินองค์กร) */}
+      <div className="w-full">
+        <OrganizationCalendarSection />
       </div>
 
       <DownloadReportDialog open={showReportDialog} onOpenChange={setShowReportDialog} />
@@ -236,6 +242,11 @@ function GuestDashboard() {
         <div className="bg-muted/30 dark:bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-border/50 dark:border-white/10 shadow-sm">
           <WallFeed variant="widget" />
         </div>
+      </div>
+
+      {/* Organization Calendar Section */}
+      <div className="w-full">
+        <OrganizationCalendarSection />
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Calendar, User, CheckCircle2, Building, Clock, AlignLeft, Flag, CreditCard, FolderKanban, Trash2, Edit, ChevronDown } from "lucide-react"
+import { X, Calendar, User, CheckCircle2, Building, Clock, AlignLeft, Flag, CreditCard, FolderKanban, Trash2, Edit, ChevronDown, FileText, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n-context"
 import { useProjects } from "@/context/project-context"
@@ -19,7 +19,7 @@ interface CalendarEvent {
     borderColor?: string
     textColor?: string
     extendedProps: {
-        type: "task" | "installment"
+        type: "task" | "installment" | "voucher" | "contract"
         projectId?: string
         projectName?: string
         priority?: string
@@ -35,7 +35,7 @@ interface CalendarEvent {
 interface CalendarEventSheetProps {
     event: CalendarEvent | null
     onClose: () => void
-    onEdit: (task: any) => void
+    onEdit?: (task: any) => void
 }
 
 export function CalendarEventSheet({ event, onClose, onEdit }: CalendarEventSheetProps) {
@@ -74,14 +74,17 @@ export function CalendarEventSheet({ event, onClose, onEdit }: CalendarEventShee
 
     const isTask = event.extendedProps.type === "task"
     const isInstallment = event.extendedProps.type === "installment"
+    const isVoucher = event.extendedProps.type === "voucher"
+    const isContract = event.extendedProps.type === "contract"
 
     const statusColors: Record<string, string> = {
         "Done": "text-green-500 bg-green-500/10",
         "In Progress": "text-blue-500 bg-blue-500/10",
         "Todo": "text-muted-foreground bg-muted",
-        "Paid": "text-green-500 bg-green-500/10",
-        "Pending": "text-yellow-500 bg-yellow-500/10",
+        "Paid": "text-emerald-500 bg-emerald-500/10",
+        "Pending": "text-amber-500 bg-amber-500/10",
         "Overdue": "text-red-500 bg-red-500/10",
+        "Active": "text-purple-500 bg-purple-500/10",
     }
 
     const statusColorClass = statusColors[event.extendedProps.status || ""] || "text-muted-foreground bg-muted"
@@ -109,11 +112,6 @@ export function CalendarEventSheet({ event, onClose, onEdit }: CalendarEventShee
             priority: event.extendedProps.priority,
             assignedTo: event.extendedProps.assignedTo,
             dueDate: event.start ? new Date(event.start).toISOString().split('T')[0] : "",
-            // Note: Description might be missing from event extendedProps if not passed initially.
-            // If essential, we should fetch the full task or pass description in CalendarView events. 
-            // For now, let's assume simple edit or we might lose description if it wasn't in props?
-            // BETTER: CalendarView passes full props OR we just rely on what we have. 
-            // Ideally, we should fetch from context using ID.
         }
         onEdit(taskObj)
     }
@@ -130,15 +128,26 @@ export function CalendarEventSheet({ event, onClose, onEdit }: CalendarEventShee
                 <div className="flex items-center justify-between p-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] border-b border-white/10 shrink-0">
                     <div className="flex items-center gap-3">
                         <div className={cn("p-3 rounded-xl border",
-                            isTask ? "bg-blue-500/10 text-blue-500 border-blue-500/20" : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                            isVoucher ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
+                            isContract ? "bg-purple-500/10 text-purple-500 border-purple-500/20" :
+                            isInstallment ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
+                            "bg-blue-500/10 text-blue-500 border-blue-500/20"
                         )}>
-                            {isTask ? <CheckCircle2 className="w-6 h-6" /> : <CreditCard className="w-6 h-6" />}
+                            {isVoucher ? <CreditCard className="w-6 h-6" /> :
+                             isContract ? <FileText className="w-6 h-6" /> :
+                             isInstallment ? <Layers className="w-6 h-6" /> :
+                             <CheckCircle2 className="w-6 h-6" />}
                         </div>
                         <div>
                             <h2 className="text-xl font-bold tracking-tight">
-                                {isTask ? (t.common?.tasks || "งาน") : (t.calendar?.payment || "งวดจ่าย")}
+                                {isVoucher ? "ใบเบิกงวด (Payment Voucher)" :
+                                 isContract ? "สัญญาจ้าง (Contract)" :
+                                 isInstallment ? "งวดงานสัญญา (Milestone)" :
+                                 (t.common?.tasks || "งาน")}
                             </h2>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wide">ID: {event.id.replace(/^(task-|installment-)/, "")}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                                {event.id.replace(/^(task-|installment-|draw-|contract-)/, "")}
+                            </p>
                         </div>
                     </div>
 
@@ -181,8 +190,8 @@ export function CalendarEventSheet({ event, onClose, onEdit }: CalendarEventShee
                         </h3>
 
                         <div className="py-4">
-                            {isInstallment ? (
-                                <h1 className="text-5xl font-black text-primary tracking-tight">
+                            {event.extendedProps.amount ? (
+                                <h1 className="text-4xl sm:text-5xl font-black text-primary tracking-tight font-mono">
                                     ฿{event.extendedProps.amount?.toLocaleString() || 0}
                                 </h1>
                             ) : (
