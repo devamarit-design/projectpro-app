@@ -391,15 +391,14 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                 <div
                     style={{
                         width: "210mm",
-                        height: "297mm",
-                        maxHeight: "297mm",
+                        minHeight: "297mm",
                         transform: `scale(${zoom})`,
                         transformOrigin: "top center",
                         marginBottom: `calc((297mm * ${zoom}) - 297mm)`
                     }}
-                    className="bg-white text-neutral-900 shadow-2xl rounded-sm p-[12mm_15mm_14mm] text-[11px] leading-normal relative flex flex-col justify-between shrink-0 font-['Sarabun',sans-serif] overflow-hidden"
+                    className="bg-white text-neutral-900 shadow-2xl rounded-sm p-[12mm_15mm_14mm] text-[11px] leading-normal relative flex flex-col justify-between shrink-0 font-['Sarabun',sans-serif]"
                 >
-                    <div className="flex-1 flex flex-col min-h-0">
+                    <div className="flex-1 flex flex-col">
                         {renderPageHeader(1, "สัญญาว่าจ้างเหมางาน")}
 
                         <div className="text-center my-1.5 shrink-0">
@@ -444,11 +443,11 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                         </div>
 
                         {/* สาระสำคัญและข้อตกลงแห่งสัญญา */}
-                        <div className="flex-1 flex flex-col min-h-0">
+                        <div className="flex-1 flex flex-col">
                             <div className="bg-emerald-50 text-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-sm border-l-4 border-emerald-600 mb-1.5 shrink-0">
                                 สาระสำคัญและข้อตกลงแห่งสัญญา (Terms & Conditions)
                             </div>
-                            <div className="flex-1 flex flex-col justify-between border border-neutral-300 rounded p-3 text-[10.5px] text-neutral-800 leading-snug">
+                            <div className="border border-neutral-300 rounded p-3 text-[10.5px] text-neutral-800 leading-snug flex flex-col gap-2">
                                 <div>
                                     <span className="font-bold text-neutral-950">ข้อ 1. วัตถุประสงค์แห่งการจ้างเหมา: </span>
                                     <span className="text-neutral-700">
@@ -531,15 +530,14 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                 <div
                     style={{
                         width: "210mm",
-                        height: "297mm",
-                        maxHeight: "297mm",
+                        minHeight: "297mm",
                         transform: `scale(${zoom})`,
                         transformOrigin: "top center",
                         marginBottom: `calc((297mm * ${zoom}) - 297mm)`
                     }}
-                    className="bg-white text-neutral-900 shadow-2xl rounded-sm p-[12mm_15mm_14mm] text-[11px] leading-relaxed relative flex flex-col justify-between shrink-0 font-['Sarabun',sans-serif] overflow-hidden"
+                    className="bg-white text-neutral-900 shadow-2xl rounded-sm p-[12mm_15mm_14mm] text-[11px] leading-relaxed relative flex flex-col justify-between shrink-0 font-['Sarabun',sans-serif]"
                 >
-                    <div className="flex-1 flex flex-col min-h-0">
+                    <div className="flex-1 flex flex-col">
                         {renderPageHeader(2, "เอกสารแนบท้ายสัญญา 1: แผนการส่งมอบงานและการจ่ายเงินตามงวดงาน")}
 
                         <div className="text-center my-2 shrink-0">
@@ -611,24 +609,9 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                             </table>
                         </div>
 
-                        {/* Extended Terms & Inspection Conditions for Full Page Layout */}
-                        <div className="mt-3 flex-1 flex flex-col justify-around p-3.5 rounded bg-neutral-50/70 border border-neutral-300 text-[10.5px] text-neutral-700">
-                            <div>
-                                <div className="font-bold text-neutral-950 text-[11px] mb-0.5">1. การแจ้งส่งมอบและตรวจรับงาน:</div>
-                                <div className="pl-3 text-neutral-600 leading-normal">เมื่อผู้รับจ้างดำเนินงานในแต่ละงวดแล้วเสร็จ ต้องแจ้งให้ผู้ว่าจ้างหรือผู้ควบคุมงานเข้าทำการตรวจรับงาน โดยผลงานต้องมีความถูกต้องครบถ้วนตามแบบแปลนและได้มาตรฐานฝีมือช่าง</div>
-                            </div>
-                            <div>
-                                <div className="font-bold text-neutral-950 text-[11px] mb-0.5">2. การอนุมัติชำระเงินค่างวด:</div>
-                                <div className="pl-3 text-neutral-600 leading-normal">{contract.paymentTerms || DEFAULT_PAYMENT_TERMS}</div>
-                            </div>
-                            <div>
-                                <div className="font-bold text-neutral-950 text-[11px] mb-0.5">3. การเบิกจ่ายเงินระหว่างงวด (Partial Draw):</div>
-                                <div className="pl-3 text-neutral-600 leading-normal">กรณีที่มีความจำเป็นต้องเบิกจ่ายเงินระหว่างงวด (เช่น งวดที่ 1.1, 1.2) ให้เป็นไปตามความก้าวหน้าของงานจริงที่เกิดขึ้นหน้างานและได้รับอนุมัติจากผู้ว่าจ้าง โดยยอดรวมของการเบิกย่อยทั้งหมดต้องไม่เกินมูลค่าของงวดงานนั้นๆ</div>
-                            </div>
-                            <div>
-                                <div className="font-bold text-neutral-950 text-[11px] mb-0.5">4. เอกสารประกอบการรับเงิน:</div>
-                                <div className="pl-3 text-neutral-600 leading-normal">ในการรับชำระเงินทุกครั้ง ผู้รับจ้างต้องส่งมอบรูปถ่ายความก้าวหน้าของงาน และลงลายมือชื่อในใบสำคัญรับเงิน (Payment Voucher) ของผู้ว่าจ้างไว้เป็นหลักฐาน</div>
-                            </div>
+                        {/* Concise Note */}
+                        <div className="mt-3 p-2.5 rounded bg-neutral-50/80 border border-neutral-200 text-[10px] text-neutral-600 leading-normal shrink-0">
+                            * การเบิกจ่ายเงินในแต่ละงวดงาน ให้เป็นไปตามความก้าวหน้าของงานจริงที่เกิดขึ้นหน้างานและผ่านการตรวจรับจากผู้ว่าจ้าง โดยยอดรวมของการเบิกย่อยต้องไม่เกินจำนวนเงินของงวดนั้นๆ
                         </div>
                     </div>
 
@@ -644,15 +627,14 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                 <div
                     style={{
                         width: "210mm",
-                        height: "297mm",
-                        maxHeight: "297mm",
+                        minHeight: "297mm",
                         transform: `scale(${zoom})`,
                         transformOrigin: "top center",
                         marginBottom: `calc((297mm * ${zoom}) - 297mm)`
                     }}
-                    className="bg-white text-neutral-900 shadow-2xl rounded-sm p-[12mm_15mm_14mm] text-[11px] leading-relaxed relative flex flex-col justify-between shrink-0 font-['Sarabun',sans-serif] overflow-hidden"
+                    className="bg-white text-neutral-900 shadow-2xl rounded-sm p-[12mm_15mm_14mm] text-[11px] leading-relaxed relative flex flex-col justify-between shrink-0 font-['Sarabun',sans-serif]"
                 >
-                    <div className="flex-1 flex flex-col min-h-0">
+                    <div className="flex-1 flex flex-col">
                         {renderPageHeader(3, "เอกสารแนบท้ายสัญญา 2: เงื่อนไข ข้อตกลง และการยกเลิกสัญญาจ้างเหมางาน")}
 
                         <div className="text-center my-2 shrink-0">
@@ -664,7 +646,7 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                             </p>
                         </div>
 
-                        <div className="flex-1 flex flex-col justify-between border border-neutral-300 rounded p-3.5 text-[11px] text-neutral-800 mt-2 leading-relaxed">
+                        <div className="border border-neutral-300 rounded p-3.5 text-[11px] text-neutral-800 mt-2 leading-relaxed flex flex-col gap-3">
                             {conditionGroups.map((group, idx) => (
                                 <div key={idx}>
                                     {group.title && (

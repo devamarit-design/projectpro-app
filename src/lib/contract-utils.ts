@@ -790,7 +790,7 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
     </section>`
 
     const page2 = `
-    <section class="page">
+    <section class="page page-annex1">
       <div class="page-top">
         ${header(`เอกสารแนบท้ายสัญญาเลขที่: ${esc(docNo)}<br/>โครงการ: ${esc(projectName)} · ผู้รับจ้าง: ${esc(workerName)}`, [["อ้างอิงสัญญา", docNo], ["มูลค่าจ้างรวม", fmtBaht(total)]])}
         <h2>เอกสารแนบท้ายสัญญา 1: แผนการส่งมอบงานและการจ่ายเงินตามงวดงาน</h2>
@@ -801,25 +801,7 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
           <tfoot><tr><td colspan="3" class="r"><b>รวมมูลค่างานจ้างทั้งสิ้นตามสัญญา (${bahtText(total)}):</b></td><td class="c"><b>100%</b></td><td class="r"><b>${fmtBaht(total)}</b></td></tr></tfoot>
         </table>
 
-        <div class="sec" style="margin-top:14px">หลักเกณฑ์และเงื่อนไขการตรวจรับงานและการเบิกจ่ายเงิน (Payment &amp; Inspection Terms)</div>
-        <div class="box terms annex1-terms">
-          <div class="term-item">
-            <div class="term-h">1. การแจ้งส่งมอบและตรวจรับงาน:</div>
-            <div class="term-b">เมื่อผู้รับจ้างดำเนินงานในแต่ละงวดแล้วเสร็จ ต้องแจ้งให้ผู้ว่าจ้างหรือผู้ควบคุมงานเข้าทำการตรวจรับงาน โดยผลงานต้องมีความถูกต้องครบถ้วนตามแบบแปลนและได้มาตรฐานฝีมือช่าง</div>
-          </div>
-          <div class="term-item">
-            <div class="term-h">2. การอนุมัติชำระเงินค่างวด:</div>
-            <div class="term-b">${esc(c.paymentTerms || DEFAULT_PAYMENT_TERMS)}</div>
-          </div>
-          <div class="term-item">
-            <div class="term-h">3. การเบิกจ่ายเงินระหว่างงวด (Partial Draw):</div>
-            <div class="term-b">กรณีที่มีความจำเป็นต้องเบิกจ่ายเงินระหว่างงวด (เช่น งวดที่ 1.1, 1.2) ให้เป็นไปตามความก้าวหน้าของงานจริงที่เกิดขึ้นหน้างานและได้รับอนุมัติจากผู้ว่าจ้าง โดยยอดรวมของการเบิกย่อยทั้งหมดต้องไม่เกินมูลค่าของงวดงานนั้นๆ</div>
-          </div>
-          <div class="term-item">
-            <div class="term-h">4. เอกสารประกอบการรับเงิน:</div>
-            <div class="term-b">ในการรับชำระเงินทุกครั้ง ผู้รับจ้างต้องส่งมอบรูปถ่ายความก้าวหน้าของงาน และลงลายมือชื่อในใบสำคัญรับเงิน (Payment Voucher) ของผู้ว่าจ้างไว้เป็นหลักฐาน</div>
-          </div>
-        </div>
+        <div class="sm muted" style="margin-top:10px; line-height:1.5;">* การเบิกจ่ายเงินในแต่ละงวดงาน ให้เป็นไปตามความก้าวหน้าของงานจริงที่เกิดขึ้นหน้างานและผ่านการตรวจรับจากผู้ว่าจ้าง โดยยอดรวมของการเบิกย่อยต้องไม่เกินจำนวนเงินของงวดนั้นๆ</div>
       </div>
 
       <div class="page-bottom">
@@ -829,7 +811,7 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
     </section>`
 
     const page3 = `
-    <section class="page">
+    <section class="page page-annex2">
       <div class="page-top">
         ${header(`เอกสารแนบท้ายสัญญาเลขที่: ${esc(docNo)}<br/>โครงการ: ${esc(projectName)} · ผู้รับจ้าง: ${esc(workerName)}`, [["อ้างอิงสัญญา", docNo], ["วันที่", thDateLong(signDate)]])}
         <h2>เอกสารแนบท้ายสัญญา 2: เงื่อนไข ข้อตกลง และการยกเลิกสัญญาจ้างเหมางาน</h2>
@@ -847,119 +829,109 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-  @page { size: A4 portrait; margin: 0; }
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm 14mm 14mm;
+  }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: #e5e7eb; }
-  body { font-family: 'Sarabun', sans-serif; color: #0f172a; font-size: 11.5px; line-height: 1.45; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: 'Sarabun', sans-serif; color: #0f172a; font-size: 11.5px; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .page {
     width: 210mm;
-    height: 296mm;
-    max-height: 296mm;
+    min-height: 297mm;
     margin: 16px auto;
-    padding: 12mm 15mm 14mm;
+    padding: 14mm 16mm;
     background: #fff;
     box-shadow: 0 8px 30px rgba(0,0,0,.15);
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    overflow: hidden;
+    box-sizing: border-box;
   }
   .page-top {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0;
   }
   .page-bottom {
-    margin-top: 10px;
+    margin-top: 24px;
     flex-shrink: 0;
   }
-  .hdr { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+  .hdr { display: flex; justify-content: space-between; gap: 16px; align-items: center; page-break-inside: avoid; break-inside: avoid; }
   .hdr-l { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .logo-wrap { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .logo { height: 48px; max-width: 115px; object-fit: contain; }
-  .logo-fallback { width: 42px; height: 42px; border-radius: 50%; background: #0f172a; color: #fff; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; }
+  .logo { height: 46px; max-width: 120px; object-fit: contain; }
+  .logo-fallback { width: 40px; height: 40px; border-radius: 50%; background: #0f172a; color: #fff; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; }
   .org-info { min-width: 0; }
   .org { font-size: 16px; font-weight: 700; color: #0f172a; line-height: 1.25; }
   .muted { color: #64748b; font-size: 10.5px; line-height: 1.4; }
   .hdr-r { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
   .meta { border: 1px solid #cbd5e1; border-radius: 6px; font-size: 10.5px; border-collapse: separate; padding: 4px 10px; background: #f8fafc; }
   .meta td { padding: 1.5px 5px; } .meta td:first-child { color: #64748b; white-space: nowrap; } .meta td:last-child { text-align: right; }
-  .rule { border-top: 2px solid #0f172a; margin: 9px 0 10px; }
-  h1 { text-align: center; font-size: 18px; font-weight: 700; margin: 0; color: #0f172a; }
-  h2 { text-align: center; font-size: 15.5px; font-weight: 700; margin: 0; color: #0f172a; }
-  .sub { text-align: center; color: #64748b; font-size: 10px; font-weight: 500; margin-bottom: 8px; }
-  .sec { background: #ecfdf5; color: #065f46; font-weight: 700; padding: 4px 10px; border-left: 3.5px solid #10b981; margin: 8px 0 6px; font-size: 11.5px; }
-  .box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 9px 12px; background: #ffffff; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+  .rule { border-top: 2px solid #0f172a; margin: 10px 0 12px; }
+  h1 { text-align: center; font-size: 18px; font-weight: 700; margin: 0 0 2px; color: #0f172a; }
+  h2 { text-align: center; font-size: 15px; font-weight: 700; margin: 0 0 2px; color: #0f172a; }
+  .sub { text-align: center; color: #64748b; font-size: 10px; font-weight: 500; margin-bottom: 12px; }
+  .sec { background: #ecfdf5; color: #065f46; font-weight: 700; padding: 4px 10px; border-left: 3.5px solid #10b981; margin: 10px 0 6px; font-size: 11.5px; page-break-after: avoid; break-after: avoid; }
+  .box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; background: #ffffff; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; page-break-inside: avoid; break-inside: avoid; }
   .party-name { font-size: 12px; color: #0f172a; margin-bottom: 1px; }
   .lbl { color: #059669; font-weight: 700; font-size: 11px; margin-bottom: 2px; }
-  .sm { font-size: 10.5px; color: #334155; line-height: 1.42; }
-  .terms {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 12px 14px;
-    font-size: 11px;
-    line-height: 1.42;
-    color: #1e293b;
-  }
-  .term-item { margin: 0; }
+  .sm { font-size: 10.5px; color: #334155; line-height: 1.45; }
+  .terms { font-size: 11px; line-height: 1.5; color: #1e293b; }
+  .term-item { margin-bottom: 8px; page-break-inside: avoid; break-inside: avoid; }
+  .term-item:last-child { margin-bottom: 0; }
   .term-h { font-weight: 700; color: #0f172a; margin-bottom: 1px; }
   .term-b { padding-left: 10px; color: #334155; }
-  .annex1-terms {
-    justify-content: space-around;
-    padding: 14px 16px;
-    font-size: 11px;
-    line-height: 1.5;
-  }
-  .annex-terms {
-    justify-content: space-between;
-    padding: 14px 16px;
-    font-size: 11.5px;
-    line-height: 1.55;
-  }
-  .c-item { margin: 0; }
+  .annex-terms { font-size: 11px; line-height: 1.55; }
+  .c-item { margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid; }
+  .c-item:last-child { margin-bottom: 0; }
   .c-h { font-weight: 700; color: #0f172a; margin-bottom: 2px; }
   .c-b { padding-left: 14px; color: #334155; }
   .pill { display: inline-block; border: 1px solid #10b981; background: #ecfdf5; color: #065f46; padding: 0 7px; border-radius: 4px; font-weight: 700; }
-  .tbl { width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 11.5px; margin-top: 4px; }
-  .tbl th { background: #f1f5f9; padding: 8px 10px; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #e2e8f0; font-weight: 700; color: #0f172a; }
-  .tbl td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; vertical-align: top; }
-  .tbl tfoot td { background: #ecfdf5; color: #065f46; border-top: 1.5px solid #10b981; padding: 9px 10px; font-size: 12px; }
+  .tbl { width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 11px; margin-top: 6px; page-break-inside: auto; break-inside: auto; }
+  .tbl thead { display: table-header-group; }
+  .tbl th { background: #f1f5f9; padding: 7px 8px; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #e2e8f0; font-weight: 700; color: #0f172a; }
+  .tbl td { padding: 7px 8px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; vertical-align: top; }
+  .tbl tr { page-break-inside: avoid; break-inside: avoid; }
+  .tbl tfoot { display: table-footer-group; }
+  .tbl tfoot td { background: #ecfdf5; color: #065f46; border-top: 1.5px solid #10b981; padding: 7px 8px; font-size: 11.5px; }
   .inst-title { font-weight: 700; color: #0f172a; margin-bottom: 2px; }
-  .inst-pay { margin-top: 3px; padding: 3px 6px; background: #ecfdf5; color: #065f46; border-radius: 4px; }
+  .inst-pay { margin-top: 3px; padding: 3px 6px; background: #ecfdf5; color: #065f46; border-radius: 4px; font-size: 10px; }
   .c { text-align: center; } .r { text-align: right; }
-  .closing { font-size: 10.5px; color: #475569; margin: 0 0 8px; text-align: center; line-height: 1.4; }
-  .sigs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 40px; padding-top: 8px; border-top: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid; }
+  .closing { font-size: 10px; color: #475569; margin: 0 0 10px; text-align: center; line-height: 1.4; page-break-inside: avoid; break-inside: avoid; }
+  .sigs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 40px; padding-top: 10px; border-top: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid; }
   .sigs.two { padding-top: 12px; }
   .sig { text-align: center; font-size: 11px; }
   .sig-line { border-bottom: 1px dotted #475569; height: 28px; margin: 0 20px 4px; }
   .sig-name { font-weight: 600; font-size: 11px; color: #0f172a; }
+
   @media print {
     html, body { background: #fff; margin: 0; padding: 0; }
     .page {
-      width: 210mm !important;
-      height: 296mm !important;
-      max-height: 296mm !important;
+      width: 100% !important;
+      min-height: auto !important;
+      height: auto !important;
+      max-height: none !important;
       margin: 0 !important;
-      padding: 12mm 15mm 14mm !important;
+      padding: 0 !important;
       box-shadow: none !important;
       page-break-after: always !important;
       break-after: page !important;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-      display: flex !important;
-      flex-direction: column !important;
-      justify-content: space-between !important;
-      overflow: hidden !important;
-      box-sizing: border-box !important;
+      page-break-inside: auto !important;
+      break-inside: auto !important;
+      display: block !important;
+      overflow: visible !important;
     }
     .page:last-child {
       page-break-after: auto !important;
       break-after: auto !important;
+    }
+    .page-bottom {
+      margin-top: 24px !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
   }
 </style></head><body>${page1}${page2}${page3}</body></html>`
