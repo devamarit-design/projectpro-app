@@ -656,19 +656,28 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
       </div>
       <div class="rule"></div>`
 
-    const conditionsHtml = conditions.split("\n").map(line => {
-        const t = line.trim()
-        if (!t) return ""
-        return /^\d+\./.test(t) ? `<div class="c-h">${esc(t)}</div>` : `<div class="c-b">${esc(t)}</div>`
-    }).join("")
+    const conditionBlocks: string[] = []
+    let currentBlock = ""
+    for (const rawLine of conditions.split("\n")) {
+        const t = rawLine.trim()
+        if (!t) continue
+        if (/^\d+\./.test(t)) {
+            if (currentBlock) conditionBlocks.push(`<div class="c-item">${currentBlock}</div>`)
+            currentBlock = `<div class="c-h">${esc(t)}</div>`
+        } else {
+            currentBlock += `<div class="c-b">${esc(t)}</div>`
+        }
+    }
+    if (currentBlock) conditionBlocks.push(`<div class="c-item">${currentBlock}</div>`)
+    const conditionsHtml = conditionBlocks.join("")
 
     const rows = installments.map((inst, i) => {
         const pct = total > 0 ? Math.round((inst.amount / total) * 1000) / 10 : 0
         return `<tr>
-          <td class="c">${i + 1}</td>
-          <td><b>${esc(inst.description)}</b>${inst.details ? `<div class="sm">${nl2br(inst.details)}</div>` : ""}${inst.paymentDetails ? `<div class="sm">งานส่งมอบ: ${nl2br(inst.paymentDetails)}</div>` : ""}</td>
+          <td class="c"><b>${i + 1}</b></td>
+          <td><div class="inst-title">${esc(inst.description)}</div>${inst.details ? `<div class="sm">${nl2br(inst.details)}</div>` : ""}${inst.paymentDetails ? `<div class="sm inst-pay"><b>เงื่อนไขจ่าย:</b> ${nl2br(inst.paymentDetails)}</div>` : ""}</td>
           <td class="c sm">${inst.dueDate ? thDateLong(inst.dueDate) : "-"}</td>
-          <td class="c">${pct}%</td>
+          <td class="c"><b>${pct}%</b></td>
           <td class="r"><b>${fmtBaht(inst.amount)}</b></td>
         </tr>`
     }).join("")
@@ -678,15 +687,21 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
         <div class="sig-line"></div>
         <div class="sig-name">( ${esc(name || "...................................................")} )</div>
         <div class="muted">${esc(role)}</div>
-        <div class="muted">วันที่ ......../......../............</div>
+        <div class="muted">วันที่ ........ / ........ / ................</div>
       </div>`
 
     const signatures = `
       <div class="sigs">
-        ${sign("ผู้ว่าจ้าง", org.signatureName || org.name || "")}
-        ${sign("ผู้รับจ้าง", workerName)}
+        ${sign("ฝ่ายผู้ว่าจ้าง", org.signatureName || org.name || "")}
+        ${sign("ฝ่ายผู้รับจ้าง / ผู้แทนช่าง", workerName)}
         ${sign("พยาน", "")}
         ${sign("พยาน", "")}
+      </div>`
+
+    const twoSignatures = `
+      <div class="sigs two">
+        ${sign("ฝ่ายผู้ว่าจ้าง", org.signatureName || org.name || "")}
+        ${sign("ฝ่ายผู้รับจ้าง / ผู้แทนช่าง", workerName)}
       </div>`
 
     const page1 = `
@@ -732,15 +747,39 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
 
         <div class="sec">สาระสำคัญและข้อตกลงแห่งสัญญา (Terms &amp; Conditions)</div>
         <div class="box terms">
-          <p><b>ข้อ 1. วัตถุประสงค์แห่งการจ้างเหมา:</b> ผู้ว่าจ้างตกลงจ้างและผู้รับจ้างตกลงรับจ้างทำงาน <b>${esc(contractType)}</b> ณ สถานที่ก่อสร้าง โครงการ <b>${esc(projectName)}</b> ตามแบบแปลน รายการประกอบแบบ และคำแนะนำของวิศวกรหรือผู้ควบคุมงานของผู้ว่าจ้าง</p>
-          <p><b>ข้อ 2. ขอบเขตงาน / สิ่งที่รวมในสัญญา (Inclusions):</b><span class="terms-multiline">${nl2br(scope || "-")}${c.inclusions ? `<br/>${nl2br(c.inclusions)}` : ""}</span></p>
-          <p><b>ข้อ 3. สิ่งที่ไม่รวมในสัญญา (Exclusions):</b><span class="terms-multiline">${nl2br(c.exclusions || "-")}</span></p>
-          <p><b>ข้อ 4. มูลค่าการจ้างตามสัญญา:</b> ทั้งสองฝ่ายตกลงค่าจ้างเหมางานตามสัญญานี้ เป็นจำนวนเงินทั้งสิ้น <span class="pill">${fmtNum(total)} บาท</span> (${bahtText(total)})</p>
-          <p><b>ข้อ 5. เงื่อนไขการชำระเงินตามงวดงาน:</b> ชำระเงินแบ่งเป็น <b>${installments.length} งวดงาน</b> ตามรายละเอียดในเอกสารแนบท้ายสัญญา 1 ${esc(c.paymentTerms || DEFAULT_PAYMENT_TERMS)}</p>
-          <p><b>ข้อ 6. การรับประกันผลงาน:</b> ${nl2br(c.warranty || DEFAULT_WARRANTY)}</p>
-          <p><b>ข้อ 7. ระยะเวลาดำเนินงาน:</b> เริ่มงานวันที่ ${thDateLong(c.startDate)} และแล้วเสร็จภายในวันที่ ${thDateLong(c.endDate)}</p>
-          <p><b>ข้อ 8. เงื่อนไขทั่วไป และการบอกเลิกสัญญา:</b> ทั้งสองฝ่ายตกลงปฏิบัติตาม <b>"เอกสารแนบท้ายสัญญา 2"</b> ซึ่งถือเป็นส่วนหนึ่งของสัญญานี้</p>
-          ${notes ? `<p><b>หมายเหตุ:</b> <span class="terms-multiline">${nl2br(notes)}</span></p>` : ""}
+          <div class="term-item">
+            <div class="term-h">ข้อ 1. วัตถุประสงค์แห่งการจ้างเหมา:</div>
+            <div class="term-b">ผู้ว่าจ้างตกลงจ้างและผู้รับจ้างตกลงรับจ้างทำงาน <b>${esc(contractType)}</b> ณ สถานที่ก่อสร้าง โครงการ <b>${esc(projectName)}</b> ตามแบบแปลน รายการประกอบแบบ และคำแนะนำของวิศวกรหรือผู้ควบคุมงานของผู้ว่าจ้าง</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">ข้อ 2. ขอบเขตงาน / สิ่งที่รวมในสัญญา (Inclusions):</div>
+            <div class="term-b">${nl2br(scope || "-")}${c.inclusions ? `<br/>${nl2br(c.inclusions)}` : ""}</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">ข้อ 3. สิ่งที่ไม่รวมในสัญญา (Exclusions):</div>
+            <div class="term-b">${nl2br(c.exclusions || "-")}</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">ข้อ 4. มูลค่าการจ้างตามสัญญา:</div>
+            <div class="term-b">ทั้งสองฝ่ายตกลงค่าจ้างเหมางานตามสัญญานี้ เป็นจำนวนเงินทั้งสิ้น <span class="pill">${fmtNum(total)} บาท</span> (${bahtText(total)})</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">ข้อ 5. เงื่อนไขการชำระเงินตามงวดงาน:</div>
+            <div class="term-b">ชำระเงินแบ่งเป็น <b>${installments.length} งวดงาน</b> ตามรายละเอียดในเอกสารแนบท้ายสัญญา 1 ${esc(c.paymentTerms || DEFAULT_PAYMENT_TERMS)}</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">ข้อ 6. การรับประกันผลงาน:</div>
+            <div class="term-b">${nl2br(c.warranty || DEFAULT_WARRANTY)}</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">ข้อ 7. ระยะเวลาดำเนินงาน:</div>
+            <div class="term-b">เริ่มงานวันที่ ${thDateLong(c.startDate)} และแล้วเสร็จภายในวันที่ ${thDateLong(c.endDate)}</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">ข้อ 8. เงื่อนไขทั่วไป และการบอกเลิกสัญญา:</div>
+            <div class="term-b">ทั้งสองฝ่ายตกลงผูกพันและปฏิบัติตามมาตรฐานฝีมือช่าง ความปลอดภัย การควบคุมงาน และสิทธิการบอกเลิกสัญญาตามที่ระบุไว้ใน <b>"เอกสารแนบท้ายสัญญา 2"</b> ซึ่งถือเป็นส่วนหนึ่งของสัญญานี้</div>
+          </div>
+          ${notes ? `<div class="term-item"><div class="term-h">หมายเหตุ:</div><div class="term-b">${nl2br(notes)}</div></div>` : ""}
         </div>
       </div>
 
@@ -757,11 +796,35 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
         <h2>เอกสารแนบท้ายสัญญา 1: แผนการส่งมอบงานและการจ่ายเงินตามงวดงาน</h2>
         <div class="sub">(ANNEX 1: MILESTONE PAYMENT SCHEDULE &amp; DELIVERABLES)</div>
         <table class="tbl">
-          <thead><tr><th style="width:48px">งวดที่</th><th>รายละเอียดงานที่ต้องส่งมอบ (Deliverables)</th><th style="width:110px">กำหนดเสร็จ</th><th style="width:60px">สัดส่วน</th><th style="width:110px">จำนวนเงิน (บาท)</th></tr></thead>
+          <thead><tr><th style="width:52px">งวดที่</th><th>รายละเอียดงานที่ต้องส่งมอบ (Deliverables)</th><th style="width:120px">กำหนดเสร็จ</th><th style="width:68px">สัดส่วน</th><th style="width:125px">จำนวนเงิน (บาท)</th></tr></thead>
           <tbody>${rows || `<tr><td colspan="5" class="c muted">ไม่มีงวดงาน</td></tr>`}</tbody>
           <tfoot><tr><td colspan="3" class="r"><b>รวมมูลค่างานจ้างทั้งสิ้นตามสัญญา (${bahtText(total)}):</b></td><td class="c"><b>100%</b></td><td class="r"><b>${fmtBaht(total)}</b></td></tr></tfoot>
         </table>
-        <p class="sm muted" style="margin-top:8px">* การเบิกจ่ายระหว่างงวด (เช่น งวดที่ 5.1, 5.2) ให้เป็นไปตามความก้าวหน้าของงานจริงและได้รับอนุมัติจากผู้ว่าจ้าง โดยยอดรวมของการเบิกย่อยต้องไม่เกินมูลค่าของงวดนั้น</p>
+
+        <div class="sec" style="margin-top:14px">หลักเกณฑ์และเงื่อนไขการตรวจรับงานและการเบิกจ่ายเงิน (Payment &amp; Inspection Terms)</div>
+        <div class="box terms annex1-terms">
+          <div class="term-item">
+            <div class="term-h">1. การแจ้งส่งมอบและตรวจรับงาน:</div>
+            <div class="term-b">เมื่อผู้รับจ้างดำเนินงานในแต่ละงวดแล้วเสร็จ ต้องแจ้งให้ผู้ว่าจ้างหรือผู้ควบคุมงานเข้าทำการตรวจรับงาน โดยผลงานต้องมีความถูกต้องครบถ้วนตามแบบแปลนและได้มาตรฐานฝีมือช่าง</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">2. การอนุมัติชำระเงินค่างวด:</div>
+            <div class="term-b">${esc(c.paymentTerms || DEFAULT_PAYMENT_TERMS)}</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">3. การเบิกจ่ายเงินระหว่างงวด (Partial Draw):</div>
+            <div class="term-b">กรณีที่มีความจำเป็นต้องเบิกจ่ายเงินระหว่างงวด (เช่น งวดที่ 1.1, 1.2) ให้เป็นไปตามความก้าวหน้าของงานจริงที่เกิดขึ้นหน้างานและได้รับอนุมัติจากผู้ว่าจ้าง โดยยอดรวมของการเบิกย่อยทั้งหมดต้องไม่เกินมูลค่าของงวดงานนั้นๆ</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">4. เอกสารประกอบการรับเงิน:</div>
+            <div class="term-b">ในการรับชำระเงินทุกครั้ง ผู้รับจ้างต้องส่งมอบรูปถ่ายความก้าวหน้าของงาน และลงลายมือชื่อในใบสำคัญรับเงิน (Payment Voucher) ของผู้ว่าจ้างไว้เป็นหลักฐาน</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-bottom">
+        <p class="closing">คู่สัญญาทั้งสองฝ่ายได้ตรวจสอบตารางงวดงานและเงื่อนไขการเบิกจ่ายข้างต้นถูกต้องตรงกันแล้ว จึงได้ลงลายมือชื่อไว้เป็นสำคัญ</p>
+        ${twoSignatures}
       </div>
     </section>`
 
@@ -774,10 +837,8 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
         <div class="box terms annex-terms">${conditionsHtml}</div>
       </div>
       <div class="page-bottom">
-        <div class="sigs two">
-          ${sign("ผู้ว่าจ้าง", org.signatureName || org.name || "")}
-          ${sign("ผู้รับจ้าง", workerName)}
-        </div>
+        <p class="closing">คู่สัญญาทั้งสองฝ่ายได้อ่านและเข้าใจเงื่อนไขและข้อตกลงในเอกสารแนบท้ายสัญญานี้โดยตลอดแล้ว จึงได้ลงลายมือชื่อไว้เป็นสำคัญ</p>
+        ${twoSignatures}
       </div>
     </section>`
 
@@ -792,10 +853,10 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
   body { font-family: 'Sarabun', sans-serif; color: #0f172a; font-size: 11.5px; line-height: 1.45; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .page {
     width: 210mm;
-    height: 297mm;
-    max-height: 297mm;
+    height: 296mm;
+    max-height: 296mm;
     margin: 16px auto;
-    padding: 11mm 14mm 10mm;
+    padding: 12mm 15mm 14mm;
     background: #fff;
     box-shadow: 0 8px 30px rgba(0,0,0,.15);
     position: relative;
@@ -811,57 +872,80 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
     min-height: 0;
   }
   .page-bottom {
-    margin-top: auto;
+    margin-top: 10px;
     flex-shrink: 0;
   }
-  .hdr { display: flex; justify-content: space-between; gap: 14px; align-items: center; }
+  .hdr { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
   .hdr-l { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .logo-wrap { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .logo { height: 44px; max-width: 110px; object-fit: contain; }
-  .logo-fallback { width: 38px; height: 38px; border-radius: 50%; background: #0f172a; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .logo { height: 48px; max-width: 115px; object-fit: contain; }
+  .logo-fallback { width: 42px; height: 42px; border-radius: 50%; background: #0f172a; color: #fff; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; }
   .org-info { min-width: 0; }
-  .org { font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1.25; }
-  .muted { color: #64748b; font-size: 10px; line-height: 1.35; }
+  .org { font-size: 16px; font-weight: 700; color: #0f172a; line-height: 1.25; }
+  .muted { color: #64748b; font-size: 10.5px; line-height: 1.4; }
   .hdr-r { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
-  .meta { border: 1px solid #e2e8f0; border-radius: 6px; font-size: 10px; border-collapse: separate; padding: 3px 8px; background: #fafafa; }
-  .meta td { padding: 1px 4px; } .meta td:first-child { color: #64748b; white-space: nowrap; } .meta td:last-child { text-align: right; }
-  .rule { border-top: 2px solid #0f172a; margin: 8px 0 8px; }
-  h1 { text-align: center; font-size: 16px; font-weight: 700; margin: 0; color: #0f172a; }
-  h2 { text-align: center; font-size: 14px; font-weight: 700; margin: 0; color: #0f172a; }
-  .sub { text-align: center; color: #64748b; font-size: 9.5px; font-weight: 500; margin-bottom: 6px; }
-  .sec { background: #ecfdf5; color: #065f46; font-weight: 700; padding: 2.5px 8px; border-left: 3px solid #10b981; margin: 6px 0 4px; font-size: 11px; }
-  .box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; background: #ffffff; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
-  .party-name { font-size: 11.5px; color: #0f172a; }
-  .lbl { color: #059669; font-weight: 700; font-size: 10.5px; margin-bottom: 1px; }
-  .sm { font-size: 10px; color: #475569; line-height: 1.35; }
-  .terms { font-size: 10px; line-height: 1.35; color: #1e293b; }
-  .terms p { margin: 0 0 3.5px; }
-  .terms b { color: #0f172a; }
-  .terms-multiline { display: block; padding-left: 10px; color: #334155; margin-top: 1px; }
-  .annex-terms { font-size: 10.5px; line-height: 1.45; }
-  .pill { display: inline-block; border: 1px solid #10b981; background: #ecfdf5; color: #065f46; padding: 0 6px; border-radius: 4px; font-weight: 700; }
-  .c-h { font-weight: 700; margin-top: 5px; color: #0f172a; }
+  .meta { border: 1px solid #cbd5e1; border-radius: 6px; font-size: 10.5px; border-collapse: separate; padding: 4px 10px; background: #f8fafc; }
+  .meta td { padding: 1.5px 5px; } .meta td:first-child { color: #64748b; white-space: nowrap; } .meta td:last-child { text-align: right; }
+  .rule { border-top: 2px solid #0f172a; margin: 9px 0 10px; }
+  h1 { text-align: center; font-size: 18px; font-weight: 700; margin: 0; color: #0f172a; }
+  h2 { text-align: center; font-size: 15.5px; font-weight: 700; margin: 0; color: #0f172a; }
+  .sub { text-align: center; color: #64748b; font-size: 10px; font-weight: 500; margin-bottom: 8px; }
+  .sec { background: #ecfdf5; color: #065f46; font-weight: 700; padding: 4px 10px; border-left: 3.5px solid #10b981; margin: 8px 0 6px; font-size: 11.5px; }
+  .box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 9px 12px; background: #ffffff; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+  .party-name { font-size: 12px; color: #0f172a; margin-bottom: 1px; }
+  .lbl { color: #059669; font-weight: 700; font-size: 11px; margin-bottom: 2px; }
+  .sm { font-size: 10.5px; color: #334155; line-height: 1.42; }
+  .terms {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px 14px;
+    font-size: 11px;
+    line-height: 1.42;
+    color: #1e293b;
+  }
+  .term-item { margin: 0; }
+  .term-h { font-weight: 700; color: #0f172a; margin-bottom: 1px; }
+  .term-b { padding-left: 10px; color: #334155; }
+  .annex1-terms {
+    justify-content: space-around;
+    padding: 14px 16px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .annex-terms {
+    justify-content: space-between;
+    padding: 14px 16px;
+    font-size: 11.5px;
+    line-height: 1.55;
+  }
+  .c-item { margin: 0; }
+  .c-h { font-weight: 700; color: #0f172a; margin-bottom: 2px; }
   .c-b { padding-left: 14px; color: #334155; }
-  .tbl { width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 10.5px; }
-  .tbl th { background: #f8fafc; padding: 5px 6px; border-bottom: 1px solid #cbd5e1; font-weight: 600; }
-  .tbl td { padding: 4.5px 6px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
-  .tbl tfoot td { background: #ecfdf5; color: #065f46; border-top: 1px solid #10b981; }
+  .pill { display: inline-block; border: 1px solid #10b981; background: #ecfdf5; color: #065f46; padding: 0 7px; border-radius: 4px; font-weight: 700; }
+  .tbl { width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 11.5px; margin-top: 4px; }
+  .tbl th { background: #f1f5f9; padding: 8px 10px; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #e2e8f0; font-weight: 700; color: #0f172a; }
+  .tbl td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; vertical-align: top; }
+  .tbl tfoot td { background: #ecfdf5; color: #065f46; border-top: 1.5px solid #10b981; padding: 9px 10px; font-size: 12px; }
+  .inst-title { font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+  .inst-pay { margin-top: 3px; padding: 3px 6px; background: #ecfdf5; color: #065f46; border-radius: 4px; }
   .c { text-align: center; } .r { text-align: right; }
-  .closing { font-size: 9.5px; color: #64748b; margin: 4px 0 0; text-align: justify; line-height: 1.35; }
-  .sigs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 36px; margin-top: 8px; page-break-inside: avoid; break-inside: avoid; }
-  .sigs.two { max-width: 540px; margin: 16px auto 0; }
-  .sig { text-align: center; font-size: 10.5px; }
-  .sig-line { border-bottom: 1px dotted #334155; height: 26px; margin: 0 16px 2px; }
-  .sig-name { font-weight: 600; font-size: 10.5px; color: #0f172a; }
+  .closing { font-size: 10.5px; color: #475569; margin: 0 0 8px; text-align: center; line-height: 1.4; }
+  .sigs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 40px; padding-top: 8px; border-top: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid; }
+  .sigs.two { padding-top: 12px; }
+  .sig { text-align: center; font-size: 11px; }
+  .sig-line { border-bottom: 1px dotted #475569; height: 28px; margin: 0 20px 4px; }
+  .sig-name { font-weight: 600; font-size: 11px; color: #0f172a; }
   @media print {
     html, body { background: #fff; margin: 0; padding: 0; }
     .page {
       width: 210mm !important;
-      height: 297mm !important;
-      max-height: 297mm !important;
+      height: 296mm !important;
+      max-height: 296mm !important;
       margin: 0 !important;
-      padding: 10mm 13mm 8mm !important;
+      padding: 12mm 15mm 14mm !important;
       box-shadow: none !important;
       page-break-after: always !important;
       break-after: page !important;
