@@ -18,7 +18,9 @@ import {
     DEFAULT_CONTRACT_TITLE,
     DEFAULT_PAYMENT_TERMS,
     DEFAULT_WARRANTY,
-    DEFAULT_GENERAL_CONDITIONS
+    DEFAULT_GENERAL_CONDITIONS,
+    getCompanyAddress,
+    DEFAULT_COMPANY_NAME
 } from "@/lib/contract-utils"
 
 interface ContractPreviewDialogProps {
@@ -68,13 +70,19 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
     const installments = contract.installments || []
     const { scope, notes } = splitLegacyScope(contract.scope)
     const conditions = (contract.generalConditions || DEFAULT_GENERAL_CONDITIONS).trim()
+    const displayAddress = getCompanyAddress(orgProfile?.address)
+    const companyName = orgProfile?.name || DEFAULT_COMPANY_NAME
 
     const handlePrint = () => {
         const html = generateContractHTML({
             contract,
             project,
             worker,
-            org: orgProfile || { name: "บริษัท แบบบ้านสวย จำกัด" }
+            org: {
+                ...(orgProfile || {}),
+                name: companyName,
+                address: displayAddress
+            }
         })
         const printWindow = window.open("", "_blank")
         if (printWindow) {
@@ -174,32 +182,34 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
         }
     }
 
-    // Shared Header Block for pages
+    // Shared Header Block for pages (Logo on Left)
     const renderPageHeader = (pageNumber: number, titleText: string) => (
-        <div className="pb-4 mb-4 border-b-2 border-neutral-900">
-            <div className="flex justify-between items-start gap-4">
-                <div>
-                    <h2 className="text-base font-bold text-neutral-950 leading-tight">
-                        {orgProfile?.name || "บริษัท แบบบ้านสวย จำกัด"}
-                    </h2>
-                    <p className="text-[11px] text-neutral-500 leading-tight mt-0.5">
-                        {orgProfile?.address || "94/67 หมู่ที่ 1 ตำบลเกาะขวาง อำเภอเมือง จังหวัดจันทบุรี 22000"}
-                    </p>
-                    {orgProfile?.phone && (
-                        <p className="text-[11px] text-neutral-500 leading-tight">
-                            โทร. {orgProfile.phone}
-                        </p>
-                    )}
-                </div>
-                <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <div className="pb-3 mb-2.5 border-b-2 border-neutral-900">
+            <div className="flex justify-between items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                     {orgProfile?.logo ? (
-                        <img src={orgProfile.logo} alt="Company logo" className="h-8 max-w-[120px] object-contain" />
+                        <img src={orgProfile.logo} alt="Company logo" className="h-10 max-w-[110px] object-contain shrink-0" />
                     ) : (
-                        <div className="w-8 h-8 rounded-full bg-neutral-900 text-white flex items-center justify-center font-bold text-xs">
-                            {orgProfile?.name?.charAt(0) || "B"}
+                        <div className="w-9 h-9 rounded-full bg-neutral-900 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                            {companyName.charAt(0) || "B"}
                         </div>
                     )}
-                    <div className="border border-neutral-200 rounded px-2.5 py-1 text-[10px] text-neutral-600 bg-neutral-50/50">
+                    <div className="min-w-0">
+                        <h2 className="text-sm font-bold text-neutral-950 leading-tight">
+                            {companyName}
+                        </h2>
+                        <p className="text-[10px] text-neutral-500 leading-tight mt-0.5">
+                            {displayAddress}
+                        </p>
+                        {orgProfile?.phone && (
+                            <p className="text-[10px] text-neutral-500 leading-tight">
+                                โทร. {orgProfile.phone}
+                            </p>
+                        )}
+                    </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                    <div className="border border-neutral-200 rounded px-2 py-1 text-[9.5px] text-neutral-600 bg-neutral-50/70">
                         <div className="flex justify-between gap-3">
                             <span className="text-neutral-500">เลขที่สัญญา:</span>
                             <span className="font-bold text-neutral-900">{docNo}</span>
@@ -220,30 +230,30 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
 
     // Shared Signature Block
     const renderSignatures = () => (
-        <div className="grid grid-cols-2 gap-x-12 gap-y-6 mt-8 pt-6 border-t border-neutral-200 text-center text-[11px]">
+        <div className="grid grid-cols-2 gap-x-10 gap-y-2.5 pt-2 border-t border-neutral-200 text-center text-[10px]">
             <div>
-                <div className="border-b border-dotted border-neutral-400 h-8 mx-6 mb-1"></div>
-                <div className="font-medium text-neutral-900">( {orgProfile?.signatureName || orgProfile?.name || "..................................................."} )</div>
-                <div className="text-neutral-500 text-[10px] mt-0.5">ฝ่ายผู้ว่าจ้าง</div>
-                <div className="text-neutral-400 text-[10px]">วันที่ ........ / ........ / ................</div>
+                <div className="border-b border-dotted border-neutral-400 h-6 mx-6 mb-1"></div>
+                <div className="font-semibold text-neutral-900 text-[10.5px]">( {orgProfile?.signatureName || companyName || "..................................................."} )</div>
+                <div className="text-neutral-500 text-[9.5px] mt-0.5">ฝ่ายผู้ว่าจ้าง</div>
+                <div className="text-neutral-400 text-[9px]">วันที่ ........ / ........ / ................</div>
             </div>
             <div>
-                <div className="border-b border-dotted border-neutral-400 h-8 mx-6 mb-1"></div>
-                <div className="font-medium text-neutral-900">( {workerName || "..................................................."} )</div>
-                <div className="text-neutral-500 text-[10px] mt-0.5">ฝ่ายผู้รับจ้าง / ผู้แทนช่าง</div>
-                <div className="text-neutral-400 text-[10px]">วันที่ ........ / ........ / ................</div>
+                <div className="border-b border-dotted border-neutral-400 h-6 mx-6 mb-1"></div>
+                <div className="font-semibold text-neutral-900 text-[10.5px]">( {workerName || "..................................................."} )</div>
+                <div className="text-neutral-500 text-[9.5px] mt-0.5">ฝ่ายผู้รับจ้าง / ผู้แทนช่าง</div>
+                <div className="text-neutral-400 text-[9px]">วันที่ ........ / ........ / ................</div>
             </div>
             <div>
-                <div className="border-b border-dotted border-neutral-400 h-8 mx-6 mb-1"></div>
-                <div className="font-medium text-neutral-900">( ................................................... )</div>
-                <div className="text-neutral-500 text-[10px] mt-0.5">พยาน</div>
-                <div className="text-neutral-400 text-[10px]">วันที่ ........ / ........ / ................</div>
+                <div className="border-b border-dotted border-neutral-400 h-6 mx-6 mb-1"></div>
+                <div className="font-medium text-neutral-900 text-[10px]">( ................................................... )</div>
+                <div className="text-neutral-500 text-[9.5px] mt-0.5">พยาน</div>
+                <div className="text-neutral-400 text-[9px]">วันที่ ........ / ........ / ................</div>
             </div>
             <div>
-                <div className="border-b border-dotted border-neutral-400 h-8 mx-6 mb-1"></div>
-                <div className="font-medium text-neutral-900">( ................................................... )</div>
-                <div className="text-neutral-500 text-[10px] mt-0.5">พยาน</div>
-                <div className="text-neutral-400 text-[10px]">วันที่ ........ / ........ / ................</div>
+                <div className="border-b border-dotted border-neutral-400 h-6 mx-6 mb-1"></div>
+                <div className="font-medium text-neutral-900 text-[10px]">( ................................................... )</div>
+                <div className="text-neutral-500 text-[9.5px] mt-0.5">พยาน</div>
+                <div className="text-neutral-400 text-[9px]">วันที่ ........ / ........ / ................</div>
             </div>
         </div>
     )
@@ -349,51 +359,52 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                 <div
                     style={{
                         width: "210mm",
-                        minHeight: "297mm",
+                        height: "297mm",
+                        maxHeight: "297mm",
                         transform: `scale(${zoom})`,
                         transformOrigin: "top center",
                         marginBottom: `calc((297mm * ${zoom}) - 297mm)`
                     }}
-                    className="bg-white text-neutral-900 shadow-2xl rounded-sm p-[14mm] text-[12px] leading-relaxed relative flex flex-col justify-between shrink-0 font-['Sarabun',sans-serif]"
+                    className="bg-white text-neutral-900 shadow-2xl rounded-sm p-[10mm_13mm_8mm] text-[10.5px] leading-normal relative flex flex-col justify-between shrink-0 font-['Sarabun',sans-serif] overflow-hidden"
                 >
-                    <div>
+                    <div className="flex-1 flex flex-col min-h-0">
                         {renderPageHeader(1, "สัญญาว่าจ้างเหมางาน")}
 
-                        <div className="text-center my-3">
-                            <h1 className="text-lg font-bold text-neutral-950 tracking-wide">
+                        <div className="text-center my-1.5">
+                            <h1 className="text-base font-bold text-neutral-950 tracking-wide">
                                 สัญญาว่าจ้างเหมางาน
                             </h1>
-                            <p className="text-[10px] text-neutral-500 font-medium">
+                            <p className="text-[9.5px] text-neutral-500 font-medium">
                                 (SUBCONTRACTOR AGREEMENT)
                             </p>
                         </div>
 
                         {/* ข้อมูลคู่สัญญา */}
-                        <div className="mb-3">
-                            <div className="bg-emerald-50 text-emerald-800 text-[11px] font-bold px-3 py-1 rounded-sm border-l-4 border-emerald-600 mb-2">
+                        <div className="mb-2">
+                            <div className="bg-emerald-50 text-emerald-800 text-[10.5px] font-bold px-2.5 py-0.5 rounded-sm border-l-4 border-emerald-600 mb-1.5">
                                 ข้อมูลคู่สัญญา (Parties to Agreement)
                             </div>
-                            <div className="grid grid-cols-2 gap-4 border border-neutral-200 rounded p-2.5 text-[11px]">
+                            <div className="grid grid-cols-2 gap-3 border border-neutral-200 rounded p-2 text-[10px]">
                                 <div>
-                                    <div className="text-emerald-700 font-semibold mb-1">ฝ่ายผู้ว่าจ้าง (บริษัทฯ)</div>
-                                    <div className="font-bold text-neutral-950">{orgProfile?.name || "บริษัท แบบบ้านสวย จำกัด"}</div>
-                                    <div className="text-neutral-600 text-[10px] leading-tight mt-0.5">
-                                        สำนักงาน: {orgProfile?.address || "94/67 หมู่ 1 ต.เกาะขวาง อ.เมือง จ.จันทบุรี 22000"}
+                                    <div className="text-emerald-700 font-bold mb-0.5">ฝ่ายผู้ว่าจ้าง (บริษัทฯ)</div>
+                                    <div className="font-bold text-neutral-950 text-[11px]">{companyName}</div>
+                                    <div className="text-neutral-600 text-[9.5px] leading-tight mt-0.5">
+                                        สำนักงาน: {displayAddress}
                                     </div>
                                     {orgProfile?.phone && (
-                                        <div className="text-neutral-600 text-[10px]">โทรศัพท์: {orgProfile.phone}</div>
+                                        <div className="text-neutral-600 text-[9.5px]">โทรศัพท์: {orgProfile.phone}</div>
                                     )}
                                 </div>
                                 <div>
-                                    <div className="text-emerald-700 font-semibold mb-1">ฝ่ายผู้รับจ้าง / ผู้แทนช่าง (ช่าง)</div>
-                                    <div className="font-bold text-neutral-950">{workerName}</div>
-                                    <div className="text-neutral-600 text-[10px] leading-tight mt-0.5">
+                                    <div className="text-emerald-700 font-bold mb-0.5">ฝ่ายผู้รับจ้าง / ผู้แทนช่าง (ช่าง)</div>
+                                    <div className="font-bold text-neutral-950 text-[11px]">{workerName}</div>
+                                    <div className="text-neutral-600 text-[9.5px] leading-tight mt-0.5">
                                         ข้อมูลวิชาชีพ: {worker?.role || "ช่างรับเหมา"} · ประเภท: {contractType}
                                     </div>
                                     {worker?.phone && (
-                                        <div className="text-neutral-600 text-[10px]">โทรศัพท์: {worker.phone}</div>
+                                        <div className="text-neutral-600 text-[9.5px]">โทรศัพท์: {worker.phone}</div>
                                     )}
-                                    <div className="text-neutral-600 text-[10px] leading-tight">
+                                    <div className="text-neutral-600 text-[9.5px] leading-tight">
                                         สถานที่ปฏิบัติงาน: โครงการ {projectName} {project?.location ? `(${project.location})` : ""}
                                     </div>
                                 </div>
@@ -402,74 +413,86 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
 
                         {/* สาระสำคัญและข้อตกลงแห่งสัญญา */}
                         <div>
-                            <div className="bg-emerald-50 text-emerald-800 text-[11px] font-bold px-3 py-1 rounded-sm border-l-4 border-emerald-600 mb-2">
+                            <div className="bg-emerald-50 text-emerald-800 text-[10.5px] font-bold px-2.5 py-0.5 rounded-sm border-l-4 border-emerald-600 mb-1.5">
                                 สาระสำคัญและข้อตกลงแห่งสัญญา (Terms & Conditions)
                             </div>
-                            <div className="border border-neutral-200 rounded p-3 text-[11px] space-y-2 text-neutral-800">
+                            <div className="border border-neutral-200 rounded p-2 text-[10px] space-y-1.5 text-neutral-800 leading-snug">
                                 <div>
-                                    <span className="font-bold text-neutral-950">ข้อ 1. วัตถุประสงค์แห่งการจ้างเหมา:</span>
-                                    <p className="text-neutral-700 text-[10.5px] leading-normal pl-3">
+                                    <span className="font-bold text-neutral-950">ข้อ 1. วัตถุประสงค์แห่งการจ้างเหมา: </span>
+                                    <span className="text-neutral-700">
                                         ผู้ว่าจ้างตกลงจ้างและผู้รับจ้างตกลงรับจ้างทำงาน <b>{contractType}</b> ณ สถานที่ก่อสร้าง โครงการ <b>{projectName}</b> ตามแบบแปลน รายการประกอบแบบ และคำแนะนำของวิศวกรหรือผู้ควบคุมงานของผู้ว่าจ้าง
-                                    </p>
+                                    </span>
                                 </div>
 
                                 <div>
                                     <span className="font-bold text-neutral-950">ข้อ 2. สิ่งที่รวมในสัญญา (Inclusions):</span>
-                                    <p className="text-neutral-700 text-[10.5px] leading-normal pl-3 whitespace-pre-wrap">
+                                    <p className="text-neutral-700 pl-2.5 whitespace-pre-wrap mt-0.5">
                                         {scope || contract.inclusions || "งานติดตั้งตามแบบแปลนและรายการประกอบแบบ"}
                                     </p>
                                 </div>
 
                                 <div>
                                     <span className="font-bold text-neutral-950">ข้อ 3. สิ่งที่ไม่รวมในสัญญา (Exclusions):</span>
-                                    <p className="text-neutral-700 text-[10.5px] leading-normal pl-3 whitespace-pre-wrap">
+                                    <p className="text-neutral-700 pl-2.5 whitespace-pre-wrap mt-0.5">
                                         {contract.exclusions || "งานปูกระเบื้องพื้นทางขึ้น และงานอื่นๆ ที่มิได้ระบุในสัญญา"}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <span className="font-bold text-neutral-950">ข้อ 4. มูลค่าว่าจ้างตามสัญญา:</span>
-                                    <p className="text-neutral-700 text-[10.5px] leading-normal pl-3">
+                                    <span className="font-bold text-neutral-950">ข้อ 4. มูลค่าว่าจ้างตามสัญญา: </span>
+                                    <span className="text-neutral-700">
                                         ทั้งสองฝ่ายตกลงค่าจ้างเหมางานตามสัญญานี้ เป็นจำนวนเงินทั้งสิ้น{" "}
-                                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold border border-emerald-300">
+                                        <span className="inline-block px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-900 font-bold border border-emerald-300">
                                             {fmtNum(total)} บาท
                                         </span>{" "}
                                         ({bahtText(total)})
-                                    </p>
+                                    </span>
                                 </div>
 
                                 <div>
-                                    <span className="font-bold text-neutral-950">ข้อ 5. เงื่อนไขการตรวจรับและชำระเงินค่างวดงาน:</span>
-                                    <p className="text-neutral-700 text-[10.5px] leading-normal pl-3">
-                                        ชำระเงินตามงวดงานที่กำหนด ภายหลังการตรวจรับงานถูกต้องครบถ้วน โดยแบ่งการจ่ายเงินออกเป็น <b>{installments.length} งวดงาน</b> ตามรายละเอียดที่ระบุไว้ใน "เอกสารแนบท้ายสัญญา 1: แผนการส่งมอบงานและการจ่ายเงินตามงวดงาน"
-                                    </p>
+                                    <span className="font-bold text-neutral-950">ข้อ 5. เงื่อนไขการตรวจรับและชำระเงินค่างวดงาน: </span>
+                                    <span className="text-neutral-700">
+                                        ชำระเงินแบ่งเป็น <b>{installments.length} งวดงาน</b> ตามรายละเอียดที่ระบุไว้ใน "เอกสารแนบท้ายสัญญา 1: แผนการส่งมอบงานและการจ่ายเงินตามงวดงาน"
+                                    </span>
                                 </div>
 
                                 <div>
-                                    <span className="font-bold text-neutral-950">ข้อ 6. การรับประกันผลงาน:</span>
-                                    <p className="text-neutral-700 text-[10.5px] leading-normal pl-3">
+                                    <span className="font-bold text-neutral-950">ข้อ 6. การรับประกันผลงาน: </span>
+                                    <span className="text-neutral-700">
                                         {contract.warranty || DEFAULT_WARRANTY}
-                                    </p>
+                                    </span>
                                 </div>
 
                                 <div>
-                                    <span className="font-bold text-neutral-950">ข้อ 7. เงื่อนไข ข้อตกลงทั่วไป และการบอกเลิกสัญญา:</span>
-                                    <p className="text-neutral-700 text-[10.5px] leading-normal pl-3">
-                                        ทั้งสองฝ่ายตกลงผูกพันและปฏิบัติตามมาตรฐานฝีมือช่าง ความปลอดภัย การควบคุมงาน และสิทธิการบอกเลิกสัญญาตามรายละเอียดที่ระบุไว้ใน "เอกสารแนบท้ายสัญญา 2: เงื่อนไข ข้อตกลง และการบอกเลิกสัญญาจ้างเหมางาน" ซึ่งถือเป็นส่วนหนึ่งของสัญญานี้
-                                    </p>
+                                    <span className="font-bold text-neutral-950">ข้อ 7. ระยะเวลาดำเนินงาน: </span>
+                                    <span className="text-neutral-700">
+                                        เริ่มงานวันที่ {thDateLong(contract.startDate)} และแล้วเสร็จภายในวันที่ {thDateLong(contract.endDate)}
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <span className="font-bold text-neutral-950">ข้อ 8. เงื่อนไขทั่วไป และการบอกเลิกสัญญา: </span>
+                                    <span className="text-neutral-700">
+                                        ทั้งสองฝ่ายตกลงผูกพันและปฏิบัติตามมาตรฐานฝีมือช่าง ความปลอดภัย และการบอกเลิกสัญญาตาม "เอกสารแนบท้ายสัญญา 2" ซึ่งถือเป็นส่วนหนึ่งของสัญญานี้
+                                    </span>
                                 </div>
 
                                 {notes && (
                                     <div className="pt-1 border-t border-dashed border-neutral-200">
-                                        <span className="font-bold text-neutral-950">หมายเหตุ:</span>
-                                        <p className="text-neutral-700 text-[10.5px] pl-3 whitespace-pre-wrap">{notes}</p>
+                                        <span className="font-bold text-neutral-950">หมายเหตุ: </span>
+                                        <span className="text-neutral-700 whitespace-pre-wrap">{notes}</span>
                                     </div>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    {renderSignatures()}
+                    <div className="mt-auto shrink-0 pt-2">
+                        <p className="text-[9.5px] text-neutral-500 mb-1 leading-tight">
+                            สัญญานี้ทำขึ้นเป็นสองฉบับมีข้อความถูกต้องตรงกัน คู่สัญญาได้อ่านและเข้าใจข้อความโดยตลอดแล้ว จึงได้ลงลายมือชื่อไว้เป็นสำคัญต่อหน้าพยาน
+                        </p>
+                        {renderSignatures()}
+                    </div>
                 </div>
 
                 {/* ──────────────────────────────────────────────── PAGE 2 ──────────────────────────────────────────────── */}
@@ -481,7 +504,7 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                         transformOrigin: "top center",
                         marginBottom: `calc((297mm * ${zoom}) - 297mm)`
                     }}
-                    className="bg-white text-neutral-900 shadow-2xl rounded-sm p-[14mm] text-[12px] leading-relaxed relative flex flex-col justify-between shrink-0 font-['Sarabun',sans-serif]"
+                    className="bg-white text-neutral-900 shadow-2xl rounded-sm p-[10mm_13mm_8mm] text-[11px] leading-relaxed relative flex flex-col justify-between shrink-0 font-['Sarabun',sans-serif]"
                 >
                     <div>
                         {renderPageHeader(2, "เอกสารแนบท้ายสัญญา 1: แผนการส่งมอบงานและการจ่ายเงินตามงวดงาน")}
@@ -562,16 +585,16 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-x-12 mt-8 pt-4 border-t border-neutral-200 text-center text-[11px]">
+                    <div className="grid grid-cols-2 gap-x-12 mt-6 pt-3 border-t border-neutral-200 text-center text-[10.5px]">
                         <div>
-                            <div className="border-b border-dotted border-neutral-400 h-8 mx-6 mb-1"></div>
-                            <div className="font-medium text-neutral-900">( {orgProfile?.signatureName || orgProfile?.name || "..................................................."} )</div>
-                            <div className="text-neutral-500 text-[10px]">ผู้ว่าจ้าง</div>
+                            <div className="border-b border-dotted border-neutral-400 h-6 mx-6 mb-1"></div>
+                            <div className="font-semibold text-neutral-900 text-[10.5px]">( {orgProfile?.signatureName || companyName || "..................................................."} )</div>
+                            <div className="text-neutral-500 text-[9.5px]">ผู้ว่าจ้าง</div>
                         </div>
                         <div>
-                            <div className="border-b border-dotted border-neutral-400 h-8 mx-6 mb-1"></div>
-                            <div className="font-medium text-neutral-900">( {workerName || "..................................................."} )</div>
-                            <div className="text-neutral-500 text-[10px]">ผู้รับจ้าง</div>
+                            <div className="border-b border-dotted border-neutral-400 h-6 mx-6 mb-1"></div>
+                            <div className="font-semibold text-neutral-900 text-[10.5px]">( {workerName || "..................................................."} )</div>
+                            <div className="text-neutral-500 text-[9.5px]">ผู้รับจ้าง</div>
                         </div>
                     </div>
                 </div>
@@ -585,12 +608,12 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                         transformOrigin: "top center",
                         marginBottom: `calc((297mm * ${zoom}) - 297mm)`
                     }}
-                    className="bg-white text-neutral-900 shadow-2xl rounded-sm p-[14mm] text-[12px] leading-relaxed relative flex flex-col justify-between shrink-0 font-['Sarabun',sans-serif]"
+                    className="bg-white text-neutral-900 shadow-2xl rounded-sm p-[10mm_13mm_8mm] text-[11px] leading-relaxed relative flex flex-col justify-between shrink-0 font-['Sarabun',sans-serif]"
                 >
                     <div>
                         {renderPageHeader(3, "เอกสารแนบท้ายสัญญา 2: เงื่อนไข ข้อตกลง และการยกเลิกสัญญาจ้างเหมางาน")}
 
-                        <div className="text-center my-3">
+                        <div className="text-center my-2">
                             <h2 className="text-base font-bold text-neutral-950">
                                 เอกสารแนบท้ายสัญญา 2: เงื่อนไข ข้อตกลง และการยกเลิกสัญญาจ้างเหมางาน
                             </h2>
@@ -599,20 +622,20 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                             </p>
                         </div>
 
-                        <div className="border border-neutral-200 rounded p-3 text-[11px] space-y-2.5 text-neutral-800 mt-4 leading-normal">
+                        <div className="border border-neutral-200 rounded p-3 text-[10.5px] space-y-2 text-neutral-800 mt-3 leading-normal">
                             {conditions.split("\n").map((line, idx) => {
                                 const trimmed = line.trim()
                                 if (!trimmed) return null
                                 const isHeader = /^\d+\./.test(trimmed)
                                 if (isHeader) {
                                     return (
-                                        <div key={idx} className="font-bold text-neutral-950 mt-2 first:mt-0">
+                                        <div key={idx} className="font-bold text-neutral-950 mt-1.5 first:mt-0">
                                             {trimmed}
                                         </div>
                                     )
                                 }
                                 return (
-                                    <p key={idx} className="text-neutral-700 text-[10.5px] pl-3 leading-normal">
+                                    <p key={idx} className="text-neutral-700 text-[10px] pl-3 leading-normal">
                                         {trimmed}
                                     </p>
                                 )
@@ -620,18 +643,18 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-x-12 mt-8 pt-6 border-t border-neutral-200 text-center text-[11px]">
+                    <div className="grid grid-cols-2 gap-x-12 mt-6 pt-3 border-t border-neutral-200 text-center text-[10.5px]">
                         <div>
-                            <div className="border-b border-dotted border-neutral-400 h-8 mx-6 mb-1"></div>
-                            <div className="font-medium text-neutral-900">( {orgProfile?.signatureName || orgProfile?.name || "..................................................."} )</div>
-                            <div className="text-neutral-500 text-[10px] mt-0.5">ฝ่ายผู้ว่าจ้าง</div>
-                            <div className="text-neutral-400 text-[10px]">วันที่ ........ / ........ / ................</div>
+                            <div className="border-b border-dotted border-neutral-400 h-6 mx-6 mb-1"></div>
+                            <div className="font-semibold text-neutral-900 text-[10.5px]">( {orgProfile?.signatureName || companyName || "..................................................."} )</div>
+                            <div className="text-neutral-500 text-[9.5px] mt-0.5">ฝ่ายผู้ว่าจ้าง</div>
+                            <div className="text-neutral-400 text-[9px]">วันที่ ........ / ........ / ................</div>
                         </div>
                         <div>
-                            <div className="border-b border-dotted border-neutral-400 h-8 mx-6 mb-1"></div>
-                            <div className="font-medium text-neutral-900">( {workerName || "..................................................."} )</div>
-                            <div className="text-neutral-500 text-[10px] mt-0.5">ฝ่ายผู้รับจ้าง / ผู้แทนช่าง</div>
-                            <div className="text-neutral-400 text-[10px]">วันที่ ........ / ........ / ................</div>
+                            <div className="border-b border-dotted border-neutral-400 h-6 mx-6 mb-1"></div>
+                            <div className="font-semibold text-neutral-900 text-[10.5px]">( {workerName || "..................................................."} )</div>
+                            <div className="text-neutral-500 text-[9.5px] mt-0.5">ฝ่ายผู้รับจ้าง / ผู้แทนช่าง</div>
+                            <div className="text-neutral-400 text-[9px]">วันที่ ........ / ........ / ................</div>
                         </div>
                     </div>
                 </div>

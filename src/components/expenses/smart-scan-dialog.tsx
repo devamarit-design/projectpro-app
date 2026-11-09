@@ -167,8 +167,15 @@ export function SmartScanDialog({ isOpen, onClose, onScanComplete, autoSave = fa
         } catch (error: any) {
             console.error("Scan failed:", error)
             const errorMsg = error?.message || "Scan failed. Please try again."
-            toast.error(errorMsg)
-            alert(`Scan failed: ${errorMsg}`)
+            if (errorMsg.includes("402") || errorMsg.includes("prepayment credits") || errorMsg.includes("Payment Required")) {
+                toast.error("เครดิต Gemini API หมดลง (402 Payment Required)", {
+                    description: "กรุณาเติมเงิน/เครดิต หรือตรวจสอบการตั้งค่าที่ Google AI Studio (ai.studio/projects)"
+                })
+                alert("เครดิต Gemini API ใน Google AI Studio หมดลง (402 Payment Required)\n\nกรุณาเข้าไปเติมเงิน/เครดิต หรือผูก Billing ที่ https://ai.studio/projects")
+            } else {
+                toast.error(errorMsg)
+                alert(`Scan failed: ${errorMsg}`)
+            }
         } finally {
             if (!autoSave) {
                 setScanning(false)

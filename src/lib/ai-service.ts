@@ -126,6 +126,18 @@ export async function analyzeReceipt(base64Image: string, authToken: string, org
         return { success: true, data };
 
     } catch (error: any) {
+        const isPaymentDepleted = error?.message?.includes("402") ||
+            error?.message?.includes("Payment Required") ||
+            error?.message?.includes("prepayment credits") ||
+            error?.status === 402;
+        if (isPaymentDepleted) {
+            console.error("Gemini API Payment Required (402):", error);
+            return {
+                success: false,
+                error: "เครดิต Gemini API ใน Google AI Studio หมดลง (402 Payment Required) กรุณาเติมเงิน/เครดิต หรือตรวจสอบการตั้งค่า Billing ที่ https://ai.studio/projects"
+            };
+        }
+
         const isRetryable = error?.message?.includes("429") || error?.message?.includes("404") || error?.status === 429 || error?.status === 404;
         if (isRetryable && modelName !== MODELS_TO_TRY[MODELS_TO_TRY.length - 1]) {
             console.warn(`Model ${modelName} returned 429, trying next model...`);

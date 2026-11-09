@@ -114,6 +114,18 @@ export async function POST(req: NextRequest) {
                 const data = JSON.parse(jsonStr) as ExtractedExpenseData;
                 return NextResponse.json({ success: true, data });
             } catch (err: any) {
+                const isPaymentDepleted = err?.message?.includes("402") ||
+                    err?.message?.includes("Payment Required") ||
+                    err?.message?.includes("prepayment credits") ||
+                    err?.status === 402;
+                if (isPaymentDepleted) {
+                    console.error("Gemini API Payment Required (402):", err);
+                    return NextResponse.json({
+                        success: false,
+                        error: "เครดิต Gemini API ใน Google AI Studio หมดลง (402 Payment Required) กรุณาเติมเงิน/เครดิต หรือตรวจสอบ Billing ที่ https://ai.studio/projects"
+                    }, { status: 402 });
+                }
+
                 const isRetryable = err?.message?.includes("429") || err?.message?.includes("404") || err?.status === 429 || err?.status === 404;
                 if (isRetryable && modelName !== MODELS_TO_TRY[MODELS_TO_TRY.length - 1]) {
                     console.warn(`Model ${modelName} failed, trying next...`);
