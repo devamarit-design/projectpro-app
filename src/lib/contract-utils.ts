@@ -801,7 +801,25 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
           <tfoot><tr><td colspan="3" class="r"><b>รวมมูลค่างานจ้างทั้งสิ้นตามสัญญา (${bahtText(total)}):</b></td><td class="c"><b>100%</b></td><td class="r"><b>${fmtBaht(total)}</b></td></tr></tfoot>
         </table>
 
-        <div class="sm muted" style="margin-top:10px; line-height:1.5;">* การเบิกจ่ายเงินในแต่ละงวดงาน ให้เป็นไปตามความก้าวหน้าของงานจริงที่เกิดขึ้นหน้างานและผ่านการตรวจรับจากผู้ว่าจ้าง โดยยอดรวมของการเบิกย่อยต้องไม่เกินจำนวนเงินของงวดนั้นๆ</div>
+        <div class="sec" style="margin-top:12px">หลักเกณฑ์และเงื่อนไขการตรวจรับงานและการเบิกจ่ายเงิน</div>
+        <div class="box terms annex1-terms">
+          <div class="term-item">
+            <div class="term-h">1. การแจ้งส่งมอบและตรวจรับงาน:</div>
+            <div class="term-b">เมื่อผู้รับจ้างดำเนินงานในแต่ละงวดแล้วเสร็จ ต้องแจ้งให้ผู้ว่าจ้างหรือผู้ควบคุมงานเข้าทำการตรวจรับงาน โดยผลงานต้องมีความถูกต้องครบถ้วนตามแบบแปลนและได้มาตรฐานฝีมือช่าง</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">2. การอนุมัติชำระเงินค่างวด:</div>
+            <div class="term-b">${esc(c.paymentTerms || DEFAULT_PAYMENT_TERMS)}</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">3. การเบิกจ่ายเงินระหว่างงวด (Partial Draw):</div>
+            <div class="term-b">กรณีที่มีความจำเป็นต้องเบิกจ่ายเงินระหว่างงวด (เช่น งวดที่ 1.1, 1.2) ให้เป็นไปตามความก้าวหน้าของงานจริงที่เกิดขึ้นหน้างานและได้รับอนุมัติจากผู้ว่าจ้าง โดยยอดรวมของการเบิกย่อยทั้งหมดต้องไม่เกินมูลค่าของงวดงานนั้นๆ</div>
+          </div>
+          <div class="term-item">
+            <div class="term-h">4. เอกสารประกอบการรับเงิน:</div>
+            <div class="term-b">ในการรับชำระเงินทุกครั้ง ผู้รับจ้างต้องส่งมอบรูปถ่ายความก้าวหน้าของงาน และลงลายมือชื่อในใบสำคัญรับเงิน (Payment Voucher) ของผู้ว่าจ้างไว้เป็นหลักฐาน</div>
+          </div>
+        </div>
       </div>
 
       <div class="page-bottom">
@@ -880,12 +898,13 @@ export function generateContractHTML({ contract: c, project, worker, org }: Cont
   .lbl { color: #059669; font-weight: 700; font-size: 11px; margin-bottom: 2px; }
   .sm { font-size: 10.5px; color: #334155; line-height: 1.45; }
   .terms { font-size: 11px; line-height: 1.5; color: #1e293b; }
-  .term-item { margin-bottom: 8px; page-break-inside: avoid; break-inside: avoid; }
+  .term-item { margin-bottom: 7px; page-break-inside: avoid; break-inside: avoid; }
   .term-item:last-child { margin-bottom: 0; }
   .term-h { font-weight: 700; color: #0f172a; margin-bottom: 1px; }
   .term-b { padding-left: 10px; color: #334155; }
-  .annex-terms { font-size: 11px; line-height: 1.55; }
-  .c-item { margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid; }
+  .annex1-terms { padding: 10px 14px; margin-top: 4px; }
+  .annex-terms { font-size: 11px; line-height: 1.5; padding: 10px 14px; }
+  .c-item { margin-bottom: 7px; page-break-inside: avoid; break-inside: avoid; }
   .c-item:last-child { margin-bottom: 0; }
   .c-h { font-weight: 700; color: #0f172a; margin-bottom: 2px; }
   .c-b { padding-left: 14px; color: #334155; }

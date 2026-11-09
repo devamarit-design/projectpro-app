@@ -609,9 +609,27 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                             </table>
                         </div>
 
-                        {/* Concise Note */}
-                        <div className="mt-3 p-2.5 rounded bg-neutral-50/80 border border-neutral-200 text-[10px] text-neutral-600 leading-normal shrink-0">
-                            * การเบิกจ่ายเงินในแต่ละงวดงาน ให้เป็นไปตามความก้าวหน้าของงานจริงที่เกิดขึ้นหน้างานและผ่านการตรวจรับจากผู้ว่าจ้าง โดยยอดรวมของการเบิกย่อยต้องไม่เกินจำนวนเงินของงวดนั้นๆ
+                        {/* หลักเกณฑ์และเงื่อนไขการตรวจรับและเบิกจ่ายเงิน (จัดระยะพอดี ไม่ยืดเกินไป) */}
+                        <div className="mt-3 p-3 rounded bg-neutral-50/80 border border-neutral-300 text-[10.5px] text-neutral-800 flex flex-col gap-2 shrink-0">
+                            <div className="font-bold text-neutral-950 text-[11px]">
+                                หลักเกณฑ์และเงื่อนไขการตรวจรับงานและการเบิกจ่ายเงิน
+                            </div>
+                            <div>
+                                <span className="font-semibold text-neutral-950">1. การแจ้งส่งมอบและตรวจรับงาน: </span>
+                                <span className="text-neutral-700">เมื่อผู้รับจ้างดำเนินงานในแต่ละงวดแล้วเสร็จ ต้องแจ้งให้ผู้ว่าจ้างหรือผู้ควบคุมงานเข้าทำการตรวจรับงาน โดยผลงานต้องมีความถูกต้องครบถ้วนตามแบบแปลนและได้มาตรฐานฝีมือช่าง</span>
+                            </div>
+                            <div>
+                                <span className="font-semibold text-neutral-950">2. การอนุมัติชำระเงินค่างวด: </span>
+                                <span className="text-neutral-700">{contract.paymentTerms || DEFAULT_PAYMENT_TERMS}</span>
+                            </div>
+                            <div>
+                                <span className="font-semibold text-neutral-950">3. การเบิกจ่ายเงินระหว่างงวด (Partial Draw): </span>
+                                <span className="text-neutral-700">กรณีที่มีความจำเป็นต้องเบิกจ่ายเงินระหว่างงวด (เช่น งวดที่ 1.1, 1.2) ให้เป็นไปตามความก้าวหน้าของงานจริงที่เกิดขึ้นหน้างานและได้รับอนุมัติจากผู้ว่าจ้าง โดยยอดรวมของการเบิกย่อยทั้งหมดต้องไม่เกินมูลค่าของงวดงานนั้นๆ</span>
+                            </div>
+                            <div>
+                                <span className="font-semibold text-neutral-950">4. เอกสารประกอบการรับเงิน: </span>
+                                <span className="text-neutral-700">ในการรับชำระเงินทุกครั้ง ผู้รับจ้างต้องส่งมอบรูปถ่ายความก้าวหน้าของงาน และลงลายมือชื่อในใบสำคัญรับเงิน (Payment Voucher) ของผู้ว่าจ้างไว้เป็นหลักฐาน</span>
+                            </div>
                         </div>
                     </div>
 
@@ -646,7 +664,7 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                             </p>
                         </div>
 
-                        <div className="border border-neutral-300 rounded p-3.5 text-[11px] text-neutral-800 mt-2 leading-relaxed flex flex-col gap-3">
+                        <div className="border border-neutral-300 rounded p-3 text-[10.5px] text-neutral-800 mt-2 leading-normal flex flex-col gap-2 shrink-0">
                             {conditionGroups.map((group, idx) => (
                                 <div key={idx}>
                                     {group.title && (
@@ -655,7 +673,7 @@ export function ContractPreviewDialog({ isOpen, onClose, contract, onEdit }: Con
                                         </div>
                                     )}
                                     {group.lines.map((line, lIdx) => (
-                                        <p key={lIdx} className="text-neutral-700 text-[10.5px] pl-3 leading-normal">
+                                        <p key={lIdx} className="text-neutral-700 text-[10px] pl-3 leading-normal">
                                             {line}
                                         </p>
                                     ))}
