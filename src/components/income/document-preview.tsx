@@ -944,13 +944,6 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                                 secondaryDateVal = formattedDocDate
                                             }
 
-                                            const hasValidLogo = orgProfile.logo && (
-                                                orgProfile.logo.startsWith('http') ||
-                                                orgProfile.logo.startsWith('data:') ||
-                                                orgProfile.logo.startsWith('blob:') ||
-                                                orgProfile.logo.startsWith('/')
-                                            )
-
                                             return (
                                                 <>
                                                     <div className={cn(
@@ -961,30 +954,24 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                                         <div className="flex items-start gap-3.5 text-left flex-1 min-w-0 pr-4">
                                                             {showLogo && (
                                                                 <div className="relative group shrink-0">
-                                                                    {hasValidLogo ? (
+                                                                    {orgProfile?.logo ? (
                                                                         <img
                                                                             id="preview-doc-logo"
                                                                             src={orgProfile.logo}
-                                                                            className="h-16 max-w-[130px] object-contain rounded-lg"
-                                                                            alt="Logo"
-                                                                            crossOrigin="anonymous"
-                                                                            onError={(e) => {
-                                                                                (e.currentTarget as HTMLElement).style.display = 'none';
-                                                                                const fallback = e.currentTarget.parentElement?.querySelector('.doc-logo-fallback') as HTMLElement | null;
-                                                                                if (fallback) fallback.style.display = 'flex';
-                                                                            }}
+                                                                            className="h-14 max-w-[130px] object-contain shrink-0"
+                                                                            alt="Company logo"
                                                                         />
-                                                                    ) : null}
-                                                                    <div
-                                                                        className={cn(
-                                                                            "w-14 h-14 flex items-center justify-center font-bold text-xl shadow-sm text-white shrink-0 doc-logo-fallback",
-                                                                            template === 'modern' ? "rounded-xl" : "rounded-none",
-                                                                            hasValidLogo ? "hidden" : "flex"
-                                                                        )}
-                                                                        style={{ backgroundColor: themeColor }}
-                                                                    >
-                                                                        {companyName.charAt(0) || "B"}
-                                                                    </div>
+                                                                    ) : (
+                                                                        <div
+                                                                            className={cn(
+                                                                                "w-12 h-12 flex items-center justify-center font-bold text-xl shadow-sm text-white shrink-0",
+                                                                                template === 'modern' ? "rounded-xl" : "rounded-none"
+                                                                            )}
+                                                                            style={{ backgroundColor: themeColor }}
+                                                                        >
+                                                                            {companyName.charAt(0) || "B"}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
 
@@ -1218,11 +1205,11 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                     <div className="flex justify-between items-center border-b border-gray-200 pb-3 mb-4">
                                         <div className="flex items-center gap-3">
                                             {showLogo && (
-                                                orgProfile.logo && (orgProfile.logo.startsWith('http') || orgProfile.logo.startsWith('data:') || orgProfile.logo.startsWith('/') || orgProfile.logo.startsWith('blob:')) ? (
+                                                orgProfile?.logo ? (
                                                     <img src={orgProfile.logo} className="h-7 max-w-[60px] object-contain" alt="Logo" />
                                                 ) : (
                                                     <div className="w-7 h-7 rounded bg-gray-100 flex items-center justify-center font-bold text-gray-700 text-xs">
-                                                        {(orgProfile.name || DEFAULT_COMPANY_NAME).charAt(0)}
+                                                        {(orgProfile?.name || DEFAULT_COMPANY_NAME).charAt(0)}
                                                     </div>
                                                 )
                                             )}
