@@ -13,8 +13,8 @@ import {
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import {
-    bahtText, fmtBaht, fmtNum, generateVoucherHTML,
-    generateVoucherNumber, getInstallmentDrawn,
+    addDaysISO, bahtText, fmtBaht, fmtNum, generateVoucherHTML,
+    generateVoucherNumber, getCompanyAddress, getDraws, getInstallmentDrawn,
     thDateLong, todayISO, VoucherPrintInput
 } from "@/lib/contract-utils"
 
@@ -49,6 +49,7 @@ export function PaymentVoucherDialog({
 
     const project = projects.find(p => p.id === contract.projectId)
     const worker = workers.find(w => w.id === contract.workerId)
+    const displayAddress = getCompanyAddress(orgProfile?.address)
 
     // View mode: 'split' | 'form' | 'preview'
     const [viewMode, setViewMode] = useState<"split" | "form" | "preview">("split")
@@ -66,6 +67,16 @@ export function PaymentVoucherDialog({
     }, [installment, draw])
 
     const remainingForInstallment = Math.max(0, installment.amount - drawnBefore)
+
+    // Calculate total already drawn across ALL installments in the contract (excluding this draw if editing)
+    const totalContractDrawnBefore = useMemo(() => {
+        return (contract.installments || []).reduce((sum, inst, i) => {
+            const draws = getDraws(inst, i)
+            return sum + draws
+                .filter(d => !draw || d.id !== draw.id)
+                .reduce((dSum, d) => dSum + (Number(d.amount) || 0), 0)
+        }, 0)
+    }, [contract, draw])
 
     // Form state
     const [docNumber, setDocNumber] = useState("")
@@ -159,9 +170,12 @@ export function PaymentVoucherDialog({
                 : String(nextSeqNum)
 
             const generatedDocNo = generateVoucherNumber(contracts)
+            const initialReqDate = todayISO()
+            const initialPayDate = addDaysISO(initialReqDate, 3)
+
             setDocNumber(generatedDocNo)
-            setRequestDate(todayISO())
-            setPaymentDate("")
+            setRequestDate(initialReqDate)
+            setPaymentDate(initialPayDate)
             setExpenseStatus("Pending")
             setWorkerName(initialWorkerName)
             setWorkerPhone(initialWorkerPhone)
@@ -211,8 +225,14 @@ export function PaymentVoucherDialog({
         return items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0)
     }, [items])
 
-    const totalContractAmount = contract.totalAmount || 0
-    const remainingAfterThisDraw = Math.max(0, remainingForInstallment - totalVoucherAmount)
+    const totalContractAmount = Number(contract.totalAmount) || (contract.installments || []).reduce((s, i) => s + (Number(i.amount) || 0), 0)
+    const remainingAfterThisDraw = Math.max(0, totalContractAmount - (totalContractDrawnBefore + totalVoucherAmount))
+
+    // Handle Request Date change with +3 days autofill for payment date
+    const handleRequestDateChange = (newDate: string) => {
+        setRequestDate(newDate)
+        setPaymentDate(addDaysISO(newDate, 3))
+    }
 
     // Handlers for Items
     const handleItemChange = (index: number, field: keyof VoucherItem, value: any) => {
@@ -351,7 +371,10 @@ export function PaymentVoucherDialog({
         installmentLabel,
         installmentAmount: totalVoucherAmount,
         remainingAmount: remainingAfterThisDraw,
-        org: orgProfile || {},
+        org: {
+            ...(orgProfile || {}),
+            address: displayAddress
+        },
         signatures
     }
 
@@ -678,23 +701,56 @@ export function PaymentVoucherDialog({
                                     <input
                                         type="date"
                                         value={requestDate}
-                                        onChange={e => setRequestDate(e.target.value)}
+                                        onChange={e => handleRequestDateChange(e.target.value)}
                                         className="w-full px-3 py-2 rounded-xl bg-muted/40 border border-border text-sm"
                                     />
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-xs font-medium text-muted-foreground">วันที่จ่ายเงิน (ถ้าจ่ายแล้ว)</label>
+                                    <label className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+                                        <span>วันที่จ่ายเงิน</span>
+                                        <span className="text-[10px] text-muted-foreground">(Autofill +3 วัน)</span>
+                                    </label>
                                     <input
                                         type="date"
                                         value={paymentDate}
-                                        onChange={e => {
-                                            setPaymentDate(e.target.value)
-                                            if (e.target.value) setExpenseStatus("Paid")
-                                        }}
+                                        onChange={e => setPaymentDate(e.target.value)}
                                         className="w-full px-3 py-2 rounded-xl bg-muted/40 border border-border text-sm"
-                                        placeholder="ระบุวันที่จ่ายจริง"
+                                        placeholder="ระบุวันที่ชำระเงิน"
                                     />
+                                </div>
+
+                                {/* Status Toggle (Decoupled from paymentDate) */}
+                                <div className="sm:col-span-2 space-y-1 pt-1">
+                                    <label className="text-xs font-medium text-muted-foreground">สถานะการจ่ายเงิน</label>
+                                    <div className="grid grid-cols-2 p-1 rounded-xl bg-muted/30 border border-border">
+                                        <button
+                                            type="button"
+                                            onClick={() => setExpenseStatus("Pending")}
+                                            className={cn(
+                                                "py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5",
+                                                expenseStatus === "Pending"
+                                                    ? "bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 shadow-sm"
+                                                    : "text-muted-foreground hover:text-foreground"
+                                            )}
+                                        >
+                                            <Clock className="w-3.5 h-3.5 text-amber-500" />
+                                            <span>รอจ่าย (Pending)</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setExpenseStatus("Paid")}
+                                            className={cn(
+                                                "py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5",
+                                                expenseStatus === "Paid"
+                                                    ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shadow-sm"
+                                                    : "text-muted-foreground hover:text-foreground"
+                                            )}
+                                        >
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                            <span>จ่ายแล้ว (Paid)</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1064,31 +1120,33 @@ export function PaymentVoucherDialog({
                                             ใบสำคัญจ่าย (PAYMENT VOUCHER)
                                         </h1>
 
-                                        {/* Header Row */}
-                                        <div className="flex justify-between items-start gap-4 mb-3">
-                                            <div className="flex-1 text-xs">
-                                                <div className="font-bold text-sm text-black mb-0.5">
-                                                    {orgProfile?.name || "บริษัท แบบบ้านสวย จำกัด"}
-                                                </div>
-                                                <div className="text-gray-700 leading-snug">
-                                                    {orgProfile?.address || "95/47 หมู่ที่ 1 ตำบลตลาดขวัญ อำเภอเมือง จังหวัดนนทบุรี 11000"}
-                                                </div>
-                                                {orgProfile?.phone && (
-                                                    <div className="text-gray-700">โทร {orgProfile.phone}</div>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col items-end">
+                                        {/* Header Row: Logo on Left, Meta on Right */}
+                                        <div className="flex justify-between items-center gap-4 mb-3">
+                                            <div className="flex items-center gap-3 flex-1 min-w-0">
                                                 {orgProfile?.logo ? (
                                                     <img
                                                         src={orgProfile.logo}
                                                         alt="Logo"
-                                                        className="max-h-14 max-w-[130px] object-contain mb-1"
+                                                        className="h-12 max-w-[120px] object-contain shrink-0"
                                                     />
                                                 ) : (
-                                                    <div className="w-12 h-12 rounded-full bg-amber-600 flex items-center justify-center text-white font-bold text-xl mb-1 shadow">
+                                                    <div className="w-11 h-11 rounded-full bg-amber-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow">
                                                         🏠
                                                     </div>
                                                 )}
+                                                <div className="text-xs min-w-0">
+                                                    <div className="font-bold text-sm text-black mb-0.5">
+                                                        {orgProfile?.name || "บริษัท แบบบ้านสวย จำกัด"}
+                                                    </div>
+                                                    <div className="text-gray-700 leading-snug">
+                                                        {displayAddress}
+                                                    </div>
+                                                    {orgProfile?.phone && (
+                                                        <div className="text-gray-700">โทร {orgProfile.phone}</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-end shrink-0">
                                                 <table className="text-xs border-collapse">
                                                     <tbody>
                                                         <tr>

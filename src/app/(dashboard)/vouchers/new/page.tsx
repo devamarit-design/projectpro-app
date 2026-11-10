@@ -19,11 +19,14 @@ import { useOrganization } from "@/context/organization-context"
 import SearchableCombobox from "@/components/ui/searchable-combobox"
 import { cn } from "@/lib/utils"
 import {
+    addDaysISO,
     bahtText,
     fmtBaht,
     fmtNum,
     generateVoucherNumber,
     generateVoucherHTML,
+    getCompanyAddress,
+    getDraws,
     thDateLong,
     thDateShort,
     todayISO,
@@ -131,7 +134,7 @@ export default function NewVoucherPage() {
     // Document Meta
     const [voucherNumber, setVoucherNumber] = useState("")
     const [date, setDate] = useState(todayISO())
-    const [paymentDate, setPaymentDate] = useState("")
+    const [paymentDate, setPaymentDate] = useState(() => addDaysISO(todayISO(), 3))
     const [expenseStatus, setExpenseStatus] = useState<"Paid" | "Pending">("Pending")
     const [department, setDepartment] = useState(WORK_DEPARTMENTS[0])
 
@@ -494,8 +497,19 @@ export default function NewVoucherPage() {
             totalContractAmount: selectedContract?.totalAmount || netPayable,
             installmentLabel: installmentLabel || "1",
             installmentAmount: netPayable,
-            remainingAmount: 0,
-            org: orgProfile || {},
+            remainingAmount: (() => {
+                if (!selectedContract) return 0
+                const totalContractAmt = Number(selectedContract.totalAmount) || 0
+                const alreadyDrawn = (selectedContract.installments || []).reduce((sum, inst, i) => {
+                    const draws = getDraws(inst, i)
+                    return sum + draws.reduce((dSum, d) => dSum + (Number(d.amount) || 0), 0)
+                }, 0)
+                return Math.max(0, totalContractAmt - (alreadyDrawn + netPayable))
+            })(),
+            org: {
+                ...(orgProfile || {}),
+                address: getCompanyAddress(orgProfile?.address)
+            },
             signatures
         }
     }, [
@@ -960,7 +974,10 @@ export default function NewVoucherPage() {
                                     <input
                                         type="date"
                                         value={date}
-                                        onChange={e => setDate(e.target.value)}
+                                        onChange={e => {
+                                            setDate(e.target.value)
+                                            setPaymentDate(addDaysISO(e.target.value, 3))
+                                        }}
                                         className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs focus:ring-1 focus:ring-primary"
                                         required
                                     />
@@ -969,17 +986,12 @@ export default function NewVoucherPage() {
                                 <div className="space-y-1">
                                     <label className="text-xs font-semibold text-foreground flex items-center justify-between">
                                         <span>กำหนดชำระ / วันที่จ่ายจริง</span>
-                                        {expenseStatus === "Paid" && (
-                                            <span className="text-[10px] text-emerald-600 font-bold">บันทึกตัดจ่าย</span>
-                                        )}
+                                        <span className="text-[10px] text-muted-foreground">(Autofill +3 วัน)</span>
                                     </label>
                                     <input
                                         type="date"
                                         value={paymentDate}
-                                        onChange={e => {
-                                            setPaymentDate(e.target.value)
-                                            if (e.target.value) setExpenseStatus("Paid")
-                                        }}
+                                        onChange={e => setPaymentDate(e.target.value)}
                                         className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs focus:ring-1 focus:ring-primary"
                                         placeholder="ระบุวันที่ชำระเงิน"
                                     />
@@ -2034,20 +2046,29 @@ export default function NewVoucherPage() {
                                         </h1>
 
                                         {/* Header Row */}
-                                        <div className="flex justify-between items-start gap-4 mb-2.5">
-                                            <div className="flex-1 text-xs">
-                                                <div className="font-bold text-sm text-black mb-0.5">
-                                                    {orgProfile?.name || "บริษัท แบบบ้านสวย จำกัด"}
+                                        <div className="flex justify-between items-center gap-4 mb-2.5">
+                                            <div className="flex items-center gap-3 flex-1 min-w-0 text-xs">
+                                                {orgProfile?.logo ? (
+                                                    <img
+                                                        src={orgProfile.logo}
+                                                        alt="Logo"
+                                                        className="h-10 max-w-[105px] object-contain shrink-0"
+                                                    />
+                                                ) : null}
+                                                <div className="min-w-0">
+                                                    <div className="font-bold text-sm text-black mb-0.5">
+                                                        {orgProfile?.name || "บริษัท แบบบ้านสวย จำกัด"}
+                                                    </div>
+                                                    <div className="text-gray-700 leading-snug">
+                                                        {getCompanyAddress(orgProfile?.address)}
+                                                    </div>
+                                                    {orgProfile?.phone && (
+                                                        <div className="text-gray-700">โทร {orgProfile.phone}</div>
+                                                    )}
+                                                    {orgProfile?.taxId && (
+                                                        <div className="text-gray-700">เลขประจำตัวผู้เสียภาษี: {orgProfile.taxId}</div>
+                                                    )}
                                                 </div>
-                                                <div className="text-gray-700 leading-snug">
-                                                    {orgProfile?.address || "95/47 หมู่ที่ 1 ตำบลตลาดขวัญ อำเภอเมือง จังหวัดนนทบุรี 11000"}
-                                                </div>
-                                                {orgProfile?.phone && (
-                                                    <div className="text-gray-700">โทร {orgProfile.phone}</div>
-                                                )}
-                                                {orgProfile?.taxId && (
-                                                    <div className="text-gray-700">เลขประจำตัวผู้เสียภาษี: {orgProfile.taxId}</div>
-                                                )}
                                             </div>
 
                                             {/* Document Meta Table */}

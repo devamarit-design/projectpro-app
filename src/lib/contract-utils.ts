@@ -74,6 +74,22 @@ export const todayISO = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
+/** Add days to ISO date string (YYYY-MM-DD) */
+export function addDaysISO(dateStr?: string, days: number = 3): string {
+    if (!dateStr) return ""
+    try {
+        const parts = dateStr.split("T")[0].split("-").map(Number)
+        if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+            const d = new Date(parts[0], parts[1] - 1, parts[2] + days)
+            const y = d.getFullYear()
+            const m = String(d.getMonth() + 1).padStart(2, "0")
+            const day = String(d.getDate()).padStart(2, "0")
+            return `${y}-${m}-${day}`
+        }
+    } catch {}
+    return ""
+}
+
 /** Thai baht text, e.g. 70000 → "เจ็ดหมื่นบาทถ้วน" */
 export function bahtText(input: number): string {
     const num = Math.round((Number(input) || 0) * 100) / 100
@@ -282,6 +298,7 @@ export interface VoucherPrintInput {
 
 export function generateVoucherHTML(data: VoucherPrintInput): string {
     const org = data.org || {}
+    const displayAddress = getCompanyAddress(org.address)
     const items = data.items || []
     const minRows = 4
     const emptyRowCount = Math.max(0, minRows - items.length)
@@ -305,8 +322,8 @@ export function generateVoucherHTML(data: VoucherPrintInput): string {
     `).join("")
 
     const logoHtml = org.logo
-        ? `<img src="${esc(org.logo)}" style="max-height: 56px; max-width: 140px; object-fit: contain; margin-bottom: 4px;" alt="Logo" />`
-        : `<div style="width: 44px; height: 44px; border-radius: 50%; background: #ea580c; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 20px;">🏠</div>`
+        ? `<img src="${esc(org.logo)}" class="logo" alt="Logo" />`
+        : `<div style="width: 44px; height: 44px; border-radius: 50%; background: #ea580c; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 20px; flex-shrink: 0;">🏠</div>`
 
     return `<!DOCTYPE html>
 <html lang="th">
@@ -352,9 +369,22 @@ export function generateVoucherHTML(data: VoucherPrintInput): string {
     .hdr-row {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
         gap: 16px;
         margin-bottom: 12px;
+    }
+    .company-wrap {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex: 1;
+        min-width: 0;
+    }
+    .logo {
+        max-height: 48px;
+        max-width: 120px;
+        object-fit: contain;
+        flex-shrink: 0;
     }
     .company-box {
         flex: 1;
@@ -370,6 +400,7 @@ export function generateVoucherHTML(data: VoucherPrintInput): string {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
+        flex-shrink: 0;
     }
     .meta-table {
         border-collapse: collapse;
@@ -491,13 +522,15 @@ export function generateVoucherHTML(data: VoucherPrintInput): string {
     <div class="title-header">ใบสำคัญจ่าย (PAYMENT VOUCHER)</div>
     
     <div class="hdr-row">
-        <div class="company-box">
-            <div class="company-name">${esc(org.name || "ชื่อบริษัท")}</div>
-            <div>${esc(org.address || "")}</div>
-            <div>${org.phone ? `โทร. ${esc(org.phone)}` : ""}</div>
+        <div class="company-wrap">
+            ${logoHtml}
+            <div class="company-box">
+                <div class="company-name">${esc(org.name || "ชื่อบริษัท")}</div>
+                <div>${esc(displayAddress)}</div>
+                ${org.phone ? `<div>โทร. ${esc(org.phone)}</div>` : ""}
+            </div>
         </div>
         <div class="meta-box">
-            ${logoHtml}
             <table class="meta-table">
                 <tr>
                     <td>เลขที่เอกสาร:</td>
