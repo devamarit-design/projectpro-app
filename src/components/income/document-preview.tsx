@@ -9,6 +9,7 @@ import { getFunctions, httpsCallable } from "firebase/functions"
 // Import shared pagination logic
 import { flattenDocumentItems, paginateItems } from "@/lib/pagination-utils"
 import { authenticatedFetch } from "@/lib/authenticated-fetch"
+import { getCompanyAddress, DEFAULT_COMPANY_NAME, thDateLong } from "@/lib/contract-utils"
 
 interface DocumentPreviewProps {
     document: IncomeDocument
@@ -895,119 +896,350 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                             >
                                 {/* Header Section (Only on first page, or repeated if configured) */}
                                 {index === 0 ? (
-                                    <div>
+                                    <div className="mb-6">
                                         {/* Company + Document Header */}
-                                        <div className={currentStyle.headerLayout}>
-                                            <div className="flex gap-4 text-left">
-                                                {showLogo && (
-                                                    <div className="relative group">
-                                                        {orgProfile.logo && (orgProfile.logo.startsWith('http') || orgProfile.logo.startsWith('data:') || orgProfile.logo.startsWith('blob:') || orgProfile.logo.startsWith('/')) ? (
-                                                            <img
-                                                                id="preview-doc-logo"
-                                                                src={orgProfile.logo}
-                                                                className="w-16 h-16 object-contain rounded-xl"
-                                                                alt="Logo"
-                                                                crossOrigin="anonymous"
-                                                            />
-                                                        ) : (
-                                                            <div
-                                                                className={cn(
-                                                                    "w-16 h-16 flex items-center justify-center font-bold text-2xl shadow-sm",
-                                                                    template === 'modern' ? "rounded-xl" : "rounded-none"
+                                        {(() => {
+                                            const displayAddress = getCompanyAddress((lang === 'en' && orgProfile.addressEn) ? orgProfile.addressEn : orgProfile.address)
+                                            const companyName = (lang === 'en' && orgProfile.nameEn) ? orgProfile.nameEn : (orgProfile.name || DEFAULT_COMPANY_NAME)
+                                            const companySecondaryName = (lang === 'en' ? (orgProfile.name || DEFAULT_COMPANY_NAME) : orgProfile.nameEn)
+                                            const companyTaxId = orgProfile.taxId || "0225564000300"
+                                            const companyPhone = orgProfile.phone || "089-874-9635"
+                                            const companyEmail = orgProfile.email
+
+                                            const formatDisplayDate = (d?: string) => {
+                                                if (!d) return "-"
+                                                if (lang === 'th') {
+                                                    const th = thDateLong(d)
+                                                    if (th !== "-") return th
+                                                }
+                                                return d
+                                            }
+
+                                            const formattedDocDate = formatDisplayDate(document.date)
+
+                                            let docPrimaryTitle = txt.docTypes[document.type as keyof typeof txt.docTypes] || document.type
+                                            let docSecondaryTitle = ""
+                                            let secondaryDateLabel = ""
+                                            let secondaryDateVal: string | null = null
+
+                                            if (document.type.toLowerCase() === 'quotation') {
+                                                docPrimaryTitle = lang === 'th' ? "ใบเสนอราคา" : "QUOTATION"
+                                                docSecondaryTitle = lang === 'th' ? "QUOTATION" : "ใบเสนอราคา"
+                                                secondaryDateLabel = lang === 'th' ? "ยืนยันราคาถึง" : "Valid Until"
+                                                secondaryDateVal = document.validUntil ? formatDisplayDate(document.validUntil) : null
+                                            } else if (document.type.toLowerCase() === 'invoice') {
+                                                docPrimaryTitle = lang === 'th' ? "ใบแจ้งหนี้ / ใบวางบิล" : "INVOICE"
+                                                docSecondaryTitle = lang === 'th' ? "INVOICE / BILL" : "ใบแจ้งหนี้ / ใบวางบิล"
+                                                secondaryDateLabel = lang === 'th' ? "ครบกำหนดชำระ" : "Due Date"
+                                                secondaryDateVal = document.validUntil ? formatDisplayDate(document.validUntil) : null
+                                            } else if (document.type.toLowerCase() === 'receipt') {
+                                                if (receiptType === 'tax') {
+                                                    docPrimaryTitle = lang === 'th' ? "ใบเสร็จรับเงิน / ใบกำกับภาษี" : "TAX INVOICE / RECEIPT"
+                                                    docSecondaryTitle = lang === 'th' ? "RECEIPT / TAX INVOICE" : "ใบเสร็จรับเงิน / ใบกำกับภาษี"
+                                                } else {
+                                                    docPrimaryTitle = lang === 'th' ? "ใบเสร็จรับเงิน" : "RECEIPT"
+                                                    docSecondaryTitle = lang === 'th' ? "RECEIPT" : "ใบเสร็จรับเงิน"
+                                                }
+                                                secondaryDateLabel = lang === 'th' ? "วันที่ชำระเงิน" : "Payment Date"
+                                                secondaryDateVal = formattedDocDate
+                                            }
+
+                                            const hasValidLogo = orgProfile.logo && (
+                                                orgProfile.logo.startsWith('http') ||
+                                                orgProfile.logo.startsWith('data:') ||
+                                                orgProfile.logo.startsWith('blob:') ||
+                                                orgProfile.logo.startsWith('/')
+                                            )
+
+                                            return (
+                                                <>
+                                                    <div className={cn(
+                                                        "flex justify-between items-start gap-4 mb-6 pb-4 border-b",
+                                                        template === 'classic' ? "flex-row-reverse border-gray-900 pb-5" : "border-gray-200"
+                                                    )}>
+                                                        {/* Left Side: Logo & Complete Company Details */}
+                                                        <div className="flex items-start gap-3.5 text-left flex-1 min-w-0 pr-4">
+                                                            {showLogo && (
+                                                                <div className="relative group shrink-0">
+                                                                    {hasValidLogo ? (
+                                                                        <img
+                                                                            id="preview-doc-logo"
+                                                                            src={orgProfile.logo}
+                                                                            className="h-16 max-w-[130px] object-contain rounded-lg"
+                                                                            alt="Logo"
+                                                                            crossOrigin="anonymous"
+                                                                            onError={(e) => {
+                                                                                (e.currentTarget as HTMLElement).style.display = 'none';
+                                                                                const fallback = e.currentTarget.parentElement?.querySelector('.doc-logo-fallback') as HTMLElement | null;
+                                                                                if (fallback) fallback.style.display = 'flex';
+                                                                            }}
+                                                                        />
+                                                                    ) : null}
+                                                                    <div
+                                                                        className={cn(
+                                                                            "w-14 h-14 flex items-center justify-center font-bold text-xl shadow-sm text-white shrink-0 doc-logo-fallback",
+                                                                            template === 'modern' ? "rounded-xl" : "rounded-none",
+                                                                            hasValidLogo ? "hidden" : "flex"
+                                                                        )}
+                                                                        style={{ backgroundColor: themeColor }}
+                                                                    >
+                                                                        {companyName.charAt(0) || "B"}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            <div className="space-y-1 min-w-0 flex-1">
+                                                                <div>
+                                                                    <h2 className="font-bold text-base md:text-lg text-gray-900 leading-tight">
+                                                                        {companyName}
+                                                                    </h2>
+                                                                    {companySecondaryName && companySecondaryName !== companyName && (
+                                                                        <p className="text-xs text-gray-500 font-medium leading-tight">
+                                                                            {companySecondaryName}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                                <div className="text-xs text-gray-600 max-w-[340px] leading-relaxed">
+                                                                    {displayAddress}
+                                                                </div>
+                                                                <div className="flex flex-wrap items-center gap-x-3.5 gap-y-0.5 text-xs text-gray-600 pt-0.5">
+                                                                    {companyTaxId && (
+                                                                        <span>
+                                                                            <span className="font-semibold text-gray-700">{lang === 'th' ? "เลขประจำตัวผู้เสียภาษี:" : "Tax ID:"}</span> {companyTaxId}
+                                                                        </span>
+                                                                    )}
+                                                                    {companyPhone && (
+                                                                        <span>
+                                                                            <span className="font-semibold text-gray-700">{lang === 'th' ? "โทร:" : "Tel:"}</span> {companyPhone}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                {companyEmail && (
+                                                                    <div className="text-xs text-gray-500">
+                                                                        <span className="font-semibold text-gray-700">{lang === 'th' ? "อีเมล:" : "Email:"}</span> {companyEmail}
+                                                                    </div>
                                                                 )}
-                                                                style={{ backgroundColor: orgProfile.logo ? 'transparent' : themeColor, color: orgProfile.logo ? 'inherit' : 'white' }}
-                                                            >
-                                                                {orgProfile.logo || orgProfile.name.charAt(0)}
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                <div className="space-y-1">
-                                                    <h2 className="font-bold text-lg text-gray-800 leading-tight">
-                                                        {(lang === 'en' && orgProfile.nameEn) ? orgProfile.nameEn : orgProfile.name}
-                                                    </h2>
-                                                    <div className="text-xs text-gray-500 max-w-[250px] leading-relaxed opacity-80 whitespace-pre-wrap">
-                                                        {(lang === 'en' && orgProfile.addressEn) ? orgProfile.addressEn : orgProfile.address}
-                                                    </div>
-                                                    <div className="flex items-center gap-4 text-xs text-gray-500 mt-1 opacity-80">
-                                                        <span>Tax ID: {orgProfile.taxId}</span>
-                                                        <span>Tel: {orgProfile.phone}</span>
-                                                    </div>
-                                                    <div className="text-xs text-gray-500">{orgProfile.email}</div>
-                                                </div>
-                                            </div>
-                                            <div className={cn("text-right", template === 'classic' && "text-left")}>
-                                                <h1 className="text-3xl font-bold uppercase tracking-widest mb-1" style={{ color: template === 'classic' ? 'black' : themeColor }}>{txt.docTypes[document.type as keyof typeof txt.docTypes] || document.type}</h1>
-                                                <p className="text-xs text-gray-400 uppercase tracking-widest mb-4">{txt.original}</p>
-
-                                                <div className={cn("flex flex-col gap-1", template === 'classic' ? "items-start" : "items-end")}>
-                                                    <div className="flex gap-4 items-center">
-                                                        <span className="text-xs font-bold text-gray-400 uppercase">NO.</span>
-                                                        <span className="font-bold text-gray-800">{document.documentNumber}</span>
-                                                    </div>
-                                                    <div className="flex gap-4 items-center">
-                                                        <span className="text-xs font-bold text-gray-400 uppercase">{txt.date}</span>
-                                                        <span className="font-bold text-gray-800">{document.date}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Customer & Project Box */}
-                                        <div className="grid grid-cols-2 gap-4 mb-8">
-                                            <div className={currentStyle.box}>
-                                                <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
-                                                    {txt.customer}
-                                                </h4>
-                                                {(() => {
-                                                    const fields = docSetting?.customerFields ?? ['name', 'taxId', 'address']
-                                                    return (
-                                                        <div className="space-y-1">
-                                                            {fields.includes('name') && <p className="font-bold text-gray-800 text-sm">{customer?.name}</p>}
-                                                            {fields.includes('address') && customer?.address && <p className="text-xs text-gray-500">{customer.address}</p>}
-                                                            {fields.includes('taxId') && <p className="text-xs text-gray-500">Tax ID: {customer?.taxId || '-'}</p>}
-                                                            {fields.includes('phone') && customer?.phone && <p className="text-xs text-gray-500">Tel: {customer.phone}</p>}
-                                                            {fields.includes('email') && customer?.email && <p className="text-xs text-gray-500">Email: {customer.email}</p>}
-                                                            {fields.includes('contactPerson') && customer?.contactPerson && <p className="text-xs text-gray-500">ผู้ติดต่อ: {customer.contactPerson}</p>}
-                                                            {fields.includes('lineId') && customer?.lineId && <p className="text-xs text-gray-500">Line: {customer.lineId}</p>}
                                                         </div>
-                                                    )
-                                                })()}
-                                            </div>
-                                            <div className={currentStyle.box}>
-                                                <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
-                                                    {txt.projectRef}
-                                                </h4>
-                                                {(() => {
-                                                    const fields = docSetting?.projectFields ?? ['name', 'location']
-                                                    return (
-                                                        <div className="space-y-1">
-                                                            {fields.includes('name') && <p className="font-bold text-gray-800 text-sm">{project?.name}</p>}
-                                                            {fields.includes('location') && project?.location && <p className="text-xs text-gray-500">{project.location}</p>}
-                                                            {fields.includes('description') && project?.description && <p className="text-xs text-gray-500">{project.description}</p>}
-                                                            {fields.includes('status') && <p className="text-xs text-gray-500">สถานะ: {project?.status}</p>}
-                                                            {fields.includes('startDate') && project?.startDate && <p className="text-xs text-gray-500">เริ่ม: {project.startDate}</p>}
-                                                            {fields.includes('endDate') && project?.endDate && <p className="text-xs text-gray-500">สิ้นสุด: {project.endDate}</p>}
-                                                            {fields.includes('budget') && project?.budget && <p className="text-xs text-gray-500">งบ: {project.budget}</p>}
-                                                        </div>
-                                                    )
-                                                })()}
-                                            </div>
-                                        </div>
 
+                                                        {/* Right Side: Document Title & Structured Metadata Box */}
+                                                        <div className={cn(
+                                                            "flex flex-col items-end shrink-0 min-w-[210px]",
+                                                            template === 'classic' && "items-start"
+                                                        )}>
+                                                            <div className={cn("mb-2.5", template === 'classic' ? "text-left" : "text-right")}>
+                                                                <h1
+                                                                    className="text-2xl font-black uppercase tracking-wider mb-1 leading-none"
+                                                                    style={{ color: template === 'classic' ? '#111827' : themeColor }}
+                                                                >
+                                                                    {docPrimaryTitle}
+                                                                </h1>
+                                                                <div className={cn(
+                                                                    "flex items-center gap-2",
+                                                                    template === 'classic' ? "justify-start" : "justify-end"
+                                                                )}>
+                                                                    {docSecondaryTitle && (
+                                                                        <span className="text-[11px] font-semibold text-gray-500 tracking-wide uppercase">
+                                                                            {docSecondaryTitle}
+                                                                        </span>
+                                                                    )}
+                                                                    <span
+                                                                        className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase border"
+                                                                        style={{
+                                                                            borderColor: template === 'classic' ? '#111827' : themeColor,
+                                                                            color: template === 'classic' ? '#111827' : themeColor,
+                                                                            backgroundColor: template === 'classic' ? '#f3f4f6' : `${themeColor}12`
+                                                                        }}
+                                                                    >
+                                                                        {txt.original}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Structured Document Meta Box */}
+                                                            <div className={cn(
+                                                                "w-full rounded-lg border border-gray-200/90 bg-gray-50/70 overflow-hidden text-xs shadow-[0_1px_2px_rgba(0,0,0,0.02)]",
+                                                                template === 'classic' && "rounded-none border-gray-900 bg-white",
+                                                                template === 'minimal' && "rounded-none border-0 border-r-2 border-gray-300 bg-transparent pr-2"
+                                                            )}>
+                                                                <table className="w-full border-collapse">
+                                                                    <tbody>
+                                                                        <tr className="border-b border-gray-200/70">
+                                                                            <td className="px-2.5 py-1 text-gray-500 font-semibold whitespace-nowrap">{lang === 'th' ? "เลขที่เอกสาร" : "Document No."}</td>
+                                                                            <td className="px-2.5 py-1 text-right font-bold text-gray-900">{document.documentNumber}</td>
+                                                                        </tr>
+                                                                        <tr className="border-b border-gray-200/70">
+                                                                            <td className="px-2.5 py-1 text-gray-500 font-semibold whitespace-nowrap">{lang === 'th' ? "วันที่เอกสาร" : "Date"}</td>
+                                                                            <td className="px-2.5 py-1 text-right font-bold text-gray-900">{formattedDocDate}</td>
+                                                                        </tr>
+                                                                        {secondaryDateVal && (
+                                                                            <tr className="border-b border-gray-200/70">
+                                                                                <td className="px-2.5 py-1 text-gray-500 font-semibold whitespace-nowrap">{secondaryDateLabel}</td>
+                                                                                <td className="px-2.5 py-1 text-right font-bold text-gray-900">{secondaryDateVal}</td>
+                                                                            </tr>
+                                                                        )}
+                                                                        {document.referenceDocumentId && (
+                                                                            <tr className="border-b border-gray-200/70">
+                                                                                <td className="px-2.5 py-1 text-gray-500 font-semibold whitespace-nowrap">{lang === 'th' ? "อ้างอิงเอกสาร" : "Ref Doc"}</td>
+                                                                                <td className="px-2.5 py-1 text-right font-semibold text-gray-800">{document.referenceDocumentId}</td>
+                                                                            </tr>
+                                                                        )}
+                                                                        {project?.name && (
+                                                                            <tr>
+                                                                                <td className="px-2.5 py-1 text-gray-500 font-semibold whitespace-nowrap">{lang === 'th' ? "โครงการ" : "Project"}</td>
+                                                                                <td className="px-2.5 py-1 text-right font-semibold text-gray-800 truncate max-w-[130px]">{project.name}</td>
+                                                                            </tr>
+                                                                        )}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Customer & Project Box */}
+                                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                                        <div className={cn(
+                                                            "p-3.5 rounded-xl border bg-gray-50/70 border-gray-200/90 shadow-[0_1px_3px_rgba(0,0,0,0.02)]",
+                                                            template === 'classic' && "rounded-none border-gray-900 bg-white p-3",
+                                                            template === 'minimal' && "rounded-none bg-transparent border-0 border-l-2 border-gray-300 pl-3 py-1"
+                                                        )}>
+                                                            <div className="flex items-center justify-between border-b border-gray-200/80 pb-2 mb-2">
+                                                                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
+                                                                    <span className="w-1.5 h-3 rounded-full" style={{ backgroundColor: themeColor }} />
+                                                                    {lang === 'th' ? "ข้อมูลลูกค้า / ผู้ว่าจ้าง" : "CUSTOMER / CLIENT"}
+                                                                </h4>
+                                                                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Customer Info</span>
+                                                            </div>
+                                                            {(() => {
+                                                                const fields = docSetting?.customerFields ?? ['name', 'taxId', 'address']
+                                                                return (
+                                                                    <div className="space-y-1 text-xs">
+                                                                        {fields.includes('name') && <p className="font-bold text-gray-900 text-sm">{customer?.name || "-"}</p>}
+                                                                        {fields.includes('address') && customer?.address && (
+                                                                            <p className="text-gray-600 leading-snug">
+                                                                                <span className="font-semibold text-gray-700">{lang === 'th' ? "ที่อยู่: " : "Address: "}</span>
+                                                                                {customer.address}
+                                                                            </p>
+                                                                        )}
+                                                                        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-0.5 pt-0.5">
+                                                                            {fields.includes('taxId') && (
+                                                                                <p className="text-gray-600">
+                                                                                    <span className="font-semibold text-gray-700">{lang === 'th' ? "เลขผู้เสียภาษี: " : "Tax ID: "}</span>
+                                                                                    {customer?.taxId || "-"}
+                                                                                </p>
+                                                                            )}
+                                                                            {fields.includes('phone') && customer?.phone && (
+                                                                                <p className="text-gray-600">
+                                                                                    <span className="font-semibold text-gray-700">{lang === 'th' ? "โทร: " : "Tel: "}</span>
+                                                                                    {customer.phone}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                        {fields.includes('contactPerson') && customer?.contactPerson && (
+                                                                            <p className="text-gray-600">
+                                                                                <span className="font-semibold text-gray-700">{lang === 'th' ? "ผู้ติดต่อ: " : "Contact: "}</span>
+                                                                                {customer.contactPerson}
+                                                                            </p>
+                                                                        )}
+                                                                        {fields.includes('email') && customer?.email && (
+                                                                            <p className="text-gray-600">
+                                                                                <span className="font-semibold text-gray-700">{lang === 'th' ? "อีเมล: " : "Email: "}</span>
+                                                                                {customer.email}
+                                                                            </p>
+                                                                        )}
+                                                                        {fields.includes('lineId') && customer?.lineId && (
+                                                                            <p className="text-gray-600">
+                                                                                <span className="font-semibold text-gray-700">Line: </span>
+                                                                                {customer.lineId}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                )
+                                                            })()}
+                                                        </div>
+
+                                                        <div className={cn(
+                                                            "p-3.5 rounded-xl border bg-gray-50/70 border-gray-200/90 shadow-[0_1px_3px_rgba(0,0,0,0.02)]",
+                                                            template === 'classic' && "rounded-none border-gray-900 bg-white p-3",
+                                                            template === 'minimal' && "rounded-none bg-transparent border-0 border-l-2 border-gray-300 pl-3 py-1"
+                                                        )}>
+                                                            <div className="flex items-center justify-between border-b border-gray-200/80 pb-2 mb-2">
+                                                                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
+                                                                    <span className="w-1.5 h-3 rounded-full" style={{ backgroundColor: themeColor }} />
+                                                                    {lang === 'th' ? "ข้อมูลโครงการ / สถานที่" : "PROJECT REFERENCE"}
+                                                                </h4>
+                                                                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Project Info</span>
+                                                            </div>
+                                                            {(() => {
+                                                                const fields = docSetting?.projectFields ?? ['name', 'location']
+                                                                return (
+                                                                    <div className="space-y-1 text-xs">
+                                                                        {fields.includes('name') && <p className="font-bold text-gray-900 text-sm">{project?.name || customer?.name || "-"}</p>}
+                                                                        {fields.includes('location') && project?.location && (
+                                                                            <p className="text-gray-600 leading-snug">
+                                                                                <span className="font-semibold text-gray-700">{lang === 'th' ? "สถานที่: " : "Location: "}</span>
+                                                                                {project.location}
+                                                                            </p>
+                                                                        )}
+                                                                        {fields.includes('description') && project?.description && (
+                                                                            <p className="text-gray-600 leading-snug">
+                                                                                <span className="font-semibold text-gray-700">{lang === 'th' ? "รายละเอียด: " : "Detail: "}</span>
+                                                                                {project.description}
+                                                                            </p>
+                                                                        )}
+                                                                        {fields.includes('status') && (
+                                                                            <p className="text-gray-600">
+                                                                                <span className="font-semibold text-gray-700">{lang === 'th' ? "สถานะ: " : "Status: "}</span>
+                                                                                {project?.status || "-"}
+                                                                            </p>
+                                                                        )}
+                                                                        {(project?.startDate || project?.endDate) && (
+                                                                            <p className="text-gray-600">
+                                                                                <span className="font-semibold text-gray-700">{lang === 'th' ? "ระยะเวลา: " : "Period: "}</span>
+                                                                                {project.startDate || "-"} {project.endDate ? ` ถึง ${project.endDate}` : ""}
+                                                                            </p>
+                                                                        )}
+                                                                        {fields.includes('budget') && project?.budget && (
+                                                                            <p className="text-gray-600">
+                                                                                <span className="font-semibold text-gray-700">{lang === 'th' ? "งบประมาณ: " : "Budget: "}</span>
+                                                                                ฿{Number(project.budget).toLocaleString()}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                )
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )
+                                        })()}
                                     </div>
                                 ) : ( // Subsequent Pages Header
-                                    <div className="flex justify-between items-end border-b border-gray-100 pb-4 mb-4">
-                                        <div className="flex items-center gap-3 opacity-60">
-                                            <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center font-bold text-gray-500 text-xs">{orgProfile.name.charAt(0)}</div>
+                                    <div className="flex justify-between items-center border-b border-gray-200 pb-3 mb-4">
+                                        <div className="flex items-center gap-3">
+                                            {showLogo && (
+                                                orgProfile.logo && (orgProfile.logo.startsWith('http') || orgProfile.logo.startsWith('data:') || orgProfile.logo.startsWith('/') || orgProfile.logo.startsWith('blob:')) ? (
+                                                    <img src={orgProfile.logo} className="h-7 max-w-[60px] object-contain" alt="Logo" />
+                                                ) : (
+                                                    <div className="w-7 h-7 rounded bg-gray-100 flex items-center justify-center font-bold text-gray-700 text-xs">
+                                                        {(orgProfile.name || DEFAULT_COMPANY_NAME).charAt(0)}
+                                                    </div>
+                                                )
+                                            )}
                                             <div>
-                                                <h2 className="font-bold text-gray-600 uppercase tracking-wide text-sm">{txt.docTypes[document.type as keyof typeof txt.docTypes] || document.type} <span className="text-gray-400 font-normal normal-case">({txt.cont})</span></h2>
+                                                <h2 className="font-bold text-gray-800 text-sm">
+                                                    {(lang === 'en' && orgProfile.nameEn) ? orgProfile.nameEn : (orgProfile.name || DEFAULT_COMPANY_NAME)}
+                                                    <span className="mx-2 text-gray-300">|</span>
+                                                    <span className="font-semibold text-gray-600">
+                                                        {txt.docTypes[document.type as keyof typeof txt.docTypes] || document.type}
+                                                    </span>
+                                                    <span className="text-gray-400 font-normal ml-1">({txt.cont})</span>
+                                                </h2>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <h3 className="font-bold text-gray-700 text-sm">{document.documentNumber}</h3>
-                                            <p className="text-xs text-gray-400">{txt.page} {index + 1} {txt.of} {pages.length}</p>
+                                            <h3 className="font-bold text-gray-800 text-xs">{document.documentNumber}</h3>
+                                            <p className="text-[11px] text-gray-500">{txt.page} {index + 1} {txt.of} {pages.length}</p>
                                         </div>
                                     </div>
                                 )}
@@ -1220,14 +1452,26 @@ export function DocumentPreview({ document, onClose, onEdit, onUpdate }: Documen
                                         </div>
 
                                         {/* Signature Area - Matching PDF style */}
-                                        <div className="flex justify-between mt-10 px-5">
-                                            <div className="text-center">
-                                                <div className="border-b border-gray-300 w-36 h-8 mb-1"></div>
-                                                <p className="text-xs text-gray-500">{lang === 'th' ? 'ลูกค้า' : 'Customer'}</p>
+                                        <div className="flex justify-between items-end mt-10 px-6 text-xs text-gray-600">
+                                            <div className="text-center min-w-[160px]">
+                                                <div className="border-b border-gray-400 w-44 mx-auto mb-2"></div>
+                                                <p className="font-semibold text-gray-800">
+                                                    ( {customer?.name || (lang === 'th' ? "...................................................." : "....................................................")} )
+                                                </p>
+                                                <p className="text-[11px] text-gray-500 mt-0.5">
+                                                    {lang === 'th' ? 'ผู้ว่าจ้าง / ลูกค้า (Customer)' : 'Customer Signature'}
+                                                </p>
+                                                <p className="text-[10px] text-gray-400 mt-1">วันที่ _____ / _____ / _________</p>
                                             </div>
-                                            <div className="text-center">
-                                                <div className="border-b border-gray-300 w-36 h-8 mb-1"></div>
-                                                <p className="text-xs text-gray-500">Authorized Signature</p>
+                                            <div className="text-center min-w-[160px]">
+                                                <div className="border-b border-gray-400 w-44 mx-auto mb-2"></div>
+                                                <p className="font-semibold text-gray-800">
+                                                    ( {orgProfile?.signatureName || (lang === 'en' && orgProfile.nameEn ? orgProfile.nameEn : (orgProfile.name || DEFAULT_COMPANY_NAME))} )
+                                                </p>
+                                                <p className="text-[11px] text-gray-500 mt-0.5">
+                                                    {lang === 'th' ? 'ผู้มีอำนาจลงนาม (Authorized Signature)' : 'Authorized Signature'}
+                                                </p>
+                                                <p className="text-[10px] text-gray-400 mt-1">วันที่ _____ / _____ / _________</p>
                                             </div>
                                         </div>
                                     </div>

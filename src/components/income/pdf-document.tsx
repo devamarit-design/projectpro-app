@@ -4,6 +4,7 @@ import { Document, Page, Text, View, StyleSheet, pdf, Image } from '@react-pdf/r
 import type { IncomeDocument, IncomeSection, IncomeItem, Customer, Project } from '@/context/project-context'
 import type { OrgProfile } from "@/context/settings-context"
 import { flattenDocumentItems, paginateItems } from '@/lib/pagination-utils'
+import { getCompanyAddress, DEFAULT_COMPANY_NAME } from '@/lib/contract-utils'
 
 import { registerThaiFonts, THAI_FONT_FAMILY } from '@/lib/pdf-fonts'
 
@@ -216,15 +217,39 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
     const labels = LABELS[lang]
     // Map document type to label key safely
     const docTypeLower = doc.type.toLowerCase() as keyof typeof labels
-    let docTitle = labels[docTypeLower] || doc.type.toUpperCase()
 
-    // Override Receipt title if needed
-    if (doc.type.toLowerCase() === 'receipt') {
+    const displayAddress = getCompanyAddress((lang === 'en' && orgProfile?.addressEn) ? orgProfile.addressEn : orgProfile?.address)
+    const companyName = (lang === 'en' && orgProfile?.nameEn) ? orgProfile.nameEn : (orgProfile?.name || DEFAULT_COMPANY_NAME)
+    const companySecondaryName = (lang === 'en' ? (orgProfile?.name || DEFAULT_COMPANY_NAME) : orgProfile?.nameEn)
+    const companyTaxId = orgProfile?.taxId || "0225564000300"
+    const companyPhone = orgProfile?.phone || "089-874-9635"
+    const companyEmail = orgProfile?.email
+
+    let docPrimaryTitle = labels[docTypeLower] || doc.type.toUpperCase()
+    let docSecondaryTitle = LABELS[lang === 'th' ? 'en' : 'th'][docTypeLower] || ""
+    let secondaryDateLabel = lang === 'th' ? "ครบกำหนด:" : "Due Date:"
+    let secondaryDateVal: string | null = null
+
+    if (doc.type.toLowerCase() === 'quotation') {
+        docPrimaryTitle = lang === 'th' ? "ใบเสนอราคา" : "QUOTATION"
+        docSecondaryTitle = lang === 'th' ? "QUOTATION" : "ใบเสนอราคา"
+        secondaryDateLabel = lang === 'th' ? "ยืนยันถึง:" : "Valid Until:"
+        secondaryDateVal = doc.validUntil ? formatDate(doc.validUntil) : null
+    } else if (doc.type.toLowerCase() === 'invoice') {
+        docPrimaryTitle = lang === 'th' ? "ใบแจ้งหนี้ / ใบวางบิล" : "INVOICE"
+        docSecondaryTitle = lang === 'th' ? "INVOICE / BILL" : "ใบแจ้งหนี้ / ใบวางบิล"
+        secondaryDateLabel = lang === 'th' ? "ครบกำหนด:" : "Due Date:"
+        secondaryDateVal = doc.validUntil ? formatDate(doc.validUntil) : null
+    } else if (doc.type.toLowerCase() === 'receipt') {
         if (receiptType === 'tax') {
-            docTitle = lang === 'th' ? "ใบเสร็จรับเงิน / ใบกำกับภาษี" : "TAX INVOICE / RECEIPT"
+            docPrimaryTitle = lang === 'th' ? "ใบเสร็จรับเงิน / ใบกำกับภาษี" : "TAX INVOICE / RECEIPT"
+            docSecondaryTitle = lang === 'th' ? "RECEIPT / TAX INVOICE" : "ใบเสร็จรับเงิน / ใบกำกับภาษี"
         } else {
-            docTitle = lang === 'th' ? "ใบเสร็จรับเงิน" : "RECEIPT"
+            docPrimaryTitle = lang === 'th' ? "ใบเสร็จรับเงิน" : "RECEIPT"
+            docSecondaryTitle = lang === 'th' ? "RECEIPT" : "ใบเสร็จรับเงิน"
         }
+        secondaryDateLabel = lang === 'th' ? "วันที่ชำระ:" : "Paid Date:"
+        secondaryDateVal = formatDate(doc.date)
     }
 
     const subtotal = doc.subtotal
@@ -330,60 +355,115 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
                             <>
                                 <View style={getHeaderStyle()}>
                                     {/* Left Side (Logo + Company) */}
-                                    <View style={{ flexDirection: 'row', gap: 15, alignItems: 'flex-start', flex: 1, marginRight: 20 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', flex: 1, marginRight: 15 }}>
                                         {/* Logo or Placeholder */}
                                         {showLogo && (
                                             <>
-                                                {orgProfile?.logo ? (
+                                                {orgProfile?.logo && (orgProfile.logo.startsWith('http') || orgProfile.logo.startsWith('data:') || orgProfile.logo.startsWith('blob:') || orgProfile.logo.startsWith('/')) ? (
                                                     <Image
                                                         src={orgProfile.logo}
-                                                        style={{ width: 70, height: 70, objectFit: 'contain', borderRadius: 8 }}
+                                                        style={{ width: 64, height: 64, objectFit: 'contain', borderRadius: 6, marginRight: 12 }}
                                                     />
                                                 ) : (
                                                     <View style={{
-                                                        width: 70,
-                                                        height: 70,
+                                                        width: 56,
+                                                        height: 56,
                                                         backgroundColor: finalThemeColor,
-                                                        borderRadius: 8,
+                                                        borderRadius: 6,
                                                         justifyContent: 'center',
-                                                        alignItems: 'center'
+                                                        alignItems: 'center',
+                                                        marginRight: 12
                                                     }}>
-                                                        <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 28 }}>
-                                                            {orgProfile?.name?.charAt(0) || 'C'}
+                                                        <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 24 }}>
+                                                            {companyName.charAt(0) || 'B'}
                                                         </Text>
                                                     </View>
                                                 )}
                                             </>
                                         )}
-                                        <View style={{ flex: 1, gap: 1 }}>
-                                            {orgProfile && (
-                                                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 2 }}>
-                                                    {(lang === 'en' && orgProfile.nameEn) ? orgProfile.nameEn : orgProfile.name}
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#111827', marginBottom: 2 }}>
+                                                {companyName}
+                                            </Text>
+                                            {companySecondaryName && companySecondaryName !== companyName && (
+                                                <Text style={{ fontSize: 8.5, color: '#6b7280', marginBottom: 2 }}>
+                                                    {companySecondaryName}
                                                 </Text>
                                             )}
-                                            {orgProfile?.address && (
-                                                <Text style={[styles.subtitle, { maxWidth: 300, fontSize: 10, lineHeight: 1.4, color: '#333' }]}>
-                                                    {(lang === 'en' && orgProfile.addressEn) ? orgProfile.addressEn : orgProfile.address}
+                                            <Text style={[styles.subtitle, { maxWidth: 280, fontSize: 8.5, lineHeight: 1.3, color: '#374151', marginBottom: 3 }]}>
+                                                {displayAddress}
+                                            </Text>
+                                            <View style={{ flexDirection: 'column' }}>
+                                                <Text style={[styles.infoLabel, { fontSize: 7.5, color: '#4b5563' }]}>
+                                                    {lang === 'th' ? "เลขประจำตัวผู้เสียภาษี: " : "Tax ID: "}{companyTaxId}
                                                 </Text>
-                                            )}
-                                            <View style={{ flexDirection: 'column', gap: 1, marginTop: 4 }}>
-                                                {orgProfile?.taxId && <Text style={[styles.infoLabel, { fontSize: 8 }]}>Tax ID: {orgProfile.taxId}</Text>}
-                                                {orgProfile?.phone && <Text style={[styles.infoLabel, { fontSize: 8 }]}>Tel: {orgProfile.phone}</Text>}
-                                                {orgProfile?.email && <Text style={[styles.infoLabel, { fontSize: 8 }]}>{orgProfile.email}</Text>}
+                                                <Text style={[styles.infoLabel, { fontSize: 7.5, color: '#4b5563' }]}>
+                                                    {lang === 'th' ? "โทร: " : "Tel: "}{companyPhone}
+                                                </Text>
+                                                {companyEmail && (
+                                                    <Text style={[styles.infoLabel, { fontSize: 7.5, color: '#4b5563' }]}>
+                                                        {lang === 'th' ? "อีเมล: " : "Email: "}{companyEmail}
+                                                    </Text>
+                                                )}
                                             </View>
                                         </View>
                                     </View>
 
-                                    {/* Right Side (Doc Info) */}
-                                    <View style={{ alignItems: isClassic ? 'flex-start' : 'flex-end', width: 160 }}>
-                                        <Text style={getTitleStyle()}>{docTitle}</Text>
-                                        <Text style={[styles.subtitle, { marginTop: 4 }]}>{labels.original}</Text>
+                                    {/* Right Side (Doc Info & Meta Box) */}
+                                    <View style={{ alignItems: isClassic ? 'flex-start' : 'flex-end', width: 175 }}>
+                                        <Text style={[styles.title, { color: isClassic ? '#000000' : finalThemeColor, textAlign: isClassic ? 'left' : 'right', fontSize: 17, marginBottom: 1 }]}>{docPrimaryTitle}</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                                            {docSecondaryTitle && (
+                                                <Text style={{ fontSize: 8, color: '#6b7280', marginRight: 5, textTransform: 'uppercase' }}>
+                                                    {docSecondaryTitle}
+                                                </Text>
+                                            )}
+                                            <View style={{
+                                                borderWidth: 1,
+                                                borderColor: finalThemeColor,
+                                                backgroundColor: '#eff6ff',
+                                                paddingHorizontal: 4,
+                                                paddingVertical: 1,
+                                                borderRadius: 3
+                                            }}>
+                                                <Text style={{ fontSize: 7.5, color: finalThemeColor, fontWeight: 'bold' }}>{labels.original}</Text>
+                                            </View>
+                                        </View>
 
-                                        <View style={{ marginTop: 8, alignItems: isClassic ? 'flex-start' : 'flex-end' }}>
-                                            <Text style={styles.infoValue}><Text style={styles.infoLabel}>{labels.docNo}: </Text>{doc.documentNumber}</Text>
-                                            <Text style={styles.infoValue}><Text style={styles.infoLabel}>{labels.date}: </Text>{formatDate(doc.date)}</Text>
-                                            {doc.validUntil && (
-                                                <Text style={styles.infoValue}><Text style={styles.infoLabel}>{labels.dueDate}: </Text>{formatDate(doc.validUntil)}</Text>
+                                        {/* Structured Meta Box */}
+                                        <View style={{
+                                            width: '100%',
+                                            borderWidth: 1,
+                                            borderColor: '#e5e7eb',
+                                            borderRadius: 4,
+                                            backgroundColor: '#f9fafb',
+                                            padding: 5
+                                        }}>
+                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2.5, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', paddingBottom: 2 }}>
+                                                <Text style={{ fontSize: 7.5, color: '#6b7280', fontWeight: 'bold' }}>{lang === 'th' ? "เลขที่เอกสาร:" : "Doc No.:"}</Text>
+                                                <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#111827' }}>{doc.documentNumber}</Text>
+                                            </View>
+                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2.5, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', paddingBottom: 2 }}>
+                                                <Text style={{ fontSize: 7.5, color: '#6b7280', fontWeight: 'bold' }}>{lang === 'th' ? "วันที่:" : "Date:"}</Text>
+                                                <Text style={{ fontSize: 7.5, color: '#111827' }}>{formatDate(doc.date)}</Text>
+                                            </View>
+                                            {secondaryDateVal && (
+                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2.5, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', paddingBottom: 2 }}>
+                                                    <Text style={{ fontSize: 7.5, color: '#6b7280', fontWeight: 'bold' }}>{secondaryDateLabel}</Text>
+                                                    <Text style={{ fontSize: 7.5, color: '#111827' }}>{secondaryDateVal}</Text>
+                                                </View>
+                                            )}
+                                            {doc.referenceDocumentId && (
+                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2.5, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', paddingBottom: 2 }}>
+                                                    <Text style={{ fontSize: 7.5, color: '#6b7280', fontWeight: 'bold' }}>{lang === 'th' ? "อ้างอิง:" : "Ref:"}</Text>
+                                                    <Text style={{ fontSize: 7.5, color: '#111827' }}>{doc.referenceDocumentId}</Text>
+                                                </View>
+                                            )}
+                                            {project?.name && (
+                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 7.5, color: '#6b7280', fontWeight: 'bold' }}>{lang === 'th' ? "โครงการ:" : "Project:"}</Text>
+                                                    <Text style={{ fontSize: 7.5, color: '#111827', maxWidth: 95 }}>{project.name}</Text>
+                                                </View>
                                             )}
                                         </View>
                                     </View>
@@ -391,26 +471,44 @@ export const PDFDocument = ({ document: doc, customer, project, themeColor = '#3
 
                                 {/* Info Section */}
                                 <View style={styles.infoSection}>
-                                    <View style={getInfoBoxStyle()}>
-                                        <Text style={[styles.infoLabel, { textTransform: 'uppercase' }]}>{labels.customer}</Text>
-                                        <Text style={[styles.infoValue, { fontWeight: 'bold' }]}>{customer?.name || '-'}</Text>
-                                        {customer?.address && <Text style={styles.infoValue}>{customer.address}</Text>}
-                                        {customer?.phone && <Text style={styles.infoValue}>{customer.phone}</Text>}
-                                        {customer?.taxId && <Text style={styles.infoLabel}>Tax ID: {customer.taxId}</Text>}
+                                    <View style={[getInfoBoxStyle(), { borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#f9fafb', borderRadius: 4, padding: 8 }]}>
+                                        <View style={{ borderBottomWidth: 1, borderBottomColor: '#e5e7eb', paddingBottom: 3, marginBottom: 4 }}>
+                                            <Text style={{ fontSize: 8, fontWeight: 'bold', color: finalThemeColor, textTransform: 'uppercase' }}>
+                                                {lang === 'th' ? "ข้อมูลลูกค้า / CUSTOMER" : "CUSTOMER / CLIENT"}
+                                            </Text>
+                                        </View>
+                                        <Text style={{ fontSize: 9.5, fontWeight: 'bold', color: '#111827', marginBottom: 2 }}>{customer?.name || '-'}</Text>
+                                        {customer?.address && <Text style={{ fontSize: 7.5, color: '#374151', marginBottom: 2 }}>{customer.address}</Text>}
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                                            {customer?.taxId && <Text style={{ fontSize: 7.5, color: '#4b5563', marginRight: 8 }}>Tax ID: {customer.taxId}</Text>}
+                                            {customer?.phone && <Text style={{ fontSize: 7.5, color: '#4b5563' }}>Tel: {customer.phone}</Text>}
+                                        </View>
+                                        {customer?.contactPerson && <Text style={{ fontSize: 7.5, color: '#4b5563', marginTop: 1 }}>Contact: {customer.contactPerson}</Text>}
+                                        {customer?.email && <Text style={{ fontSize: 7.5, color: '#4b5563', marginTop: 1 }}>Email: {customer.email}</Text>}
                                     </View>
-                                    <View style={getInfoBoxStyle()}>
-                                        <Text style={[styles.infoLabel, { textTransform: 'uppercase' }]}>{labels.project}</Text>
-                                        <Text style={[styles.infoValue, { fontWeight: 'bold' }]}>{project?.name || '-'}</Text>
-                                        {project?.location && <Text style={styles.infoValue}>{project.location}</Text>}
+                                    <View style={[getInfoBoxStyle(), { borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#f9fafb', borderRadius: 4, padding: 8 }]}>
+                                        <View style={{ borderBottomWidth: 1, borderBottomColor: '#e5e7eb', paddingBottom: 3, marginBottom: 4 }}>
+                                            <Text style={{ fontSize: 8, fontWeight: 'bold', color: finalThemeColor, textTransform: 'uppercase' }}>
+                                                {lang === 'th' ? "ข้อมูลโครงการ / PROJECT REFERENCE" : "PROJECT REFERENCE"}
+                                            </Text>
+                                        </View>
+                                        <Text style={{ fontSize: 9.5, fontWeight: 'bold', color: '#111827', marginBottom: 2 }}>{project?.name || customer?.name || '-'}</Text>
+                                        {project?.location && <Text style={{ fontSize: 7.5, color: '#374151', marginBottom: 2 }}>{project.location}</Text>}
+                                        {project?.description && <Text style={{ fontSize: 7.5, color: '#4b5563', marginBottom: 2 }}>{project.description}</Text>}
+                                        {(project?.startDate || project?.endDate) && (
+                                            <Text style={{ fontSize: 7.5, color: '#4b5563' }}>
+                                                {lang === 'th' ? "ระยะเวลา: " : "Period: "}{project.startDate || "-"} {project.endDate ? ` ถึง ${project.endDate}` : ""}
+                                            </Text>
+                                        )}
                                     </View>
                                 </View>
                             </>
                         ) : (
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#eeeeee' }}>
                                 <View>
-                                    <Text style={{ fontSize: 12, fontWeight: 'bold' }}>{docTitle} ({labels.cont})</Text>
+                                    <Text style={{ fontSize: 11, fontWeight: 'bold' }}>{docPrimaryTitle} ({labels.cont})</Text>
                                 </View>
-                                <Text style={{ fontSize: 10, color: '#666666' }}>{doc.documentNumber}</Text>
+                                <Text style={{ fontSize: 9, color: '#666666' }}>{doc.documentNumber}</Text>
                             </View>
                         )}
 
