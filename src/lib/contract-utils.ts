@@ -613,7 +613,7 @@ export function generateVoucherHTML(data: VoucherPrintInput): string {
             </td>
         </tr>
         <tr>
-            <td>คงเหลือค่าจ้างเบิกจ่ายในครั้งต่อไป :</td>
+            <td>คงเหลือค่าจ้างเบิกจ่ายในสัญญา :</td>
             <td><span class="summary-dots">${fmtNum(data.remainingAmount)}</span> บาท</td>
         </tr>
     </table>

@@ -981,7 +981,7 @@ export function PaymentVoucherDialog({
                                     <span className="font-bold text-emerald-600 dark:text-emerald-400">{fmtBaht(totalVoucherAmount)}</span>
                                 </div>
                                 <div className="flex justify-between py-1 border-t border-dashed border-border">
-                                    <span className="text-muted-foreground">คงเหลือค่าจ้างเบิกจ่ายในครั้งต่อไป:</span>
+                                    <span className="text-muted-foreground">คงเหลือค่าจ้างเบิกจ่ายในสัญญา:</span>
                                     <span className="font-bold text-amber-600 dark:text-amber-400">{fmtBaht(remainingAfterThisDraw)}</span>
                                 </div>
                             </div>
@@ -1268,7 +1268,7 @@ export function PaymentVoucherDialog({
                                                 </span>
                                             </div>
                                             <div className="flex items-center">
-                                                <span className="w-36 text-gray-800">คงเหลือค่าจ้างเบิกจ่ายในครั้งต่อไป :</span>
+                                                <span className="w-36 text-gray-800">คงเหลือค่าจ้างเบิกจ่ายในสัญญา :</span>
                                                 <span className="border-b border-dotted border-gray-600 px-3 min-w-[100px] text-right font-bold">
                                                     {fmtNum(remainingAfterThisDraw)}
                                                 </span>
