@@ -34,10 +34,10 @@ export function HeaderProfile() {
     const [hasImageError, setHasImageError] = React.useState(false)
     const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false)
 
-    // Reset error when avatar changes
+    // Reset error when avatar or team logo changes
     React.useEffect(() => {
         setHasImageError(false)
-    }, [currentUser?.avatar])
+    }, [currentUser?.avatar, currentTeam?.logo])
 
     // Close dropdown when clicking outside
     React.useEffect(() => {
@@ -229,20 +229,30 @@ export function HeaderProfile() {
                 onClick={toggleDropdown}
                 className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
             >
-                <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold shadow-md overflow-hidden relative">
-                    {currentUser.avatar && !hasImageError ? (
-                        <Image
-                            src={currentUser.avatar}
-                            alt={currentUser.name}
-                            fill
-                            sizes="32px"
-                            className="rounded-full object-cover"
-                            onError={() => setHasImageError(true)}
-                        />
-                    ) : (
-                        currentUser.name.charAt(0).toUpperCase()
-                    )}
-                </div>
+                {(() => {
+                    const teamLogo = currentTeam?.logo
+                    const isTeamLogoUrl = teamLogo && (teamLogo.startsWith('http') || teamLogo.startsWith('data:') || teamLogo.startsWith('blob:') || teamLogo.startsWith('/'))
+                    const displayImg = isTeamLogoUrl ? teamLogo : (!teamLogo && currentUser.avatar ? currentUser.avatar : null)
+
+                    return (
+                        <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold shadow-md overflow-hidden">
+                            {displayImg && !hasImageError ? (
+                                <Image
+                                    src={displayImg}
+                                    alt={currentTeam?.name || currentUser.name}
+                                    fill
+                                    sizes="32px"
+                                    className="rounded-full object-cover"
+                                    onError={() => setHasImageError(true)}
+                                />
+                            ) : teamLogo && !isTeamLogoUrl ? (
+                                <span className="text-base leading-none">{teamLogo}</span>
+                            ) : (
+                                (currentTeam?.name || currentUser.name).charAt(0).toUpperCase()
+                            )}
+                        </div>
+                    )
+                })()}
                 <div className="hidden md:block text-left mr-1">
                     <p className="text-xs font-bold leading-none">{currentUser.name}</p>
                     <p className="text-[10px] text-muted-foreground leading-none mt-1">{currentTeam?.name || "No Team"}</p>
