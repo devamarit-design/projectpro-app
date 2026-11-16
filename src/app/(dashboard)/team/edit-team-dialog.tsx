@@ -4,6 +4,7 @@ import * as React from "react"
 import { X, Building2, Upload } from "lucide-react"
 import { useTranslation } from "@/lib/i18n-context"
 import { useProjects, Team } from "@/context/project-context"
+import { useOrganization } from "@/context/organization-context"
 import { uploadImage } from "@/lib/upload"
 import { cn } from "@/lib/utils"
 
@@ -16,6 +17,7 @@ interface EditTeamDialogProps {
 export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialogProps) {
     const { t } = useTranslation()
     const { updateCompanyProfile } = useProjects()
+    const { currentOrg } = useOrganization()
 
     // We can't update 'name' via updateCompanyProfile easily because it's derived?
     // Actually project-context says: const updatedTeam: Team = { ...currentTeam, ...updates }
@@ -23,6 +25,7 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
 
     const [formData, setFormData] = React.useState<Partial<Team>>({})
     const [isUploading, setIsUploading] = React.useState(false)
+    const [uploadError, setUploadError] = React.useState<string | null>(null)
     const fileInputRef = React.useRef<HTMLInputElement>(null)
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,19 +33,24 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
         if (!file) return
 
         setIsUploading(true)
+        setUploadError(null)
         try {
-            const url = await uploadImage(file, "team/logo")
+            const orgId = team?.id || currentOrg?.id
+            if (!orgId) throw new Error("Organization not found")
+            const url = await uploadImage(file, `organizations/${orgId}/company/logo`)
             setFormData(prev => ({ ...prev, logo: url }))
-        } catch (error) {
+        } catch (error: any) {
             console.error("Logo upload failed:", error)
+            setUploadError(error?.message || "อัปโหลดโลโก้ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง")
         } finally {
-            setIsUploading(true) // Keep uploading state for a split second to show success? No, set to false.
             setIsUploading(false)
+            e.target.value = ""
         }
     }
 
     React.useEffect(() => {
         if (isOpen && team) {
+            setUploadError(null)
             setFormData({
                 name: team.name,
                 nameEn: team.nameEn || "",
@@ -56,7 +64,9 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
                 logo: team.logo || ""
             })
         }
-    }, [isOpen, team])
+        // Only initialize when modal opens so background team snapshots don't overwrite unsaved edits
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen])
 
     if (!isOpen) return null
 
@@ -96,7 +106,7 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
                                 {formData.logo ? (
                                     <div className="flex items-center justify-center w-full h-full text-4xl">
                                         {formData.logo.length > 4 ? (
-                                            <img src={formData.logo} alt="Logo" className="w-full h-full object-cover" />
+                                            <img src={formData.logo} alt="Logo" className="w-full h-full object-contain p-1" />
                                         ) : (
                                             formData.logo
                                         )}
@@ -126,6 +136,11 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
                             <p className="text-xs text-muted-foreground text-center">
                                 {isUploading ? "Uploading..." : "Click to upload company logo"}
                             </p>
+                            {uploadError && (
+                                <p className="text-xs text-red-500 text-center max-w-xs">
+                                    {uploadError}
+                                </p>
+                            )}
                         </div>
 
                         {/* Name */}
@@ -257,9 +272,10 @@ export default function EditTeamDialog({ isOpen, onClose, team }: EditTeamDialog
                     <button
                         type="submit"
                         form="edit-team-form"
-                        className="px-6 py-2 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:translate-y-0.5 transition-all"
+                        disabled={isUploading}
+                        className="px-6 py-2 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {t.common.save}
+                        {isUploading ? "Uploading..." : t.common.save}
                     </button>
                 </div>
             </div>
