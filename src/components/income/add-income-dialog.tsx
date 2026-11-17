@@ -439,7 +439,7 @@ export function AddIncomeDialog({
         <div className="fixed inset-0 z-[100] flex flex-col sm:items-center sm:justify-center font-sans overflow-hidden p-0 sm:p-4">
             <SafeBackdrop onClose={() => onOpenChange(false)} className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm transition-opacity" />
 
-            <div className="relative w-full sm:max-w-2xl lg:max-w-5xl xl:max-w-6xl h-full sm:h-[90vh] max-h-[100dvh] sm:max-h-[90vh] p-0 rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-border flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden bg-background text-foreground">
+            <div className="relative w-full sm:max-w-3xl lg:max-w-6xl xl:max-w-7xl h-full sm:h-[92vh] max-h-[100dvh] sm:max-h-[92vh] p-0 rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-border flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden bg-background text-foreground">
 
                 {/* Dialog Header with Safe Area for Mobile */}
                 <div className="flex items-center justify-between px-4 py-3 sm:p-5 border-b border-border shrink-0 bg-background pt-[max(0.875rem,env(safe-area-inset-top))]">
@@ -572,8 +572,8 @@ export function AddIncomeDialog({
                 <div className="flex flex-col flex-1 min-h-0 overflow-hidden min-w-0 w-full">
                     <div className="flex-1 min-h-0 overflow-hidden flex flex-col lg:grid lg:grid-cols-12 min-w-0 w-full">
 
-                        {/* LEFT PANE (Mobile: full width, Desktop: 7 cols) */}
-                        <div ref={scrollRef} className="lg:col-span-7 xl:col-span-7 flex flex-col h-full overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 space-y-3.5 min-w-0 w-full lg:border-r lg:border-border custom-scrollbar overscroll-contain min-h-0">
+                        {/* LEFT PANE (Mobile: full width, Desktop: 8-9 cols for spacious editing) */}
+                        <div ref={scrollRef} className="lg:col-span-8 xl:col-span-9 flex flex-col h-full overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 space-y-3.5 min-w-0 w-full lg:border-r lg:border-border custom-scrollbar overscroll-contain min-h-0">
 
                             {/* STEP 1: ข้อมูลหัวเอกสาร & โครงการ */}
                             <div id="income-section-1" className="shrink-0 bg-card border border-border shadow-xs rounded-2xl overflow-hidden transition-all min-w-0 w-full scroll-mt-2">
@@ -845,25 +845,16 @@ export function AddIncomeDialog({
                                     <div className="p-3.5 sm:p-4 pt-0 space-y-4 border-t border-border/60 min-w-0 w-full animate-in fade-in duration-200">
                                         {mode === "Simple" ? (
                                             <div className="space-y-3 pt-2">
-                                                {/* Column Headers (Desktop) */}
-                                                <div className="hidden sm:grid grid-cols-12 gap-2 text-[11px] font-bold text-muted-foreground uppercase tracking-wider pb-1.5 border-b border-border/60">
-                                                    <div className="col-span-1 text-center">#</div>
-                                                    <div className="col-span-6">รายการสินค้า / รายละเอียด</div>
-                                                    <div className="col-span-2 text-center">จำนวน</div>
-                                                    <div className="col-span-2 text-right">ราคา/หน่วย</div>
-                                                    <div className="col-span-1 text-right">รวม</div>
-                                                </div>
-
                                                 {/* Simple Items List */}
-                                                <div className="space-y-2.5">
+                                                <div className="space-y-3">
                                                     {simpleItems.map((item: any, index: number) => (
                                                         <div
                                                             key={item.id}
-                                                            className="p-3 sm:p-2 rounded-xl bg-background border border-border/80 hover:border-foreground/20 transition-all flex flex-col sm:grid sm:grid-cols-12 gap-2.5 sm:gap-2 sm:items-start"
+                                                            className="p-3.5 rounded-xl bg-background border border-border/80 hover:border-foreground/20 transition-all space-y-2.5"
                                                         >
-                                                            {/* Index & Image & Description */}
-                                                            <div className="flex items-start gap-2.5 sm:col-span-7 min-w-0">
-                                                                <div className="w-6 h-6 rounded-md bg-muted/60 text-muted-foreground flex items-center justify-center text-xs font-bold shrink-0 mt-1">
+                                                            {/* Row 1: Index + Image + Item Name + Delete */}
+                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                <div className="w-7 h-7 rounded-lg bg-muted/70 text-muted-foreground flex items-center justify-center text-xs font-bold shrink-0">
                                                                     {index + 1}
                                                                 </div>
 
@@ -879,14 +870,14 @@ export function AddIncomeDialog({
                                                                     <label
                                                                         htmlFor={`income-item-img-${item.id}`}
                                                                         className={cn(
-                                                                            "w-11 h-11 rounded-lg flex items-center justify-center border cursor-pointer transition-colors overflow-hidden relative group",
+                                                                            "w-10 h-10 rounded-lg flex items-center justify-center border cursor-pointer transition-colors overflow-hidden relative group",
                                                                             item.image ? "border-primary/40 bg-muted/20" : "border-dashed border-input bg-muted/30 hover:bg-muted/60"
                                                                         )}
                                                                         title="คลิกเพื่อแนบรูปสินค้า"
                                                                     >
                                                                         {item.image ? (
                                                                             <>
-                                                                                <Image src={item.image} alt="Item" fill sizes="44px" className="object-cover" unoptimized={item.image.startsWith('data:') || item.image.startsWith('blob:')} />
+                                                                                <Image src={item.image} alt="Item" fill sizes="40px" className="object-cover" unoptimized={item.image.startsWith('data:') || item.image.startsWith('blob:')} />
                                                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px]">
                                                                                     เปลี่ยน
                                                                                 </div>
@@ -897,70 +888,89 @@ export function AddIncomeDialog({
                                                                     </label>
                                                                 </div>
 
-                                                                {/* Name & Description Inputs */}
-                                                                <div className="flex-1 space-y-1.5 min-w-0">
-                                                                    <input
-                                                                        placeholder="ชื่อสินค้า หรือ รายการงาน..."
-                                                                        value={item.name || ""}
-                                                                        onChange={(e) => updateSimpleItem(item.id, "name", e.target.value)}
-                                                                        className="w-full bg-background border border-input rounded-lg px-3 py-1.5 text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground"
-                                                                    />
-                                                                    <input
-                                                                        placeholder="รายละเอียดสเปก หรือ ขอบเขตงาน (ถ้ามี)..."
-                                                                        value={item.description || ""}
-                                                                        onChange={(e) => updateSimpleItem(item.id, "description", e.target.value)}
-                                                                        className="w-full bg-background border border-input/60 rounded-lg px-3 py-1 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                                    />
-                                                                </div>
+                                                                {/* Name Input (Full remaining width) */}
+                                                                <input
+                                                                    placeholder="ชื่อสินค้า หรือ รายการงาน..."
+                                                                    value={item.name || ""}
+                                                                    onChange={(e) => updateSimpleItem(item.id, "name", e.target.value)}
+                                                                    className="flex-1 min-w-0 bg-background border border-input rounded-lg px-3.5 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+                                                                />
+
+                                                                {simpleItems.length > 1 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setSimpleItems((prev: any[]) => prev.filter((i: any) => i.id !== item.id))}
+                                                                        className="w-8 h-8 rounded-lg hover:bg-red-500/10 hover:text-red-500 text-muted-foreground flex items-center justify-center transition-colors shrink-0"
+                                                                        title="ลบรายการนี้"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                )}
                                                             </div>
 
-                                                            {/* Quantity, Unit, Price, Total, Delete in Mobile / Desktop */}
-                                                            <div className="flex items-center justify-between sm:contents pt-1 sm:pt-0 border-t sm:border-t-0 border-border/40">
-                                                                {/* Qty & Unit */}
-                                                                <div className="sm:col-span-2 flex items-center gap-1 min-w-0">
+                                                            {/* Row 2: Description + Qty + Unit + Unit Price + Total */}
+                                                            <div className="flex flex-col sm:flex-row sm:items-end gap-2.5 sm:pl-10">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
+                                                                        รายละเอียด / สเปก (ถ้ามี)
+                                                                    </label>
                                                                     <input
-                                                                        type="number"
-                                                                        placeholder="จำนวน"
-                                                                        value={item.quantity}
-                                                                        onChange={(e) => updateSimpleItem(item.id, "quantity", parseFloat(e.target.value) || 0)}
-                                                                        className="w-16 sm:w-full bg-background border border-input rounded-lg px-2 py-1.5 text-sm text-center font-medium focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                                        min={0}
-                                                                    />
-                                                                    <input
-                                                                        placeholder="หน่วย"
-                                                                        value={item.unit || "unit"}
-                                                                        onChange={(e) => updateSimpleItem(item.id, "unit", e.target.value)}
-                                                                        className="w-12 sm:w-14 bg-background border border-input rounded-lg px-1 py-1.5 text-xs text-center text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                                        placeholder="รายละเอียดสเปก หรือ ขอบเขตงาน..."
+                                                                        value={item.description || ""}
+                                                                        onChange={(e) => updateSimpleItem(item.id, "description", e.target.value)}
+                                                                        className="w-full bg-background border border-input/70 rounded-lg px-3 py-2 text-xs text-muted-foreground focus:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                                                                     />
                                                                 </div>
 
-                                                                {/* Unit Price */}
-                                                                <div className="sm:col-span-2">
-                                                                    <input
-                                                                        type="number"
-                                                                        placeholder="ราคาต่อหน่วย"
-                                                                        value={item.unitPrice}
-                                                                        onChange={(e) => updateSimpleItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)}
-                                                                        className="w-24 sm:w-full bg-background border border-input rounded-lg px-2.5 py-1.5 text-sm text-right font-medium focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                                        min={0}
-                                                                    />
-                                                                </div>
+                                                                <div className="flex flex-wrap sm:flex-nowrap items-end gap-2 shrink-0">
+                                                                    <div className="w-20 sm:w-24">
+                                                                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block text-center">
+                                                                            จำนวน
+                                                                        </label>
+                                                                        <input
+                                                                            type="number"
+                                                                            placeholder="1"
+                                                                            value={item.quantity}
+                                                                            onChange={(e) => updateSimpleItem(item.id, "quantity", parseFloat(e.target.value) || 0)}
+                                                                            className="w-full bg-background border border-input rounded-lg px-2.5 py-2 text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                            min={0}
+                                                                        />
+                                                                    </div>
 
-                                                                {/* Line Total & Trash */}
-                                                                <div className="sm:col-span-1 flex items-center justify-end gap-1.5">
-                                                                    <span className="text-sm font-bold text-foreground font-mono">
-                                                                        ฿{(item.total || 0).toLocaleString()}
-                                                                    </span>
-                                                                    {simpleItems.length > 1 && (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => setSimpleItems((prev: any[]) => prev.filter((i: any) => i.id !== item.id))}
-                                                                            className="w-8 h-8 rounded-lg hover:bg-red-500/10 hover:text-red-500 text-muted-foreground flex items-center justify-center transition-colors shrink-0"
-                                                                            title="ลบรายการนี้"
-                                                                        >
-                                                                            <Trash2 className="w-4 h-4" />
-                                                                        </button>
-                                                                    )}
+                                                                    <div className="w-20">
+                                                                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block text-center">
+                                                                            หน่วย
+                                                                        </label>
+                                                                        <input
+                                                                            placeholder="unit"
+                                                                            value={item.unit || "unit"}
+                                                                            onChange={(e) => updateSimpleItem(item.id, "unit", e.target.value)}
+                                                                            className="w-full bg-background border border-input rounded-lg px-2 py-2 text-sm text-center text-muted-foreground focus:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                        />
+                                                                    </div>
+
+                                                                    <div className="w-28 sm:w-36">
+                                                                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block text-right">
+                                                                            ราคา / หน่วย (฿)
+                                                                        </label>
+                                                                        <input
+                                                                            type="number"
+                                                                            placeholder="0"
+                                                                            value={item.unitPrice}
+                                                                            onChange={(e) => updateSimpleItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)}
+                                                                            className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm text-right font-medium font-mono focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                            min={0}
+                                                                        />
+                                                                    </div>
+
+                                                                    <div className="min-w-[96px] text-right pb-2 pl-2">
+                                                                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">
+                                                                            รวม
+                                                                        </div>
+                                                                        <div className="text-sm font-bold text-foreground font-mono">
+                                                                            ฿{(item.total || 0).toLocaleString()}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1041,10 +1051,13 @@ export function AddIncomeDialog({
                                                             {section.items.map((item, iIndex) => (
                                                                 <div
                                                                     key={item.id || `item-${section.id}-${iIndex}`}
-                                                                    className="p-2.5 rounded-lg bg-muted/20 border border-border/60 flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:items-center"
+                                                                    className="p-3 rounded-xl bg-muted/20 border border-border/70 hover:border-foreground/20 transition-all space-y-2.5"
                                                                 >
-                                                                    <div className="flex items-center gap-2 sm:col-span-7 min-w-0">
-                                                                        <span className="w-5 text-center text-xs text-muted-foreground font-bold shrink-0">{iIndex + 1}</span>
+                                                                    {/* Row 1: Index + Image + Name + Delete */}
+                                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                                        <span className="w-6 h-6 rounded-md bg-muted/70 text-muted-foreground flex items-center justify-center text-xs font-bold shrink-0">
+                                                                            {iIndex + 1}
+                                                                        </span>
                                                                         <div className="relative shrink-0">
                                                                             <input
                                                                                 type="file"
@@ -1064,85 +1077,120 @@ export function AddIncomeDialog({
                                                                                 )}
                                                                             </label>
                                                                         </div>
-                                                                        <div className="flex-1 space-y-1 min-w-0">
+                                                                        <input
+                                                                            placeholder="ชื่อรายการ..."
+                                                                            value={item.name || ""}
+                                                                            onChange={(e) => {
+                                                                                const val = e.target.value
+                                                                                setSections(prev => prev.map(s => s.id === section.id ? {
+                                                                                    ...s,
+                                                                                    items: s.items.map(i => i.id === item.id ? { ...i, name: val } : i)
+                                                                                } : s))
+                                                                            }}
+                                                                            className="flex-1 min-w-0 bg-background border border-input rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                        />
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setSections(prev => prev.map(s => s.id === section.id ? {
+                                                                                    ...s,
+                                                                                    items: s.items.filter(i => i.id !== item.id)
+                                                                                } : s))
+                                                                            }}
+                                                                            className="p-1.5 hover:bg-red-500/10 hover:text-red-500 text-muted-foreground rounded-lg transition-colors shrink-0"
+                                                                            title="ลบรายการนี้"
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+
+                                                                    {/* Row 2: Description + Qty + Unit + Price + Total */}
+                                                                    <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:pl-8">
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
+                                                                                รายละเอียด / สเปก (ถ้ามี)
+                                                                            </label>
                                                                             <input
-                                                                                placeholder="ชื่อรายการ..."
-                                                                                value={item.name || ""}
+                                                                                placeholder="รายละเอียดสเปก..."
+                                                                                value={item.description || ""}
                                                                                 onChange={(e) => {
                                                                                     const val = e.target.value
                                                                                     setSections(prev => prev.map(s => s.id === section.id ? {
                                                                                         ...s,
-                                                                                        items: s.items.map(i => i.id === item.id ? { ...i, name: val } : i)
+                                                                                        items: s.items.map(i => i.id === item.id ? { ...i, description: val } : i)
                                                                                     } : s))
                                                                                 }}
-                                                                                className="w-full bg-background border border-input rounded-md px-2.5 py-1 text-xs sm:text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="flex items-center justify-between sm:contents pt-1 sm:pt-0">
-                                                                        <div className="sm:col-span-2 flex items-center gap-1">
-                                                                            <input
-                                                                                type="number"
-                                                                                placeholder="จำนวน"
-                                                                                value={item.quantity}
-                                                                                onChange={(e) => {
-                                                                                    const qty = parseFloat(e.target.value) || 0
-                                                                                    setSections(prev => prev.map(s => s.id === section.id ? {
-                                                                                        ...s,
-                                                                                        items: s.items.map(i => i.id === item.id ? { ...i, quantity: qty, total: qty * (Number(i.unitPrice) || 0) } : i)
-                                                                                    } : s))
-                                                                                }}
-                                                                                className="w-16 sm:w-full bg-background border border-input rounded-md px-2 py-1 text-xs text-center font-medium focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                                                min={0}
-                                                                            />
-                                                                            <input
-                                                                                placeholder="หน่วย"
-                                                                                value={item.unit || "unit"}
-                                                                                onChange={(e) => {
-                                                                                    const unit = e.target.value
-                                                                                    setSections(prev => prev.map(s => s.id === section.id ? {
-                                                                                        ...s,
-                                                                                        items: s.items.map(i => i.id === item.id ? { ...i, unit } : i)
-                                                                                    } : s))
-                                                                                }}
-                                                                                className="w-12 sm:w-14 bg-background border border-input rounded-md px-1 py-1 text-[11px] text-center text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                                                                className="w-full bg-background border border-input/70 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground focus:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                                                                             />
                                                                         </div>
 
-                                                                        <div className="sm:col-span-2">
-                                                                            <input
-                                                                                type="number"
-                                                                                placeholder="ราคา"
-                                                                                value={item.unitPrice}
-                                                                                onChange={(e) => {
-                                                                                    const pr = parseFloat(e.target.value) || 0
-                                                                                    setSections(prev => prev.map(s => s.id === section.id ? {
-                                                                                        ...s,
-                                                                                        items: s.items.map(i => i.id === item.id ? { ...i, unitPrice: pr, total: (Number(i.quantity) || 0) * pr } : i)
-                                                                                    } : s))
-                                                                                }}
-                                                                                className="w-20 sm:w-full bg-background border border-input rounded-md px-2 py-1 text-xs text-right font-medium focus:outline-none focus:ring-1 focus:ring-primary/50"
-                                                                                min={0}
-                                                                            />
-                                                                        </div>
+                                                                        <div className="flex flex-wrap sm:flex-nowrap items-end gap-2 shrink-0">
+                                                                            <div className="w-20 sm:w-24">
+                                                                                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block text-center">
+                                                                                    จำนวน
+                                                                                </label>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    placeholder="1"
+                                                                                    value={item.quantity}
+                                                                                    onChange={(e) => {
+                                                                                        const qty = parseFloat(e.target.value) || 0
+                                                                                        setSections(prev => prev.map(s => s.id === section.id ? {
+                                                                                            ...s,
+                                                                                            items: s.items.map(i => i.id === item.id ? { ...i, quantity: qty, total: qty * (Number(i.unitPrice) || 0) } : i)
+                                                                                        } : s))
+                                                                                    }}
+                                                                                    className="w-full bg-background border border-input rounded-lg px-2 py-1.5 text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                                    min={0}
+                                                                                />
+                                                                            </div>
 
-                                                                        <div className="sm:col-span-1 flex items-center justify-end gap-1">
-                                                                            <span className="text-xs font-mono font-bold">
-                                                                                ฿{((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toLocaleString()}
-                                                                            </span>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => {
-                                                                                    setSections(prev => prev.map(s => s.id === section.id ? {
-                                                                                        ...s,
-                                                                                        items: s.items.filter(i => i.id !== item.id)
-                                                                                    } : s))
-                                                                                }}
-                                                                                className="p-1 hover:text-red-500 text-muted-foreground rounded transition-colors"
-                                                                            >
-                                                                                <Trash2 className="w-3.5 h-3.5" />
-                                                                            </button>
+                                                                            <div className="w-20">
+                                                                                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block text-center">
+                                                                                    หน่วย
+                                                                                </label>
+                                                                                <input
+                                                                                    placeholder="unit"
+                                                                                    value={item.unit || "unit"}
+                                                                                    onChange={(e) => {
+                                                                                        const unit = e.target.value
+                                                                                        setSections(prev => prev.map(s => s.id === section.id ? {
+                                                                                            ...s,
+                                                                                            items: s.items.map(i => i.id === item.id ? { ...i, unit } : i)
+                                                                                        } : s))
+                                                                                    }}
+                                                                                    className="w-full bg-background border border-input rounded-lg px-2 py-1.5 text-sm text-center text-muted-foreground focus:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                                />
+                                                                            </div>
+
+                                                                            <div className="w-28 sm:w-32">
+                                                                                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block text-right">
+                                                                                    ราคา / หน่วย (฿)
+                                                                                </label>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    placeholder="0"
+                                                                                    value={item.unitPrice}
+                                                                                    onChange={(e) => {
+                                                                                        const pr = parseFloat(e.target.value) || 0
+                                                                                        setSections(prev => prev.map(s => s.id === section.id ? {
+                                                                                            ...s,
+                                                                                            items: s.items.map(i => i.id === item.id ? { ...i, unitPrice: pr, total: (Number(i.quantity) || 0) * pr } : i)
+                                                                                        } : s))
+                                                                                    }}
+                                                                                    className="w-full bg-background border border-input rounded-lg px-2.5 py-1.5 text-sm text-right font-medium font-mono focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                                    min={0}
+                                                                                />
+                                                                            </div>
+
+                                                                            <div className="min-w-[90px] text-right pb-1.5 pl-1">
+                                                                                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">
+                                                                                    รวม
+                                                                                </div>
+                                                                                <div className="text-sm font-bold font-mono text-foreground">
+                                                                                    ฿{((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toLocaleString()}
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -1242,7 +1290,8 @@ export function AddIncomeDialog({
                         </div>
 
                         {/* RIGHT PANE (Desktop only, 5 cols) */}
-                        <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col h-full overflow-y-auto overflow-x-hidden p-5 space-y-4 bg-muted/15 min-w-0 custom-scrollbar overscroll-contain min-h-0">
+                        {/* RIGHT PANE: Desktop Sticky Summary Sidebar (4-3 cols) */}
+                        <div className="hidden lg:flex lg:col-span-4 xl:col-span-3 flex-col h-full overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-muted/15 min-w-0 custom-scrollbar overscroll-contain min-h-0">
 
                             {/* Document Live Preview Card */}
                             <div className="shrink-0 bg-card border border-border shadow-xs rounded-2xl p-4 space-y-3 min-w-0">
