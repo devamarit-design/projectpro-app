@@ -395,7 +395,10 @@ export function AddIncomeDialog({
                 await updateIncome(initialData.id, docPayload as any)
                 toast.success("อัปเดตเอกสารสำเร็จ!", { id: toastId })
             } else {
-                await addIncome(docPayload as any)
+                const newId = await addIncome(docPayload as any)
+                if (!newId) {
+                    throw new Error("ไม่สามารถบันทึกเอกสารลงฐานข้อมูลได้")
+                }
                 toast.success("บันทึกเอกสารสำเร็จ!", { id: toastId })
 
                 // Send Telegram Notification (Quotation only)

@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { DocumentPreview } from "./document-preview"
 import { AddIncomeDialog } from "./add-income-dialog"
 import { generateNextDocumentNumber } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface IncomeDetailSheetProps {
     documentId: string | null
@@ -39,83 +40,97 @@ export function IncomeDetailSheet({ documentId, onClose }: IncomeDetailSheetProp
         setShowPreview(false)
     }
 
-    const handleCreateNext = (targetType: IncomeType) => {
-        // Generate new document number
-        const docNumber = generateNextDocumentNumber(targetType, incomes, new Date().toISOString().split('T')[0])
+    const handleCreateNext = async (targetType: IncomeType) => {
+        try {
+            // Generate new document number
+            const docNumber = generateNextDocumentNumber(targetType, incomes, new Date().toISOString().split('T')[0])
 
-        // Create the new income document automatically
-        // Strip undefined fields — Firestore rejects them (e.g. items is undefined in zone/section mode)
-        const rawDoc = {
-            type: targetType,
-            documentNumber: docNumber,
-            date: new Date().toISOString().split('T')[0],
-            customerId: document.customerId,
-            projectId: document.projectId,
-            status: 'Draft' as const,
-            mode: document.mode,
-            items: document.items ?? [],
-            sections: document.sections ?? [],
-            subtotal: document.subtotal,
-            discount: document.discount || 0,
-            total: document.total || document.subtotal,
-            tax: document.tax ?? 0,
-            grandTotal: document.grandTotal ?? document.total ?? document.subtotal,
-            referenceDocumentId: document.id,
-            vatIncluded: document.vatIncluded ?? false,
-        }
-        const newDoc: Omit<IncomeDocument, 'id'> = Object.fromEntries(
-            Object.entries(rawDoc).filter(([, v]) => v !== undefined)
-        ) as unknown as Omit<IncomeDocument, 'id'>
-
-        // Add the new document
-        addIncome(newDoc)
-
-        // If converting Quotation to Invoice, mark original as Invoiced
-        if (document.type === 'Quotation' && targetType === 'Invoice' && document.status !== 'Invoiced') {
-            updateIncome(document.id, { status: 'Invoiced' })
-        }
-
-        // If converting Invoice to Receipt, mark original as Paid
-        if (document.type === 'Invoice' && targetType === 'Receipt') {
-            updateIncome(document.id, { status: 'Paid' })
-        }
-
-        // Close the sheet and let user know
-        onClose()
-    }
-
-    // Mark as Paid AND create Receipt automatically
-    const handleMarkPaid = () => {
-        // Mark this document as Paid
-        updateIncome(document.id, { status: 'Paid' })
-
-        // If it's an Invoice, also create a Receipt
-        if (document.type === 'Invoice') {
-            const docNumber = generateNextDocumentNumber('Receipt', incomes, new Date().toISOString().split('T')[0])
-
-            const newReceipt: Omit<IncomeDocument, 'id'> = {
-                type: 'Receipt',
+            // Create the new income document automatically
+            // Strip undefined fields — Firestore rejects them (e.g. items is undefined in zone/section mode)
+            const rawDoc = {
+                type: targetType,
                 documentNumber: docNumber,
                 date: new Date().toISOString().split('T')[0],
                 customerId: document.customerId,
                 projectId: document.projectId,
-                status: 'Paid',
+                status: 'Draft' as const,
                 mode: document.mode,
-                items: document.items,
-                sections: document.sections,
+                items: document.items ?? [],
+                sections: document.sections ?? [],
                 subtotal: document.subtotal,
                 discount: document.discount || 0,
                 total: document.total || document.subtotal,
-                tax: document.tax,
-                grandTotal: document.grandTotal,
+                tax: document.tax ?? 0,
+                grandTotal: document.grandTotal ?? document.total ?? document.subtotal,
                 referenceDocumentId: document.id,
-                vatIncluded: document.vatIncluded,
+                vatIncluded: document.vatIncluded ?? false,
+            }
+            const newDoc: Omit<IncomeDocument, 'id'> = Object.fromEntries(
+                Object.entries(rawDoc).filter(([, v]) => v !== undefined)
+            ) as unknown as Omit<IncomeDocument, 'id'>
+
+            // Add the new document FIRST and verify it succeeds before updating status
+            const newId = await addIncome(newDoc)
+            if (!newId) {
+                throw new Error("ไม่สามารถสร้างเอกสารได้")
             }
 
-            addIncome(newReceipt)
-        }
+            // If converting Quotation to Invoice, mark original as Invoiced
+            if (document.type === 'Quotation' && targetType === 'Invoice' && document.status !== 'Invoiced') {
+                await updateIncome(document.id, { status: 'Invoiced' })
+            }
 
-        onClose()
+            // If converting Invoice to Receipt, mark original as Paid
+            if (document.type === 'Invoice' && targetType === 'Receipt') {
+                await updateIncome(document.id, { status: 'Paid' })
+            }
+
+            toast.success(`สร้าง${targetType === 'Invoice' ? 'ใบวางบิล' : 'ใบเสร็จรับเงิน'}สำเร็จ (${docNumber})`)
+            // Close the sheet and let user know
+            onClose()
+        } catch (error: any) {
+            console.error("Failed to create next document:", error)
+            toast.error(`สร้างเอกสารไม่สำเร็จ: ${error?.message || "เกิดข้อผิดพลาด"}`)
+        }
+    }
+
+    // Mark as Paid AND create Receipt automatically
+    const handleMarkPaid = async () => {
+        try {
+            // If it's an Invoice, also create a Receipt
+            if (document.type === 'Invoice') {
+                const docNumber = generateNextDocumentNumber('Receipt', incomes, new Date().toISOString().split('T')[0])
+
+                const newReceipt: Omit<IncomeDocument, 'id'> = {
+                    type: 'Receipt',
+                    documentNumber: docNumber,
+                    date: new Date().toISOString().split('T')[0],
+                    customerId: document.customerId,
+                    projectId: document.projectId,
+                    status: 'Paid',
+                    mode: document.mode,
+                    items: document.items ?? [],
+                    sections: document.sections ?? [],
+                    subtotal: document.subtotal,
+                    discount: document.discount || 0,
+                    total: document.total || document.subtotal,
+                    tax: document.tax ?? 0,
+                    grandTotal: document.grandTotal ?? document.total ?? document.subtotal,
+                    referenceDocumentId: document.id,
+                    vatIncluded: document.vatIncluded ?? false,
+                }
+
+                await addIncome(newReceipt)
+            }
+
+            // Mark this document as Paid
+            await updateIncome(document.id, { status: 'Paid' })
+            toast.success("อัปเดตสถานะชำระเงินสำเร็จ!")
+            onClose()
+        } catch (error: any) {
+            console.error("Failed to mark paid:", error)
+            toast.error(`บันทึกไม่สำเร็จ: ${error?.message || "เกิดข้อผิดพลาด"}`)
+        }
     }
 
     // Workflow Actions Config

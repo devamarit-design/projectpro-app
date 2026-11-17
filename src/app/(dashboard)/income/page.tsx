@@ -137,7 +137,7 @@ export default function IncomePage() {
 
 
     // Helper: Get available months
-    const availableMonths = Array.from(new Set(incomes.map(i => i.date.substring(0, 7)))).sort().reverse()
+    const availableMonths = Array.from(new Set(incomes.map(i => (i.date || "").substring(0, 7)).filter(Boolean))).sort().reverse()
 
     // Step 1: Base Filter (Project, Month, Customer, User, Search)
     const baseFilteredIncomes = React.useMemo(() => {

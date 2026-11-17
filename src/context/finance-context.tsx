@@ -356,31 +356,39 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
     }, [mutateContractDraw])
 
     const addIncome = useCallback(async (incomeData: Omit<IncomeDocument, "id" | "createdAt" | "orgId">) => {
-        if (!currentTeam) return
+        const targetOrgId = (incomeData as any).orgId || currentTeam?.id || currentUser?.orgIds?.[0] || (typeof window !== "undefined" ? localStorage.getItem("lastOrgId") : null)
+        if (!targetOrgId) {
+            console.error("[FinanceContext] Cannot add income: missing organization ID")
+            throw new Error("ไม่พบรหัสองค์กร กรุณารีเฟรชหน้าเว็บแล้วลองใหม่")
+        }
         try {
-            const payload = {
+            const payload = stripUndefined({
                 ...incomeData,
-                orgId: currentTeam.id,
+                orgId: targetOrgId,
                 createdAt: new Date().toISOString()
-            }
-            const docRef = await addDoc(collection(db, "incomes"), payload)
-            logActivity(db, currentTeam.id, {
-                action: "CREATE",
-                entityType: "INCOME",
-                entityId: docRef.id,
-                entityTitle: incomeData.documentNumber,
-                details: `Created new income document: ${incomeData.documentNumber}`,
-                performedBy: {
-                    uid: currentUser?.id,
-                    name: currentUser?.name,
-                    role: currentUser?.role
-                },
-                relatedUserIds: []
             })
+            const docRef = await addDoc(collection(db, "incomes"), payload)
+            try {
+                logActivity(db, targetOrgId, {
+                    action: "CREATE",
+                    entityType: "INCOME",
+                    entityId: docRef.id,
+                    entityTitle: incomeData.documentNumber,
+                    details: `Created new income document: ${incomeData.documentNumber}`,
+                    performedBy: stripUndefined({
+                        uid: currentUser?.id,
+                        name: currentUser?.name,
+                        role: currentUser?.role
+                    }),
+                    relatedUserIds: []
+                })
+            } catch (logErr) {
+                console.warn("Activity log failed for income:", logErr)
+            }
             return docRef.id
         } catch (e) {
             console.error("Error adding income:", e)
-            return undefined
+            throw e
         }
     }, [currentTeam, currentUser])
 
@@ -388,9 +396,10 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         const original = [...incomes]
         setIncomes(prev => prev.map(i => i.id === id ? { ...i, ...updates, updatedAt: new Date().toISOString() } : i))
         try {
-            await updateDoc(doc(db, "incomes", id), { ...updates, updatedAt: new Date().toISOString() })
+            await updateDoc(doc(db, "incomes", id), stripUndefined({ ...updates, updatedAt: new Date().toISOString() }))
         } catch (e) {
             setIncomes(original)
+            throw e
         }
     }, [incomes])
 
