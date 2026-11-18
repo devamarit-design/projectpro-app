@@ -187,12 +187,19 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                 }))
             }
 
-            // Recalculate totalValue from items so top-level total always matches breakdown
+            // Recalculate totalValue and amount from items so top-level total always matches breakdown
             if (updates.items && updates.items.length > 0) {
                 updates.totalValue = updates.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
             } else {
                 updates.totalValue = Number(updates.totalValue) || 0
             }
+            updates.amount = `฿${updates.totalValue.toLocaleString()}`
+
+            // Let updateExpense manage updatedAt / updatedBy / editHistory
+            delete updates.editHistory
+            delete updates.updatedAt
+            delete updates.updatedBy
+            delete updates.updatedByName
 
             await updateExpense(expenseId, updates)
             setIsEditing(false)
@@ -543,23 +550,60 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                             )}
                         </div>
 
-                        {/* Created By Field */}
-                        <div className="glass-card p-3 rounded-xl border border-white/5 space-y-1">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                <User className="w-3 h-3" /> Created By (ผู้ทำรายการ)
-                            </label>
-                            <div className="text-sm font-medium truncate flex items-center gap-2">
-                                {expense.createdBy ? (
-                                    <>
-                                        <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">
-                                            {users.find(u => u.id === expense.createdBy)?.name?.charAt(0) || "?"}
-                                        </div>
-                                        {users.find(u => u.id === expense.createdBy)?.name || "Unknown"}
-                                    </>
-                                ) : (
-                                    <span className="text-muted-foreground">-</span>
-                                )}
+                        {/* Created By & Edit History Field */}
+                        <div className="glass-card p-3 rounded-xl border border-white/5 space-y-2.5">
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                    <User className="w-3 h-3" /> Created By (ผู้ทำรายการ)
+                                </label>
+                                <div className="text-sm font-medium truncate flex items-center gap-2">
+                                    {(expense.createdBy || expense.createdByName) ? (
+                                        <>
+                                            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">
+                                                {(users.find(u => u.id === expense.createdBy)?.name || expense.createdByName || "?").charAt(0)}
+                                            </div>
+                                            <span>{users.find(u => u.id === expense.createdBy)?.name || expense.createdByName || "Unknown"}</span>
+                                            {expense.createdAt && (
+                                                <span className="text-xs text-muted-foreground ml-auto">
+                                                    {new Date(expense.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
+                                                </span>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <span className="text-muted-foreground">-</span>
+                                    )}
+                                </div>
                             </div>
+
+                            {(expense.updatedAt || (expense.editHistory && expense.editHistory.length > 0)) && (
+                                <div className="pt-2 border-t border-border/50 space-y-1.5">
+                                    <label className="text-[10px] font-bold uppercase tracking-wider text-amber-500/90 flex items-center gap-1">
+                                        <Clock className="w-3 h-3" /> ประวัติการแก้ไข (Edit History)
+                                    </label>
+                                    {expense.editHistory && expense.editHistory.length > 0 ? (
+                                        <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                                            {expense.editHistory.map((h, i) => (
+                                                <div key={i} className="text-xs flex items-center justify-between gap-2 bg-muted/30 px-2.5 py-1.5 rounded-lg">
+                                                    <div className="min-w-0">
+                                                        <span className="font-semibold text-foreground">{h.editedByName || users.find(u => u.id === h.editedBy)?.name || "Unknown"}</span>
+                                                        {h.summary && <span className="text-muted-foreground ml-1.5">• {h.summary}</span>}
+                                                    </div>
+                                                    <span className="text-[11px] text-muted-foreground shrink-0">
+                                                        {new Date(h.editedAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-xs flex items-center justify-between gap-2 text-muted-foreground">
+                                            <span>แก้ไขล่าสุดโดย: <strong className="text-foreground">{expense.updatedByName || users.find(u => u.id === expense.updatedBy)?.name || "Unknown"}</strong></span>
+                                            {expense.updatedAt && (
+                                                <span>{new Date(expense.updatedAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Financial Breakdown */}

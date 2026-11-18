@@ -797,7 +797,15 @@ function ExpensesContent() {
 
                                                     <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end pl-[64px] sm:pl-0">
                                                         <div className="text-right">
-                                                            <p className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{expense.amount}</p>
+                                                            <p className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                                                                ฿{(
+                                                                    (expense.items && expense.items.length > 0)
+                                                                        ? expense.items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0)
+                                                                        : (typeof expense.totalValue === "number"
+                                                                            ? expense.totalValue
+                                                                            : Number(String(expense.amount || "0").replace(/[^0-9.-]/g, "")) || 0)
+                                                                ).toLocaleString()}
+                                                            </p>
                                                         </div>
                                                         <div className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
                                                             expense.status === 'Paid' ? 'bg-green-500/10 text-green-500 border-green-500/20' :

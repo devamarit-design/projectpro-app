@@ -142,6 +142,16 @@ export interface Expense {
     updatedAt?: string // Timestamp
     createdBy?: string // User ID of creator
     createdByName?: string // Display name of creator
+    updatedBy?: string // User ID of last editor
+    updatedByName?: string // Display name of last editor
+    editHistory?: Array<{
+        editedBy: string
+        editedByName: string
+        editedAt: string
+        previousAmount?: number
+        newAmount?: number
+        summary?: string
+    }>
     // Contract linkage (created by เบิกงวด)
     contractId?: string
     contractInstallmentId?: string

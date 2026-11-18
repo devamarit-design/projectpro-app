@@ -297,9 +297,43 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
     const updateExpense = useCallback(async (id: string, updates: Partial<Expense>) => {
         const original = [...expenses]
         const current = expenses.find(e => e.id === id)
-        setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString() } : e))
+        const now = new Date().toISOString()
+
+        const nextTotalValue = updates.totalValue !== undefined ? Number(updates.totalValue) || 0 : current?.totalValue
+        const prevTotalValue = current?.totalValue
+        const amountChanged = prevTotalValue !== undefined && nextTotalValue !== undefined && prevTotalValue !== nextTotalValue
+
+        const historyEntry = {
+            editedBy: currentUser?.id || "",
+            editedByName: currentUser?.name || "Unknown",
+            editedAt: now,
+            ...(amountChanged ? {
+                previousAmount: prevTotalValue,
+                newAmount: nextTotalValue,
+                summary: `แก้ไขยอดจาก ฿${prevTotalValue.toLocaleString()} เป็น ฿${nextTotalValue.toLocaleString()}`
+            } : {
+                summary: updates.status && updates.status !== current?.status
+                    ? `เปลี่ยนสถานะเป็น ${updates.status}`
+                    : "แก้ไขรายละเอียดรายการ"
+            })
+        }
+        const existingHistory = Array.isArray(current?.editHistory) ? current.editHistory : []
+        const nextHistory = [historyEntry, ...existingHistory].slice(0, 20)
+
+        const enrichedUpdates: Partial<Expense> = {
+            ...updates,
+            ...(updates.totalValue !== undefined && updates.amount === undefined
+                ? { amount: `฿${(Number(updates.totalValue) || 0).toLocaleString()}` }
+                : {}),
+            updatedAt: now,
+            updatedBy: currentUser?.id || "",
+            updatedByName: currentUser?.name || "Unknown",
+            editHistory: nextHistory
+        }
+
+        setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...enrichedUpdates } : e))
         try {
-            await updateDoc(doc(db, "expenses", id), stripUndefined({ ...updates, updatedAt: new Date().toISOString() }))
+            await updateDoc(doc(db, "expenses", id), stripUndefined(enrichedUpdates))
             // Keep the linked contract draw in sync (amount / status / date)
             if (current?.contractId && current.contractInstallmentId && current.contractDrawId &&
                 (updates.totalValue !== undefined || updates.status !== undefined || updates.date !== undefined)) {
@@ -315,7 +349,7 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
             console.error("Error updating expense:", e)
             throw e
         }
-    }, [expenses, mutateContractDraw])
+    }, [expenses, mutateContractDraw, currentUser])
 
     const deleteExpense = useCallback(async (id: string, permanent?: boolean) => {
         const original = [...expenses]

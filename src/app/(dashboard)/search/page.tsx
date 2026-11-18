@@ -272,7 +272,15 @@ function SearchResultsContent() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <span className="font-mono font-bold text-base text-red-500">฿{expense.amount}</span>
+                                        <span className="font-mono font-bold text-base text-red-500">
+                                            ฿{(
+                                                (expense.items && expense.items.length > 0)
+                                                    ? expense.items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0)
+                                                    : (typeof expense.totalValue === "number"
+                                                        ? expense.totalValue
+                                                        : Number(String(expense.amount || "0").replace(/[^0-9.-]/g, "")) || 0)
+                                            ).toLocaleString()}
+                                        </span>
                                         <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
                                     </div>
                                 </div>
