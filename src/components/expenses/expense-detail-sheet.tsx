@@ -168,7 +168,7 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
             }
 
             updates.receiptImages = finalReceiptUrls
-            updates.receiptImage = finalReceiptUrls[0] || undefined
+            updates.receiptImage = finalReceiptUrls[0] || ""
 
             setUploadStatus("Saving data...")
 
@@ -185,6 +185,13 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                     ...item,
                     category: updates.category as ExpenseCategory
                 }))
+            }
+
+            // Recalculate totalValue from items so top-level total always matches breakdown
+            if (updates.items && updates.items.length > 0) {
+                updates.totalValue = updates.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+            } else {
+                updates.totalValue = Number(updates.totalValue) || 0
             }
 
             await updateExpense(expenseId, updates)
@@ -608,7 +615,8 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                                         type="button"
                                                         onClick={() => {
                                                             const newItems = currentItems.filter((_, i) => i !== idx)
-                                                            setEditForm(prev => ({ ...prev, items: newItems }))
+                                                            const newTotal = newItems.reduce((sum, it) => sum + (Number(it.amount) || 0), 0)
+                                                            setEditForm(prev => ({ ...prev, items: newItems, totalValue: newTotal }))
                                                         }}
                                                         className="p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-colors shrink-0"
                                                         title="ลบรายการ"
@@ -631,7 +639,8 @@ export default function ExpenseDetailSheet({ expenseId, onClose }: ExpenseDetail
                                                             onChange={(e) => {
                                                                 const newItems = [...currentItems]
                                                                 newItems[idx] = { ...item, amount: parseFloat(e.target.value) || 0 }
-                                                                setEditForm(prev => ({ ...prev, items: newItems }))
+                                                                const newTotal = newItems.reduce((sum, it) => sum + (Number(it.amount) || 0), 0)
+                                                                setEditForm(prev => ({ ...prev, items: newItems, totalValue: newTotal }))
                                                             }}
                                                             className="w-full bg-background border border-input rounded-lg pl-7 pr-3 py-1.5 text-sm text-right font-mono font-bold focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
                                                             placeholder="0.00"

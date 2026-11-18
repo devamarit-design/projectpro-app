@@ -299,7 +299,7 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
         const current = expenses.find(e => e.id === id)
         setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString() } : e))
         try {
-            await updateDoc(doc(db, "expenses", id), { ...updates, updatedAt: new Date().toISOString() })
+            await updateDoc(doc(db, "expenses", id), stripUndefined({ ...updates, updatedAt: new Date().toISOString() }))
             // Keep the linked contract draw in sync (amount / status / date)
             if (current?.contractId && current.contractInstallmentId && current.contractDrawId &&
                 (updates.totalValue !== undefined || updates.status !== undefined || updates.date !== undefined)) {
@@ -312,6 +312,8 @@ export function FinanceProvider({ children, currentUser }: { children: React.Rea
             }
         } catch (e) {
             setExpenses(original)
+            console.error("Error updating expense:", e)
+            throw e
         }
     }, [expenses, mutateContractDraw])
 
